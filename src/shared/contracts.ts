@@ -1,3 +1,5 @@
+import type { DiffScope, FileDiff, GitStatus } from './git.js';
+
 export interface Preferences {
   piPath: string;
   nodePath: string;
@@ -47,6 +49,8 @@ export interface DesktopAPI {
   onTerminalEvent(callback: (event: TerminalEvent) => void): () => void;
   openExternal(url: string): Promise<void>;
   openProject(id: string): Promise<void>;
+  gitStatus(id: string): Promise<GitStatus>;
+  fileDiff(id: string, path: string, scope: DiffScope): Promise<FileDiff>;
   readClipboard(): Promise<{ text: string; image: boolean }>;
   writeClipboard(text: string): Promise<void>;
 }

@@ -6,6 +6,7 @@ import { OutputFlow } from '../src/main/flow-control';
 import { defaults, PreferencesStore, validatePreferences } from '../src/main/preferences';
 import { expandHome, resolveRuntime, terminalEnvironment } from '../src/main/runtime';
 import { modifiedEnter, referencePaths } from '../src/renderer/terminal-keys';
+import { removeSession, type SessionWorkspace } from '../src/renderer/session-state';
 
 describe('terminal transport', () => {
   it('pauses until xterm has consumed the high-water backlog', () => {
@@ -53,6 +54,22 @@ describe('user-owned Pi runtime', () => {
   it('expands home but does not interpret shell expressions', () => {
     expect(expandHome('~/project', '/home/test')).toBe('/home/test/project');
     expect(expandHome('$(pwd)')).toBe('$(pwd)');
+  });
+});
+
+describe('async session closure', () => {
+  const initial: SessionWorkspace = { sessions: ['A', 'B', 'C'].map(id => ({ id, cwd: '/project', title: id, status: 'running' })), activeId: 'A' };
+  it('reconciles out-of-order close responses without selecting a removed tab', () => {
+    const next = removeSession(removeSession(initial, 'B'), 'A');
+    expect(next.sessions.map(session => session.id)).toEqual(['C']);
+    expect(next.activeId).toBe('C');
+    expect(removeSession(removeSession(initial, 'A'), 'B').activeId).toBe('C');
+  });
+  it('preserves a newer user selection and handles duplicate responses', () => {
+    const selected = { ...initial, activeId: 'C' };
+    expect(removeSession(selected, 'A').activeId).toBe('C');
+    expect(removeSession(removeSession(selected, 'A'), 'A').activeId).toBe('C');
+    expect(removeSession(removeSession(removeSession(selected, 'A'), 'B'), 'C').activeId).toBeNull();
   });
 });
 

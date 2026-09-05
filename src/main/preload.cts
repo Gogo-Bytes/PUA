@@ -20,6 +20,8 @@ const api: DesktopAPI = {
   },
   openExternal: url => ipcRenderer.invoke('desktop:external', url),
   openProject: id => ipcRenderer.invoke('desktop:project', id),
+  gitStatus: id => ipcRenderer.invoke('desktop:git-status', id),
+  fileDiff: (id, path, scope) => ipcRenderer.invoke('desktop:file-diff', id, path, scope),
   readClipboard: () => ipcRenderer.invoke('desktop:clipboard-read'),
   writeClipboard: text => ipcRenderer.invoke('desktop:clipboard-write', text),
 };

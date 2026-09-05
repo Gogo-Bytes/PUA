@@ -1,4 +1,4 @@
-# 0.1 桌面架构
+# 桌面架构（0.2）
 
 状态：已实现的终端优先基线。目标是方便使用用户自己的 Pi，不重写其运行策略。
 
@@ -10,7 +10,7 @@
 - Tauri 2 可使用系统 WebView 和 Rust 后端，但本项目仍要解决 PTY、Pi/Node 发现与 sidecar 生命周期；首版不为减小壳体积增加 Rust/Node 双运行时维护面。未进行体积/内存基准，不作倍数结论。
 - 纯 RPC 聊天壳无法保留任意 `ctx.ui.custom`、footer/header 和编辑器替换。SDK 能嵌入 agent，但不能把任意终端组件自动变成 React。保留交互 Pi 是兼容基线，不是宣称任何终端协议都已兼容。
 
-外部框架比较的官方链接与证据缺口在 [research.md](../research.md)。本机安装包 `@xterm/addon-image/README.md` 已直接确认 IIP/SIXEL 协议、内存上限与 alpha/beta 状态；本机 `electron/electron.d.ts` 为实际使用的 API 类型依据。
+Electron/Tauri 官方进程模型已在 0.2 阶段通过浏览器补充核验；来源、初始研究范围与残余证据缺口在 [research.md](../research.md)。本机安装包 `@xterm/addon-image/README.md` 已直接确认 IIP/SIXEL 协议、内存上限与 alpha/beta 状态；本机 `electron/electron.d.ts` 为实际使用的 API 类型依据。
 
 ## 进程与依赖方向
 
@@ -44,8 +44,16 @@ Pi 不进入 Electron main/renderer 的模块图。不解析 ANSI 猜测 agent �
 7. 切换标签不重建 PTY。退出/关闭会终止 PTY，不保证主动 detach 的第三方进程树清理。会话历史归 Pi，而非桌面自建数据库。
 8. Electron ESM 入口不能顶层 `await app.whenReady()`：ready 等模块求值完成，会产生启动死锁；使用 promise callback 初始化。
 
+## 0.2：会话与变更审查
+
+- `src/shared/git.ts` 是范围/文件状态/diff 返回值的契约；`src/main/git.ts` 负责只读 Git 查询，renderer 不拼 shell、不执行 Git。
+- Git 状态以 porcelain v1 `-z` 解析，保留重命名和特殊文件名；diff 显式使用 literal pathspec，区分 index 与 worktree，不运行 external diff/textconv helper。UI 查询的超时/显示长度只影响预览，不改变 Pi 执行能力。
+- 变更反映启动项目仓库的全部修改。因为交互 Pi 可在内部切换目录，而本版无可靠业务事件桥，面板明确标记启动目录，不假装它总是 Pi 的实时 cwd。
+- 会话草稿按标签 id 分开；筛选不卸载终端；显示名仅是当前窗口元数据，不写入 Pi 会话文件。
+- 文件级反馈加入当前会话草稿，用户再粘贴到 Pi；没有后台提交、回滚、暂存或额外审批层。
+
 ## 下一步设计方向
 
-在这个基线上增加会话可读性、真实 Git diff、工作状态与通知，并研究可选的原生聊天视图。不能通过虚构状态或解析屏幕文案制造「结构化」数据；业务状态需要可靠的 Pi 事件接口。RPC 视图要显式列出能力差异，并保留终端入口；同一会话文件不应由两种模式并行写入。
+继续完善工作状态与通知，并研究可选的原生聊天视图。不能通过虚构状态或解析屏幕文案制造「结构化」数据；业务状态需要可靠的 Pi 事件接口。RPC 视图要显式列出能力差异，并保留终端入口；同一会话文件不应由两种模式并行写入。
 
 当前具体 UI 与功能边界见 [README](../README.md)。

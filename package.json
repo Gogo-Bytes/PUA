@@ -1,6 +1,6 @@
 {
   "name": "pi-desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "A desktop workspace for your own Pi agent — no fork, no reduced toolset.",
   "type": "module",
@@ -43,11 +43,34 @@
   "build": {
     "appId": "dev.pi.desktop",
     "productName": "Pi Desktop",
-    "directories": { "output": "release" },
-    "files": ["dist/**/*", "package.json"],
-    "asarUnpack": ["node_modules/node-pty/**/*"],
-    "mac": { "category": "public.app-category.developer-tools", "target": ["dmg", "zip"] },
-    "win": { "target": ["nsis"] },
-    "linux": { "target": ["AppImage", "deb"], "category": "Development" }
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    }
   }
 }

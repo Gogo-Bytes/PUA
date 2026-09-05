@@ -1,0 +1,45 @@
+.session-filter { margin: 0 5px 12px; width: calc(100% - 10px); background: #121418; font-size: 11px; padding: 8px 10px; }
+.workbench { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.workbench.hidden { display: none; }
+.interaction-column { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.session-toolbar button.toolbar-selected { background: #403326; color: #e6b18b; }
+.git-panel { flex: 0 0 390px; width: 390px; min-width: 0; background: #191b20; border-left: 1px solid #343640; display: flex; flex-direction: column; overflow: hidden; }
+.git-panel>header { display: flex; align-items: center; justify-content: space-between; padding: 19px 19px 12px; }
+.git-panel .eyebrow { font-size: 8px; margin: 0; letter-spacing: 1.5px; }
+.git-panel h2 { font-size: 14px; font-weight: 550; margin: 7px 0 0; }
+.git-panel h2 span { font-size: 10px; color: #9098a5; margin-left: 7px; }
+.git-panel>header button { border: 0; background: none; font-size: 20px; padding: 0 3px; }
+.git-summary { display: flex; align-items: center; justify-content: space-between; padding: 0 19px 10px; font-size: 11px; color: #c0a689; }
+.git-summary>span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.git-summary button { background: none; border-color: #353a45; font-size: 10px; padding: 4px 8px; }
+.git-disclaimer { padding: 0 19px 14px; margin: 0; font-size: 9px; color: #747f90; line-height: 1.9; }
+.git-disclaimer strong { font-weight: 500; color: #a1a9b4; }
+.git-scopes { display: flex; border-top: 1px solid #2c3039; border-bottom: 1px solid #2c3039; padding: 0 12px; }
+.git-scopes button { flex: 1; font-size: 11px; background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 11px 5px; color: #7f899b; }
+.git-scopes button.selected { border-bottom-color: #d29b74; color: #e0b899; }
+.git-scopes button span { display: inline-block; margin-left: 7px; padding: 1px 5px; border-radius: 4px; background: #292d36; font-size: 9px; color: #8b94a3; }
+.changed-files { max-height: 210px; flex-shrink: 0; overflow: auto; padding: 8px; border-bottom: 1px solid #2c3039; }
+.changed-files button { display: flex; width: 100%; align-items: center; gap: 10px; border: 0; border-radius: 4px; background: none; font-size: 11px; text-align: left; padding: 9px 10px; }
+.changed-files button:hover { background: #242932; }
+.changed-files button.selected { background: #30333d; color: #eceef2; }
+.changed-files button>span:first-of-type { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.changed-files button>span:last-child { color: #596578; }
+.file-status { font-size: 10px; color: #c7a776; }
+.file-status.added { color: #98ba99; }
+.git-empty { text-align: center; padding: 30px 24px; color: #7c8799; font-size: 11px; }
+.git-empty>span { display: inline-block; color: #a8c19b; border: 1px solid #495d44; padding: 4px 8px; border-radius: 50%; font-size: 18px; margin-top: 8px; }
+.git-empty h3 { font-size: 12px; font-weight: 500; color: #b4bfcd; margin-top: 16px; }
+.git-empty p { line-height: 1.9; font-size: 10px; }
+.git-empty details { text-align: left; font-size: 10px; line-height: 1.8; }
+.git-empty details pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+.diff-heading { display: flex; gap: 10px; justify-content: space-between; align-items: center; padding: 11px 15px; background: #20232a; }
+.diff-heading code { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-size: 10px; color: #b7c3d2; }
+.diff-heading button { flex-shrink: 0; background: #332b23; border-color: #564330; color: #d1a683; font-size: 9px; padding: 5px 7px; }
+.diff-content { flex: 1; margin: 0; min-height: 0; overflow: auto; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 10px; line-height: 1.8; tab-size: 2; background: #14171c; padding: 12px 0; color: #9aa6b7; }
+.diff-content>span { display: block; min-width: max-content; padding: 0 12px; white-space: pre; }
+.diff-content .addition { color: #acccb0; background: #49764a23; }
+.diff-content .deletion { color: #d6a3a3; background: #923f3f23; }
+.diff-content .hunk { color: #92afd3; background: #527caf19; }
+.diff-note { margin: 0; padding: 9px 15px; font-size: 10px; line-height: 1.8; color: #b3987b; background: #3e30211a; }
+.git-timestamp { margin-top: auto; padding: 10px 15px; border-top: 1px solid #2c3039; color: #657083; font-size: 9px; }
+@media (max-width: 1150px) { .git-panel { flex-basis: 335px; width: 335px; } .session-toolbar { flex-wrap: wrap; } .scratchpad small { display: none; } }

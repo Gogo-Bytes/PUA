@@ -1,4 +1,20 @@
-# 0.1.0 验证记录
+# 验证记录
+
+## 0.2.0（当前工作区）
+
+同一 macOS arm64 环境，2026-09-05 已重新执行并通过：
+
+- `npm run typecheck`
+- `npm test`：18 项，新增 staged/unstaged、索引不变、特殊文件名、符号链接替换竞态、超 8MiB tracked diff 有界预览、乱序关闭会话状态回归。
+- `npm run test:desktop`：新增会话筛选/显示名、会话间草稿隔离、真实 Git diff 范围、引用加入草稿，以及 Git 刷新失败后不残留可点击引用。
+- `npm run test:pi`：真实 Pi 自定义编辑器 /settings /quit 继续通过，无模型调用。
+- `npm run package` 和打包产物的 `scripts/smoke-desktop.mjs`：通过。`release/mac-arm64/Pi Desktop.app` 现为 0.2.0，仍未签名。
+
+独立 Reviewer 完成只读源码审查（其工具不具备测试执行能力）：发现 untracked symlink TOCTOU、大 diff 先溢出后截断、刷新失败残留引用、异步关闭标签选择竞态。Main 已修复并加入对应回归测试；未将 Main 的执行结果冒充 Reviewer 独立实测或再次批准。
+
+0.2 的外部研究补充已在 [Codex 对照](codex-desktop-study.md) 和 [研究版本说明](../research.md) 记录。原生聊天、OAuth、完整图片/IME/终端协议及跨平台发布仍不在已验证范围。Git 预览还不是编辑器或 Git 操作客户端，不支持行内意见、暂存/回滚动作、分支对比。当前产物仍使用默认 Electron 图标；renderer 大 chunk 提示约 639KB 未压缩。
+
+## 0.1.0（已推送基线 `95e360e`）
 
 验证环境：macOS arm64、Node.js 22.22.3、Electron 44.2.0、本机 Pi 0.84.4。实际执行日期：2026-09-05（本机时钟）。
 

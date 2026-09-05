@@ -1,5 +1,7 @@
 # Research: Pi 桌面 GUI 架构与能力兼容
 
+> 证据版本说明：正文保留 0.1 调研时的能力与工具边界。0.2 已恢复浏览器并补读 [Electron 官方进程模型](https://www.electronjs.org/docs/latest/tutorial/process-model) 与 [Tauri 官方进程模型](https://v2.tauri.app/concept/process-model/)（2026-09-05）。前者直接确认 Node main/utility、renderer/preload/IPC 架构；后者直接确认 Rust Core 与系统 WebView、体积收益及平台差异。并已读取安装包内 xterm image addon README 确认 IIP/SIXEL 范围。这支持下文选型方向，但不补齐性能基准、分发或全部协议实测。Codex 对照见 [后续研究](docs/codex-desktop-study.md)，本项目实际运行证据见 [验证记录](docs/validation.md)。
+
 ## Summary
 首版建议 **Electron + xterm.js + 独立 PTY worker（node-pty）运行用户已安装的交互式 Pi**：用项目选择、标签页、搜索、字体/快捷键设置改善便利性，不先重写 Pi。完全原生聊天界面的 SDK/RPC 模式适合第二阶段，但不能宣称与任意 TUI 扩展等价；终端基线也必须验证图片、中文 IME、增强键盘协议，保留外部终端入口。
 

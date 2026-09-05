@@ -5,6 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PreferencesStore, validatePreferences } from './preferences.js';
 import { resolveRuntime } from './runtime.js';
 import { Sessions } from './sessions.js';
+import { getFileDiff, getGitStatus } from './git.js';
+import type { DiffScope } from '../shared/git.js';
 import type { Bootstrap, Preferences } from '../shared/contracts.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -103,6 +105,8 @@ function registerIPC(): void {
     const result = await shell.openPath(sessions.get(text(id)).info.cwd);
     if (result) throw new Error(result);
   });
+  handle('desktop:git-status', (id: unknown) => getGitStatus(sessions.get(text(id)).info.cwd));
+  handle('desktop:file-diff', (id: unknown, filename: unknown, scope: DiffScope) => getFileDiff(sessions.get(text(id)).info.cwd, text(filename), scope));
   handle('desktop:clipboard-read', async () => ({
     text: await clipboard.readText(),
     image: (await Promise.all(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'].map(type => clipboard.has(type)))).some(Boolean),
