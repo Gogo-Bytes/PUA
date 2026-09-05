@@ -1,0 +1,53 @@
+{
+  "name": "pi-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A desktop workspace for your own Pi agent — no fork, no reduced toolset.",
+  "type": "module",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "dev": "npm run build && electron .",
+    "build": "tsc -p tsconfig.main.json && vite build",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:desktop": "npm run build && node scripts/smoke-desktop.mjs",
+    "test:pi": "npm run build && node scripts/smoke-pi.mjs",
+    "rebuild": "electron-rebuild -f -w node-pty",
+    "postinstall": "electron-rebuild -f -w node-pty",
+    "package": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-image": "^0.9.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/xterm": "^6.0.0",
+    "node-pty": "^1.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "electron": "^44.2.0",
+    "electron-builder": "^26.0.12",
+    "playwright": "^1.58.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.3.0",
+    "vitest": "^3.2.0"
+  },
+  "build": {
+    "appId": "dev.pi.desktop",
+    "productName": "Pi Desktop",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "package.json"],
+    "asarUnpack": ["node_modules/node-pty/**/*"],
+    "mac": { "category": "public.app-category.developer-tools", "target": ["dmg", "zip"] },
+    "win": { "target": ["nsis"] },
+    "linux": { "target": ["AppImage", "deb"], "category": "Development" }
+  }
+}
