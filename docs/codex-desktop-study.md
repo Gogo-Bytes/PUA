@@ -1,4 +1,6 @@
-# Codex Desktop 对照研究与 0.2 改进
+# PUA：Codex Desktop 对照研究与 0.2 改进
+
+研究对象是如何改善 **PUA（Pi Universal App）** 的桌面体验；Codex Desktop 是对照产品，不是 PUA 的运行内核。产品定位见 [README](../README.md)。
 
 状态：0.1 基线 `95e360e` 已推送；本研究指导下一版，不改变 Pi 的执行策略。
 

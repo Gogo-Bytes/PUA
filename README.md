@@ -1,6 +1,12 @@
-# Pi Desktop
+# PUA — Pi Universal App
 
-给你已经在用的 **Pi coding agent** 一个桌面工作空间。当前为 **0.2.0 终端优先预览版**，不是能力缩水的聊天代理，也还不是完整的原生聊天 GUI。
+**Your desktop workspace for Pi.**
+
+为 Pi 打造的桌面工作台。
+
+PUA（**Pi Universal App**）给你已经在用的 **Pi coding agent** 一个桌面工作空间，将项目、会话、终端和变更审查集中起来。它是 Pi 的桌面应用，不是另一套 Agent；目标是在不削弱 Pi 能力、不增加不必要限制的前提下，让 Pi 更顺手。
+
+名称中的 **Pi** 指明基础能力来源，**Universal** 表达跨平台目标，**App** 明确桌面应用定位；并不代表所有平台均已通过验收。当前为 **0.2.0 终端优先预览版**，也还不是完整的原生聊天 GUI。
 
 ## 开始使用
 
@@ -38,6 +44,8 @@ Windows 需要 Pi 本身要求的 Git Bash（或你已有的 Pi shell 配置）�
 - 请勿让两个进程同时恢复同一个 Pi 会话文件。当前桌面不拥有 Pi 会话数据库，也不自动迁移或锁定历史文件。
 
 ## 验证与构建
+
+> 命名说明：产品名称统一为 **PUA — Pi Universal App**。本次仅更新文档；现有界面和打包名称仍为 `Pi Desktop`，npm 包标识仍为 `pi-desktop`，应用 ID 和测试环境变量未变更。以下命令与验证记录中的路径保持与实际实现一致。
 
 ```bash
 npm run typecheck

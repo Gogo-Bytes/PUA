@@ -1,4 +1,6 @@
-# Research: Pi 桌面 GUI 架构与能力兼容
+# PUA 调研：Pi 桌面 GUI 架构与能力兼容
+
+本报告服务于 **PUA（Pi Universal App）**——为 Pi 打造的桌面工作台。下文的 Pi 指上游 coding agent，PUA 指本仓库的桌面应用；产品名称与定位见 [README](README.md)。
 
 > 证据版本说明：正文保留 0.1 调研时的能力与工具边界。0.2 已恢复浏览器并补读 [Electron 官方进程模型](https://www.electronjs.org/docs/latest/tutorial/process-model) 与 [Tauri 官方进程模型](https://v2.tauri.app/concept/process-model/)（2026-09-05）。前者直接确认 Node main/utility、renderer/preload/IPC 架构；后者直接确认 Rust Core 与系统 WebView、体积收益及平台差异。并已读取安装包内 xterm image addon README 确认 IIP/SIXEL 范围。这支持下文选型方向，但不补齐性能基准、分发或全部协议实测。Codex 对照见 [后续研究](docs/codex-desktop-study.md)，本项目实际运行证据见 [验证记录](docs/validation.md)。
 
