@@ -1,6 +1,6 @@
 {
   "name": "pi-desktop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "A desktop workspace for your own Pi agent — no fork, no reduced toolset.",
   "type": "module",
@@ -15,7 +15,8 @@
     "rebuild": "electron-rebuild -f -w node-pty",
     "postinstall": "electron-rebuild -f -w node-pty",
     "package": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "test:lifecycle": "npm run build && node scripts/smoke-lifecycle.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -25,16 +26,24 @@
     "@xterm/xterm": "^6.0.0",
     "node-pty": "^1.1.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "react-virtuoso": "^4.18.13",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "remend": "^1.3.1"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "^22.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.1.0",
     "electron": "^44.2.0",
     "electron-builder": "^26.0.12",
+    "jsdom": "^26.1.0",
     "playwright": "^1.58.0",
     "typescript": "^5.9.0",
     "vite": "^7.3.0",

@@ -1,8 +1,32 @@
 # PUA 验证记录
 
-产品名称为 **PUA — Pi Universal App**。以下记录保留验证时的实际构建名称、路径和命令；`Pi Desktop.app` 是现有产物名称，本次文档命名更新不表示已重新命名或重新验证应用。
+产品名称为 **PUA — Pi Universal App**。为保持 app id 和用户数据路径，本次打包产物名称仍为 `Pi Desktop.app`。
 
-## 0.2.0（当前工作区）
+## 0.3.0（当前工作区）
+
+验证环境：macOS arm64、Node.js 22.22.3、Electron 44.2.0、本机 Pi 0.84.4。
+
+已执行并通过：
+
+- `npm run typecheck`：main/utility/preload/shared 和 React renderer 严格类型检查。
+- `npm test`：60 项。新增严格 LF JSONL、UTF-8 chunk、CRLF、U+2028、malformed/上限、stderr 尾部、历史工具合并、流式 reducer、工具乱序、chat CLI 参数、Markdown/GFM/highlight/raw HTML/外链/远程图片和工具卡片测试；新增响应注入/对话过期、内容索引、最终工具权威值、请求背压/超时、附件并发/撤销、原子恢复与终端排他、异步草稿/预填/停止和真实后代进程清理回归。另覆盖关机准入屏障、启动期对话响应/握手计时暂停、对话写入失败关闭、clear 成功后 abort 失败仍恢复草稿且不重复。
+- `npm run test:desktop`：真实 Electron，离线双模式 fixture。覆盖默认 RPC chat、流式 Markdown/代码/工具、extension select 往返、steer/follow-up、clear-before-abort 草稿恢复、Git 引用回填、显式 PTY fallback、sandbox/外链边界与退出。实际 Virtuoso 验证 100 段流式文本自动跟随、上滚不抢位置、回到最新、工具展开/图片尺寸变化、后台切换恢复；断言回复/高亮代码/工具输出的准确剪贴板文本、退出后回复仍可复制、握手阻塞对话可回答且连接状态正确。
+- `npm run test:pi`：隔离 `PI_CODING_AGENT_DIR` 与 `PI_OFFLINE=1`；真实本机 Pi RPC handshake、官方 `rpc-demo.ts` input/editor、取消后 idle、后续 prefill、启动 widget/status；临时离线扩展另测 confirm/timeout/零超时继续可回答，以及兼容终端官方 `modal-editor.ts`。不调用模型、不读写用户配置。
+- `npm run test:lifecycle`：真实 Electron，忽略 EOF/SIGTERM 的 Pi fixture，加继承进程组与 detached 子进程；窗口正常退出、握手失败、renderer 崩溃、utility host SIGKILL 均无遗留 fixture PID。另验证 PTY 根进程响应 TERM 退出、已发现的 detached 后代忽略 TERM/HUP 时，host 仍完成 KILL 清理后退出。
+- `npm run build`：通过。Vite 报告 renderer 首包约 1.06 MB minified / 313 KB gzip；提示仍保留，后续按需拆分 Markdown/highlight/terminal。
+- `npm run package`：生成 `release/mac-arm64/Pi Desktop.app`，未签名、默认 Electron 图标；随后以 `PI_DESKTOP_TEST_EXECUTABLE` 对打包产物再次执行双模式 smoke，通过。
+
+截图证据位于 `.agent-work/native-chat/evidence/`。图片 smoke 通过替换 Electron 原生文件选择器的返回值，实际经过 main 登记、四图移除/重选、RPC 发送及 transcript 显示；不是对操作系统文件选择器或真实模型视觉输入的验收。桌面 smoke 另包含有效 dialog id 携带伪造 RPC type 的注入回归、超时退出、多 chat 草稿/后台预填和最终工具参数/成员断言。Windows/Linux、真实 OAuth 和付费模型仍未验证。
+
+### 最终复核与副作用披露
+
+Main 亲自执行类型检查、60 项测试、桌面/Pi 离线 smoke、五类生命周期 smoke、重新打包及打包产物 smoke，均通过。最后两项单测验证 PTY 根进程退出后迟到的 resize/write/ack 不会打断后代清理，以及操作异常也等待清理完成后退出。独立 reviewer 已确认最后一个已知阻塞项修复，未发现该定点改动引入的新缺陷；reviewer 结论来自只读源码与测试审查，运行结果由 Main 实际执行，不冒充 reviewer 独立实测。
+
+曾有一次生命周期测试脚本误用配置隔离参数，向普通 PUA 桌面设置 `/Users/gan/Library/Application Support/pi-desktop/desktop-settings.json` 添加了临时最近项目 `.../T/pua-lifecycle-rKwu8B`。这是已确认的桌面偏好副作用，不是 Pi 凭据或信任配置变更；未尝试恢复未知旧数据。修正后的全部测试使用临时 `--user-data-dir`。此前“不修改用户配置”的测试说明仅适用于修正后的隔离测试，不覆盖这次开发调试失误。
+
+首期实现与已列出的本机离线验证已完成；未执行提交、推送或发布。此结论不扩大下方“尚未验证”范围。
+
+## 0.2.0（历史工作区）
 
 同一 macOS arm64 环境，2026-09-05 已重新执行并通过：
 
@@ -30,7 +54,7 @@
 | 打包产物集成测试 | 通过：`PI_DESKTOP_TEST_EXECUTABLE="$PWD/release/mac-arm64/Pi Desktop.app/Contents/MacOS/Pi Desktop" node scripts/smoke-desktop.mjs` |
 | 依赖安装审计 | npm install 报告 0 vulnerabilities；不是独立安全审计 |
 
-## 桌面集成测试覆盖
+## 0.1/0.2 历史桌面集成测试覆盖（0.3 终端已改为独占）
 
 - 启动窗口、renderer 无 Node `require`。
 - 真实 PTY 和 utility process，中文/空格 cwd，含 shell 元字符的 argv 原样传递。
@@ -48,10 +72,13 @@
 
 ## 尚未验证
 
-- Windows / Linux / macOS x64 打包与真实运行；签名、公证、安装/升级、杀毒兼容。
-- 付费模型执行、真实 OAuth 完整授权、图像剪贴板到模型、IIP 图片显示专项、完整 IME 候选定位。
-- 用户现有所有扩展及其额外依赖、外部编辑器、完整增强键盘协议、脱离 PTY 的第三方子进程。
-- 原生聊天 GUI、结构化业务状态/工具卡片不在 0.1 的实现范围。
-- 外部官网在线调研尚未完成；研究报告已标记依据来自本机官方文档和包内类型/README。
+- 进程生命周期保证不覆盖 Electron main 被硬杀、utility host 在 child PID 尚未登记前崩溃的极短窗口，或发现前已 daemonize/reparent 的后代；当前已测退出路径不能证明这些边界。
 
-构建仍有大 chunk 提示（renderer 包含 xterm 与 React，约 632KB 未压缩）；未将提示隐藏，也未以未测量的拆包收益作性能承诺。
+
+- Windows / Linux / macOS x64 打包与真实运行；签名、公证、安装/升级、杀毒兼容。
+- 付费模型执行、真实 OAuth 完整授权、真实模型图片输入、图片剪贴板、完整 IME 候选定位。
+- 用户现有所有扩展及其额外依赖；RPC 不支持的 custom/overlay/editor/header/footer/theme/renderer 必须继续在兼容终端专项验收。
+- 原生历史列表、模型/思考选择、会话树、fork/clone、统计与压缩界面。
+- 超大（接近 64 MiB）真实会话历史与长时间运行的内存曲线；当前只有边界单测和常规集成测试。
+
+构建仍有大 chunk 提示（renderer 同时包含 xterm、Markdown/highlight 与 React，约 1.06 MB 未压缩）；未隐藏提示，也未以未测量的拆包收益作性能承诺。

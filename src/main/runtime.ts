@@ -78,10 +78,15 @@ export function resolveRuntime(preferences: Pick<Preferences, 'piPath' | 'nodePa
   return { executable: real, args: [...preferences.args], source };
 }
 
-export function terminalEnvironment(runtime: RuntimeInfo): Record<string, string> {
+export function runtimeEnvironment(runtime: RuntimeInfo): Record<string, string> {
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
   const key = Object.keys(env).find(key => key.toLowerCase() === 'path') ?? 'PATH';
   env[key] = [...new Set([path.dirname(runtime.executable), path.dirname(runtime.source), ...searchDirectories()])].join(path.delimiter);
+  return env;
+}
+
+export function terminalEnvironment(runtime: RuntimeInfo): Record<string, string> {
+  const env = runtimeEnvironment(runtime);
   env.TERM = 'xterm-256color';
   env.COLORTERM = 'truecolor';
   env.TERM_PROGRAM = 'pi-desktop';
@@ -91,4 +96,12 @@ export function terminalEnvironment(runtime: RuntimeInfo): Record<string, string
   if (!env.PI_IMAGE_PROTOCOL || env.PI_IMAGE_PROTOCOL === 'auto') env.PI_IMAGE_PROTOCOL = 'iterm2';
   if (!env.PI_HYPERLINKS || env.PI_HYPERLINKS === 'auto') env.PI_HYPERLINKS = '1';
   return env;
+}
+
+const chatOwnedFlags = new Set(['--', '--mode', '--print', '-p', '--session', '--fork', '--continue', '-c', '--resume', '-r', '--approve', '-a', '--no-approve', '-na']);
+
+/** Chat transport owns protocol, session selection, and per-run trust flags. */
+export function validateChatArguments(args: string[]): void {
+  const conflict = args.find(arg => chatOwnedFlags.has(arg) || arg.startsWith('--mode=') || arg.startsWith('--session=') || arg.startsWith('--fork='));
+  if (conflict) throw new Error(`聊天模式不能使用附加参数 ${conflict}。请通过桌面会话与信任选项控制；兼容终端仍可使用原生参数。`);
 }

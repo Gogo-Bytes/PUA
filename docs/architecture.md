@@ -1,61 +1,76 @@
-# PUA 桌面架构（0.2）
+# PUA 桌面架构（0.3）
 
-PUA（Pi Universal App）是为 Pi 打造的桌面工作台，产品名称与定位见 [README](../README.md)。
-
-状态：已实现的终端优先基线。目标是方便使用用户自己的 Pi，不重写其运行策略。
+状态：已实现的原生对话优先架构。产品行为见 [README](../README.md)，技术取舍与协议细节见 [原生对话技术设计](native-chat-design.md)。
 
 ## 选型
 
-**Electron + React/TypeScript + xterm.js + node-pty**。
+**Electron + React/TypeScript + Pi RPC + 显式 PTY 兼容入口**。
 
-- Electron 的 Node/utility process 路线与 node-pty 衔接直接，Chromium 渲染环境跨平台相对一致；代价是分发体积、内存和原生模块 ABI 构建成本。
-- Tauri 2 可使用系统 WebView 和 Rust 后端，但本项目仍要解决 PTY、Pi/Node 发现与 sidecar 生命周期；首版不为减小壳体积增加 Rust/Node 双运行时维护面。未进行体积/内存基准，不作倍数结论。
-- 纯 RPC 聊天壳无法保留任意 `ctx.ui.custom`、footer/header 和编辑器替换。SDK 能嵌入 agent，但不能把任意终端组件自动变成 React。保留交互 Pi 是兼容基线，不是宣称任何终端协议都已兼容。
+原生对话是默认产品路径。PUA 不解析 ANSI 推断业务状态，而是消费 Pi 的消息、工具、队列、重试、压缩和 extension UI 事件。用户本机 Pi 仍拥有模型、凭据、工具、技能、扩展和会话文件。
 
-Electron/Tauri 官方进程模型已在 0.2 阶段通过浏览器补充核验；来源、初始研究范围与残余证据缺口在 [research.md](../research.md)。本机安装包 `@xterm/addon-image/README.md` 已直接确认 IIP/SIXEL 协议、内存上限与 alpha/beta 状态；本机 `electron/electron.d.ts` 为实际使用的 API 类型依据。
+PTY/xterm 不再是主界面，但仍是一个真实 adapter：RPC 明确无法承载任意 `ctx.ui.custom()`、自定义 editor/header/footer/theme 和 TUI renderer，登录、设置及首期未原生化的历史/树操作也继续从兼容终端进入。
 
 ## 进程与依赖方向
 
 ```text
-React workspace / xterm
-          │ 窄 preload API（类型：src/shared/contracts.ts）
+React workspace
+  ├─ ChatPane: PUA ChatMessage / ToolActivity / ExtensionUI
+  ├─ GitPanel
+  └─ TerminalPane (explicit compatibility only)
+          │ narrow preload intent interface
           ▼
-Electron main
-  ├─ PreferencesStore：仅桌面元数据
-  ├─ runtime：用户 Pi / Node 路径解析、argv、PTY 环境
-  └─ Sessions：标签页生命周期
-          │ utilityProcess 消息
-          ▼
-PTY host（每个标签独立）
-          │ node-pty
-          ▼
-用户已安装的 pi 交互 CLI
-          └─ 原有 tools / skills / extensions / 模型 / sessions
+Electron main / Sessions seam
+  ├─ chat adapter ── utilityProcess rpc-host ── child_process ── user pi --mode rpc
+  └─ terminal adapter ── utilityProcess pty-host ── node-pty ── user pi TUI
 ```
 
-Pi 不进入 Electron main/renderer 的模块图。不解析 ANSI 猜测 agent 是否空闲：UI 的「运行中」只表示进程存活。
+`src/shared/chat.ts` 是 renderer 唯一需要理解的对话 interface。Pi 原始 RPC 对象、JSONL framing、请求 id、delta 批处理、历史归一化和协议错误集中在 `src/main/rpc-host.ts` 及其内部模块；renderer 不能发送任意 RPC command。
 
-## 不变约束
+## RPC host 不变约束
 
-1. CLI 参数以数组传递，无 shell 字符串拼接；桌面不默认传任何工具过滤、trust 覆盖、system prompt 覆盖或禁用资源标志。
-2. 测试使用隔离配置；生产运行保留 `PI_CODING_AGENT_DIR` 等用户环境。不读取或回传 auth.json 给 renderer。
-3. 新 PTY 不是父终端的子窗口：清除父终端/multiplexer 的能力标识；设置 `TERM=xterm-256color`、真实 TERM_PROGRAM。仅在用户未明确指定时声明 addon 实现的 `PI_IMAGE_PROTOCOL=iterm2` 与 OSC 8。
-4. renderer 禁用 Node、启用 sandbox/contextIsolation，CSP 禁止外网连接、任意脚本与导航；允许图片解码器所需 `wasm-unsafe-eval`，不允许普通 `unsafe-eval`。
-5. 用户点击链接才经受校验 IPC 打开 HTTP(S)。这不是对 Pi 工具/扩展的协议限制，Pi 仍能按自身逻辑打开 OAuth 浏览器或运行任意程序。
-6. xterm 先订阅，再启动 PTY；收到 write callback 才 ACK。高水位 256K 字符暂停读取，64K 恢复。后台标签持续消费，避免静默卡死。历史滚动与图片使用各自有界缓存。
-7. 切换标签不重建 PTY。退出/关闭会终止 PTY，不保证主动 detach 的第三方进程树清理。会话历史归 Pi，而非桌面自建数据库。
-8. Electron ESM 入口不能顶层 `await app.whenReady()`：ready 等模块求值完成，会产生启动死锁；使用 promise callback 初始化。
+1. JSONL 只按 LF 分帧，尾部 CR 可剥离；使用 `StringDecoder` 保留跨 chunk UTF-8，U+2028/U+2029 不是分隔符。
+2. 单条入站记录上限 64 MiB，stderr 只保留 64 KiB 尾部。malformed/超限只结束对应会话。
+3. `message_update` 按 `contentIndex` 合并；文本 delta 约 24 ms 批量跨 utility/main IPC；`message_end` 前强制 flush，最终 message 是权威值。
+4. 工具按 `toolCallId` 关联。update 的 `partialResult` 是累计值，替换而非追加；并行工具可交错和乱序完成。
+5. Agent 运行的完全空闲由 `agent_settled` 判定；扩展专用命令的 UI 等待独立于 agent activity，完成后恢复先前状态，不要求并不存在的 settled 事件；`agent_end` 后仍可能自动重试、压缩或处理队列。
+6. stop 必须先 `clear_queue`，通过 `chat-queue-recovered` 事件立即恢复队列文本，再等待 `abort`；renderer 按请求 id 去重，abort 失败不会丢失已经清出的文本。`stopChat` 的完成值不再承载草稿。
+7. 子进程退出拒绝所有 pending 请求；关闭先结束 stdin，再超时终止 utility/子进程。renderer 崩溃或应用退出会关闭全部会话。
+8. 启动期允许已验证的扩展对话回答，握手计时在等待用户期间暂停；`timeout: 0` 与 Pi 一致表示不设超时。窗口关闭先封锁新建/启动准入，再等待所有已有会话清理，异步目录检查后必须再次检查准入。
+9. 以 Pi 0.84.4 为当前测试基线。handshake 使用 `get_state`、`get_messages`、`get_commands`；不兼容时明确报错，不静默解析终端输出。
 
-## 0.2：会话与变更审查
+## 安全与所有权
 
-- `src/shared/git.ts` 是范围/文件状态/diff 返回值的契约；`src/main/git.ts` 负责只读 Git 查询，renderer 不拼 shell、不执行 Git。
-- Git 状态以 porcelain v1 `-z` 解析，保留重命名和特殊文件名；diff 显式使用 literal pathspec，区分 index 与 worktree，不运行 external diff/textconv helper。UI 查询的超时/显示长度只影响预览，不改变 Pi 执行能力。
-- 变更反映启动项目仓库的全部修改。因为交互 Pi 可在内部切换目录，而本版无可靠业务事件桥，面板明确标记启动目录，不假装它总是 Pi 的实时 cwd。
-- 会话草稿按标签 id 分开；筛选不卸载终端；显示名仅是当前窗口元数据，不写入 Pi 会话文件。
-- 文件级反馈加入当前会话草稿，用户再粘贴到 Pi；没有后台提交、回滚、暂存或额外审批层。
+- renderer 保持 sandbox/contextIsolation、无 Node、无外网 `connect-src`。Markdown 不启用 raw HTML；远程 Markdown 图片不加载；HTTP(S) 链接只经校验 IPC 打开。
+- 附件由 main 的文件选择器登记为会话内 opaque id。普通文件只发送路径；受支持图片经大小/数量检查后编码为 RPC image content。发送或关闭后清理登记。
+- PUA 不读取/回传 `auth.json` 或 `trust.json`。RPC 不显示内置信任提示，因此检测到项目资源时让用户明确选择沿用 Pi 默认、本次 `--approve` 或本次 `--no-approve`。
+- chat 模式拒绝会破坏协议/会话/信任所有权的附加 CLI 参数；其他模型、工具、技能、扩展参数保持原样。
+- 托管会话原子预留所有权，关闭后确认进程树退出才释放。恢复必须先关闭其他运行会话；恢复握手前禁止新建，之后允许明确的新 chat 并行。所有终端与所有其他托管会话互斥（`--no-session` 也不例外），因为终端可在内部任意 `/resume`；不约束外部 Pi 进程。首期 chat 只支持新建/继续最近，不做运行中模式切换。
+- Pi 与扩展仍以用户权限运行；utility process 是故障和生命周期隔离，不是权限沙箱。
 
-## 下一步设计方向
+## 会话与界面状态
 
-继续完善工作状态与通知，并研究可选的原生聊天视图。不能通过虚构状态或解析屏幕文案制造「结构化」数据；业务状态需要可靠的 Pi 事件接口。RPC 视图要显式列出能力差异，并保留终端入口；同一会话文件不应由两种模式并行写入。
+`SessionInfo` 将进程与业务活动拆开：
 
-当前具体 UI 与功能边界见 [README](../README.md)。
+- `kind`: `chat | terminal`
+- `processStatus`: `starting | running | exited`
+- `activity`: `idle | responding | compacting | retrying | waiting-input`
+
+每个 ChatPane 保持自己的 reducer、虚拟列表位置、草稿、附件和扩展对话。切换侧栏不会重启进程或丢失后台事件。Git 面板仍展示会话启动目录所属仓库的只读快照；文件引用直接进入原生 composer。
+
+## 已知能力差异
+
+| 能力 | 原生对话 | 兼容终端 |
+|---|---:|---:|
+| Markdown、代码、工具卡片 | ✓ 原生结构化 | Pi TUI 渲染 |
+| prompt/steer/follow-up/stop | ✓ RPC 事件 | ✓ Pi 快捷键 |
+| extension select/confirm/input/editor | ✓ | ✓ |
+| extension notify/status/string widget/title/editor text | ✓ | ✓ |
+| 任意 custom/overlay/editor/header/footer/theme/renderer | 不支持 | ✓（受终端协议覆盖限制） |
+| 新会话、继续最近 | ✓ | ✓ |
+| 任意历史、模型、设置、登录、树/fork/clone | 首期未原生化 | ✓ |
+
+## 下一步
+
+原生历史浏览、模型/思考选择、会话树、fork/clone、统计与压缩界面应继续建立在稳定 RPC interface 上。实现前先定义同会话单写者的交接协议；不能用并行进程或解析会话屏幕文本绕过。
+
+RPC 输入、对话等待、附件与关闭的具体限额和生命周期见 [评审修复后的边界](native-chat-design.md#评审修复后的边界)。

@@ -64,11 +64,11 @@ export function TerminalPane({ session, active, fontSize, platform, onReady, onE
       term.onResize(({ cols, rows }) => window.desktop.resize(id, cols, rows)),
     ];
     let alive = true;
-    const unsubscribe = window.desktop.onTerminalEvent(event => {
+    const unsubscribe = window.desktop.onSessionEvent(event => {
       if (event.id !== id) return;
-      if (event.type === 'data') {
+      if (event.type === 'terminal-data') {
         term.write(event.data, () => { if (alive) window.desktop.acknowledge(id, event.data.length); });
-      } else {
+      } else if (event.type === 'exit') {
         term.write(`\r\n\x1b[90m[Pi 进程已退出 · ${event.exitCode}]\x1b[0m\r\n`);
         callbacks.current.onExit(id, event.exitCode);
       }

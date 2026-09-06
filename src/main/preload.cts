@@ -1,20 +1,28 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DesktopAPI, TerminalEvent } from '../shared/contracts.js';
+import type { DesktopAPI } from '../shared/contracts.js';
+import type { SessionEvent } from '../shared/chat.js';
 
 const api: DesktopAPI = {
   bootstrap: () => ipcRenderer.invoke('desktop:bootstrap'),
   chooseDirectory: () => ipcRenderer.invoke('desktop:directory'),
   chooseFile: () => ipcRenderer.invoke('desktop:file'),
   chooseAttachments: () => ipcRenderer.invoke('desktop:attachments'),
+  removeChatAttachment: (id, attachmentId) => ipcRenderer.invoke('desktop:chat-attachment-remove', id, attachmentId),
+  chooseChatAttachments: id => ipcRenderer.invoke('desktop:chat-attachments', id),
   savePreferences: value => ipcRenderer.invoke('desktop:preferences', value),
+  inspectProjectResources: cwd => ipcRenderer.invoke('desktop:project-resources', cwd),
   createSession: options => ipcRenderer.invoke('desktop:create', options),
   startSession: id => ipcRenderer.invoke('desktop:start', id),
   closeSession: id => ipcRenderer.invoke('desktop:close', id),
+  sendChatMessage: (id, input) => ipcRenderer.invoke('desktop:chat-send', id, input),
+  stopChat: id => ipcRenderer.invoke('desktop:chat-stop', id),
+  respondToExtensionUI: (id, response) => ipcRenderer.invoke('desktop:extension-response', id, response),
+  renameChatSession: (id, name) => ipcRenderer.invoke('desktop:chat-rename', id, name),
   write: (id, data) => ipcRenderer.send('desktop:write', id, data),
   resize: (id, cols, rows) => ipcRenderer.send('desktop:resize', id, cols, rows),
   acknowledge: (id, size) => ipcRenderer.send('desktop:ack', id, size),
-  onTerminalEvent: callback => {
-    const listener = (_event: unknown, value: TerminalEvent) => callback(value);
+  onSessionEvent: callback => {
+    const listener = (_event: unknown, value: SessionEvent) => callback(value);
     ipcRenderer.on('desktop:event', listener);
     return () => { ipcRenderer.removeListener('desktop:event', listener); };
   },
