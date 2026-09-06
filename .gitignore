@@ -3,3 +3,6 @@ dist/
 release/
 coverage/
 .DS_Store
+.agents/
+.agent-work/
+skills-lock.json
