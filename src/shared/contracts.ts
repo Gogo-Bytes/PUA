@@ -4,7 +4,11 @@ import type {
   SessionEvent, SessionKind, SessionProcessStatus,
 } from './chat.js';
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 export interface Preferences {
+  /** Omitted by older desktop clients; normalized to system on save/read. */
+  theme?: ThemePreference;
   piPath: string;
   nodePath: string;
   args: string[];

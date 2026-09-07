@@ -19,22 +19,22 @@ const executablePath = process.env.PI_DESKTOP_TEST_EXECUTABLE;
 const app = await electron.launch({ executablePath, args: [...(executablePath ? [] : [root]), `--user-data-dir=${profile}`], cwd: root, timeout: 20000, env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1', PUA_MOCK_STARTUP_DIALOG: '1' } });
 const window = await app.firstWindow({ timeout: 15000 }); window.setDefaultTimeout(15000); const errors = []; window.on('pageerror', error => errors.push(String(error)));
 try {
-  await window.getByRole('heading', { name: '与 Pi 对话。 清楚地看到工作过程。' }).waitFor();
+  await window.getByRole('heading', { name: '打开项目，开始工作' }).waitFor();
   assert.equal(await window.evaluate(() => typeof globalThis.require), 'undefined');
   await window.evaluate(() => { window.__events = []; window.desktop.onSessionEvent(event => window.__events.push(event)); });
   await mkdir(path.join(root, '.agent-work/native-chat/evidence'), { recursive: true });
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/welcome.png') });
 
-  await window.getByRole('button', { name: '打开一个项目' }).click();
+  await window.locator('main').getByRole('button', { name: '打开项目', exact: true }).click();
   await window.getByRole('textbox', { name: '项目文件夹', exact: true }).fill(project);
   await window.getByText('检测到项目资源').waitFor();
   await window.getByRole('radio', { name: /沿用 Pi/ }).check();
   await window.getByRole('button', { name: '开始对话' }).click();
   await window.getByRole('heading', { name: '启动确认' }).waitFor();
-  assert((await window.locator('.session-label').textContent()).includes('连接中'));
-  assert((await window.locator('footer').textContent()).includes('正在连接'));
+  assert((await window.getByRole('tab', { selected: true }).getAttribute('title')).includes('连接中'));
+  assert((await window.locator('.chat-pane.active .chat-meta').textContent()).includes('正在连接'));
   await window.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click();
-  await window.getByRole('heading', { name: '从需求开始' }).waitFor();
+  await window.getByRole('heading', { name: '从一个具体问题开始' }).waitFor();
   const firstId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
   const image = path.join(temp, 'image.png'); await writeFile(image, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aU1sAAAAASUVORK5CYII=', 'base64'));
   await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file, file, file, file] }); }, image);
@@ -66,11 +66,26 @@ try {
   await window.getByRole('alert').filter({ hasText: '避免两个进程写入同一 Pi 历史' }).waitFor();
   await window.getByRole('button', { name: '关闭对话框' }).click();
 
-  await window.getByRole('button', { name: '变更审查', exact: true }).click();
+  if (!await window.getByRole('complementary', { name: '文件与 Git 检查区' }).count()) await window.getByRole('button', { name: '显示或收起检查区' }).click();
   await window.locator('.changed-files button').filter({ hasText: 'editor.ts' }).click();
-  await window.getByRole('button', { name: '引用给 Pi' }).click();
+  await window.getByRole('button', { name: '引用文件到草稿' }).click();
   assert((await window.getByRole('textbox', { name: '发送消息' }).inputValue()).includes('editor.ts'));
   await window.getByRole('button', { name: '关闭变更面板' }).click();
+
+  // Narrow-window Escape belongs to focused input unless the inspector itself handles it.
+  const originalBounds = await app.evaluate(({ BrowserWindow }) => { const browser = BrowserWindow.getAllWindows()[0]; const bounds = browser.getBounds(); browser.setContentSize(1000, 800); return bounds; });
+  await window.waitForFunction(() => window.innerWidth <= 1100);
+  const chatInput = window.getByRole('textbox', { name: '发送消息' });
+  await chatInput.press('Escape');
+  assert(await chatInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal chat Escape focus');
+  const inspectorToggle = window.getByRole('button', { name: '显示或收起检查区' });
+  await inspectorToggle.click();
+  await chatInput.press('Escape');
+  assert.equal(await inspectorToggle.getAttribute('aria-expanded'), 'true', 'input Escape must not close inspector');
+  await window.getByRole('button', { name: '关闭变更面板' }).press('Escape');
+  assert.equal(await inspectorToggle.getAttribute('aria-expanded'), 'false');
+  assert(await inspectorToggle.evaluate(node => node === document.activeElement), 'inspector Escape returns focus to toggle');
+  await app.evaluate(({ BrowserWindow }, bounds) => BrowserWindow.getAllWindows()[0].setBounds(bounds), originalBounds);
 
   await window.getByRole('textbox', { name: '发送消息' }).fill('/mock-dialog');
   await window.getByRole('button', { name: '发送', exact: false }).click();
@@ -169,11 +184,11 @@ try {
   const secondId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
   await window.getByRole('textbox', { name: '发送消息' }).fill('second draft');
   await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-prefill', attachmentIds: [], delivery: 'prompt' }), firstId);
-  await window.locator('.session-select').first().click();
+  await window.getByRole('tab').first().click();
   assert.equal(await window.getByRole('textbox', { name: '发送消息' }).inputValue(), '预填草稿');
   await scrollRest();
   assert(Math.abs(await scroller.evaluate(node => node.scrollTop) - backgroundScroll) < 5, 'background tab retains reader scroll position');
-  await window.locator('.session-select').last().click();
+  await window.getByRole('tab').last().click();
   assert.equal(await window.getByRole('textbox', { name: '发送消息' }).inputValue(), 'second draft');
   await window.locator('.close-session').last().click(); await window.waitForFunction(() => document.querySelectorAll('.chat-pane').length === 1);
   await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-exit', attachmentIds: [], delivery: 'prompt' }), firstId);
@@ -192,6 +207,13 @@ try {
   const terminalId = await window.locator('.terminal-pane.active').getAttribute('data-session-id'); assert.notEqual(firstId, terminalId);
   const terminalOutput = await window.evaluate(() => window.__events.filter(event => event.type === 'terminal-data').map(event => event.data).join(''));
   assert(terminalOutput.includes('spaces;$(not-a-shell)'));
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1000, 800));
+  await window.waitForFunction(() => window.innerWidth <= 1100);
+  assert.equal(await window.getByRole('button', { name: '显示或收起检查区' }).getAttribute('aria-expanded'), 'false');
+  const terminalInput = window.locator('.terminal-pane.active .xterm-helper-textarea');
+  await terminalInput.press('Escape');
+  assert(await terminalInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal real xterm Escape focus');
+  await app.evaluate(({ BrowserWindow }, bounds) => BrowserWindow.getAllWindows()[0].setBounds(bounds), originalBounds);
   await window.locator('.terminal-pane.active .xterm-helper-textarea').press('Shift+Enter');
   await window.evaluate(id => window.desktop.write(id, '\x02'), terminalId);
   await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes('INPUT_BASE64=')));

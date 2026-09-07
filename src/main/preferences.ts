@@ -2,7 +2,7 @@ import { readFile, mkdir, writeFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import type { Preferences } from '../shared/contracts.js';
 
-export const defaults: Preferences = { piPath: '', nodePath: '', args: [], fontSize: 14, recentProjects: [] };
+export const defaults: Preferences = { piPath: '', nodePath: '', args: [], fontSize: 14, recentProjects: [], theme: 'system' };
 
 export function validatePreferences(value: unknown): Preferences {
   if (!value || typeof value !== 'object') throw new Error('无效设置');
@@ -12,7 +12,8 @@ export function validatePreferences(value: unknown): Preferences {
       typeof v.fontSize !== 'number' || !Number.isFinite(v.fontSize) || v.fontSize < 10 || v.fontSize > 28 ||
       !Array.isArray(v.recentProjects) || !v.recentProjects.every(p => typeof p === 'string') ||
       v.piPath.includes('\0') || v.nodePath.includes('\0')) throw new Error('设置格式错误：字体范围为 10–28，参数应为 JSON 字符串数组。');
-  return { piPath: v.piPath, nodePath: v.nodePath, args: [...v.args], fontSize: v.fontSize, recentProjects: [...new Set(v.recentProjects as string[])].slice(0, 20) };
+  if (v.theme !== undefined && !['system', 'light', 'dark'].includes(v.theme as string)) throw new Error('无效外观主题');
+  return { theme: (v.theme ?? 'system') as Preferences['theme'], piPath: v.piPath, nodePath: v.nodePath, args: [...v.args], fontSize: v.fontSize, recentProjects: [...new Set(v.recentProjects as string[])].slice(0, 20) };
 }
 
 export class PreferencesStore {

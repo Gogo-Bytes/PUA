@@ -7,6 +7,7 @@ import { ImageAddon } from '@xterm/addon-image';
 import '@xterm/xterm/css/xterm.css';
 import { modifiedEnter } from './terminal-keys';
 import type { SessionInfo } from '../shared/contracts';
+import { terminalThemes, type ResolvedTheme } from './theme';
 
 export interface TerminalHandle {
   focus(): void;
@@ -19,13 +20,14 @@ interface Props {
   session: SessionInfo;
   active: boolean;
   fontSize: number;
+  theme?: ResolvedTheme;
   platform: string;
   onReady(id: string, handle: TerminalHandle | null): void;
   onExit(id: string, code: number): void;
   onError(message: string): void;
 }
 
-export function TerminalPane({ session, active, fontSize, platform, onReady, onExit, onError }: Props) {
+export function TerminalPane({ session, active, fontSize, theme = 'light', platform, onReady, onExit, onError }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
   const fit = useRef<FitAddon | null>(null);
@@ -39,7 +41,7 @@ export function TerminalPane({ session, active, fontSize, platform, onReady, onE
       fontSize, lineHeight: 1.22, cursorBlink: true, scrollback: 20000,
       allowProposedApi: true,
       linkHandler: { activate: (_event, url) => { void window.desktop.openExternal(url).catch(error => callbacks.current.onError(String(error))); } },
-      theme: { background: '#151619', foreground: '#d9dce3', cursor: '#eca777', selectionBackground: '#66504488', black: '#24262c', red: '#ed8585', green: '#99be94', yellow: '#e4bd7c', blue: '#8baee5', magenta: '#c9a0dc', cyan: '#8ac7c9', white: '#e5e7eb', brightBlack: '#7c8190' },
+      theme: terminalThemes[theme],
     });
     terminal.current = term;
     const fitAddon = new FitAddon();
@@ -112,6 +114,8 @@ export function TerminalPane({ session, active, fontSize, platform, onReady, onE
       term.dispose(); terminal.current = null; fit.current = null;
     };
   }, [session.id]);
+
+  useEffect(() => { if (terminal.current) terminal.current.options.theme = terminalThemes[theme]; }, [theme]);
 
   useEffect(() => {
     if (!terminal.current) return;
