@@ -1,0 +1,32 @@
+.ui-provider {
+  --ui-canvas: #f7f7f9; --ui-surface: #fff; --ui-muted: #f0f0f4; --ui-border: #e3e3ea;
+  --ui-text: #35353f; --ui-secondary: #575765; --ui-tertiary: #676774; --ui-disabled: #94949f; --ui-link: #7434d8; --ui-accent: #7434d8; --ui-on-accent: #fff; --ui-selected: #e8e8ee;
+  --ui-success: #237047; --ui-success-bg: #eaf5ee; --ui-info: #266393; --ui-info-bg: #eaf2fa;
+  --ui-danger: #b52f45; --ui-danger-bg: #fcecef; --ui-warning: #895b0b; --ui-warning-bg: #fff3d9;
+  --ui-space-half: 2px; --ui-space-1: 4px; --ui-space-tight: 6px; --ui-space-2: 8px; --ui-space-3: 12px; --ui-space-4: 16px; --ui-space-5: 24px; --ui-space-6: 32px;
+  --ui-radius-small: 4px; --ui-radius-control: 4px; --ui-radius-overlay: 8px;
+  --ui-control-height: 28px; --ui-target-small: 24px; --ui-control-inset: 3px; --ui-control-line: 20px;
+  --ui-type-meta: 12px; --ui-type-body: 13px; --ui-type-reading: 15px; --ui-type-title: 16px; --ui-type-display: 22px;
+  --ui-reading-line: 1.65; --ui-toast-width: 352px; --ui-detail-width: 340px; --ui-crumb-width: 120px;
+  --ui-composer-height: 60px; --ui-attachments-height: 120px;
+  --ui-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --ui-weight-normal: 400; --ui-weight-medium: 500; --ui-weight-semibold: 600;
+  --ui-font-control: var(--ui-weight-normal) var(--ui-type-body)/var(--ui-control-line) var(--ui-font);
+  --ui-font-reading: var(--ui-weight-normal) var(--ui-type-reading)/var(--ui-reading-line) var(--ui-font);
+  --ui-font-meta: var(--ui-weight-normal) var(--ui-type-meta)/18px var(--ui-font);
+  --ui-font-heading: var(--ui-weight-semibold) var(--ui-type-title)/24px var(--ui-font);
+  --ui-reading-width: 720px;
+  --ui-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Consolas, monospace;
+  --ui-shadow: 0 4px 16px #22223814, 0 1px 4px #2222380a;
+  --ui-hover-duration: 120ms;
+  color: var(--ui-text); background: var(--ui-canvas); font: var(--ui-font-control); color-scheme: light;
+}
+.ui-provider[data-theme='dark'] {
+  --ui-canvas: #17171c; --ui-surface: #202027; --ui-muted: #2a2a33; --ui-border: #3b3b47;
+  --ui-text: #dedee6; --ui-secondary: #bcbcc9; --ui-tertiary: #a2a2b1; --ui-disabled: #727280; --ui-link: #b99afa; --ui-accent: #b99afa; --ui-on-accent: #22123e; --ui-selected: #30303b;
+  --ui-success: #8fd5ad; --ui-success-bg: #233b30; --ui-info: #93c7f3; --ui-info-bg: #23384b;
+  --ui-danger: #ffa1b2; --ui-danger-bg: #4a2831; --ui-warning: #efc571; --ui-warning-bg: #433722;
+  --ui-shadow: 0 4px 16px #0005, 0 1px 4px #0003; color-scheme: dark;
+}
+.ui-provider[data-motion='off'] { --ui-hover-duration: 0ms; }
+@media (prefers-reduced-motion: reduce) { .ui-provider { --ui-hover-duration: 0ms; } }

@@ -1,0 +1,49 @@
+.ui-provider .ui-module-heading { display: flex; align-items: center; gap: var(--ui-space-2); padding: 0 var(--ui-space-tight) var(--ui-space-1); font-weight: var(--ui-weight-medium); color: var(--ui-secondary); }
+.ui-provider .ui-module-heading strong { font-weight: inherit; }
+.ui-provider .ui-module-heading .ui-icon-button { margin-left: auto; }
+.ui-provider .ui-project-row, .ui-provider .ui-file-row { display: flex; width: 100%; justify-content: flex-start; text-align: left; margin: 2px 0; }
+.ui-provider .ui-project-row > span, .ui-provider .ui-file-row > span { overflow: hidden; text-overflow: ellipsis; }
+.ui-provider .ui-project-row small, .ui-provider .ui-file-row small { margin-left: auto; font: var(--ui-font-meta); color: var(--ui-tertiary); }
+.ui-provider .ui-project-row[aria-current='page'] { background: var(--ui-selected); color: var(--ui-text); font-weight: var(--ui-weight-medium); }
+.ui-provider .ui-project-nav .ui-tooltip-anchor, .ui-provider .ui-project-nav .ui-tooltip-anchor > span:first-child { display: block; }
+.ui-provider .ui-session-strip { display: flex; align-items: center; gap: var(--ui-space-1); padding: var(--ui-space-1) var(--ui-space-2); border-bottom: 1px solid var(--ui-border); }
+.ui-provider .ui-session-tabs { display: flex; gap: var(--ui-space-1); min-width: 0; overflow-x: auto; flex: 1; padding: var(--ui-space-1); }
+.ui-provider .ui-session-tabs .ui-rename { flex-shrink: 0; max-width: 360px; }
+.ui-provider .ui-tool-card { border: 1px solid var(--ui-border); border-radius: var(--ui-radius-control); overflow: hidden; }
+.ui-provider .ui-tool-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-tight); padding: var(--ui-space-tight) var(--ui-space-2); }
+.ui-provider .ui-tool-heading strong { font-weight: var(--ui-weight-medium); margin-right: auto; }
+.ui-provider .ui-tool-card pre { white-space: pre-wrap; overflow-wrap: anywhere; font: var(--ui-type-meta)/1.6 var(--ui-mono); margin: 0; }
+.ui-provider .ui-composer { border: 1px solid var(--ui-border); border-radius: var(--ui-radius-control); padding: var(--ui-space-2); background: var(--ui-surface); }
+.ui-provider .ui-composer textarea { display: block; min-height: var(--ui-composer-height); resize: vertical; font: var(--ui-font-reading); border-color: transparent; }
+.ui-provider .ui-composer-footer { display: flex; gap: var(--ui-space-2); align-items: center; justify-content: space-between; margin-top: var(--ui-space-2); }
+.ui-provider .ui-composer-footer, .ui-provider .ui-composer-controls { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); align-items: center; }
+.ui-provider .ui-composer-controls { margin-left: auto; }
+.ui-provider .ui-composer-attachments { padding: 0; margin: var(--ui-space-2) 0; list-style: none; display: grid; gap: var(--ui-space-1); max-height: var(--ui-attachments-height); overflow-y: auto; }
+.ui-provider .ui-composer-attachments li { display: flex; align-items: center; gap: var(--ui-space-2); background: var(--ui-muted); border-radius: var(--ui-radius-control); padding: var(--ui-space-half) var(--ui-space-tight); }
+.ui-provider .ui-composer-attachments li > span { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.ui-provider .ui-composer-attachments small { display: block; color: var(--ui-secondary); }
+.ui-provider .ui-composer-attachments :focus-visible { outline-offset: -2px; }
+.ui-provider .ui-composer > .ui-message { margin-top: var(--ui-space-2); }
+/* Conversation prose is scoped here, never inherited by generic UI headings. */
+.ui-provider .ui-chat-message { min-width: 0; display: grid; gap: var(--ui-space-2); padding: var(--ui-space-3) 0; overflow-wrap: anywhere; color: var(--ui-text); }
+.ui-provider .ui-chat-message-user { justify-items: end; }
+.ui-provider .ui-chat-message-user .ui-chat-body { max-width: min(85%, 36em); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-overlay); background: var(--ui-muted); }
+.ui-provider .ui-chat-message-system { color: var(--ui-secondary); }
+.ui-provider .ui-chat-message footer { display: flex; gap: var(--ui-space-2); flex-wrap: wrap; align-items: center; }
+.ui-provider .ui-chat-body { min-width: 0; max-width: 100%; font: var(--ui-font-reading); white-space: normal; }
+.ui-provider .ui-chat-body-text { white-space: pre-wrap; }
+.ui-provider .ui-chat-body > :first-child { margin-top: 0; }
+.ui-provider .ui-chat-body > :last-child { margin-bottom: 0; }
+.ui-provider .ui-chat-body p { margin: 0 0 .9em; }
+.ui-provider .ui-chat-body :is(h1, h2, h3, h4, h5, h6) { font-family: inherit; font-size: 1.067em; line-height: 1.5; font-weight: var(--ui-weight-semibold); letter-spacing: normal; margin: 1.5em 0 .6em; }
+.ui-provider .ui-chat-body :is(ul, ol) { margin: .6em 0 1em; padding-left: 1.6em; }
+.ui-provider .ui-chat-body li { margin: .35em 0; }
+.ui-provider .ui-chat-body li > :is(ul, ol) { margin: .3em 0; }
+.ui-provider .ui-chat-body a { color: var(--ui-link); text-decoration: underline; text-underline-offset: 3px; }
+.ui-provider .ui-chat-body code { font-family: var(--ui-mono); font-size: .9em; background: var(--ui-muted); border-radius: var(--ui-radius-small); padding: .1em .3em; }
+.ui-provider .ui-chat-body pre { margin: 1em 0; padding: var(--ui-space-3); max-width: 100%; overflow-x: auto; white-space: pre; background: var(--ui-muted); border-radius: var(--ui-radius-control); line-height: 1.6; }
+.ui-provider .ui-chat-body pre code { padding: 0; background: transparent; }
+.ui-provider .ui-chat-body blockquote { margin: 1em 0; padding-left: 1em; border-left: 2px solid var(--ui-secondary); color: var(--ui-secondary); }
+.ui-provider .ui-chat-body table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1em 0; font-size: .93em; }
+.ui-provider .ui-chat-body :is(th, td) { padding: .5em .75em; border-bottom: 1px solid var(--ui-border); text-align: left; }
+.ui-provider .ui-chat-body th { font-weight: var(--ui-weight-medium); }

@@ -1,0 +1,77 @@
+/** @vitest-environment jsdom */
+import { fireEvent, render, screen } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+import './component-preview/test-setup';
+import { ProjectNav, SessionTabs } from '../src/renderer/modules';
+import { UIProvider } from '../src/renderer/ui';
+it('ProjectNav keeps cwd as callback identity and only reveals duplicate paths on hover/focus', () => {
+  const select = vi.fn();
+  render(<UIProvider><ProjectNav projects={[{ name: 'Atlas', cwd: '/one/atlas', sessions: 2 }, { name: 'Atlas', cwd: '/two/atlas', sessions: 1 }, { name: 'Orbit', cwd: '/one/orbit', sessions: 0 }]} selectedCwd="/one/atlas" onSelect={select} onAdd={() => {}}/></UIProvider>);
+  expect(screen.queryByText('/one/atlas')).toBeNull(); expect(screen.queryByText('/one/orbit')).toBeNull();
+  const rows = screen.getAllByRole('button', { name: /Atlas/ }); fireEvent.focus(rows[1]); expect(screen.getByRole('tooltip').textContent).toBe('/two/atlas'); fireEvent.click(rows[1]); expect(select).toHaveBeenCalledWith('/two/atlas');
+});
+it('SessionTabs separates selection from rename and passes the session id through its callback', () => {
+  const select = vi.fn(), rename = vi.fn();
+  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} selectedId="a" onSelect={select} onRename={rename} onAdd={() => {}}/></UIProvider>);
+  fireEvent.click(screen.getByRole('tab', { name: 'Two' })); expect(select).toHaveBeenCalledWith('b'); expect(rename).not.toHaveBeenCalled();
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Two' }), { key: 'F2' }); fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } }); fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' }); expect(rename).not.toHaveBeenCalled();
+});
+it.each(['Home', 'ArrowLeft', 'ArrowRight'])('SessionTabs %s finds the first session editor by identity while retaining its draft', key => {
+  const select = vi.fn();
+  const props = { sessions: [{ id: 'a"odd', title: 'One' }, { id: 'b', title: 'Two' }], onSelect: select, onRename: vi.fn(), onAdd: vi.fn() };
+  const view = render(<UIProvider><SessionTabs {...props} selectedId={'a"odd'}/></UIProvider>);
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'One' }), { key: 'F2' });
+  const editor = screen.getByRole('textbox') as HTMLInputElement;
+  fireEvent.change(editor, { target: { value: 'Retained draft' } });
+  const second = screen.getByRole('tab', { name: 'Two' }); second.focus(); fireEvent.click(second);
+  view.rerender(<UIProvider><SessionTabs {...props} selectedId="b"/></UIProvider>);
+  fireEvent.keyDown(second, { key });
+  expect(select).toHaveBeenLastCalledWith('a"odd'); expect(document.activeElement).toBe(editor); expect(editor.value).toBe('Retained draft');
+  // End also resolves by identity, not the shortened set of remaining tabs.
+  second.focus(); fireEvent.keyDown(second, { key: 'End' });
+  expect(select).toHaveBeenLastCalledWith('b'); expect(document.activeElement).toBe(second);
+});
+it.each(['Save', 'Cancel'])('SessionTabs isolates all navigation keys on editor %s', label => {
+  const select = vi.fn();
+  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} selectedId="a" onSelect={select} onRename={vi.fn()} onAdd={vi.fn()}/></UIProvider>);
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'One' }), { key: 'F2' });
+  const button = screen.getByRole('button', { name: label }); button.focus();
+  for (const key of ['Home', 'End', 'ArrowLeft', 'ArrowRight']) fireEvent.keyDown(button, { key });
+  expect(select).not.toHaveBeenCalled(); expect(document.activeElement).toBe(button); expect(screen.getByRole('textbox')).toBeTruthy();
+});
+it('SessionTabs can focus a pending editor by session id without enabling its busy controls', () => {
+  const select = vi.fn();
+  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} selectedId="b" onSelect={select} onRename={() => new Promise<void>(() => {})} onAdd={vi.fn()}/></UIProvider>);
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'One' }), { key: 'F2' });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  const second = screen.getByRole('tab', { name: 'Two' }); second.focus(); fireEvent.keyDown(second, { key: 'Home' });
+  expect(select).toHaveBeenLastCalledWith('a');
+  expect(document.activeElement).toBe(screen.getByRole('textbox').closest('.ui-rename-editor'));
+  expect((screen.getByRole('textbox') as HTMLInputElement).disabled).toBe(true);
+});
+it('ChatMessage treats HTML strings as text, exposes role/meta/streaming/failure/actions without desktop effects', async () => {
+  const { ChatMessage } = await import('../src/renderer/modules');
+  const action = vi.fn(); const unsafe = '<img src=x onerror="alert(1)"><script>alert(1)</script>';
+  const view = render(<UIProvider><ChatMessage role="assistant" author="小派" metadata="刚刚" streaming error="稍后重试" labels={{ assistant: '助手', streaming: '正在回复', failed: '回复失败' }} actions={<button onClick={action}>重试回复</button>}>{unsafe}</ChatMessage></UIProvider>);
+  expect(screen.getByRole('article', { name: '助手' })).toBeTruthy(); expect(screen.getByText('刚刚')).toBeTruthy(); expect(screen.getByText('正在回复')).toBeTruthy(); expect(screen.getByText(unsafe)).toBeTruthy();
+  expect(view.container.querySelector('img, script')).toBeNull(); expect(view.container.querySelector('[aria-busy="true"]')).toBeTruthy(); expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '重试回复' })); expect(action).toHaveBeenCalledOnce();
+});
+it('module labels localize navigation, rename, execution and inspection without changing identity callbacks', async () => {
+  const { ToolExecutionCard, InspectorHeader, FileRow } = await import('../src/renderer/modules');
+  const open = vi.fn();
+  render(<UIProvider><ProjectNav projects={[]} selectedCwd="" onSelect={vi.fn()} onAdd={vi.fn()} labels={{ title: '项目', add: '添加项目', empty: '暂无项目' }}/><SessionTabs sessions={[{ id: 'a', title: '方案' }]} selectedId="a" onSelect={vi.fn()} onRename={vi.fn()} onAdd={vi.fn()} labels={{ title: '会话', add: '新会话', rename: { hint: '双击或 F2 重命名', input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空' } }}/><ToolExecutionCard title="检查" status="success" labels={{ details: '执行详情', statuses: { success: '已完成' } }}>详情</ToolExecutionCard><InspectorHeader title="检查器" count={1} onRefresh={vi.fn()} labels={{ refresh: '刷新检查' }}/><FileRow name="说明" detail="文件" onOpen={open} labels={{ open: '打开说明' }}/></UIProvider>);
+  expect(screen.getByRole('navigation', { name: '项目' })).toBeTruthy(); expect(screen.getByText('暂无项目')).toBeTruthy(); expect(screen.getByRole('button', { name: '添加项目' })).toBeTruthy(); expect(screen.getByRole('button', { name: '新会话' })).toBeTruthy();
+  fireEvent.keyDown(screen.getByRole('tab', { name: '方案' }), { key: 'F2' }); expect(screen.getByRole('textbox', { name: '重命名 方案' })).toBeTruthy(); expect(screen.getByRole('button', { name: '保存' })).toBeTruthy(); expect(screen.getByRole('button', { name: '取消' })).toBeTruthy();
+  expect(screen.getByText('已完成')).toBeTruthy(); expect(screen.getByRole('button', { name: '执行详情' })).toBeTruthy(); expect(screen.getByRole('button', { name: '刷新检查' })).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: '打开说明' })); expect(open).toHaveBeenCalledOnce();
+});
+it('ChatMessage keeps author semantics without repeated visual headings, and scopes string line breaks separately from React prose', async () => {
+  const { ChatMessage } = await import('../src/renderer/modules');
+  const view = render(<UIProvider><ChatMessage role="user" author="中文作者">{'第一行\nEnglish 2026'}</ChatMessage><ChatMessage role="assistant" author="小派" metadata="0.8s"><h1>回答章节</h1><p>普通正文</p><pre><code>{'const value = 1;\nreturn value;'}</code></pre></ChatMessage></UIProvider>);
+  expect(screen.getByText('中文作者').closest('header')?.className).toBe('ui-visually-hidden');
+  expect(screen.getByText('小派').closest('header')?.getAttribute('aria-hidden')).toBeNull();
+  expect(view.container.querySelector('.ui-chat-message-user .ui-chat-body-text')?.textContent).toBe('第一行\nEnglish 2026');
+  expect(view.container.querySelector('.ui-chat-message-assistant .ui-chat-body-text')).toBeNull();
+  expect(screen.getByText('0.8s').closest('.ui-visually-hidden')).toBeNull();
+  expect(screen.getByRole('heading', { name: '回答章节' }).closest('.ui-chat-body')).toBeTruthy();
+});

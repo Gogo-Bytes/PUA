@@ -1,0 +1,35 @@
+# 工作台模块接口
+
+入口 `index.ts` 按模块 re-export，样式由 UIProvider 限定。所有模块只接受数据、React slot 与 callbacks，不访问 Pi、Git、IPC 或磁盘。通用封装原则见 [ui README](../ui/README.md)。
+
+## Composer：真实接入前的调用方契约
+
+类型：`ComposerProps`、`ComposerSubmission`、`ComposerAttachment`、`ComposerLabels`，定义于 `Composer.tsx`。
+
+- 必传 `conversationKey`、`value` / `onValueChange`、`attachments`。调用方持有每个会话的真实草稿和附件；附件使用稳定唯一 id、不可变数组/对象。`onAddAttachments` / `onRemoveAttachment(id)` 仅报告意图，文件选择、验证和失败展示由调用方负责。
+- `onSend(submission)` 和 `onQueue(submission)` 接收 `{ conversationKey, value, attachments }` 快照；保留原始草稿空白，附件复制为提交快照。纯空白且无附件不可提交，只有附件可以提交。
+- `busy` 表示模型运行，而不是禁用输入：可继续编辑、增删附件；有 `onQueue` 时主按钮变成排队，有 `onStop` 时显示独立停止按钮。`queuedCount` 是调用方队列的展示值。没有对应 callback 不展示虚假的操作按钮。
+- `disabled` 才整体锁定输入和操作。异步提交锁防止重复发送/排队；停止有独立 pending 锁，可在排队请求未结束时停止。Enter 提交，Shift+Enter 换行，composition / isComposing / 229 的 Enter 不提交。
+- 模块**永不清空**草稿或附件，也不内置模拟 timer。callback reject 时保留数据并展示错误，resolve 时只解除内部 pending。
+- 调用方若选择成功后清空，应按提交时的会话身份和草稿版本做条件更新；不能在 `await` 后无条件清空当前会话。`conversationKey` 改变会重建内部 pending/error 生命周期（包括 A→B→A），外部草稿或附件替换会使旧错误失效。旧请求完成不会写入新内部状态，但**不能取消调用方自己的副作用**；真实请求取消和回写版本校验仍由调用方完成。
+- `labels` 是小型文案对象，包含 textarea、placeholder、提示、发送/排队/停止、附件增删、队列计数与失败文案。业务错误的语言由 callback 提供。
+
+预览的 `CompletionExamples.tsx / ComposerPreview` 是独立内存 Adapter：受控会话草稿、附件、提交后按快照清空、650ms 模拟失败、运行/排队/停止。所有模拟延时仅存在于 preview，卸载时清理；这不是 Pi 或真实附件实测。
+
+## ChatMessage：对话展示，不是通知
+
+`ChatMessageProps`（`ChatMessage.tsx`）：`role` 为 user / assistant / system，`author` 必传，`metadata`、`children` 正文、`actions` 均为 ReactNode。字符串始终作为文本；调用方可通过正文 slot 提供已审核的受控渲染器。`streaming` 展示状态并将正文标记 aria-busy，不对每个 token 创建 live region；`error` 保留正文并复用静态 Message。角色、流式和失败标签可通过 `labels` 配置。作者与角色默认视觉隐藏但保留可访问文字，metadata 独立展示；actions 始终可见（键盘、触屏无需 hover）。用户正文右对齐浅底，助手使用裸正文。字符串保留换行，React slot 按正常块排版；段落、章节、列表、代码、引用、表格与链接样式仅作用于正文。排版规则见 [注意力层级](../ui/typography-and-hierarchy.md)。
+
+本库不直接复用旧 `ContentView.MarkdownView`：其链接和复制按钮依赖 `window.desktop`，不适用于隔离预览。未改动旧实现，也未新增不受控 HTML 渲染或桥接后门。
+
+## 导航与检查模块
+
+| 模块 | 数据与行为 | 文案/slot |
+| --- | --- | --- |
+| ProjectNav | `Project { cwd, name, sessions }[]`；selectedCwd；onSelect(cwd)、onAdd | labels.title / add / empty；默认显示名称，重名的完整路径仅 hover/focus 显示 |
+| SessionTabs | `Session { id, title }[]`；selectedId；onSelect(id)、onRename(id,title)、onAdd | labels.title / add / rename；rename 为 InlineRenameLabels 的部分配置 |
+| ToolExecutionCard | title、RunStatus、可选 duration；children 详情 | labels.details / statuses（按状态覆盖名称） |
+| InspectorHeader | title、count、onRefresh | labels.refresh |
+| FileRow | name、detail、onOpen | labels.open 可覆盖完整可访问名称；可见名称和详情由数据控制 |
+
+SessionTabs 仍支持双击/F2 改名、Enter 提交、Escape 取消、IME 安全、失败保留草稿。焦点按 session id 定位，而非按剩余 tab 的 DOM 下标；编辑器内部导航键不触发会话切换。调用方需维护稳定 id，并对自己的异步重命名回写做会话身份校验。

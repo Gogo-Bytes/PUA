@@ -16,14 +16,17 @@
     "postinstall": "electron-rebuild -f -w node-pty",
     "package": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
-    "test:lifecycle": "npm run build && node scripts/smoke-lifecycle.mjs"
+    "test:lifecycle": "npm run build && node scripts/smoke-lifecycle.mjs",
+    "dev:components": "vite --config tests/component-preview/vite.config.ts"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/addon-image": "^0.9.0",
     "@xterm/addon-search": "^0.16.0",
     "@xterm/addon-web-links": "^0.12.0",
     "@xterm/xterm": "^6.0.0",
+    "gsap": "^3.15.0",
     "node-pty": "^1.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

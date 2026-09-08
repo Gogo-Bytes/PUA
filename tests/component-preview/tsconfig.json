@@ -1,0 +1,4 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["../../src/renderer/ui", "../../src/renderer/modules", "./**/*.ts", "./**/*.tsx", "../component-*.test.tsx"]
+}
