@@ -71,4 +71,4 @@ npm run dist            # 本平台安装包；发布签名/公证需另外配�
 - 附加 CLI 参数存入桌面设置，勿填写 API key。软件没有凭据编辑器，不复制 `auth.json`。
 - 0.1 初始研究仅使用本机文档；0.2 补充 Electron/Tauri 与 Codex Desktop 对照；0.3 的原生对话技术决策与协议边界单独记录。Windows/Linux 真机发行、签名、公证和自动更新仍未验收。
 
-详见 [原生对话技术设计](docs/native-chat-design.md)、[研究与兼容矩阵](research.md)、[Codex Desktop 对照研究](docs/codex-desktop-study.md)、[架构说明](docs/architecture.md)、[验证记录](docs/validation.md)。
+详见 [原生对话技术设计](docs/native-chat-design.md)、[研究与兼容矩阵](research.md)、[Codex Desktop 对照研究](docs/codex-desktop-study.md)、[现行架构说明](docs/architecture.md)、[目标架构](docs/target-architecture.md)、[验证记录](docs/validation.md)。
