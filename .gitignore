@@ -6,3 +6,5 @@ coverage/
 .agents/
 .agent-work/
 skills-lock.json
+docs/*
+!docs/target-architecture.md
