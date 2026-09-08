@@ -40,7 +40,7 @@ try {
       assert(await current.evaluate(el => el === document.activeElement), 'showing top layer does not steal trigger focus');
       assert(geometry.fitsViewport && geometry.cornersVisible.every(Boolean), 'all four tooltip corners are painted, not clipped by scroll ancestors');
       assert(geometry.topLayer, 'tooltip escapes ancestor clips via native top layer');
-      assert.equal(geometry.radius, '8px');
+      assert.equal(geometry.radius, '12px');
       // Constrained scroll fixture: real overflow containers, not overflow-visible overrides.
       await page.locator('.ui-workspace-main').evaluate(el => {
         el.style.maxHeight = '280px';

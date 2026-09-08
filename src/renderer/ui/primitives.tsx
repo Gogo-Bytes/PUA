@@ -1,10 +1,10 @@
 import { cloneElement, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode, type KeyboardEvent } from 'react';
-import { Icon } from '../Icon';
+import { Icon } from './Icon';
 import { Reveal, gsap, useGSAP, motionTokens } from './motion';
 import { useMotionScale } from './theme';
 export { Icon };
 export function Button({ variant = 'secondary', busy = false, className = '', children, disabled, ...props }: ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; busy?: boolean }) {
-  return <button type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <span aria-hidden="true">◌</span>}{children}</button>;
+  return <button type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</button>;
 }
 export function IconButton({ label, icon, ...props }: Omit<Parameters<typeof Button>[0], 'children'> & { label: string; icon: Parameters<typeof Icon>[0]['name'] }) {
   return <Button {...props} className={`ui-icon-button ${props.className ?? ''}`} aria-label={label}><Icon name={icon}/></Button>;
@@ -17,7 +17,7 @@ export function Tag({ children }: { children: ReactNode }) { return <span classN
 export type RunStatus = 'idle' | 'running' | 'success' | 'error' | 'paused';
 const statusLabels: Record<RunStatus, string> = { idle: 'Idle', running: 'Running', success: 'Complete', error: 'Failed', paused: 'Paused' };
 export function StatusBadge({ status, label }: { status: RunStatus; label?: string }) {
-  return <span className={`ui-status ui-status-${status}`}><Icon name={status === 'success' ? 'check' : status === 'error' ? 'close' : status === 'paused' ? 'stop' : 'chat'}/>{label ?? statusLabels[status]}</span>;
+  return <span className={`ui-status ui-status-${status}`}><Icon name={status === 'success' ? 'success' : status === 'error' ? 'error' : status === 'paused' ? 'pause' : status === 'running' ? 'running' : 'clock'}/>{label ?? statusLabels[status]}</span>;
 }
 export function Tooltip({ content, children }: { content: ReactNode; children: ReactElement<{ 'aria-describedby'?: string }> }) {
   const id = useId(), anchor = useRef<HTMLSpanElement>(null), bubble = useRef<HTMLSpanElement>(null);
@@ -155,9 +155,9 @@ export function Tabs({ label, items, value, onChange }: { label: string; items: 
     event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')[next]?.focus();
   }}>{items.map(item => <Button role="tab" key={item.value} variant="ghost" aria-selected={value === item.value} tabIndex={value === item.value ? 0 : -1} disabled={item.disabled} onClick={() => onChange(item.value)}>{item.label}</Button>)}</div>;
 }
-export function Collapsible({ title, children, defaultOpen = false }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
+export function Collapsible({ title, children, defaultOpen = false, label }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; label?: string }) {
   const [open, setOpen] = useState(defaultOpen); const id = useId();
-  return <section className="ui-collapsible"><Button variant="ghost" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}><Icon name={open ? 'down' : 'chevron'}/>{title}</Button><div id={id}><Reveal open={open}>{children}</Reveal></div></section>;
+  return <section className="ui-collapsible"><Button variant="ghost" aria-label={label} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}><Icon name={open ? 'down' : 'chevron'}/>{title}</Button><div id={id}><Reveal open={open}>{children}</Reveal></div></section>;
 }
 export function Dialog({ open, title, onClose, children, closeLabel = 'Close dialog' }: { open: boolean; title: string; onClose(): void; children: ReactNode; closeLabel?: string }) {
   const ref = useRef<HTMLDialogElement>(null); const id = useId(); const scale = useMotionScale();

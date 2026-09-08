@@ -4,6 +4,22 @@ import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
 import { ProjectNav, SessionTabs } from '../src/renderer/modules';
 import { UIProvider } from '../src/renderer/ui';
+it('tool activity uses one disclosure and retains open details across status updates', async () => {
+  const { ToolExecutionCard } = await import('../src/renderer/modules');
+  const action = vi.fn();
+  const view = (status: 'running' | 'error') => <UIProvider motion="off"><ToolExecutionCard title="读取配置" status={status} labels={{ details: '详情', statuses: { running: '运行中', error: '读取失败' } }}><button onClick={action}>重试读取</button></ToolExecutionCard></UIProvider>;
+  const { rerender } = render(view('running'));
+  const trigger = screen.getByRole('button', { name: '读取配置 · 详情 · 运行中' });
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  fireEvent.click(trigger);
+  expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  rerender(view('error'));
+  expect(screen.getByRole('button', { name: '读取配置 · 详情 · 读取失败' }).getAttribute('aria-expanded')).toBe('true');
+  fireEvent.click(screen.getByRole('button', { name: '重试读取' }));
+  expect(action).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button', { name: '读取配置 · 详情 · 读取失败' }));
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+});
 it('ProjectNav keeps cwd as callback identity and only reveals duplicate paths on hover/focus', () => {
   const select = vi.fn();
   render(<UIProvider><ProjectNav projects={[{ name: 'Atlas', cwd: '/one/atlas', sessions: 2 }, { name: 'Atlas', cwd: '/two/atlas', sessions: 1 }, { name: 'Orbit', cwd: '/one/orbit', sessions: 0 }]} selectedCwd="/one/atlas" onSelect={select} onAdd={() => {}}/></UIProvider>);
@@ -63,7 +79,7 @@ it('module labels localize navigation, rename, execution and inspection without 
   render(<UIProvider><ProjectNav projects={[]} selectedCwd="" onSelect={vi.fn()} onAdd={vi.fn()} labels={{ title: '项目', add: '添加项目', empty: '暂无项目' }}/><SessionTabs sessions={[{ id: 'a', title: '方案' }]} selectedId="a" onSelect={vi.fn()} onRename={vi.fn()} onAdd={vi.fn()} labels={{ title: '会话', add: '新会话', rename: { hint: '双击或 F2 重命名', input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空' } }}/><ToolExecutionCard title="检查" status="success" labels={{ details: '执行详情', statuses: { success: '已完成' } }}>详情</ToolExecutionCard><InspectorHeader title="检查器" count={1} onRefresh={vi.fn()} labels={{ refresh: '刷新检查' }}/><FileRow name="说明" detail="文件" onOpen={open} labels={{ open: '打开说明' }}/></UIProvider>);
   expect(screen.getByRole('navigation', { name: '项目' })).toBeTruthy(); expect(screen.getByText('暂无项目')).toBeTruthy(); expect(screen.getByRole('button', { name: '添加项目' })).toBeTruthy(); expect(screen.getByRole('button', { name: '新会话' })).toBeTruthy();
   fireEvent.keyDown(screen.getByRole('tab', { name: '方案' }), { key: 'F2' }); expect(screen.getByRole('textbox', { name: '重命名 方案' })).toBeTruthy(); expect(screen.getByRole('button', { name: '保存' })).toBeTruthy(); expect(screen.getByRole('button', { name: '取消' })).toBeTruthy();
-  expect(screen.getByText('已完成')).toBeTruthy(); expect(screen.getByRole('button', { name: '执行详情' })).toBeTruthy(); expect(screen.getByRole('button', { name: '刷新检查' })).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: '打开说明' })); expect(open).toHaveBeenCalledOnce();
+  expect(screen.getByText('已完成')).toBeTruthy(); expect(screen.getByRole('button', { name: '检查 · 执行详情 · 已完成' })).toBeTruthy(); expect(screen.getByRole('button', { name: '刷新检查' })).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: '打开说明' })); expect(open).toHaveBeenCalledOnce();
 });
 it('ChatMessage keeps author semantics without repeated visual headings, and scopes string line breaks separately from React prose', async () => {
   const { ChatMessage } = await import('../src/renderer/modules');

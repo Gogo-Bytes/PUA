@@ -61,11 +61,12 @@ function ComposerDraft({ conversationKey, value, onValueChange, attachments, onA
       event.preventDefault(); void run('submit');
     }}/>
     {attachments.length > 0 && <ul className="ui-composer-attachments" aria-label={text.attachments}>{attachments.map(item => <li key={item.id}><Icon name="file"/><span>{item.name}{item.detail && <small>{item.detail}</small>}</span>{onRemoveAttachment && <IconButton icon="close" label={text.removeAttachment(item.name)} variant="ghost" disabled={disabled} onClick={() => onRemoveAttachment(item.id)}/>}</li>)}</ul>}
-    <div className="ui-composer-footer"><span className="ui-meta">{text.hint}</span><div className="ui-composer-controls">
-      {onAddAttachments && <IconButton icon="plus" label={text.addAttachments} disabled={disabled} onClick={onAddAttachments}/>}
+    <div className="ui-composer-footer"><div className="ui-composer-controls">
+      {onAddAttachments && <IconButton icon="plus" variant="ghost" label={text.addAttachments} disabled={disabled} onClick={onAddAttachments}/>}
+      <span className="ui-meta">{text.hint}</span>
       {queuedCount > 0 && <span className="ui-meta">{text.queued(queuedCount)}</span>}
       {busy && onStop && <Button disabled={disabled} busy={stopping} onClick={() => void run('stop')}><Icon name="stop"/>{text.stop}</Button>}
-      {submit && <Button type="submit" variant="primary" busy={pending} disabled={disabled || !hasContent}><Icon name="up"/>{busy ? text.queue : text.send}</Button>}
+      {submit && <Button className="ui-composer-submit" type="submit" variant="primary" aria-label={busy ? text.queue : text.send} title={busy ? text.queue : text.send} busy={pending} disabled={disabled || !hasContent}><Icon name="up"/></Button>}
     </div></div>
     {error && <Message tone="error" toneLabel={text.error} announcement="assertive">{error}</Message>}
   </form>;

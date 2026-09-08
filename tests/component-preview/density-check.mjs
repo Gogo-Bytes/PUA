@@ -36,7 +36,7 @@ try {
       assert(metrics.message.height <= 36, 'short notification stays one compact line');
       assert(metrics.breadcrumbs.height <= 30, 'default breadcrumbs single row');
       assert(metrics.section < 360, 'notification examples do not become a giant section');
-      assert.equal(metrics.button.radius, '4px');
+      assert.equal(metrics.button.radius, '8px');
     }
     await page.getByRole('tab', { name: '组合交互', exact: true }).click();
     await page.waitForTimeout(100);
@@ -104,7 +104,7 @@ try {
       await inViewport(toast); await noOverflow();
       const toastRect = await toast.boundingBox();
       assert(toastRect.width <= 360, 'bounded floating notification');
-      assert.equal(await toast.evaluate(el => getComputedStyle(el).borderRadius), '8px');
+      assert.equal(await toast.evaluate(el => getComputedStyle(el).borderRadius), '12px');
       assert.notEqual(await toast.evaluate(el => getComputedStyle(el).boxShadow), 'none');
       interactionMeasurements.push({ width, toast: toastRect, dialog: dialogRect, longError: await error.boundingBox(), shortMessageAction: actionRect, keyboardDetails: true, unclippedError: true, focusVisible: true });
       await page.screenshot({ path: `${output}/toast-${width}.png` });

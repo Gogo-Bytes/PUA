@@ -1,6 +1,8 @@
 # PUA 项目组件库
 
-状态：独立组件库预览；当前库尚未被 App 消费，接入时同步更新此状态。视觉确认与生产接入是两步，不能把预览 fixture 当生产数据。参考 ClickUp 的产品信息组织与 Codex 的阅读模式；这不代表当前视觉已获批准。
+状态：独立组件库预览；当前库尚未被 App 消费，接入时同步更新此状态。视觉确认与生产接入是两步，不能把预览 fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
+
+导出边界：light contrast=40 / opaqueWindows=true，dark contrast=100 / opaqueWindows=false，codeThemeId 均为 catppuccin。未知的 contrast 派生算法和原生窗口透明效果未模拟。用户后续要求优先：Diff 与 highlight 使用低饱和配套色，覆盖原导出 Diff 值；浅色 link 使用实际 ClickUp 任务正文链接测得的 #0b68cb，深色 #79b8ff 与两种 hover 色为本库配套值，不是 ClickUp 实测值。链接下划线保持同色，不再降低透明度。其他基础色保持；字体栈按后续要求统一明暗。提示、引用、Diff 与动效样例均不使用左侧装饰线；Diff 以正负号、文字色和浅底区分。尺寸和行高未由导出提供，沿用现值。
 
 ## 分层与封装流程（原则单一事实源）
 
@@ -15,7 +17,7 @@
 
 新增组件、修改文字 slot、字重、状态色或对话布局前，必读 [排版与注意力层级](typography-and-hierarchy.md)，按角色选择 token 并验证同屏阅读。
 
-- **先用 token**：尺寸集中在 `tokens.css`；控件 13px、辅助 12px、常规控件 28px，控件圆角 4px、浮层 8px，邻接间距优先 4/6/8/12px。组件实际消费这些 token，而非在预览给新组件另加缩小特例。长篇 Chat 与 Composer 正文使用 reading token（15px / 1.65），不靠全局小字压缩信息。
+- **先用 token**：尺寸集中在 `tokens.css`；控件 13px、辅助 12px、常规控件 28px，控件圆角 8px、浮层 12px、Composer 20px，邻接间距优先 4/6/8/12px。组件实际消费这些 token，而非在预览给新组件另加缩小特例。长篇 Chat 与 Composer 正文使用 reading token（15px / 1.65），不靠全局小字压缩信息。
 - **行 / 浮层 / 容器**：导航、通知与会话优先使用紧凑行及轻分隔；聊天采用稳定阅读列、用户浅底与助手裸正文；状态色用于图标、标签或局部强调，主正文保持中性。Toast、Tooltip、菜单与 Dialog 才使用有限宽度、适度阴影的浮层。容器只为独立内容分组，不给每条消息套大圆角卡片，不无理由将产品控件扩成营销卡片。
 - **空间跟随内容**：短通知一行，不强制标题另起一行，操作紧邻正文；显式标题或长错误可展开完整正文。Dialog 按内容自适应，Composer 保留紧凑工具区与可滚动附件条。缩小留白不能裁掉错误、隐藏可操作链接或抹掉焦点环；常规目标至少 24px，必要时通过间距保证可操作性。
 - **预览与视觉验收**：小 section、合理列宽和真实项目/会话标签为默认；长标题、多层与长错误放在可展开压力案例。实际查看包含新旧组件的同屏截图（通用页、模块与工作台组合），对比同视口的明暗主题和窄窗，测量 CSS px 高度/圆角并验证键盘详情、焦点及溢出。测试全绿不等于视觉一致；用户视觉确认后才允许生产替换。
@@ -46,7 +48,7 @@
 
 ### Tooltip（`primitives.tsx`）
 
-使用原生 Popover top layer 跨越滚动祖先裁切，同时保留 UIProvider 明暗 token 与所在 Dialog 的 DOM 归属；浮层圆角使用 8px overlay token。显示不抢触发器焦点，hover 与 focus 独立保持，移向浮层有短暂离开宽限；Escape 先关闭 Tooltip，若焦点在全文区则返回触发器。
+使用原生 Popover top layer 跨越滚动祖先裁切，同时保留 UIProvider 明暗 token 与所在 Dialog 的 DOM 归属；浮层圆角使用 12px overlay token。显示不抢触发器焦点，hover 与 focus 独立保持，移向浮层有短暂离开宽限；Escape 先关闭 Tooltip，若焦点在全文区则返回触发器。
 
 按视窗可用空间选择上下方向，滚动、resize 与 ResizeObserver 更新位置，关闭或卸载清理监听和待执行工作。超长内容不截断：出现键盘提示时可 Tab 进入全文区，用方向键、PgUp/PgDn 或 End 滚动阅读。依赖宿主原生 Popover 支持；jsdom 仅验证状态和清理，不验证 top layer 绘制。
 
@@ -57,6 +59,13 @@
 默认单行，末项优先占用剩余空间并截断，所有收起标签可通过 hover 或键盘 focus 的 Tooltip 获取全文（Escape 关闭）。超过三层时保留首尾，中间层通过可键盘操作的原生 disclosure 展示完整链接/操作，Escape 收起并恢复焦点；不以 overflow:hidden 吞掉层级。调用方只传有意义的项目/会话标签，不默认塞完整路径；路径详情通过用户主动操作展示。链接导航的业务去向由调用方审核。
 
 ## 既有行为保持
+
+- Collapsible 的 title 支持非交互 ReactNode，label 可提供完整按钮可访问名称；原字符串调用保持兼容。ToolExecutionCard 用它将图标、摘要和状态合并为一个详情入口，复用现有展开/收起与 reduced-motion 行为。
+
+- `ui/Icon.tsx` 统一映射 lucide-react 按需导入图标：24px 网格、16px 显示、1.75 线宽。通知、状态和任务清单复用同一来源；不再手画路径。免费使用许可为 ISC，部分 Feather 来源图标为 MIT；许可证随 npm 包提供，发布时保留其通知，见 https://lucide.dev/license 。旧生产 `renderer/Icon.tsx` 保留，视觉批准并接入后再统一。
+- 图标选型参考实际 ClickUp 页面的齿轮、折角文档与循环箭头；采用同一免费 Lucide 家族的 Settings、File、RotateCw，warning 使用 CircleAlert。它们是风格匹配，不是 ClickUp 专有 SVG 的逐路径复制。
+- 语义颜色：链接使用明显蓝色及 hover 色，成功/新增绿色、失败/删除红色、警告琥珀色、高亮淡紫色；代码关键字、字符串、数字各自使用 token。中性底色和主操作保持原层级。
+- Foundations 新增图标目录与完整文档样例，组合页复用同一静态样例；包含 mark、kbd、任务清单、代码着色、ins/del、状态表、术语、折叠内容、图注和脚注。代码着色为本地 React span，不是新增 Markdown 解析器。
 
 - Dialog 仍是同一原生 modal 实现，Tab 循环、Escape 请求关闭、恢复 opener；可配置 closeLabel。确认、危险操作、异步失败的状态由调用方控制，示例在 `CompletionExamples.tsx / DialogExamples`，没有另造一套 Dialog。
 - InlineRename 支持双击/F2，labels 可配置输入提示、保存/取消和失败文案；SessionTabs 按 id 恢复焦点，忙碌编辑器可作为焦点目标。未增加改名菜单入口。

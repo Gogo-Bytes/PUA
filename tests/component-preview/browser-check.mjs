@@ -217,7 +217,7 @@ try {
   await page.waitForTimeout(800);
   await page.getByText('测试控制 · 动效', { exact: true }).click();
   const structureCounts = [];
-  const details = page.getByRole('button', { name: '执行详情' });
+  const details = page.getByRole('button', { name: /已读取文件运行了命令 · 执行详情/ });
   for (let i = 0; i < 80; i++) {
     await page.getByRole('button', { name: `${i % 2 ? 'Show' : 'Hide'} left panel` }).click();
     await details.click(); await page.getByRole('button', { name: 'Replay motion' }).click();

@@ -6,6 +6,8 @@
 
 类型：`ComposerProps`、`ComposerSubmission`、`ComposerAttachment`、`ComposerLabels`，定义于 `Composer.tsx`。
 
+视觉：输入容器使用 20px 圆角与浅阴影；附件入口位于工具区左侧，发送/排队使用圆形图标按钮，保留由 labels 提供的可访问名称及 title。输入框键盘焦点环显示在整个容器，其他按钮保留各自焦点环。未增加无对应能力的模型、权限或语音入口。
+
 - 必传 `conversationKey`、`value` / `onValueChange`、`attachments`。调用方持有每个会话的真实草稿和附件；附件使用稳定唯一 id、不可变数组/对象。`onAddAttachments` / `onRemoveAttachment(id)` 仅报告意图，文件选择、验证和失败展示由调用方负责。
 - `onSend(submission)` 和 `onQueue(submission)` 接收 `{ conversationKey, value, attachments }` 快照；保留原始草稿空白，附件复制为提交快照。纯空白且无附件不可提交，只有附件可以提交。
 - `busy` 表示模型运行，而不是禁用输入：可继续编辑、增删附件；有 `onQueue` 时主按钮变成排队，有 `onStop` 时显示独立停止按钮。`queuedCount` 是调用方队列的展示值。没有对应 callback 不展示虚假的操作按钮。
@@ -22,14 +24,18 @@
 
 本库不直接复用旧 `ContentView.MarkdownView`：其链接和复制按钮依赖 `window.desktop`，不适用于隔离预览。未改动旧实现，也未新增不受控 HTML 渲染或桥接后门。
 
+正文支持受控 React 内容中的 mark 高亮、kbd 快捷键、ins/del 变更行、dl 术语、details 折叠、figure/figcaption 与脚注锚点。`ui-code-keyword/string/number/comment` 为调用方已审核语法片段的配色类；不自动解析或执行代码。静态任务清单以图标加明确文字表达完成/待检查，不伪装成可操作的复选框。完整样例位于预览 `DocumentExamples.tsx`，不从模块入口导出。
+
 ## 导航与检查模块
 
 | 模块 | 数据与行为 | 文案/slot |
 | --- | --- | --- |
 | ProjectNav | `Project { cwd, name, sessions }[]`；selectedCwd；onSelect(cwd)、onAdd | labels.title / add / empty；默认显示名称，重名的完整路径仅 hover/focus 显示 |
 | SessionTabs | `Session { id, title }[]`；selectedId；onSelect(id)、onRename(id,title)、onAdd | labels.title / add / rename；rename 为 InlineRenameLabels 的部分配置 |
-| ToolExecutionCard | title、RunStatus、可选 duration；children 详情 | labels.details / statuses（按状态覆盖名称） |
+| ToolExecutionCard | title 摘要句、RunStatus、可选 duration / icon 装饰 slot；children 详情 | labels.details / statuses（按状态覆盖名称） |
 | InspectorHeader | title、count、onRefresh | labels.refresh |
 | FileRow | name、detail、onOpen | labels.open 可覆盖完整可访问名称；可见名称和详情由数据控制 |
 
 SessionTabs 仍支持双击/F2 改名、Enter 提交、Escape 取消、IME 安全、失败保留草稿。焦点按 session id 定位，而非按剩余 tab 的 DOM 下标；编辑器内部导航键不触发会话切换。调用方需维护稳定 id，并对自己的异步重命名回写做会话身份校验。
+
+ToolExecutionCard 保留兼容名称，视觉为无外框、无底色的全宽块。摘要按钮覆盖完整阅读列宽度，整行均可点击；完成状态只保留可访问文字，运行、暂停、失败保留可见状态。可访问名称包含摘要、详情标签与当前状态。icon 只接受非交互装饰内容，工具名称必须由 title 表达。默认收起，复用 Collapsible 的 GSAP seam 与键盘按钮语义；展开时摘要与详情之间显示贯穿宽度的水平分隔线，正文与摘要左缘对齐，无侧边竖线或额外缩进。长摘要允许换行，不截掉错误；duration 可选且紧邻内容。

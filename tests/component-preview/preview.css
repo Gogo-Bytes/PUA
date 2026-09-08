@@ -1,5 +1,5 @@
 .ui-provider:has(> .preview-shell) { position: absolute; top: 0; left: 0; right: 0; min-height: 100vh; }
-.ui-provider .preview-shell { min-height: 100vh; padding: 0 var(--ui-space-6) var(--ui-space-4); max-width: 1440px; margin: 0 auto; }
+.ui-provider .preview-shell { min-height: 100vh; padding: 0 var(--ui-space-5) var(--ui-space-4); max-width: 1680px; margin: 0 auto; }
 .ui-provider .preview-header { min-height: 52px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ui-border); gap: var(--ui-space-4); }
 .ui-provider .preview-wordmark, .ui-provider .preview-controls { display: flex; align-items: center; gap: 12px; }
 .ui-provider .preview-wordmark > .icon { color: var(--ui-accent); width: 23px; height: 23px; flex-basis: 23px; }
@@ -8,8 +8,8 @@
 .ui-provider .preview-nav { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--ui-border); gap: var(--ui-space-3); margin-bottom: var(--ui-space-3); }
 .ui-provider .preview-nav .ui-tabs { border: 0; }
 .ui-provider .preview-section-toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--ui-space-2); margin-bottom: var(--ui-space-2); min-height: var(--ui-control-height); }
-.ui-provider .preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--ui-space-3); }
-.ui-provider .preview-card { padding: var(--ui-space-3); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-overlay); background: var(--ui-surface); min-width: 0; }
+.ui-provider .preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--ui-space-5) var(--ui-space-6); }
+.ui-provider .preview-card { padding: var(--ui-space-4) 0; border-top: 1px solid var(--ui-border); min-width: 0; }
 .ui-provider .preview-card-heading { color: var(--ui-secondary); display: flex; justify-content: space-between; gap: var(--ui-space-2); align-items: center; margin-bottom: var(--ui-space-2); }
 .ui-provider .preview-card > h2, .ui-provider .preview-card > p { margin-top: 10px; }
 .ui-provider .preview-wide { grid-column: 1 / -1; }
@@ -39,6 +39,9 @@
 .ui-provider .preview-test-controls[open] { padding-bottom: var(--ui-space-2); }
 .ui-provider .preview-type-roles { display: grid; gap: var(--ui-space-3); }
 .ui-provider .preview-type-reading { font: var(--ui-font-reading); }
+.ui-provider .preview-icon-catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--ui-space-4); }
+.ui-provider .preview-icon-catalog > span { display: flex; align-items: center; gap: var(--ui-space-2); color: var(--ui-secondary); }
+.ui-provider .preview-card:has(.ui-chat-body) > .ui-chat-message { max-width: var(--ui-reading-width); }
 .ui-provider .preview-type-roles a { color: var(--ui-link); text-decoration: underline; }
 /* The transcript scrolls; the dock has its own space, never an overlay on the final paragraph. */
 .ui-provider .preview-shell:has(.preview-conversation) .ui-workspace-grid { height: max(420px, calc(100dvh - 224px)); min-height: 0; }
@@ -47,14 +50,9 @@
 .ui-provider .preview-conversation .preview-composer-adapter { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .ui-provider .preview-conversation .preview-transcript { flex: 1; min-height: 0; overflow-y: auto; padding: var(--ui-space-2) var(--ui-space-5) var(--ui-space-5); }
 .ui-provider .preview-reading-column { width: 100%; max-width: var(--ui-reading-width); margin-inline: auto; min-width: 0; }
-.ui-provider .preview-conversation .preview-composer-dock { flex: none; max-height: 50%; overflow-y: auto; padding: var(--ui-space-2) var(--ui-space-5) 0; background: var(--ui-surface); }
-.ui-provider .preview-conversation .ui-chat-message { padding-block: var(--ui-space-3); }
-.ui-provider .preview-conversation .ui-tool-card { border: 0; color: var(--ui-secondary); margin-block: var(--ui-space-3); }
-.ui-provider .preview-conversation .ui-tool-heading { padding: 0; }
-.ui-provider .preview-conversation .ui-tool-heading strong { font-weight: var(--ui-weight-normal); }
-.ui-provider .preview-conversation .ui-tool-card .ui-status-success { background: transparent; color: var(--ui-tertiary); }
-.ui-provider .preview-conversation .ui-tool-card .ui-collapsible > .ui-button { padding-left: 0; }
-.ui-provider .preview-conversation .ui-composer { border-radius: var(--ui-radius-overlay); }
+.ui-provider .preview-conversation .preview-composer-dock { flex: none; max-height: 50%; overflow-y: auto; padding: var(--ui-space-2) var(--ui-space-5) 0; background: var(--ui-canvas); }
+.ui-provider .preview-conversation .ui-chat-message { padding-block: var(--ui-space-4); }
+.ui-provider .preview-conversation .ui-tool-card { margin-block: var(--ui-space-2); }
 .ui-provider .preview-conversation .ui-composer textarea { resize: none; }
 @media (max-width: 700px) {
   .ui-provider .preview-conversation .preview-transcript { padding-inline: var(--ui-space-3); }

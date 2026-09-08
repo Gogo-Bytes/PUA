@@ -1,31 +1,52 @@
 .ui-provider {
-  --ui-canvas: #f7f7f9; --ui-surface: #fff; --ui-muted: #f0f0f4; --ui-border: #e3e3ea;
-  --ui-text: #35353f; --ui-secondary: #575765; --ui-tertiary: #676774; --ui-disabled: #94949f; --ui-link: #7434d8; --ui-accent: #7434d8; --ui-on-accent: #fff; --ui-selected: #e8e8ee;
+  /* Exact exported light values: surface, ink, accent and skill.
+     contrast=40, opaqueWindows=true, codeThemeId=catppuccin.
+     Other surfaces are PUA companion values, not Codex's unknown contrast algorithm. */
+  --ui-canvas: #eff1f5; --ui-surface: #f6f7fa; --ui-muted: #e6e9ef; --ui-border: #ccd0da;
+  --ui-text: #4c4f69; --ui-secondary: #565a70; --ui-tertiary: #5e6276; --ui-disabled: #9ca0b0; --ui-accent: #8839ef; --ui-on-accent: #fff; --ui-selected: #dce0e8;
+  /* User-requested softer overrides supersede the exported diff palette. */
+  --ui-diff-added: #426951; --ui-diff-removed: #975565; --ui-skill: #8839ef;
+  --ui-diff-added-bg: #e5ede7; --ui-diff-removed-bg: #f1e7ea;
   --ui-success: #237047; --ui-success-bg: #eaf5ee; --ui-info: #266393; --ui-info-bg: #eaf2fa;
   --ui-danger: #b52f45; --ui-danger-bg: #fcecef; --ui-warning: #895b0b; --ui-warning-bg: #fff3d9;
+  --ui-link: #0b68cb; --ui-link-hover: #084f9c;
+  --ui-highlight: #55516f; --ui-highlight-bg: #e5e1ef;
+  --ui-code-keyword: var(--ui-accent); --ui-code-string: #237047; --ui-code-number: #a34b13;
+  --ui-code-inline: #82502a;
   --ui-space-half: 2px; --ui-space-1: 4px; --ui-space-tight: 6px; --ui-space-2: 8px; --ui-space-3: 12px; --ui-space-4: 16px; --ui-space-5: 24px; --ui-space-6: 32px;
-  --ui-radius-small: 4px; --ui-radius-control: 4px; --ui-radius-overlay: 8px;
+  --ui-radius-small: 4px; --ui-radius-control: 8px; --ui-radius-overlay: 12px; --ui-radius-composer: 20px;
   --ui-control-height: 28px; --ui-target-small: 24px; --ui-control-inset: 3px; --ui-control-line: 20px;
   --ui-type-meta: 12px; --ui-type-body: 13px; --ui-type-reading: 15px; --ui-type-title: 16px; --ui-type-display: 22px;
   --ui-reading-line: 1.65; --ui-toast-width: 352px; --ui-detail-width: 340px; --ui-crumb-width: 120px;
-  --ui-composer-height: 60px; --ui-attachments-height: 120px;
-  --ui-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --ui-composer-height: 48px; --ui-attachments-height: 120px;
+  --ui-system-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --ui-font: Geist, Inter, var(--ui-system-font);
   --ui-weight-normal: 400; --ui-weight-medium: 500; --ui-weight-semibold: 600;
   --ui-font-control: var(--ui-weight-normal) var(--ui-type-body)/var(--ui-control-line) var(--ui-font);
   --ui-font-reading: var(--ui-weight-normal) var(--ui-type-reading)/var(--ui-reading-line) var(--ui-font);
   --ui-font-meta: var(--ui-weight-normal) var(--ui-type-meta)/18px var(--ui-font);
   --ui-font-heading: var(--ui-weight-semibold) var(--ui-type-title)/24px var(--ui-font);
   --ui-reading-width: 720px;
-  --ui-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Consolas, monospace;
-  --ui-shadow: 0 4px 16px #22223814, 0 1px 4px #2222380a;
+  --ui-system-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Consolas, monospace;
+  --ui-mono: 'Geist Mono', var(--ui-system-mono);
+  --ui-shadow: 0 4px 20px #343b5010, 0 1px 3px #343b5008;
   --ui-hover-duration: 120ms;
   color: var(--ui-text); background: var(--ui-canvas); font: var(--ui-font-control); color-scheme: light;
 }
 .ui-provider[data-theme='dark'] {
-  --ui-canvas: #17171c; --ui-surface: #202027; --ui-muted: #2a2a33; --ui-border: #3b3b47;
-  --ui-text: #dedee6; --ui-secondary: #bcbcc9; --ui-tertiary: #a2a2b1; --ui-disabled: #727280; --ui-link: #b99afa; --ui-accent: #b99afa; --ui-on-accent: #22123e; --ui-selected: #30303b;
+  /* Exact exported dark values. contrast=100, opaqueWindows=false,
+     accentSource=custom, codeThemeId=catppuccin; fonts intentionally shared across themes.
+     Native window translucency is not simulated with whole-page opacity. */
+  --ui-canvas: #1e1e2e; --ui-surface: #242436; --ui-muted: #313244; --ui-border: #45475a;
+  --ui-text: #cdd6f4; --ui-secondary: #bac2de; --ui-tertiary: #a6adc8; --ui-disabled: #6c7086; --ui-accent: #cba6f7; --ui-on-accent: #1e1e2e; --ui-selected: #36364b;
+  --ui-diff-added: #a3c4ac; --ui-diff-removed: #d0a0ac; --ui-skill: #cba6f7;
+  --ui-diff-added-bg: #293a33; --ui-diff-removed-bg: #3d2e39;
   --ui-success: #8fd5ad; --ui-success-bg: #233b30; --ui-info: #93c7f3; --ui-info-bg: #23384b;
   --ui-danger: #ffa1b2; --ui-danger-bg: #4a2831; --ui-warning: #efc571; --ui-warning-bg: #433722;
+  --ui-link: #79b8ff; --ui-link-hover: #a8d1ff;
+  --ui-highlight: #ddd5ed; --ui-highlight-bg: #3a354d;
+  --ui-code-keyword: var(--ui-accent); --ui-code-string: #8fd5ad; --ui-code-number: #f2b278;
+  --ui-code-inline: #e9be93;
   --ui-shadow: 0 4px 16px #0005, 0 1px 4px #0003; color-scheme: dark;
 }
 .ui-provider[data-motion='off'] { --ui-hover-duration: 0ms; }
