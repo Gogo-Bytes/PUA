@@ -1,3 +1,4 @@
+import { desktopClient } from './app/desktop-client';
 import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -40,7 +41,7 @@ export function TerminalPane({ session, active, fontSize, theme = 'light', platf
       fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
       fontSize, lineHeight: 1.22, cursorBlink: true, scrollback: 20000,
       allowProposedApi: true,
-      linkHandler: { activate: (_event, url) => { void window.desktop.openExternal(url).catch(error => callbacks.current.onError(String(error))); } },
+      linkHandler: { activate: (_event, url) => { void desktopClient.openExternal(url).catch(error => callbacks.current.onError(String(error))); } },
       theme: terminalThemes[theme],
     });
     terminal.current = term;
@@ -51,7 +52,7 @@ export function TerminalPane({ session, active, fontSize, theme = 'light', platf
     term.loadAddon(search);
     term.loadAddon(new WebLinksAddon((event, url) => {
       event.preventDefault();
-      void window.desktop.openExternal(url).catch(error => callbacks.current.onError(String(error)));
+      void desktopClient.openExternal(url).catch(error => callbacks.current.onError(String(error)));
     }));
     term.loadAddon(new ImageAddon());
     term.open(container.current!);
@@ -62,14 +63,14 @@ export function TerminalPane({ session, active, fontSize, theme = 'light', platf
     observer.observe(container.current!);
     refit();
     const disposables = [
-      term.onData(data => window.desktop.write(id, data)),
-      term.onResize(({ cols, rows }) => window.desktop.resize(id, cols, rows)),
+      term.onData(data => desktopClient.write(id, data)),
+      term.onResize(({ cols, rows }) => desktopClient.resize(id, cols, rows)),
     ];
     let alive = true;
-    const unsubscribe = window.desktop.onSessionEvent(event => {
+    const unsubscribe = desktopClient.onSessionEvent(event => {
       if (event.id !== id) return;
       if (event.type === 'terminal-data') {
-        term.write(event.data, () => { if (alive) window.desktop.acknowledge(id, event.data.length); });
+        term.write(event.data, () => { if (alive) desktopClient.acknowledge(id, event.data.length); });
       } else if (event.type === 'exit') {
         term.write(`\r\n\x1b[90m[Pi 进程已退出 · ${event.exitCode}]\x1b[0m\r\n`);
         callbacks.current.onExit(id, event.exitCode);
@@ -81,20 +82,20 @@ export function TerminalPane({ session, active, fontSize, theme = 'light', platf
       const paste = platform === 'darwin' ? event.metaKey && event.key.toLowerCase() === 'v' : event.ctrlKey && event.key.toLowerCase() === 'v';
       if (copy && term.hasSelection()) {
         event.preventDefault();
-        void window.desktop.writeClipboard(term.getSelection()).catch(error => callbacks.current.onError(String(error)));
+        void desktopClient.writeClipboard(term.getSelection()).catch(error => callbacks.current.onError(String(error)));
         return false;
       }
       if (paste) {
         event.preventDefault();
-        void window.desktop.readClipboard().then(value => {
+        void desktopClient.readClipboard().then(value => {
           if (!alive) return;
-          if (value.image) window.desktop.write(id, platform === 'win32' ? '\x1bv' : '\x16');
+          if (value.image) desktopClient.write(id, platform === 'win32' ? '\x1bv' : '\x16');
           else term.paste(value.text);
         }).catch(error => callbacks.current.onError(String(error)));
         return false;
       }
       const sequence = modifiedEnter(event);
-      if (sequence) { event.preventDefault(); window.desktop.write(id, sequence); return false; }
+      if (sequence) { event.preventDefault(); desktopClient.write(id, sequence); return false; }
       return true;
     });
     callbacks.current.onReady(id, {
@@ -104,8 +105,8 @@ export function TerminalPane({ session, active, fontSize, theme = 'light', platf
       clearSearch: () => search.clearDecorations(),
     });
     // Attach the renderer before spawning: startup prompts/output must not race the subscription.
-    void window.desktop.startSession(id).then(() => {
-      if (alive) window.desktop.resize(id, term.cols, term.rows);
+    void desktopClient.startSession(id).then(() => {
+      if (alive) desktopClient.resize(id, term.cols, term.rows);
     }).catch(error => { callbacks.current.onError(String(error)); callbacks.current.onExit(id, 1); });
     return () => {
       alive = false;

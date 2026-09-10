@@ -1,4 +1,7 @@
 /** @vitest-environment jsdom */
+import { installDesktopFake } from './desktop-bridge-fake';
+import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
+let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bootstrap, Preferences } from '../src/shared/contracts';
@@ -20,7 +23,7 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   boot = { preferences: { piPath: '/pi', nodePath: '', args: ['--extension', '/global.ts'], fontSize: 14, recentProjects: ['/one/app', '/two/app', '/empty'] }, runtime: { executable: '/pi', args: [], source: '/pi' }, home: '/home', platform: 'darwin' };
   let count = 0;
-  window.desktop = {
+  desktop = installDesktopFake({
     bootstrap: vi.fn(async () => boot), onSessionEvent: vi.fn(callback => { listeners.add(callback); return () => listeners.delete(callback); }),
     inspectProjectResources: vi.fn().mockResolvedValue({ hasResources: false, paths: [] }),
     createSession: vi.fn(async options => ({ id: `s${++count}`, title: `会话 ${count}`, cwd: options.cwd, kind: options.kind, processStatus: 'running', activity: 'idle' })),
@@ -30,7 +33,7 @@ beforeEach(() => {
     savePreferences: vi.fn(async (preferences: Preferences) => { boot = { ...boot, preferences }; return boot; }),
     gitStatus: vi.fn().mockResolvedValue({ root: '/one/app', branch: 'main', files: [], capturedAt: '2026-01-01T00:00:00Z' }),
     writeClipboard: vi.fn().mockResolvedValue(undefined), openExternal: vi.fn().mockResolvedValue(undefined),
-  } as unknown as typeof window.desktop;
+  } as unknown as DesktopAPI);
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView; });
 
@@ -58,15 +61,15 @@ describe('production workspace navigation', () => {
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(firstDraft);
     expect((firstDraft as HTMLTextAreaElement).value).toBe('unfinished first'); expect(screen.getByText('context.txt')).toBeTruthy(); expect(screen.getByText('background reply')).toBeTruthy();
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
-    expect(window.desktop.startSession).toHaveBeenCalledTimes(3);
-    vi.mocked(window.desktop.closeSession).mockResolvedValueOnce(false);
-    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 1' })); await waitFor(() => expect(window.desktop.closeSession).toHaveBeenCalledWith('s1'));
+    expect(desktop.startSession).toHaveBeenCalledTimes(3);
+    vi.mocked(desktop.closeSession).mockResolvedValueOnce(false);
+    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 1' })); await waitFor(() => expect(desktop.closeSession).toHaveBeenCalledWith('s1'));
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
     fireEvent.click(screen.getByRole('button', { name: '关闭 会话 1' })); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
     fireEvent.click(screen.getByRole('button', { name: '关闭 会话 2' })); await screen.findByText(/此项目还没有打开的会话/);
     expect(screen.queryByRole('tab')).toBeNull(); expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
-    expect(window.desktop.sendChatMessage).not.toHaveBeenCalled();
+    expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
   it('supports overflow keyboard/Escape focus return and tab keyboard navigation', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
@@ -75,7 +78,7 @@ describe('production workspace navigation', () => {
     fireEvent.keyDown(document.activeElement!, { key: 'Home' }); expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: '会话 1' }));
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' }); expect(screen.queryByRole('menu')).toBeNull(); expect(document.activeElement).toBe(trigger);
     fireEvent.keyDown(screen.getByRole('tab', { name: '会话 2' }), { key: 'ArrowLeft' }); expect(screen.getByRole('tab', { name: '会话 1' }).getAttribute('aria-selected')).toBe('true');
-    expect(window.desktop.startSession).toHaveBeenCalledTimes(2);
+    expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
   it('scrolls overflow-selected tabs nearest without stealing focus from the menu trigger (no jsdom layout claim)', async () => {
     const scrollIntoView = vi.fn();
@@ -133,18 +136,18 @@ describe('production workspace navigation', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(document.activeElement).toBe(settings); expect(document.documentElement.dataset.theme).toBe('light');
     act(() => mediaListeners.forEach(listener => listener({ matches: true } as MediaQueryListEvent)));
-    expect(document.documentElement.dataset.theme).toBe('light'); expect(window.desktop.savePreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'light', args: ['--extension', '/global.ts'] }));
-    expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(draft); expect((draft as HTMLTextAreaElement).value).toBe('theme draft'); expect(window.desktop.startSession).toHaveBeenCalledTimes(1);
+    expect(document.documentElement.dataset.theme).toBe('light'); expect(desktop.savePreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'light', args: ['--extension', '/global.ts'] }));
+    expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(draft); expect((draft as HTMLTextAreaElement).value).toBe('theme draft'); expect(desktop.startSession).toHaveBeenCalledTimes(1);
     fireEvent.click(settings); fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true })); expect(screen.queryByRole('dialog')).toBeNull(); expect(document.activeElement).toBe(settings);
   });
   it('keeps composition Enter safe, stops the real runtime and reports rename errors inside the dialog', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: '中文输入' } });
     fireEvent.compositionStart(draft); fireEvent.keyDown(draft, { key: 'Enter' }); fireEvent.compositionEnd(draft);
-    fireEvent.keyDown(draft, { key: 'Enter', keyCode: 229 }); expect(window.desktop.sendChatMessage).not.toHaveBeenCalled();
+    fireEvent.keyDown(draft, { key: 'Enter', keyCode: 229 }); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
     emit({ id: 's1', type: 'chat-state', state: { activity: 'responding' } }); fireEvent.click(screen.getByRole('button', { name: '停止运行' }));
-    await waitFor(() => expect(window.desktop.stopChat).toHaveBeenCalledWith('s1'));
-    vi.mocked(window.desktop.renameChatSession).mockRejectedValueOnce(new Error('rename refused'));
+    await waitFor(() => expect(desktop.stopChat).toHaveBeenCalledWith('s1'));
+    vi.mocked(desktop.renameChatSession).mockRejectedValueOnce(new Error('rename refused'));
     fireEvent.click(screen.getByRole('button', { name: '重命名' })); fireEvent.change(screen.getByRole('textbox', { name: '会话显示名' }), { target: { value: 'New name' } });
     fireEvent.click(screen.getByRole('button', { name: '保存名称' }));
     expect((await within(screen.getByRole('dialog')).findByRole('alert')).textContent).toContain('rename refused');
@@ -153,9 +156,9 @@ describe('production workspace navigation', () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension', description: 'Real extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
     const commands = screen.getByRole('button', { name: /搜索与命令/ }); commands.focus(); fireEvent.click(commands);
-    fireEvent.click(screen.getByRole('button', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(window.desktop.sendChatMessage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
     const toggle = screen.getByRole('button', { name: '显示或收起检查区' }); fireEvent.click(toggle);
-    await screen.findByText('这个范围没有变更'); expect(window.desktop.gitStatus).toHaveBeenCalledWith('s1');
+    await screen.findByText('这个范围没有变更'); expect(desktop.gitStatus).toHaveBeenCalledWith('s1');
     fireEvent.click(screen.getByRole('button', { name: '关闭变更面板' })); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull(); expect(document.activeElement).toBe(toggle);
     fireEvent.click(toggle);
     // The inserted command has suggestions: dismiss that local menu before the inspector.
@@ -188,7 +191,7 @@ async function submitPendingCreate() {
 describe('Workspace real App with in-memory Desktop deferred completions (not Electron/Pi)', () => {
   it.each(['other', 'remembered', 'empty'] as const)('repairs close using latest selection: %s', async scenario => {
     const { container, unmount } = await seedProjects(); const pending = deferred<boolean>();
-    vi.mocked(window.desktop.closeSession).mockReturnValueOnce(pending.promise);
+    vi.mocked(desktop.closeSession).mockReturnValueOnce(pending.promise);
     closeTab('会话 3'); expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
     if (scenario === 'remembered') fireEvent.click(screen.getByRole('tab', { name: '会话 1' }));
     selectProject(scenario === 'empty' ? '/empty' : '/two/app');
@@ -197,63 +200,63 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     if (scenario === 'empty') { expect(screen.queryByRole('tab')).toBeNull(); expect(within(screen.getByRole('navigation', { name: '项目' })).getByTitle('/empty').getAttribute('aria-pressed')).toBe('true'); }
     else selected('会话 4');
     selectProject('/one/app'); selected(scenario === 'remembered' ? '会话 1' : '会话 2');
-    expect(window.desktop.startSession).toHaveBeenCalledTimes(4); expect(listeners.size).toBe(4);
+    expect(desktop.startSession).toHaveBeenCalledTimes(4); expect(listeners.size).toBe(4);
     unmount(); expect(listeners.size).toBe(0);
   });
   it('does not lose pane, draft or attachments on false/reject, and allows explicit retry', async () => {
     const { container } = await seedProjects(); const pane = container.querySelector('[data-session-id="s3"]');
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'keep me' } });
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
-    const cancelled = deferred<boolean>(); vi.mocked(window.desktop.closeSession).mockReturnValueOnce(cancelled.promise);
+    const cancelled = deferred<boolean>(); vi.mocked(desktop.closeSession).mockReturnValueOnce(cancelled.promise);
     closeTab('会话 3'); await act(async () => cancelled.resolve(false));
-    const rejected = deferred<boolean>(); vi.mocked(window.desktop.closeSession).mockReturnValueOnce(rejected.promise);
+    const rejected = deferred<boolean>(); vi.mocked(desktop.closeSession).mockReturnValueOnce(rejected.promise);
     closeTab('会话 3'); await act(async () => rejected.reject(new Error('close refused')));
     expect(screen.getByRole('alert').textContent).toContain('Error: close refused'); selected('会话 3');
     expect(container.querySelector('[data-session-id="s3"]')).toBe(pane); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(draft);
     expect((draft as HTMLTextAreaElement).value).toBe('keep me'); expect(screen.getByText('context.txt')).toBeTruthy();
     closeTab('会话 3'); await waitFor(() => expect(container.querySelector('[data-session-id="s3"]')).toBeNull()); selected('会话 2');
-    expect(window.desktop.closeSession).toHaveBeenCalledTimes(3);
+    expect(desktop.closeSession).toHaveBeenCalledTimes(3);
   });
   it('keeps concurrent closes independent, including repeated clicks and reverse completion', async () => {
     const { container } = await seedProjects(); const first = deferred<boolean>(), duplicate = deferred<boolean>(), second = deferred<boolean>();
-    vi.mocked(window.desktop.closeSession).mockReturnValueOnce(first.promise).mockReturnValueOnce(duplicate.promise).mockReturnValueOnce(second.promise);
+    vi.mocked(desktop.closeSession).mockReturnValueOnce(first.promise).mockReturnValueOnce(duplicate.promise).mockReturnValueOnce(second.promise);
     closeTab('会话 3'); closeTab('会话 3'); closeTab('会话 2');
-    expect(window.desktop.closeSession).toHaveBeenCalledTimes(3);
+    expect(desktop.closeSession).toHaveBeenCalledTimes(3);
     await act(async () => second.resolve(true)); selected('会话 3');
     await act(async () => duplicate.resolve(true)); selected('会话 1');
     await act(async () => first.resolve(true)); selected('会话 1');
     expect(container.querySelectorAll('[data-session-id]')).toHaveLength(2);
   });
   it('does not let an old close steal selection from a newly completed same-project create', async () => {
-    await seedProjects(); const pending = deferred<boolean>(); vi.mocked(window.desktop.closeSession).mockReturnValueOnce(pending.promise);
+    await seedProjects(); const pending = deferred<boolean>(); vi.mocked(desktop.closeSession).mockReturnValueOnce(pending.promise);
     closeTab('会话 3'); await createSession(); selected('会话 5');
     await act(async () => pending.resolve(true)); selected('会话 5');
     selectProject('/two/app'); selectProject('/one/app'); selected('会话 5');
   });
   it('appends and selects creates in completion order through two real dialog submissions', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
-    const first = deferred<Awaited<ReturnType<typeof window.desktop.createSession>>>(), second = deferred<Awaited<ReturnType<typeof window.desktop.createSession>>>();
-    vi.mocked(window.desktop.createSession).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const first = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>(), second = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
+    vi.mocked(desktop.createSession).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
     await submitPendingCreate(); fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true }));
-    await submitPendingCreate(); expect(window.desktop.createSession).toHaveBeenCalledTimes(2);
+    await submitPendingCreate(); expect(desktop.createSession).toHaveBeenCalledTimes(2);
     const session = (id: string) => ({ id, title: id, cwd: '/one/app', kind: 'chat' as const, processStatus: 'running' as const, activity: 'idle' as const });
     emit({ id: 'first', type: 'session-info', title: 'too early' });
     await act(async () => second.resolve(session('second'))); selected('second'); expect(screen.queryByRole('dialog')).toBeNull();
     await act(async () => first.resolve(session('first'))); selected('first');
     expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual(['second', 'first']);
-    expect(window.desktop.bootstrap).toHaveBeenCalledTimes(3); expect(window.desktop.startSession).toHaveBeenCalledTimes(2);
+    expect(desktop.bootstrap).toHaveBeenCalledTimes(3); expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
   it('keeps both real drafts/attachments and background events; send completion owns only its submission', async () => {
     const { container, unmount } = render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     const a = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
     fireEvent.change(a, { target: { value: 'A submitted' } });
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
-    const send = deferred<void>(); vi.mocked(window.desktop.sendChatMessage).mockReturnValueOnce(send.promise);
+    const send = deferred<void>(); vi.mocked(desktop.sendChatMessage).mockReturnValueOnce(send.promise);
     fireEvent.click(screen.getByRole('button', { name: '发送消息' })); fireEvent.change(a, { target: { value: 'A newer' } });
     selectProject('/two/app'); await createSession();
     const b = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
     fireEvent.change(b, { target: { value: 'B newer' } });
-    vi.mocked(window.desktop.chooseChatAttachments).mockResolvedValueOnce([{ id: 'attachment-2', name: 'b.txt', path: '/b.txt', size: 1, kind: 'file' }]);
+    vi.mocked(desktop.chooseChatAttachments).mockResolvedValueOnce([{ id: 'attachment-2', name: 'b.txt', path: '/b.txt', size: 1, kind: 'file' }]);
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('b.txt');
     emit({ id: 's1', type: 'chat-message-start', message: { id: 'background', role: 'assistant', blocks: [{ type: 'text', text: 'only A background' }], timestamp: 1 } });
     emit({ id: 's1', type: 'session-info', title: 'A renamed', activity: 'responding' });
@@ -267,7 +270,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     emit({ id: 's1', type: 'exit', exitCode: 7 }); expect(screen.getByRole('tab', { name: 'A renamed' }).title).toContain('已退出'); expect(a.value).toBe('A newer');
     closeTab('A renamed'); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
     expect(screen.queryByRole('tab')).toBeNull(); selectProject('/two/app'); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(b); expect(b.value).toBe('B newer'); expect(screen.getByText('b.txt')).toBeTruthy();
-    expect(window.desktop.startSession).toHaveBeenCalledTimes(2); expect(listeners.size).toBe(2); unmount(); expect(listeners.size).toBe(0);
+    expect(desktop.startSession).toHaveBeenCalledTimes(2); expect(listeners.size).toBe(2); unmount(); expect(listeners.size).toBe(0);
   });
 });
 
@@ -279,51 +282,51 @@ describe('Workspace edge ownership with actual App', () => {
   });
   it('keeps rename bound to the request session after selection changes', async () => {
     await seedProjects(); const pending = deferred<void>();
-    vi.mocked(window.desktop.renameChatSession).mockReturnValueOnce(pending.promise);
+    vi.mocked(desktop.renameChatSession).mockReturnValueOnce(pending.promise);
     fireEvent.click(screen.getByRole('button', { name: '重命名' }));
     fireEvent.change(screen.getByRole('textbox', { name: '会话显示名' }), { target: { value: 'late A name' } });
     fireEvent.click(screen.getByRole('button', { name: '保存名称' }));
     // jsdom can synthesize this while the modal is open; not a native modal interaction claim.
     selectProject('/two/app'); await act(async () => pending.resolve()); selected('会话 4');
-    expect(window.desktop.renameChatSession).toHaveBeenCalledWith('s3', 'late A name');
+    expect(desktop.renameChatSession).toHaveBeenCalledWith('s3', 'late A name');
     selectProject('/one/app'); selected('late A name');
   });
   it('unsubscribes on unmount without adding cancellation to a pending host close', async () => {
     const { unmount } = await seedProjects(); const pending = deferred<boolean>();
-    vi.mocked(window.desktop.closeSession).mockReturnValueOnce(pending.promise);
+    vi.mocked(desktop.closeSession).mockReturnValueOnce(pending.promise);
     closeTab('会话 3'); unmount(); expect(listeners.size).toBe(0);
     await act(async () => pending.resolve(true));
-    expect(window.desktop.closeSession).toHaveBeenCalledTimes(1); expect(listeners.size).toBe(0);
+    expect(desktop.closeSession).toHaveBeenCalledTimes(1); expect(listeners.size).toBe(0);
   });
 });
 
 describe('Session launch through real App, dialog and controller with Fake Desktop', () => {
   it('opens project → chooses → inspects → chooses trust → creates → adds/selects → closes → refreshes bootstrap', async () => {
-    const picking = deferred<string | null>(), inspecting = deferred<Awaited<ReturnType<typeof window.desktop.inspectProjectResources>>>();
-    const creating = deferred<Awaited<ReturnType<typeof window.desktop.createSession>>>();
-    window.desktop.chooseDirectory = vi.fn().mockReturnValue(picking.promise);
-    vi.mocked(window.desktop.inspectProjectResources).mockReturnValue(inspecting.promise);
-    vi.mocked(window.desktop.createSession).mockReturnValue(creating.promise);
+    const picking = deferred<string | null>(), inspecting = deferred<Awaited<ReturnType<DesktopAPI['inspectProjectResources']>>>();
+    const creating = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
+    desktop.chooseDirectory = vi.fn().mockReturnValue(picking.promise);
+    vi.mocked(desktop.inspectProjectResources).mockReturnValue(inspecting.promise);
+    vi.mocked(desktop.createSession).mockReturnValue(creating.promise);
     const { container } = render(<App />); await screen.findByTitle('/one/app');
     const opener = screen.getAllByRole('button', { name: '打开项目' })[0]; opener.focus(); fireEvent.click(opener);
     const input = screen.getByRole('textbox', { name: '项目文件夹' }) as HTMLInputElement;
     expect(input.value).toBe('/one/app'); expect(document.activeElement).toBe(input);
     fireEvent.click(screen.getByRole('button', { name: '浏览…' })); await act(async () => picking.resolve('/chosen'));
-    await waitFor(() => expect(window.desktop.inspectProjectResources).toHaveBeenCalledWith('/chosen'));
+    await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalledWith('/chosen'));
     expect((screen.getByRole('button', { name: '开始对话 ↗' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => inspecting.resolve({ hasResources: true, paths: ['/chosen/.pi'] }));
     fireEvent.click(screen.getByRole('radio', { name: '本次信任并加载项目资源' }));
     fireEvent.click(screen.getByRole('button', { name: '开始对话 ↗' }));
-    expect(window.desktop.createSession).toHaveBeenCalledExactlyOnceWith({ cwd: '/chosen', kind: 'chat', startMode: 'new', projectTrust: 'approve', cols: 100, rows: 30 });
-    expect(screen.queryByRole('tab')).toBeNull(); expect(window.desktop.bootstrap).toHaveBeenCalledTimes(1);
+    expect(desktop.createSession).toHaveBeenCalledExactlyOnceWith({ cwd: '/chosen', kind: 'chat', startMode: 'new', projectTrust: 'approve', cols: 100, rows: 30 });
+    expect(screen.queryByRole('tab')).toBeNull(); expect(desktop.bootstrap).toHaveBeenCalledTimes(1);
     const refresh = deferred<Bootstrap>();
-    vi.mocked(window.desktop.bootstrap).mockImplementationOnce(() => {
+    vi.mocked(desktop.bootstrap).mockImplementationOnce(() => {
       // React's enqueue is not a committed DOM update inside this synchronous continuation.
-      expect(window.desktop.createSession).toHaveBeenCalledTimes(1);
+      expect(desktop.createSession).toHaveBeenCalledTimes(1);
       return refresh.promise;
     });
     await act(async () => creating.resolve({ id: 'chosen', title: 'Chosen session', cwd: '/chosen', kind: 'chat', processStatus: 'running', activity: 'idle' }));
-    selected('Chosen session'); expect(screen.queryByRole('dialog')).toBeNull(); expect(window.desktop.bootstrap).toHaveBeenCalledTimes(2);
+    selected('Chosen session'); expect(screen.queryByRole('dialog')).toBeNull(); expect(desktop.bootstrap).toHaveBeenCalledTimes(2);
     expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy(); expect(document.activeElement).toBe(document.body); // Original autoFocus runs before Modal captures previous focus.
     await act(async () => refresh.reject(new Error('refresh failed')));
     expect(screen.getByRole('alert').textContent).toContain('Error: refresh failed'); selected('Chosen session');
@@ -346,6 +349,6 @@ describe('Session launch through real App, dialog and controller with Fake Deskt
     expect((screen.getByRole('radio', { name: /^继续最近/ }) as HTMLInputElement).checked).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: '关闭对话框' })); fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
     expect((screen.getByRole('radio', { name: /^新会话/ }) as HTMLInputElement).checked).toBe(true);
-    expect(window.desktop.createSession).not.toHaveBeenCalled();
+    expect(desktop.createSession).not.toHaveBeenCalled();
   });
 });

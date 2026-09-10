@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { parseDesktopResult } from '../dist/shared/ipc/desktop-result.js';
 import { invokeChannels, sendChannels, eventChannels } from '../dist/shared/ipc/channels.js';
 
 const root = process.cwd();
@@ -37,7 +38,9 @@ try {
   assert.deepEqual(await page.evaluate(() => [typeof window.require, typeof window.process]), ['undefined', 'undefined']);
   assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()),
     [...Object.keys(invokeChannels), ...Object.keys(sendChannels), ...Object.keys(eventChannels)].sort());
-  const bootstrap = await page.evaluate(() => window.desktop.bootstrap());
+  const bootstrapResult = parseDesktopResult('bootstrap', await page.evaluate(() => window.desktop.bootstrap()));
+  assert.equal(bootstrapResult?.ok, true, 'bootstrap must return a valid success envelope');
+  const bootstrap = bootstrapResult.value;
   assert.equal(bootstrap.runtime.source, fixture);
   assert.equal(bootstrap.preferences.piPath, fixture);
   assert.deepEqual(bootstrap.preferences.recentProjects, []);
@@ -56,10 +59,9 @@ try {
     const foreignPage = await foreignWindow;
     foreignPage.setDefaultTimeout(15000);
     await foreignPage.waitForFunction(() => typeof window.desktop?.bootstrap === 'function');
-    const rejection = await foreignPage.evaluate(async () => {
-      try { await window.desktop.bootstrap(); return 'ACCEPTED'; } catch (error) { return String(error); }
-    });
-    assert(rejection.includes('Untrusted IPC sender'), rejection);
+    const rejection = parseDesktopResult('bootstrap', await foreignPage.evaluate(() => window.desktop.bootstrap()));
+    assert.equal(rejection?.ok, false);
+    assert.deepEqual(rejection.error, { kind: 'authorization', code: 'UNTRUSTED_SENDER', message: 'Untrusted IPC sender' });
   } finally {
     await app.evaluate(({ BrowserWindow }, id) => BrowserWindow.fromId(id)?.destroy(), foreignId);
   }
@@ -73,10 +75,15 @@ try {
       () => window.desktop.savePreferences({}),
       () => window.desktop.writeClipboard(42),
     ];
-    return Promise.all(calls.map(async call => { try { await call(); return 'ACCEPTED'; } catch (error) { return String(error); } }));
+    return Promise.all(calls.map(call => call()));
   });
   for (const [index, fragment] of ['HTTP(S)', '无效会话类型', '无效发送方式', '唯一结果', '未知 diff 范围', '设置格式错误', '无效字符串'].entries()) {
-    assert(rejections[index].includes(fragment), rejections[index]);
+    const method = ['openExternal', 'createSession', 'sendChatMessage', 'respondToExtensionUI', 'fileDiff', 'savePreferences', 'writeClipboard'][index];
+    const rejection = parseDesktopResult(method, rejections[index]);
+    assert.equal(rejection?.ok, false);
+    assert.equal(rejection.error.kind, 'validation');
+    assert.equal(rejection.error.code, 'INVALID_ARGUMENTS');
+    assert(rejection.error.message.includes(fragment), rejection.error.message);
   }
   await page.evaluate(() => {
     window.__ipcEvents = [];

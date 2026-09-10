@@ -1,4 +1,7 @@
 /** @vitest-environment jsdom */
+import { installDesktopFake } from './desktop-bridge-fake';
+import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
+let desktop: DesktopAPI;
 import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,10 +12,10 @@ afterEach(cleanup);
 let emit: ((event: import('../src/shared/chat').SessionEvent) => void) | undefined;
 beforeEach(() => {
   emit = undefined;
-  window.desktop = {
+  desktop = installDesktopFake({
     openExternal: vi.fn().mockResolvedValue(undefined), writeClipboard: vi.fn().mockResolvedValue(undefined), startSession: vi.fn().mockResolvedValue(undefined),
     onSessionEvent: vi.fn(callback => { emit = callback; return () => {}; }), sendChatMessage: vi.fn().mockResolvedValue(undefined), stopChat: vi.fn().mockResolvedValue(undefined), chooseChatAttachments: vi.fn().mockResolvedValue([]), respondToExtensionUI: vi.fn().mockResolvedValue(undefined),
-  } as unknown as typeof window.desktop;
+  } as unknown as DesktopAPI);
 });
 
 describe('native message rendering', () => {
@@ -27,7 +30,7 @@ describe('native message rendering', () => {
   it('routes links through validated desktop IPC', () => {
     render(<MarkdownView text="[site](https://example.com)" />);
     fireEvent.click(screen.getByRole('link', { name: 'site' }));
-    expect(window.desktop.openExternal).toHaveBeenCalledWith('https://example.com');
+    expect(desktop.openExternal).toHaveBeenCalledWith('https://example.com');
   });
   it('does not automatically load remote markdown images', () => {
     const { container } = render(<MarkdownView text="![secret](https://example.com/a.png)" />);
@@ -41,13 +44,13 @@ describe('native composer', () => {
     function Harness() { const [draft, setDraft] = useState('你好'); return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft={draft} onDraftChange={setDraft} onError={() => {}} onCommands={() => {}} />; }
     render(<Harness />);
     const textbox = screen.getByRole('textbox', { name: '发送消息' });
-    fireEvent.keyDown(textbox, { key: 'Enter', isComposing: true }); expect(window.desktop.sendChatMessage).not.toHaveBeenCalled();
-    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true }); expect(window.desktop.sendChatMessage).not.toHaveBeenCalled();
-    fireEvent.keyDown(textbox, { key: 'Enter' }); await waitFor(() => expect(window.desktop.sendChatMessage).toHaveBeenCalledWith('s', expect.objectContaining({ delivery: 'prompt' })));
+    fireEvent.keyDown(textbox, { key: 'Enter', isComposing: true }); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true }); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
+    fireEvent.keyDown(textbox, { key: 'Enter' }); await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith('s', expect.objectContaining({ delivery: 'prompt' })));
     fireEvent.change(textbox, { target: { value: 'later' } });
     act(() => emit?.({ type: 'chat-state', id: 's', state: { activity: 'responding' } }));
     await screen.findByRole('button', { name: /停止/ });
-    fireEvent.keyDown(textbox, { key: 'Enter', altKey: true }); await waitFor(() => expect(window.desktop.sendChatMessage).toHaveBeenLastCalledWith('s', expect.objectContaining({ delivery: 'followUp' })));
+    fireEvent.keyDown(textbox, { key: 'Enter', altKey: true }); await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenLastCalledWith('s', expect.objectContaining({ delivery: 'followUp' })));
   });
 });
 
@@ -65,17 +68,17 @@ describe('draft acceptance races', () => {
   function Harness() { const [draft, setDraft] = useState('original'); return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft={draft} onDraftChange={setDraft} onError={() => {}} onCommands={() => {}} />; }
   it('preserves newer typing and prevents double-submit before acceptance', async () => {
     let accept!: () => void;
-    vi.mocked(window.desktop.sendChatMessage).mockImplementation(() => new Promise(resolve => { accept = resolve; }));
+    vi.mocked(desktop.sendChatMessage).mockImplementation(() => new Promise(resolve => { accept = resolve; }));
     render(<Harness />); const textbox = screen.getByRole('textbox', { name: '发送消息' });
     fireEvent.keyDown(textbox, { key: 'Enter' }); fireEvent.keyDown(textbox, { key: 'Enter' });
-    expect(window.desktop.sendChatMessage).toHaveBeenCalledTimes(1);
+    expect(desktop.sendChatMessage).toHaveBeenCalledTimes(1);
     fireEvent.change(textbox, { target: { value: 'new typing' } });
     await act(async () => { accept(); });
     expect((textbox as HTMLTextAreaElement).value).toBe('new typing');
   });
   it('preserves extension prefill delivered before prompt acceptance', async () => {
     let accept!: () => void;
-    vi.mocked(window.desktop.sendChatMessage).mockImplementation(() => new Promise(resolve => { accept = resolve; }));
+    vi.mocked(desktop.sendChatMessage).mockImplementation(() => new Promise(resolve => { accept = resolve; }));
     render(<Harness />); const textbox = screen.getByRole('textbox', { name: '发送消息' });
     fireEvent.keyDown(textbox, { key: 'Enter' });
     act(() => emit?.({ id: 's', type: 'chat-editor-text', text: 'extension prefill' }));
@@ -84,7 +87,7 @@ describe('draft acceptance races', () => {
   });
   it('merges stopped queue into the latest draft, not the pre-stop draft', async () => {
     let stopped!: (error: Error) => void;
-    vi.mocked(window.desktop.stopChat).mockImplementation(() => new Promise((_resolve, reject) => { stopped = reject; }));
+    vi.mocked(desktop.stopChat).mockImplementation(() => new Promise((_resolve, reject) => { stopped = reject; }));
     render(<Harness />); const textbox = screen.getByRole('textbox', { name: '发送消息' });
     act(() => emit?.({ id: 's', type: 'chat-state', state: { activity: 'responding' } }));
     fireEvent.click(screen.getByRole('button', { name: /停止/ }));

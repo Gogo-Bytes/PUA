@@ -1,3 +1,4 @@
+import { DesktopApplicationError } from '../platform/electron/ipc/desktop-errors.js';
 import { ConversationFailure, type ConversationFailureCode, type ExtensionResponse, type SendIntent } from '../modules/conversation/index.js';
 import type { ChatDelivery, ExtensionUIResponse } from '../shared/chat.js';
 
@@ -16,7 +17,7 @@ const messages: Record<ConversationFailureCode, string> = {
 
 export function conversationError(error: unknown): never {
   if (error instanceof ConversationFailure) {
-    throw new Error(`${error.attachmentName === undefined ? '' : `${error.attachmentName} `}${messages[error.code]}`);
+    throw new DesktopApplicationError(error.code, `${error.attachmentName === undefined ? '' : `${error.attachmentName} `}${messages[error.code]}`);
   }
   throw error;
 }

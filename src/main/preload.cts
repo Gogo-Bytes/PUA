@@ -1,9 +1,8 @@
 import { invokeChannels, sendChannels, eventChannels } from '../shared/ipc/channels.js';
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DesktopAPI } from '../shared/ipc/desktop-api.js';
-import type { SessionEvent } from '../shared/chat.js';
+import type { DesktopBridge } from '../shared/ipc/desktop-api.js';
 
-const api: DesktopAPI = {
+const api: DesktopBridge = {
   bootstrap: () => ipcRenderer.invoke(invokeChannels.bootstrap),
   chooseDirectory: () => ipcRenderer.invoke(invokeChannels.chooseDirectory),
   chooseFile: () => ipcRenderer.invoke(invokeChannels.chooseFile),
@@ -23,7 +22,7 @@ const api: DesktopAPI = {
   resize: (id, cols, rows) => ipcRenderer.send(sendChannels.resize, id, cols, rows),
   acknowledge: (id, size) => ipcRenderer.send(sendChannels.acknowledge, id, size),
   onSessionEvent: callback => {
-    const listener = (_event: unknown, value: SessionEvent) => callback(value);
+    const listener = (_event: unknown, value: unknown) => callback(value);
     ipcRenderer.on(eventChannels.onSessionEvent, listener);
     return () => { ipcRenderer.removeListener(eventChannels.onSessionEvent, listener); };
   },

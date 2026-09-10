@@ -1,10 +1,5 @@
-import { PreferencesApplication } from '../../../src/modules/preferences/index';
 import { describe, expect, it, vi } from 'vitest';
-import { ReviewFailure, type ChangeReview } from '../../../src/modules/change-review/index';
-import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
-import { registerDesktopIPC, type DesktopIPCDependencies } from '../../../src/platform/electron/ipc/register-desktop-ipc';
-import { createWindowHolder } from '../../../src/app/main/create-window';
-import { createDesktopPreferences } from '../../../src/app/main/desktop-preferences';
+import { ReviewFailure } from '../../../src/modules/change-review/index';
 import { invokeChannels, sendChannels, type RequestArgs, type RequestMethod } from '../../../src/shared/ipc/channels';
 import { requestParsers } from '../../../src/shared/ipc/schemas';
 import { deferred, failure, fakeCapabilities, fakeWindow, sessionInfo } from './main-fakes';
@@ -21,26 +16,7 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
   openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
 };
-function harness() {
-  const { fake, window } = fakeWindow(); const capabilities = fakeCapabilities(); const holder = createWindowHolder(); holder.set({ window, capabilities });
-  const invokes = new Map<string, (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown>();
-  const sends = new Map<string, (event: IpcMainEvent, ...args: unknown[]) => void>();
-  const ipcMain: DesktopIPCDependencies['ipcMain'] = {
-    handle: (channel, handler) => { expect(invokes.has(channel)).toBe(false); invokes.set(channel, handler); },
-    on: vi.fn((channel, handler) => { expect(sends.has(channel)).toBe(false); sends.set(channel, handler); }) as unknown as DesktopIPCDependencies['ipcMain']['on'],
-  };
-  const store = { write: vi.fn().mockResolvedValue(undefined) }; const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
-  const resolveRuntime = vi.fn(() => runtime); const validateChatArguments = vi.fn();
-  const preferences = createDesktopPreferences({ application: new PreferencesApplication({ ...initial, recentProjects: [...initial.recentProjects] }, store), resolveRuntime, validateChatArguments, home: '/fake/home', platform: 'fake' });
-  const dialog = { showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: ['/fake/file'] }), showMessageBox: vi.fn().mockResolvedValue({ response: 1 }) };
-  const shell = { openExternal: vi.fn().mockResolvedValue(undefined), openPath: vi.fn().mockResolvedValue('') };
-  const clipboard = { readText: vi.fn(async () => 'clip'), has: vi.fn(async (type: string) => type === 'image/png'), writeText: vi.fn().mockResolvedValue(undefined) };
-  const getGitStatus = vi.fn<ChangeReview['snapshot']>().mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: 'now', files: [{ path: 'new\nname', originalPath: 'old', index: 'R', worktree: ' ' }] }); const getFileDiff = vi.fn<ChangeReview['preview']>().mockResolvedValue({ text: 'patch', kind: 'diff', truncated: false }); const inspectProjectResources = vi.fn().mockResolvedValue({ hasResources: false, paths: [] });
-  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL: fake.webContents.mainFrame.url, preferences, changeReview: { snapshot: getGitStatus, preview: getFileDiff }, inspectProjectResources });
-  const event = { sender: fake.webContents, senderFrame: fake.webContents.mainFrame } as unknown as IpcMainInvokeEvent & IpcMainEvent;
-  const call = (method: keyof typeof invokeChannels, ...args: unknown[]) => invokes.get(invokeChannels[method])!(event, ...args);
-  return { fake, window, holder, capabilities, invokes, sends, store, runtime, preferences, resolveRuntime, validateChatArguments, dialog, shell, clipboard, getGitStatus, getFileDiff, inspectProjectResources, event, call };
-}
+import { desktopIPCFake as harness } from '../../desktop-ipc-fake';
 describe('real registerDesktopIPC with Fake Electron and closed business dependencies', () => {
   it('registers each original 21 invoke and 3 send exactly once and calls every real handler', async () => {
     const h = harness(); expect([...h.invokes.keys()].sort()).toEqual(Object.values(invokeChannels).sort()); expect([...h.sends.keys()].sort()).toEqual(Object.values(sendChannels).sort());
@@ -68,7 +44,7 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     const report = vi.spyOn(console, 'error').mockImplementation(() => {});
     const h = harness(); const parsers = Object.keys(requestParsers).map(method => vi.spyOn(requestParsers, method as RequestMethod));
     const foreign = { ...h.event, senderFrame: null };
-    for (const method of Object.keys(invokeChannels) as (keyof typeof invokeChannels)[]) expect(() => h.invokes.get(invokeChannels[method])!(foreign, ...samples[method])).toThrow('Untrusted IPC sender');
+    for (const method of Object.keys(invokeChannels) as (keyof typeof invokeChannels)[]) expect(h.invokes.get(invokeChannels[method])!(foreign, ...samples[method])).toMatchObject({ ok: false, error: { kind: 'authorization', code: 'UNTRUSTED_SENDER' } });
     for (const method of Object.keys(sendChannels) as (keyof typeof sendChannels)[]) h.sends.get(sendChannels[method])!(foreign, ...samples[method]);
     for (const parser of parsers) { expect(parser).not.toHaveBeenCalled(); parser.mockRestore(); }
     for (const spy of [h.store.write, h.resolveRuntime, h.validateChatArguments, h.dialog.showOpenDialog, h.dialog.showMessageBox, h.shell.openPath, h.shell.openExternal, ...Object.values(h.clipboard), h.getGitStatus, h.getFileDiff, h.inspectProjectResources, ...Object.values(h.capabilities.session), ...Object.values(h.capabilities.conversation), ...Object.values(h.capabilities.terminal), h.capabilities.createSession, h.capabilities.registerChatAttachments]) expect(spy).not.toHaveBeenCalled();
@@ -76,20 +52,20 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
   });
   it('all trusted malformed tuples fail before effects; sends log/drop', () => {
     const report = vi.spyOn(console, 'error').mockImplementation(() => {}); const h = harness();
-    for (const [method, channel] of Object.entries(invokeChannels)) expect(() => h.invokes.get(channel)!(h.event, ...samples[method as keyof typeof invokeChannels], 'extra')).toThrow('参数数量');
+    for (const [method, channel] of Object.entries(invokeChannels)) expect(h.invokes.get(channel)!(h.event, ...samples[method as keyof typeof invokeChannels], 'extra')).toMatchObject({ ok: false, error: { kind: 'validation' } });
     for (const [method, channel] of Object.entries(sendChannels)) h.sends.get(channel)!(h.event, ...samples[method as keyof typeof sendChannels], 'extra');
     expect(h.store.write).not.toHaveBeenCalled(); expect(h.capabilities.session.get).not.toHaveBeenCalled(); expect(h.resolveRuntime).not.toHaveBeenCalled(); expect(h.dialog.showOpenDialog).not.toHaveBeenCalled(); expect(h.clipboard.readText).not.toHaveBeenCalled(); expect(report).toHaveBeenCalledTimes(3); report.mockRestore();
   });
   it('keeps Git parsing/session lookup before use cases and maps only stable business failures', async () => {
     const h = harness();
-    expect(() => h.call('fileDiff', 'id', 'file', 'all')).toThrow('未知 diff 范围');
+    await expect(h.call('fileDiff', 'id', 'file', 'all')).rejects.toThrow('未知 diff 范围');
     expect(h.capabilities.session.get).not.toHaveBeenCalled(); expect(h.getFileDiff).not.toHaveBeenCalled();
     h.capabilities.session.get.mockReturnValueOnce(undefined);
-    expect(() => h.call('gitStatus', 'missing')).toThrow(); expect(h.getGitStatus).not.toHaveBeenCalled();
+    await expect(h.call('gitStatus', 'missing')).rejects.toThrow(); expect(h.getGitStatus).not.toHaveBeenCalled();
     h.getFileDiff.mockRejectedValueOnce(new ReviewFailure('STATUS_CHANGED'));
     await expect(h.call('fileDiff', 'id', 'file', 'worktree')).rejects.toThrow('文件状态已变化，请刷新变更列表。');
     const error = new Error('Git denied'); h.getGitStatus.mockRejectedValueOnce(error);
-    await expect(h.call('gitStatus', 'id')).rejects.toBe(error);
+    await expect(h.call('gitStatus', 'id')).rejects.toThrow(error.message);
   });
   it('captures original context across attachment/close dialogs, with cancel and core false semantics', async () => {
     const h = harness(); const attachments = deferred<{ canceled: boolean; filePaths: string[] }>(); const confirmation = deferred<{ response: number }>();
@@ -117,6 +93,6 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(await h.call('chooseDirectory')).toBeNull(); expect(await h.call('chooseFile')).toBeNull(); expect(await h.call('chooseAttachments')).toEqual([]); expect(await h.call('chooseChatAttachments', 'id')).toEqual([]); expect(h.capabilities.registerChatAttachments).not.toHaveBeenCalled();
     h.capabilities.session.get.mockReturnValue({ ...h.capabilities.session.get('id')!, kind: 'terminal' }); await expect(h.call('chooseChatAttachments', 'id')).rejects.toThrow('附件只支持原生对话');
     h.shell.openPath.mockResolvedValueOnce('OS failure'); await expect(h.call('openProject', 'id')).rejects.toThrow('OS failure');
-    const error = new Error('core error'); h.capabilities.conversation.stop.mockRejectedValueOnce(error); await expect(h.call('stopChat', 'id')).rejects.toBe(error);
+    const error = new Error('core error'); h.capabilities.conversation.stop.mockRejectedValueOnce(error); await expect(h.call('stopChat', 'id')).rejects.toThrow(error.message);
   });
 });

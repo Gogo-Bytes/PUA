@@ -90,3 +90,10 @@ Main 亲自执行类型检查、60 项测试、桌面/Pi 离线 smoke、五类�
 - 超大（接近 64 MiB）真实会话历史与长时间运行的内存曲线；当前只有边界单测和常规集成测试。
 
 构建仍有大 chunk 提示（renderer 同时包含 xterm、Markdown/highlight 与 React，约 1.06 MB 未压缩）；未隐藏提示，也未以未测量的拆包收益作性能承诺。
+
+
+## DesktopResult + renderer client 有限验证
+
+本包基于 clean `e709f4d`，完整 before（含 ignored 项目 docs/源码、dist）、diff/状态/候选 allowlist 与输入 hash、实际命令日志分别保存于 `/tmp/pua-desktop-client-before`、`/tmp/pua-desktop-client.diff`、`/tmp/pua-desktop-client.status`、`/tmp/pua-desktop-client-candidate`、`/tmp/pua-desktop-client.logs`。权威契约与行为兼容差异见 [Desktop client](desktop-client-contract.md)。仅记录本轮实际 pure Fake/jsdom、noEmit、AST/44字节/27闭包与隔离 pure build；不能以此前绿项或测试数量替代本轮候选核对。AST 参数化数量与行为测试分开统计在 handoff/logs。
+
+运行中的应用与 dist 不动；无应用/产物/Electron/Pi/browser/真实fsGit/外部进程fixture/smoke/lifecycle/IPC集成/verify/dev/package/dist/全量 npm test，依赖仅使用原 node_modules link。源码 smoke 的成功/拒绝断言静态迁移但未执行。完整候选树经 Main 独立 review 后才决定 stage/commit，不 push。App composition、Prefs alias、bounds/完整lint/UI 与真实发布门禁仍后置，不宣称全架构完成或 P0 修复。

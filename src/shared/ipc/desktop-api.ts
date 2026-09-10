@@ -1,3 +1,4 @@
+import type { DesktopResult, WireValue } from './desktop-result.js';
 import type { DiffScope, FileDiff, GitStatus } from '../git.js';
 import type {
   ChatAttachment, ChatDelivery, ExtensionUIResponse, ProjectTrust, SessionActivity,
@@ -79,6 +80,15 @@ export interface DesktopAPI {
   writeClipboard(text: string): Promise<void>;
 }
 
+/** Raw sandbox transport. Application callers use DesktopAPI through the renderer client. */
+export type DesktopBridge = {
+  [K in keyof DesktopAPI]: K extends 'onSessionEvent'
+    ? (callback: (event: unknown) => void) => () => void
+    : ReturnType<DesktopAPI[K]> extends Promise<infer T>
+      ? (...args: Parameters<DesktopAPI[K]>) => Promise<DesktopResult<WireValue<T>>>
+      : DesktopAPI[K];
+};
+
 declare global {
-  interface Window { desktop: DesktopAPI }
+  interface Window { desktop?: DesktopBridge }
 }

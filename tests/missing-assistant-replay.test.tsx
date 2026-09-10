@@ -1,4 +1,7 @@
 /** @vitest-environment jsdom */
+import { installDesktopFake } from './desktop-bridge-fake';
+import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
+let desktop: DesktopAPI;
 import { readFileSync } from 'node:fs';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
@@ -122,11 +125,11 @@ it.each([false, true])('source-contract replay (diagnostics=%s): send -> final -
   } } } as unknown as BrowserWindow);
   const main = composeMain(forward, { createId: () => 'acceptance-session', prepareProject: async () => ({ cwd: '/fake/project', title: 'Fake' }) });
   const session = await main.createSession({ executable: '/fake/pi', source: '/fake/pi', args: [] }, { cwd: '/fake/project', kind: 'chat', startMode: 'new', projectTrust: 'default' });
-  window.desktop = {
+  desktop = installDesktopFake({
     onSessionEvent: callback => { listeners.add(callback); return () => { listeners.delete(callback); }; },
     startSession: async id => { applySessionStartResult(main.session.start(id)); },
     sendChatMessage: async (id, input) => { await main.conversation.send(id, sendIntent(input.text, input.attachmentIds, input.delivery)); },
-  } as typeof window.desktop;
+  } as DesktopAPI);
   function Pane() {
     const [draft, setDraft] = useState('acceptance request');
     return <VirtuosoMockContext.Provider value={{ viewportHeight: 800, itemHeight: 80 }}><ChatPane session={{ ...session, processStatus: 'running' }} active draft={draft} onDraftChange={setDraft} onCommands={() => {}} onError={error => { throw new Error(error); }} /></VirtuosoMockContext.Provider>;
@@ -204,12 +207,12 @@ it.each([
   });
   const session = await main.createSession({ executable: '/fake/pi', source: '/fake/pi', args: [] }, { cwd: '/fake/project', kind: 'chat', startMode: 'new', projectTrust: 'default' });
   const errors: string[] = []; const submitted: string[][] = [];
-  window.desktop = {
+  desktop = installDesktopFake({
     onSessionEvent: callback => { listeners.add(callback); return () => { listeners.delete(callback); }; },
     startSession: async id => { applySessionStartResult(main.session.start(id)); },
     chooseChatAttachments: async id => main.registerChatAttachments(id, ['/fake/submitted.txt']),
     sendChatMessage: async (id, input) => { submitted.push(input.attachmentIds); await main.conversation.send(id, sendIntent(input.text, input.attachmentIds, input.delivery)); },
-  } as typeof window.desktop;
+  } as DesktopAPI);
   function Pane() {
     const [draft, setDraft] = useState('keep submitted draft');
     return <VirtuosoMockContext.Provider value={{ viewportHeight: 800, itemHeight: 80 }}><ChatPane session={{ ...session, processStatus: 'running' }} active draft={draft} onDraftChange={setDraft} onCommands={() => {}} onError={error => errors.push(error)} /></VirtuosoMockContext.Provider>;

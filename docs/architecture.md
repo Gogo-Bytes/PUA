@@ -48,6 +48,12 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 
 本批不是阶段 0 或 Spec P1 全完成：formatter、完整 lint、完整产品 smoke、preview-only export 清理、UI 迁移、跨平台发布矩阵尚未落地；Session 完整桌面验收/Conversation 提取、结构化 IPC 结果、未设上限的参数长度策略及旧类型兼容入口删除仍待后续。UI 统一由用户冻结后置。此前单次 IPC timeout 未建立根因，本轮通过不构成其已修复的证据。现有组件预览浏览器检查仍是独立验收，冻结前已经失败的项必须保留并报告；不能通过修改冻结文件或减少脚本覆盖使本批变绿。构建仍有既有大 chunk 告警。
 
+## DesktopResult / Renderer client（有限 vertical）
+
+当前链路为应用 `DesktopAPI → renderer/app/desktop-client → DesktopBridge → sandbox preload → registrar → 原 application`。21 invoke 全面结构化成功/失败；3 send 保持同步 submission-only；1 event 每订阅精确取消、inactive/late guard。所有生产 global bridge 读取收归 client，App/ChatPane/TerminalPane/GitPanel/ContentView/features 原业务 owner、keys/effect deps/continuation 与视觉保持。wire guard 只查必要外层，不建递归 transcript schema。
+
+权威 Interface、错误分类/可见文本兼容差异、Fake/preview/smoke 迁移与 gate 的真实边界见 [Desktop client 契约](desktop-client-contract.md)。纯 Fake/noEmit/AST/hash/隔离 build 不代表 Electron/Pi/桌面或视觉验收；App composition-only、Prefs alias、bounds/lint/UI 与发布门禁仍后置。本 vertical 未 stage/commit，等待独立完整候选 review。
+
 ## Session 核心有限提取（阶段 2 代码与纯测试）
 
 实际调用路径：`app/main/bootstrap.ts → app/main/composition.ts` 装配单个 `SessionCoordinator`、`ConversationApplication` 与 `SessionProcessAdapter`；main 直接消费收窄的真实 Session/Conversation/Terminal 能力。`modules/sessions/index.ts → SessionCoordinator / SessionOwnershipPolicy → SessionProcessPort ← main/session-process-adapter.ts → 既有 rpc-host / pty-host`。IPC 方法、DTO、错误传递方式与 renderer 均不迁移。
@@ -286,9 +292,9 @@ App 保留草稿文本、Terminal handle 和原同步 insert：Chat 追加 newli
 
 ### 后续包与提交依赖
 
-本次仅完成 strict Pi 代码/纯验证 checkpoint；下一包固定为完整 DesktopResult + renderer client vertical（21 invoke / 3 send / 1 event），随后 App 必要 continuation 按 owner 收口，再处理 Preferences alias 行为修正及必要门禁。结构化错误、client/订阅所有权、剩余 bounds 政策、Preferences 可变引用、App composition-only、生产 UI 收敛、formatter/完整 lint、真实桌面/跨平台 release gates 均未完成。原诊断默认关闭和 editMenu 修复保留；用户普通模式基本手验不等于当前候选树验收。
+strict Pi 代码/纯验证已在 `e709f4d` checkpoint 提交；后续 DesktopResult + renderer client vertical 的当前有限状态见上文与 [契约](desktop-client-contract.md)。随后仍需 App 必要 continuation 按 owner 收口，再处理 Preferences alias 行为修正及必要门禁。剩余 bounds 政策、Preferences 可变引用、App composition-only、生产 UI 收敛、formatter/完整 lint、真实桌面/跨平台 release gates 均未完成。原诊断默认关闭和 editMenu 修复保留；用户普通模式基本手验不等于当前候选树验收。
 
-工作树是 `a4fb717` 以来累计 checkpoint 候选，不是仅 rpc-host 可独立提交：新 helper/host 依赖累计 Conversation core/mappers、worker schema、process adapter、main composition/IPC/preload/build；App/Navigation 依赖新增 features 与旧源删除；diagnostics、测试/fixture/门禁/tsconfig、已 tracked 架构文档也须依赖闭合。ignored 设计材料保留但不自动纳入提交。Main 必须用 HEAD＋明确路径 allowlist 构造完整候选树验证、独立累计 review，再决定 stage/commit；本实现未 stage/commit/push，不能用未提交 imports 偷偷满足候选闭包。禁止应用/Pi/browser/Electron/真实 fsGit fixture、smoke/lifecycle/IPC 集成与发布命令的本轮约束保持；真实验收后置而非删除目标条款。
+历史 strict Pi 候选当时是 `a4fb717` 以来累计 checkpoint，后经 review 提交为 `e709f4d`；以下保留当时依赖说明，不是当前 dirty 状态：新 helper/host 依赖累计 Conversation core/mappers、worker schema、process adapter、main composition/IPC/preload/build；App/Navigation 依赖新增 features 与旧源删除；diagnostics、测试/fixture/门禁/tsconfig、已 tracked 架构文档也须依赖闭合。ignored 设计材料保留但不自动纳入提交。Main 必须用 HEAD＋明确路径 allowlist 构造完整候选树验证、独立累计 review，再决定 stage/commit；本实现未 stage/commit/push，不能用未提交 imports 偷偷满足候选闭包。禁止应用/Pi/browser/Electron/真实 fsGit fixture、smoke/lifecycle/IPC 集成与发布命令的本轮约束保持；真实验收后置而非删除目标条款。
 
 ## RPC host 不变约束
 

@@ -1,4 +1,7 @@
 /** @vitest-environment jsdom */
+import { installDesktopFake } from '../../../desktop-bridge-fake';
+import type { DesktopAPI } from '../../../../src/shared/ipc/desktop-api';
+let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bootstrap } from '../../../../src/shared/contracts';
@@ -54,14 +57,14 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   boot = { preferences: { piPath: '/pi', nodePath: '', args: [], fontSize: 14, recentProjects: ['/one', '/empty'] }, runtime: { executable: '/pi', args: [], source: '/pi' }, home: '/home', platform: 'darwin' };
   let count = 0;
-  window.desktop = {
+  desktop = installDesktopFake({
     bootstrap: vi.fn(async () => boot), onSessionEvent: vi.fn(callback => { listeners.add(callback); return () => listeners.delete(callback); }),
     inspectProjectResources: vi.fn().mockResolvedValue({ hasResources: false, paths: [] }),
     createSession: vi.fn(async options => ({ id: `s${++count}`, title: `Session ${count}`, cwd: options.cwd, kind: options.kind, processStatus: 'running', activity: 'idle' })),
     startSession: vi.fn().mockResolvedValue(undefined), closeSession: vi.fn().mockResolvedValue(true),
     sendChatMessage: vi.fn().mockResolvedValue(undefined), write: vi.fn(), resize: vi.fn(), acknowledge: vi.fn(), chooseAttachments: vi.fn().mockResolvedValue([]),
     savePreferences: vi.fn(async preferences => ({ ...boot, preferences })),
-  } as unknown as typeof window.desktop;
+  } as unknown as DesktopAPI);
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
@@ -80,18 +83,18 @@ describe('App command palette before/after characterization with real panes', ()
     fireEvent.click(screen.getByRole('tab', { name: 'Session 1' })); expect(items().map(item => item.textContent)).toEqual(['/backgroundextension/background']);
     fireEvent.click(items()[0]); expect(first.value).toBe('first draft\n/background'); expect(second.value).toBe('second draft');
     expect(screen.queryByRole('dialog')).toBeNull(); expect(container.querySelectorAll('[data-session-id]')).toHaveLength(2);
-    expect(window.desktop.sendChatMessage).not.toHaveBeenCalled(); expect(window.desktop.write).not.toHaveBeenCalled();
-    expect(window.desktop.startSession).toHaveBeenCalledTimes(2); expect(listeners.size).toBe(3);
+    expect(desktop.sendChatMessage).not.toHaveBeenCalled(); expect(desktop.write).not.toHaveBeenCalled();
+    expect(desktop.startSession).toHaveBeenCalledTimes(2); expect(listeners.size).toBe(3);
     unmount(); expect(listeners.size).toBe(0);
   });
   it('retains same-array identity without a parent projection update or restarting ChatPane subscriptions', async () => {
     await mount(); const name = vi.fn(() => 'identity');
     const commands: ChatCommand[] = [{ get name() { return name(); }, source: 'extension' }];
     snapshot('s1', commands); open(); const reads = name.mock.calls.length;
-    const subscriptions = vi.mocked(window.desktop.onSessionEvent).mock.calls.length;
+    const subscriptions = vi.mocked(desktop.onSessionEvent).mock.calls.length;
     snapshot('s1', commands); snapshot('s1', commands);
     expect(name).toHaveBeenCalledTimes(reads);
-    expect(window.desktop.onSessionEvent).toHaveBeenCalledTimes(subscriptions); expect(window.desktop.startSession).toHaveBeenCalledTimes(1);
+    expect(desktop.onSessionEvent).toHaveBeenCalledTimes(subscriptions); expect(desktop.startSession).toHaveBeenCalledTimes(1);
     snapshot('s1', [{ name: 'replacement', source: 'skill' }]); expect(items()[0].textContent).toBe('/replacementskill/replacement');
   });
   it('keeps query on close/cancel/shortcut and inactive projects, clears sidebar open and successful insertion', async () => {
@@ -102,7 +105,7 @@ describe('App command palette before/after characterization with real panes', ()
     selectProject('/one'); expect(query().value).toBe('beta'); fireEvent.click(items()[0]); shortcut(); expect(query().value).toBe('');
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/beta');
     close(); selectProject('/empty'); shortcut(); expect(screen.queryByRole('dialog')).toBeNull(); selectProject('/one'); expect(query().value).toBe('');
-    expect(window.desktop.sendChatMessage).not.toHaveBeenCalled();
+    expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
   it('preserves filter fields, distinct zero results, exact DOM and list navigation including index -1/zero', async () => {
     await mount(); open(); expect(screen.getByRole('dialog', { name: 'Pi 命令' }).className).toBe('modal');
@@ -149,19 +152,19 @@ describe('App command palette before/after characterization with real panes', ()
     expect(items().map(item => item.querySelector('div')?.firstChild?.textContent)).toEqual(['选择模型', '思考强度', '恢复历史', '会话分支', 'Pi 设置', '登录提供商', '重新加载资源', '压缩上下文', '所有快捷键']);
     expect(items().map(item => item.querySelector('small')?.textContent)).toEqual(['使用 Pi 原生模型选择器', '选择推理等级', '打开 Pi 原生会话选择器', '查看会话树', '打开原生设置', '由 Pi 处理凭据', '重新加载扩展和技能', '执行上下文压缩', '以当前 Pi 配置为准']);
     for (const name of names) { filter(name); fireEvent.click(items()[0]); expect(screen.queryByRole('dialog')).toBeNull(); shortcut(); expect(query().value).toBe(''); }
-    expect(terminal.pastes).toEqual(names.map(name => `/${name}`)); expect(vi.mocked(window.desktop.write).mock.calls).toEqual(names.map(name => ['s1', `/${name}`]));
-    expect(window.desktop.sendChatMessage).not.toHaveBeenCalled(); close(); shortcut({ key: 'f', shiftKey: true }); expect(screen.getByRole('textbox', { name: '搜索终端历史' })).toBeTruthy(); expect(screen.queryByRole('dialog')).toBeNull();
+    expect(terminal.pastes).toEqual(names.map(name => `/${name}`)); expect(vi.mocked(desktop.write).mock.calls).toEqual(names.map(name => ['s1', `/${name}`]));
+    expect(desktop.sendChatMessage).not.toHaveBeenCalled(); close(); shortcut({ key: 'f', shiftKey: true }); expect(screen.getByRole('textbox', { name: '搜索终端历史' })).toBeTruthy(); expect(screen.queryByRole('dialog')).toBeNull();
   });
   it('retains palette/query when real terminal paste throws; pending attachment keeps original captured target', async () => {
     await mount('terminal'); open(); filter('model'); terminal.throwPaste = true;
     const errors: unknown[] = []; const onError = (event: ErrorEvent) => { errors.push(event.error); event.preventDefault(); }; window.addEventListener('error', onError);
     fireEvent.click(items()[0]); window.removeEventListener('error', onError); expect(errors).toHaveLength(1); expect(query().value).toBe('model'); expect(terminal.pastes).toEqual([]);
     terminal.throwPaste = false; close();
-    let resolve!: (paths: string[]) => void; vi.mocked(window.desktop.chooseAttachments).mockReturnValueOnce(new Promise(yes => { resolve = yes; }));
+    let resolve!: (paths: string[]) => void; vi.mocked(desktop.chooseAttachments).mockReturnValueOnce(new Promise(yes => { resolve = yes; }));
     fireEvent.click(screen.getByRole('button', { name: '＋ 文件引用' })); selectProject('/empty'); await create();
     open(); filter('keep'); await act(async () => resolve(['/old target.txt']));
     expect(terminal.pastes).toEqual(['@"/old target.txt" ']); expect(screen.queryByRole('dialog')).toBeNull();
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe(''); shortcut(); expect(query().value).toBe('');
-    expect(window.desktop.sendChatMessage).not.toHaveBeenCalled();
+    expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
 });

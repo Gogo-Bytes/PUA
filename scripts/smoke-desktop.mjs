@@ -1,3 +1,4 @@
+import { parseDesktopResult } from '../dist/shared/ipc/desktop-result.js';
 import { _electron as electron } from 'playwright';
 import { mkdtemp, mkdir, writeFile, rm, rename } from 'node:fs/promises';
 import os from 'node:os';
@@ -102,15 +103,17 @@ try {
   await window.getByText('Pi 已就绪', { exact: true }).waitFor();
   await window.getByRole('textbox', { name: '发送消息' }).fill('/mock-dialog'); await window.getByRole('button', { name: '发送', exact: false }).click();
   await window.getByRole('dialog').waitFor();
-  await window.evaluate(async id => {
+  const answered = await window.evaluate(async id => {
     const request = window.__events.filter(event => event.type === 'extension-ui').at(-1).request;
-    await window.desktop.respondToExtensionUI(id, { id: request.id, cancelled: true, type: 'prompt', message: 'injected', images: [{ type: 'image', mimeType: 'image/png', data: 'aA==' }] });
+    return window.desktop.respondToExtensionUI(id, { id: request.id, cancelled: true, type: 'prompt', message: 'injected', images: [{ type: 'image', mimeType: 'image/png', data: 'aA==' }] });
   }, firstId);
+  assert.deepEqual(parseDesktopResult('respondToExtensionUI', answered), { ok: true, value: null });
   await window.getByRole('dialog').waitFor({ state: 'hidden' });
   await window.getByText('已取消测试对话', { exact: true }).waitFor();
   await window.getByText('Pi 已就绪', { exact: true }).waitFor();
   assert.equal(await window.getByText('injected', { exact: true }).count(), 0);
-  const injected = await window.evaluate(async id => { try { await window.desktop.respondToExtensionUI(id, { id: 'unknown', cancelled: true, type: 'prompt', message: 'injected' }); return true; } catch { return false; } }, firstId); assert.equal(injected, false);
+  const injected = parseDesktopResult('respondToExtensionUI', await window.evaluate(id => window.desktop.respondToExtensionUI(id, { id: 'unknown', cancelled: true, type: 'prompt', message: 'injected' }), firstId));
+  assert.equal(injected?.ok, false); assert.equal(injected.error.kind, 'application');
 
 
   await window.getByRole('textbox', { name: '发送消息' }).fill('slow task');
@@ -183,7 +186,7 @@ try {
   await window.locator('.chat-pane.active .chat-empty').waitFor();
   const secondId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
   await window.getByRole('textbox', { name: '发送消息' }).fill('second draft');
-  await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-prefill', attachmentIds: [], delivery: 'prompt' }), firstId);
+  assert.deepEqual(parseDesktopResult('sendChatMessage', await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-prefill', attachmentIds: [], delivery: 'prompt' }), firstId)), { ok: true, value: null });
   await window.getByRole('tab').first().click();
   assert.equal(await window.getByRole('textbox', { name: '发送消息' }).inputValue(), '预填草稿');
   await scrollRest();
@@ -191,7 +194,7 @@ try {
   await window.getByRole('tab').last().click();
   assert.equal(await window.getByRole('textbox', { name: '发送消息' }).inputValue(), 'second draft');
   await window.locator('.close-session').last().click(); await window.waitForFunction(() => document.querySelectorAll('.chat-pane').length === 1);
-  await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-exit', attachmentIds: [], delivery: 'prompt' }), firstId);
+  assert.deepEqual(parseDesktopResult('sendChatMessage', await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-exit', attachmentIds: [], delivery: 'prompt' }), firstId)), { ok: true, value: null });
   await window.getByRole('alert').filter({ hasText: 'Pi 对话进程已退出' }).waitFor();
   await window.locator('.chat-pane.active').getByRole('button', { name: '复制回复', exact: true }).last().click();
   const lastReply = await app.evaluate(({ clipboard }) => clipboard.readText());
@@ -219,7 +222,8 @@ try {
   await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes('INPUT_BASE64=')));
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/terminal-fallback.png') });
 
-  const denied = await window.evaluate(async () => { try { await window.desktop.openExternal('file:///etc/passwd'); return false; } catch { return true; } }); assert(denied);
+  const denied = parseDesktopResult('openExternal', await window.evaluate(() => window.desktop.openExternal('file:///etc/passwd')));
+  assert.equal(denied?.ok, false); assert.equal(denied.error.kind, 'validation'); assert.equal(denied.error.code, 'INVALID_ARGUMENTS');
   await window.evaluate(id => window.desktop.write(id, '\x04'), terminalId);
   await window.waitForFunction(id => window.__events.some(event => event.id === id && event.type === 'exit'), terminalId);
   assert.deepEqual(errors, []);

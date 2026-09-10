@@ -131,3 +131,7 @@ Terminal submission-only Interface 由原 process Adapter 实现，经 `app/main
 ### filesystem 归位与最新手工观察
 
 资源存在性扫描与 cwd 准备的当前路径、无行为变更约束、纯验证与运行应用保护见 [filesystem 当前状态](architecture.md#project-resources--session-preparation有限-filesystem-归位)。用户已在原生 editMenu 粘贴修复后确认普通模式粘贴、连续对话和切换显示正常；这不是附件/queue/stop/Terminal 真实启动/设置/清理/发布全矩阵验收。原助手回复缺失 P0 根因仍未定，默认关诊断与 source 回放未复现不等于修复，不假定 a4fb717 前健康基线；诊断及开关保留观察，本批未操作或重启应用。
+
+### DesktopResult / renderer client 当前契约
+
+后续 Desktop invoke 已在 shared edge 使用 Result，renderer 经唯一 client 解包与持有每订阅取消生命周期；原 Session/Conversation/PTY owner、草稿/附件/queue 与 Pi protocol 不变。21 invoke / 3同步send / 1event、错误兼容、安全与纯验证限制见 [Desktop client 契约](desktop-client-contract.md)。此为有限 vertical，不是 App composition-only、Preferences alias、UI 或真实桌面/原生对话/跨平台发布验收完成；原助手缺失 P0 未定位的观察保留。

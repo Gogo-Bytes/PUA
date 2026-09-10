@@ -1,3 +1,4 @@
+import { desktopClient } from '../../app/desktop-client';
 import { useEffect, useState } from 'react';
 import type { ProjectTrust, SessionKind } from '../../../shared/chat';
 
@@ -23,7 +24,7 @@ export function useNewSessionLaunch({ initialKind = 'chat', initialMode = 'new',
   useEffect(() => {
     let current = true; setTrust('default');
     const timer = setTimeout(() => {
-      if (cwd.trim()) void window.desktop.inspectProjectResources(cwd).then(value => { if (current) setInspection({ cwd, paths: value.paths }); }).catch(error => { if (current) setInspection({ cwd, paths: [], error: String(error) }); });
+      if (cwd.trim()) void desktopClient.inspectProjectResources(cwd).then(value => { if (current) setInspection({ cwd, paths: value.paths }); }).catch(error => { if (current) setInspection({ cwd, paths: [], error: String(error) }); });
     }, 250);
     return () => { current = false; clearTimeout(timer); };
   }, [cwd]);
@@ -34,7 +35,7 @@ export function useNewSessionLaunch({ initialKind = 'chat', initialMode = 'new',
     setBusy(true);
     void onCreate(cwd, kind, mode, trust).catch(error => { setError(String(error)); setBusy(false); });
   };
-  const chooseDirectory = () => void window.desktop.chooseDirectory().then(value => { if (value) setCwd(value); }).catch(error => setError(String(error)));
+  const chooseDirectory = () => void desktopClient.chooseDirectory().then(value => { if (value) setCwd(value); }).catch(error => setError(String(error)));
 
   return { cwd, setCwd, kind, setKind, mode, setMode, trust, setTrust, resources, inspecting, inspection, busy, error, submit, chooseDirectory };
 }

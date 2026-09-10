@@ -1,3 +1,4 @@
+import { desktopClient } from './app/desktop-client';
 import { useEffect, useRef, useState } from 'react';
 import { filesForScope, type DiffScope, type FileDiff, type GitStatus } from '../shared/git';
 import { referencePaths } from './terminal-keys';
@@ -24,7 +25,7 @@ export function GitPanel({ sessionId, onClose, onReference }: { sessionId: strin
     const request = ++generation.current;
     setBusy(true); setError('');
     try {
-      const next = await window.desktop.gitStatus(sessionId);
+      const next = await desktopClient.gitStatus(sessionId);
       if (generation.current !== request) return;
       setStatus(next);
       setSelected(current => filesForScope(next.files, currentScope.current).some(file => file.path === current) ? current : '');
@@ -39,7 +40,7 @@ export function GitPanel({ sessionId, onClose, onReference }: { sessionId: strin
     setDiff(null); setDiffError(''); setReceivedAt(''); setView('source');
     if (!selected || !status) { setLoadingDiff(false); return; }
     setLoadingDiff(true);
-    void window.desktop.fileDiff(sessionId, selected, scope).then(next => { if (!cancelled) { setDiff(next); setReceivedAt(new Date().toLocaleTimeString()); } })
+    void desktopClient.fileDiff(sessionId, selected, scope).then(next => { if (!cancelled) { setDiff(next); setReceivedAt(new Date().toLocaleTimeString()); } })
       .catch(error => { if (!cancelled) setDiffError(String(error)); })
       .finally(() => { if (!cancelled) setLoadingDiff(false); });
     return () => { cancelled = true; };

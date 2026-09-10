@@ -1,3 +1,4 @@
+import { DesktopApplicationError } from '../platform/electron/ipc/desktop-errors.js';
 import { processStatus, type SessionFailureCode, type SessionResult, type SessionSnapshot, type SessionChange } from '../modules/sessions/index.js';
 import type { SessionActivity, SessionEvent } from '../shared/chat.js';
 import type { SessionInfo } from '../shared/contracts.js';
@@ -13,17 +14,17 @@ const messages: Record<SessionFailureCode, string> = {
   CLEANUP_FAILED: '进程清理失败，仍保留会话占用',
 };
 export function unwrapSessionResult<T>(result: SessionResult<T>): T {
-  if (!result.ok) throw new Error(`${messages[result.code]}${result.detail ? `：${result.detail}` : ''}`);
+  if (!result.ok) throw new DesktopApplicationError(result.code, `${messages[result.code]}${result.detail ? `：${result.detail}` : ''}`);
   return result.value;
 }
 
 export function applySessionStartResult(result: SessionResult): void {
   if (!result.ok && result.code === 'SESSION_NOT_STARTABLE') return;
-  if (!result.ok && result.code === 'SHUTTING_DOWN') throw new Error('应用正在关闭，不能启动会话');
+  if (!result.ok && result.code === 'SHUTTING_DOWN') throw new DesktopApplicationError(result.code, '应用正在关闭，不能启动会话');
   unwrapSessionResult(result);
 }
 export function requireSessionSnapshot(snapshot: SessionSnapshot | undefined): SessionSnapshot {
-  if (!snapshot) throw new Error(messages.SESSION_NOT_FOUND);
+  if (!snapshot) throw new DesktopApplicationError('SESSION_NOT_FOUND', messages.SESSION_NOT_FOUND);
   return snapshot;
 }
 export function sessionInfo(session: SessionSnapshot, activity: SessionActivity): SessionInfo {

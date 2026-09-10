@@ -1,4 +1,7 @@
 /** @vitest-environment jsdom */
+import { installDesktopFake } from '../../../desktop-bridge-fake';
+import type { DesktopAPI } from '../../../../src/shared/ipc/desktop-api';
+let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,10 +26,10 @@ beforeEach(() => {
   vi.useFakeTimers();
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
-  window.desktop = {
+  desktop = installDesktopFake({
     inspectProjectResources: vi.fn().mockResolvedValue(resources()),
     chooseDirectory: vi.fn().mockResolvedValue(null),
-  } as unknown as typeof window.desktop;
+  } as unknown as DesktopAPI);
   props = { initialPath: '/a', hasRuntime: true, onClose: vi.fn(), onCreate: vi.fn().mockResolvedValue(undefined), onSettings: vi.fn() };
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
@@ -37,18 +40,18 @@ describe('NewSessionDialog production view/controller characterization (only Fak
     expect(document.activeElement).toBe(pathInput()); expect(pathInput().required).toBe(true);
     expect(radio(/^原生对话/).checked).toBe(true); expect(radio(/^新会话/).checked).toBe(true);
     expect(button().disabled).toBe(true); submit(); expect(props.onCreate).not.toHaveBeenCalled();
-    await tick(249); expect(window.desktop.inspectProjectResources).not.toHaveBeenCalled();
-    changePath(' /b '); await tick(249); expect(window.desktop.inspectProjectResources).not.toHaveBeenCalled();
-    await tick(1); expect(window.desktop.inspectProjectResources).toHaveBeenCalledExactlyOnceWith(' /b ');
+    await tick(249); expect(desktop.inspectProjectResources).not.toHaveBeenCalled();
+    changePath(' /b '); await tick(249); expect(desktop.inspectProjectResources).not.toHaveBeenCalled();
+    await tick(1); expect(desktop.inspectProjectResources).toHaveBeenCalledExactlyOnceWith(' /b ');
     expect(button().disabled).toBe(false); submit();
     expect(props.onCreate).toHaveBeenCalledExactlyOnceWith(' /b ', 'chat', 'new', 'default');
     await tick(); expect(button().textContent).toBe('正在打开…'); // success relies on App unmount, not local reset
   });
   it.each(['resolve', 'reject'] as const)('invalidates the older of two pending cwd inspections: %s', async outcome => {
     const a = deferred<ProjectResourceInfo>(), b = deferred<ProjectResourceInfo>();
-    vi.mocked(window.desktop.inspectProjectResources).mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise);
+    vi.mocked(desktop.inspectProjectResources).mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise);
     render(<NewSessionDialog {...props} />); await tick(); changePath('/b'); await tick();
-    expect(vi.mocked(window.desktop.inspectProjectResources).mock.calls.map(call => call[0])).toEqual(['/a', '/b']);
+    expect(vi.mocked(desktop.inspectProjectResources).mock.calls.map(call => call[0])).toEqual(['/a', '/b']);
     await act(async () => b.resolve(resources(['/b/.pi'])));
     fireEvent.click(radio(/^本次信任并/));
     await act(async () => outcome === 'resolve' ? a.resolve(resources()) : a.reject(new Error('old error')));
@@ -57,7 +60,7 @@ describe('NewSessionDialog production view/controller characterization (only Fak
   });
   it('invalidates pending A even after A → B → A; same cwd alone is not the active flag', async () => {
     const oldA = deferred<ProjectResourceInfo>(), b = deferred<ProjectResourceInfo>(), newA = deferred<ProjectResourceInfo>();
-    vi.mocked(window.desktop.inspectProjectResources).mockReturnValueOnce(oldA.promise).mockReturnValueOnce(b.promise).mockReturnValueOnce(newA.promise);
+    vi.mocked(desktop.inspectProjectResources).mockReturnValueOnce(oldA.promise).mockReturnValueOnce(b.promise).mockReturnValueOnce(newA.promise);
     render(<NewSessionDialog {...props} />); await tick(); changePath('/b'); await tick(); changePath('/a'); await tick();
     await act(async () => oldA.resolve(resources(['/old']))); expect(button().disabled).toBe(true); expect(screen.queryByText('检测到项目资源')).toBeNull();
     await act(async () => newA.resolve(resources(['/new']))); expect(button().disabled).toBe(false);
@@ -66,10 +69,10 @@ describe('NewSessionDialog production view/controller characterization (only Fak
   it('preserves already-completed same-cwd reuse while the revisit debounce is pending', async () => {
     render(<NewSessionDialog {...props} />); await tick(); changePath('/b'); changePath('/a');
     expect(button().disabled).toBe(false); submit(); expect(props.onCreate).toHaveBeenCalledWith('/a', 'chat', 'new', 'default');
-    expect(window.desktop.inspectProjectResources).toHaveBeenCalledTimes(1);
+    expect(desktop.inspectProjectResources).toHaveBeenCalledTimes(1);
   });
   it('resets trust immediately on cwd change, associates resources by cwd, and preserves old error display until replacement', async () => {
-    vi.mocked(window.desktop.inspectProjectResources).mockResolvedValueOnce(resources(['/a/.pi'])).mockRejectedValueOnce(new Error('B failed')).mockResolvedValueOnce(resources(['/c/.pi']));
+    vi.mocked(desktop.inspectProjectResources).mockResolvedValueOnce(resources(['/a/.pi'])).mockRejectedValueOnce(new Error('B failed')).mockResolvedValueOnce(resources(['/c/.pi']));
     render(<NewSessionDialog {...props} />); await tick(); fireEvent.click(radio(/^本次不加载/));
     changePath('/b'); expect(screen.queryByText('检测到项目资源')).toBeNull(); expect(button().disabled).toBe(true);
     await tick(); expect(screen.getByRole('alert').textContent).toBe('Error: B failed'); submit(); expect(props.onCreate).not.toHaveBeenCalled();
@@ -79,14 +82,14 @@ describe('NewSessionDialog production view/controller characterization (only Fak
   });
   it.each(['', '   '])('does not inspect blank cwd %j; keeps required HTML validity distinct from trimmed button gating', async cwd => {
     render(<NewSessionDialog {...props} initialPath={cwd} />); await tick(1000);
-    expect(window.desktop.inspectProjectResources).not.toHaveBeenCalled(); expect(button().disabled).toBe(true);
+    expect(desktop.inspectProjectResources).not.toHaveBeenCalled(); expect(button().disabled).toBe(true);
     expect(pathInput().checkValidity()).toBe(cwd !== ''); submit(); expect(props.onCreate).not.toHaveBeenCalled();
     fireEvent.click(radio(/^兼容终端/)); expect(button().disabled).toBe(true);
     // Synthetic submit bypasses native required/button checks, as did the original handler.
     submit(); expect(props.onCreate).toHaveBeenCalledWith(cwd, 'terminal', 'new', 'default');
   });
   it('terminal ignores pending/error chat inspection and supports resume; switching back resets only resume to new', async () => {
-    vi.mocked(window.desktop.inspectProjectResources).mockRejectedValueOnce('inspection denied');
+    vi.mocked(desktop.inspectProjectResources).mockRejectedValueOnce(new Error('inspection denied'));
     render(<NewSessionDialog {...props} initialKind="terminal" initialMode="continue" />);
     expect(button().disabled).toBe(false); expect(radio(/^继续最近/).checked).toBe(true);
     fireEvent.click(radio(/^选择历史/)); fireEvent.click(radio(/^原生对话/));
@@ -94,11 +97,11 @@ describe('NewSessionDialog production view/controller characterization (only Fak
     fireEvent.click(radio(/^继续最近/)); fireEvent.click(radio(/^兼容终端/)); fireEvent.click(radio(/^原生对话/));
     expect(radio(/^继续最近/).checked).toBe(true);
     await tick(); expect(button().disabled).toBe(true); fireEvent.click(radio(/^兼容终端/));
-    expect(screen.getByRole('alert').textContent).toBe('inspection denied'); expect(button().disabled).toBe(false);
+    expect(screen.getByRole('alert').textContent).toBe('Error: inspection denied'); expect(button().disabled).toBe(false);
     fireEvent.click(radio(/^选择历史/)); submit(); expect(props.onCreate).toHaveBeenCalledWith('/a', 'terminal', 'resume', 'default');
   });
   it('passes the current trust to terminal too, without taking ownership of actual Pi trust or Session admission', async () => {
-    vi.mocked(window.desktop.inspectProjectResources).mockResolvedValue(resources(['/a/.pi']));
+    vi.mocked(desktop.inspectProjectResources).mockResolvedValue(resources(['/a/.pi']));
     render(<NewSessionDialog {...props} />); await tick(); fireEvent.click(radio(/^本次不加载/)); fireEvent.click(radio(/^兼容终端/));
     submit(); expect(props.onCreate).toHaveBeenCalledWith('/a', 'terminal', 'new', 'decline');
   });
@@ -130,30 +133,30 @@ describe('NewSessionDialog production view/controller characterization (only Fak
   });
   it('preserves choose cancel/reject and completion-order late directory overwrite, without a picker lock', async () => {
     const first = deferred<string | null>(), second = deferred<string | null>();
-    vi.mocked(window.desktop.chooseDirectory).mockResolvedValueOnce(null).mockRejectedValueOnce(new Error('picker failed')).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    vi.mocked(desktop.chooseDirectory).mockResolvedValueOnce(null).mockRejectedValueOnce(new Error('picker failed')).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
     render(<NewSessionDialog {...props} />);
     const browse = () => fireEvent.click(screen.getByRole('button', { name: '浏览…' }));
     browse(); await tick(0); expect(pathInput().value).toBe('/a'); browse(); await tick(0); expect(screen.getByRole('alert').textContent).toBe('Error: picker failed');
     browse(); browse(); changePath('/typed'); await act(async () => second.resolve('/second')); expect(pathInput().value).toBe('/second');
     await act(async () => first.resolve('/first')); expect(pathInput().value).toBe('/first'); expect(screen.getByRole('alert').textContent).toBe('Error: picker failed');
-    expect(window.desktop.chooseDirectory).toHaveBeenCalledTimes(4);
+    expect(desktop.chooseDirectory).toHaveBeenCalledTimes(4);
   });
-  it('clears debounce on unmount and does not read/publish late inspection success or stringify late errors', async () => {
-    const a = render(<NewSessionDialog {...props} />); a.unmount(); await tick(); expect(window.desktop.inspectProjectResources).not.toHaveBeenCalled();
-    const pending = deferred<ProjectResourceInfo>(); vi.mocked(window.desktop.inspectProjectResources).mockReturnValueOnce(pending.promise);
+  it('clears debounce on unmount and validates but does not publish late inspection success or stringify late errors', async () => {
+    const a = render(<NewSessionDialog {...props} />); a.unmount(); await tick(); expect(desktop.inspectProjectResources).not.toHaveBeenCalled();
+    const pending = deferred<ProjectResourceInfo>(); vi.mocked(desktop.inspectProjectResources).mockReturnValueOnce(pending.promise);
     const b = render(<NewSessionDialog {...props} />); await tick(); b.unmount(); expect(vi.getTimerCount()).toBe(0);
-    const paths = vi.fn(() => ['/late']); await act(async () => pending.resolve({ hasResources: true, get paths() { return paths(); } })); expect(paths).not.toHaveBeenCalled();
-    const failure = deferred<ProjectResourceInfo>(); vi.mocked(window.desktop.inspectProjectResources).mockReturnValueOnce(failure.promise);
+    const paths = vi.fn(() => ['/late']); await act(async () => pending.resolve({ hasResources: true, get paths() { return paths(); } })); expect(paths).toHaveBeenCalledOnce();
+    const failure = deferred<ProjectResourceInfo>(); vi.mocked(desktop.inspectProjectResources).mockReturnValueOnce(failure.promise);
     const c = render(<NewSessionDialog {...props} />); await tick(); c.unmount();
     const toString = vi.fn(() => 'late error'); await act(async () => failure.reject({ toString })); expect(toString).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull(); expect(props.onCreate).not.toHaveBeenCalled();
   });
   it('allows a late picker completion after unmount without affecting a newly mounted dialog', async () => {
-    const pending = deferred<string | null>(); vi.mocked(window.desktop.chooseDirectory).mockReturnValueOnce(pending.promise);
+    const pending = deferred<string | null>(); vi.mocked(desktop.chooseDirectory).mockReturnValueOnce(pending.promise);
     const old = render(<NewSessionDialog {...props} />); fireEvent.click(screen.getByRole('button', { name: '浏览…' })); old.unmount();
     render(<NewSessionDialog {...props} initialPath="/new" />); await act(async () => pending.resolve('/old-picked'));
     expect(pathInput().value).toBe('/new'); expect(props.onCreate).not.toHaveBeenCalled();
-    await tick(); expect(window.desktop.inspectProjectResources).toHaveBeenCalledExactlyOnceWith('/new');
+    await tick(); expect(desktop.inspectProjectResources).toHaveBeenCalledExactlyOnceWith('/new');
   });
   it('keeps close and native cancel requests active even while submitting; Modal prevents default cancel', async () => {
     const pending = deferred<void>(); vi.mocked(props.onCreate).mockReturnValueOnce(pending.promise);

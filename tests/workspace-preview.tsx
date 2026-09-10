@@ -1,5 +1,6 @@
 // TEST ONLY: browser visual review of real production React components with a mock IPC device.
 // No Pi process, filesystem access, model request, simulated streaming or timers.
+import { installDesktopFake } from './desktop-bridge-fake';
 import { createRoot } from 'react-dom/client';
 import { App } from '../src/renderer/App';
 import type { DesktopAPI, Preferences, SessionInfo } from '../src/shared/contracts';
@@ -15,7 +16,7 @@ const emit = (event: SessionEvent) => listeners.forEach(listener => listener(eve
 const source = '# 测试文档\n\n这份内容来自测试 IPC，不是磁盘文件。\n\n## 阅读边界\n\n- 工具输出是执行快照。\n- Git patch 不是完整文件。\n- 引用只回填草稿。';
 const unsupported = async (): Promise<never> => { throw new Error('TEST ONLY：浏览器预览不提供此 Electron 能力'); };
 const bootstrap: DesktopAPI['bootstrap'] = async () => ({ preferences, runtime: { executable: 'TEST ONLY', args: [], source: 'MOCK / NOT ELECTRON' }, home: '/test', platform: 'darwin' });
-window.desktop = {
+installDesktopFake({
   bootstrap,
   savePreferences: async value => { preferences = value; return bootstrap(); },
   onSessionEvent: callback => { listeners.add(callback); return () => listeners.delete(callback); },
@@ -47,5 +48,5 @@ window.desktop = {
   writeClipboard: async text => navigator.clipboard.writeText(text),
   readClipboard: unsupported, openExternal: unsupported, openProject: unsupported, chooseDirectory: unsupported, chooseFile: unsupported, chooseAttachments: unsupported,
   respondToExtensionUI: unsupported, write: () => {}, resize: () => {}, acknowledge: () => {},
-};
+});
 createRoot(document.getElementById('root')!).render(<App />);

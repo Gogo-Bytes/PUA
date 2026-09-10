@@ -1,19 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { invokeChannels, sendChannels, eventChannels, type RequestArgs, type RequestMethod } from '../src/shared/ipc/channels';
+import { invokeChannels, sendChannels, eventChannels, type RequestMethod } from '../src/shared/ipc/channels';
 import { requestParsers, validatePreferences } from '../src/shared/ipc/schemas';
 
-const preferences = { piPath: '', nodePath: '', args: [], fontSize: 14, recentProjects: [] };
-const create = { cwd: '~/project', kind: 'chat', startMode: 'new', projectTrust: 'default' } as const;
-const samples: { [K in RequestMethod]: RequestArgs<K> } = {
-  bootstrap: [], chooseDirectory: [], chooseFile: [], chooseAttachments: [], readClipboard: [],
-  chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'],
-  stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], writeClipboard: ['clipboard'],
-  savePreferences: [preferences], createSession: [create], removeChatAttachment: ['id', 'token'],
-  renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
-  sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
-  write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
-  openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
-};
+import { preferences, create, samples } from './desktop-contract-fixtures';
 const methods = Object.keys(samples) as RequestMethod[];
 
 describe('desktop IPC contract', () => {

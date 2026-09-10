@@ -6,7 +6,7 @@ import type { IpcMainEvent, IpcMainInvokeEvent, WebContents } from 'electron';
 import { checkSender, createIPCRegistrar } from '../src/platform/electron/ipc/registrar';
 import { invokeChannels, sendChannels, eventChannels } from '../src/shared/ipc/channels';
 import { requestParsers } from '../src/shared/ipc/schemas';
-import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
+import type { DesktopBridge } from '../src/shared/ipc/desktop-api';
 
 function harness() {
   const invokes = new Map<string, (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown>();
@@ -51,14 +51,14 @@ describe('main IPC registrar', () => {
       { ...h.event, senderFrame: null },
     ];
     for (const candidate of candidates) {
-      expect(() => h.invokes.get(invokeChannels.startSession)!(candidate as IpcMainInvokeEvent, null)).toThrow('Untrusted IPC sender');
+      expect(h.invokes.get(invokeChannels.startSession)!(candidate as IpcMainInvokeEvent, null)).toMatchObject({ ok: false, error: { kind: 'authorization', code: 'UNTRUSTED_SENDER', message: 'Untrusted IPC sender' } });
       expect(() => h.sends.get(sendChannels.write)!(candidate as IpcMainEvent, null, null)).not.toThrow();
     }
     const url = h.event.senderFrame!.url;
     // Same WebContents + same mainFrame, but a changed source (query/hash included).
     for (const source of ['https://untrusted.invalid/', url + '?x', url + '#x', 'file:///app/other.html']) {
       Object.assign(h.event.senderFrame!, { url: source });
-      expect(() => h.invokes.get(invokeChannels.startSession)!(h.event, null)).toThrow('Untrusted IPC sender');
+      expect(h.invokes.get(invokeChannels.startSession)!(h.event, null)).toMatchObject({ ok: false, error: { kind: 'authorization', code: 'UNTRUSTED_SENDER', message: 'Untrusted IPC sender' } });
       expect(() => h.sends.get(sendChannels.write)!(h.event, null, null)).not.toThrow();
     }
     Object.assign(h.event.senderFrame!, { url });
@@ -69,16 +69,16 @@ describe('main IPC registrar', () => {
   it('rejects malformed tuples before effects and preserves invoke result/errors and send drop/log semantics', async () => {
     const h = harness(); const start = vi.fn(); const write = vi.fn();
     h.registrar.handle('startSession', start); h.registrar.listen('write', write);
-    expect(() => h.invokes.get(invokeChannels.startSession)!(h.event, 4)).toThrow('无效字符串');
+    expect(h.invokes.get(invokeChannels.startSession)!(h.event, 4)).toMatchObject({ ok: false, error: { kind: 'validation', message: '无效字符串' } });
     expect(() => h.sends.get(sendChannels.write)!(h.event, 'id', 4)).not.toThrow();
     expect(start).not.toHaveBeenCalled(); expect(write).not.toHaveBeenCalled(); expect(h.report).toHaveBeenCalledOnce();
     h.invokes.get(invokeChannels.startSession)!(h.event, 'id'); expect(start).toHaveBeenCalledWith('id');
     h.sends.get(sendChannels.write)!(h.event, 'id', '\0'); expect(write).toHaveBeenCalledWith('id', '\0');
     h.registrar.handle('closeSession', async () => false);
-    expect(await h.invokes.get(invokeChannels.closeSession)!(h.event, 'id')).toBe(false);
+    expect(await h.invokes.get(invokeChannels.closeSession)!(h.event, 'id')).toEqual({ ok: true, value: false });
     const error = new Error('domain failure');
     h.registrar.handle('stopChat', async () => { throw error; });
-    await expect(h.invokes.get(invokeChannels.stopChat)!(h.event, 'id')).rejects.toBe(error);
+    await expect(h.invokes.get(invokeChannels.stopChat)!(h.event, 'id')).resolves.toEqual({ ok: false, error: { kind: 'application', code: 'APPLICATION_FAILED', message: error.message } });
     h.registrar.listen('acknowledge', () => { throw error; });
     expect(() => h.sends.get(sendChannels.acknowledge)!(h.event, 'id', 1)).not.toThrow();
     expect(h.report).toHaveBeenLastCalledWith(`IPC ${sendChannels.acknowledge}:`, 'domain failure');
@@ -88,7 +88,7 @@ describe('main IPC registrar', () => {
     h.registrar.handle('createSession', async () => { await prepareProject(); return reserve(); });
     const parse = vi.spyOn(requestParsers, 'createSession');
     const options = { cwd: '~/project', kind: 'chat', startMode: 'new', projectTrust: 'default' };
-    expect(() => h.invokes.get(invokeChannels.createSession)!({ ...h.event, senderFrame: null }, options)).toThrow('Untrusted IPC sender');
+    expect(h.invokes.get(invokeChannels.createSession)!({ ...h.event, senderFrame: null }, options)).toMatchObject({ ok: false, error: { kind: 'authorization', code: 'UNTRUSTED_SENDER', message: 'Untrusted IPC sender' } });
     expect(parse).not.toHaveBeenCalled(); expect(prepareProject).not.toHaveBeenCalled(); expect(reserve).not.toHaveBeenCalled();
     parse.mockRestore();
   });
@@ -131,14 +131,14 @@ describe('main IPC registrar', () => {
 
 describe('preload whitelist', () => {
   it('forwards all existing methods and removes the exact event listener on unsubscribe', async () => {
-    let api!: DesktopAPI;
+    let api!: DesktopBridge;
     const ipc = { invoke: vi.fn().mockResolvedValue('result'), send: vi.fn(), on: vi.fn(), removeListener: vi.fn() };
     const code = ts.transpileModule(readFileSync(new URL('../src/main/preload.cts', import.meta.url), 'utf8'), {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
     }).outputText;
     vm.runInNewContext(code, {
       exports: {}, require: (name: string) => {
-        if (name === 'electron') return { ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (key: string, value: DesktopAPI) => { expect(key).toBe('desktop'); api = value; } } };
+        if (name === 'electron') return { ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (key: string, value: DesktopBridge) => { expect(key).toBe('desktop'); api = value; } } };
         if (name === '../shared/ipc/channels.js') return { invokeChannels, sendChannels, eventChannels };
         throw new Error(`Unexpected preload require: ${name}`);
       },

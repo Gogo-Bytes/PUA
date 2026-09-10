@@ -1,3 +1,4 @@
+import { desktopClient, isDesktopAvailable } from './app/desktop-client';
 import { useEffect, useRef, useState } from 'react';
 import type { Bootstrap } from '../shared/contracts';
 import type { ProjectTrust, SessionKind } from '../shared/chat';
@@ -26,8 +27,8 @@ export function App() {
   const closeReview = () => { setReviewOpen(false); panelToggle.current?.focus(); };
   const handles = useRef(new Map<string, TerminalHandle>());
 
-  useEffect(() => { if (!window.desktop) { setError('请使用 npm run dev 启动桌面应用。'); return; } void window.desktop.bootstrap().then(setBoot).catch(error => setError(String(error))); }, []);
-  const workspace = useWorkspace(window.desktop, {
+  useEffect(() => { if (!isDesktopAvailable()) { setError('请使用 npm run dev 启动桌面应用。'); return; } void desktopClient.bootstrap().then(setBoot).catch(error => setError(String(error))); }, []);
+  const workspace = useWorkspace(isDesktopAvailable() ? desktopClient : undefined, {
     onClosed: id => setDrafts(current => { const next = { ...current }; delete next[id]; return next; }),
     onError: setError,
   });
@@ -63,12 +64,12 @@ export function App() {
 
   const insert = (text: string) => { if (active?.kind === 'chat') setDraft(draft ? `${draft}\n${text}` : text); else handle()?.paste(text); palette.dismissAfterInsert(); };
   const create = async (cwd: string, kind: SessionKind, startMode: 'new' | 'continue' | 'resume', projectTrust: ProjectTrust) => {
-    const session = await window.desktop.createSession({ cwd, kind, startMode, projectTrust, cols: 100, rows: 30 });
+    const session = await desktopClient.createSession({ cwd, kind, startMode, projectTrust, cols: 100, rows: 30 });
     workspace.addCreatedSession(session); setNewSession(false); setLaunch(undefined); setSearchOpen(false);
-    void window.desktop.bootstrap().then(setBoot).catch(error => setError(String(error)));
+    void desktopClient.bootstrap().then(setBoot).catch(error => setError(String(error)));
   };
-  const attachTerminal = async () => { try { const paths = await window.desktop.chooseAttachments(); if (paths.length) insert(referencePaths(paths)); } catch (error) { setError(String(error)); } };
-  const rename = async (title: string) => { if (!active) return; if (active.kind === 'chat') await window.desktop.renameChatSession(active.id, title); workspace.setSessionTitle(active.id, title); setRenaming(false); };
+  const attachTerminal = async () => { try { const paths = await desktopClient.chooseAttachments(); if (paths.length) insert(referencePaths(paths)); } catch (error) { setError(String(error)); } };
+  const rename = async (title: string) => { if (!active) return; if (active.kind === 'chat') await desktopClient.renameChatSession(active.id, title); workspace.setSessionTitle(active.id, title); setRenaming(false); };
 
   return <div className="workspace">
     <aside className="sidebar" aria-label="项目导航"><div className="brand"><span className="brand-icon"><Icon name="pi" /></span><strong>PUA</strong><small>工作台</small></div>
@@ -80,7 +81,7 @@ export function App() {
     <main><header className="topbar"><SessionTabs sessions={projectSessions} activeId={activeId} onSelect={setActiveId} onClose={id => void workspace.closeSession(id)} /><div className="topbar-actions"><button className="icon-button" aria-label="新建会话" title="新建会话" onClick={() => { if (project) setLaunch({ cwd: project, kind: 'chat', mode: 'new' }); setNewSession(true); }} disabled={!boot}><Icon name="plus" /></button><button ref={panelToggle} className="icon-button" aria-label="显示或收起检查区" title="文件与 Git 检查区" aria-expanded={reviewOpen && !!active} disabled={!active} onClick={() => setReviewOpen(value => !value)}><Icon name="panel" /></button></div></header>
       {error && <div className="error-banner" role="alert"><span>{error}</span><button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
       {!active && <section className="workspace-empty"><Icon name="chat" /><h1>{project ? projectName(project) : '打开项目，开始工作'}</h1>{project && <code>{project}</code>}<p>{project ? '此项目还没有打开的会话。新建对话或继续 Pi 保存的最近会话。' : '选择本机项目，与 Pi 对话。模型和工具仍由你的 Pi 管理。'}</p><div><button className="primary" onClick={() => setNewSession(true)} disabled={!boot}>{project ? '创建会话' : '打开项目'}</button>{project && <button onClick={() => { setLaunch({ cwd: project, kind: 'chat', mode: 'continue' }); setNewSession(true); }}>继续最近会话</button>}<button onClick={() => setSettings(true)} disabled={!boot}>桌面设置</button></div>{boot?.runtimeError && <p className="form-error" role="alert">{boot.runtimeError}</p>}</section>}
-      {active && <div className="session-toolbar"><div title={active.cwd} className="project-path"><Icon name="folder" /> {active.cwd}</div><div><button onClick={() => setRenaming(true)}>重命名</button>{active.kind === 'chat' && <button onClick={() => { setLaunch({ cwd: active.cwd, kind: 'terminal', mode: 'new' }); setNewSession(true); }}>兼容终端</button>}<button onClick={() => void window.desktop.openProject(active.id).catch(error => setError(String(error)))}>打开目录</button>{active.kind === 'terminal' && <><button onClick={() => setSearchOpen(value => !value)}>搜索</button><button onClick={() => void attachTerminal()}>＋ 文件引用</button></>}</div></div>}
+      {active && <div className="session-toolbar"><div title={active.cwd} className="project-path"><Icon name="folder" /> {active.cwd}</div><div><button onClick={() => setRenaming(true)}>重命名</button>{active.kind === 'chat' && <button onClick={() => { setLaunch({ cwd: active.cwd, kind: 'terminal', mode: 'new' }); setNewSession(true); }}>兼容终端</button>}<button onClick={() => void desktopClient.openProject(active.id).catch(error => setError(String(error)))}>打开目录</button>{active.kind === 'terminal' && <><button onClick={() => setSearchOpen(value => !value)}>搜索</button><button onClick={() => void attachTerminal()}>＋ 文件引用</button></>}</div></div>}
       {active?.kind === 'terminal' && searchOpen && <form className="search-bar" onSubmit={event => { event.preventDefault(); setFound(handle()?.search(searchText) ?? false); }}><input autoFocus aria-label="搜索终端历史" placeholder="搜索当前终端缓冲区…" value={searchText} onChange={event => { setSearchText(event.target.value); setFound(true); }} /><span>{!found && '未找到'}</span><button type="button" onClick={() => setFound(handle()?.search(searchText, true) ?? false)}>↑</button><button type="submit">↓</button><button type="button" onClick={() => { handle()?.clearSearch(); setSearchOpen(false); handle()?.focus(); }}>×</button></form>}
       <div className={`workbench ${!active ? 'hidden' : ''}`}><div className="interaction-column"><div className="session-stage">{sessions.map(session => session.kind === 'terminal' ? <TerminalPane key={session.id} session={session} active={session.id === activeId} fontSize={boot?.preferences.fontSize ?? 14} theme={theme} platform={boot?.platform ?? ''} onReady={(id, value) => { if (value) handles.current.set(id, value); else handles.current.delete(id); }} onExit={workspace.markSessionExited} onError={setError} /> : <ChatPane key={session.id} session={session} active={session.id === activeId} draft={drafts[session.id] || ''} onDraftChange={text => setDrafts(current => ({ ...current, [session.id]: text }))} onError={setError} onTerminalRecovery={() => { setLaunch({ cwd: session.cwd, kind: 'terminal', mode: 'new' }); setNewSession(true); }} onCommands={commands => palette.onCommands(session.id, commands)} />)}</div></div>{active && reviewOpen && <GitPanel key={active.id} sessionId={active.id} onClose={closeReview} onReference={text => { if (active.kind === 'terminal') insert(text); else { setDraft(draft ? `${draft}\n${text}` : text); document.querySelector<HTMLTextAreaElement>('.chat-pane.active textarea')?.focus(); } if (window.innerWidth <= 1100) setReviewOpen(false); }} />}</div>
       {active?.kind === 'terminal' && <footer>兼容终端 · TUI 快捷键以 /hotkeys 为准 · {active.processStatus === 'exited' ? '进程已退出' : '独占会话'}</footer>}

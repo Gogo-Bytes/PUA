@@ -47,7 +47,7 @@ describe('production bootstrap source with fully Fake Electron/store/composition
       expect(h.fake.listenerCount('close')).toBe(1); expect(h.fake.webContents.listenerCount('render-process-gone')).toBe(1);
       const bootstrap = fake.handle.mock.calls.find(call => call[0] === 'desktop:bootstrap')![1];
       const frame = h.fake.webContents.mainFrame; frame.url = new URL('../../../src/renderer/index.html', import.meta.url).href;
-      expect(bootstrap({ sender: h.fake.webContents, senderFrame: frame }).home).toBe('/fake/home');
+      expect(await bootstrap({ sender: h.fake.webContents, senderFrame: frame })).toMatchObject({ ok: true, value: { home: '/fake/home' } });
     });
     h.settings.resolve({ piPath: '', nodePath: '', args: [], fontSize: 14, recentProjects: [] }); await settle();
     expect(h.fake.loadURL).toHaveBeenCalledExactlyOnceWith(new URL('../../../src/renderer/index.html', import.meta.url).href);

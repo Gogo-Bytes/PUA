@@ -1,3 +1,4 @@
+import { desktopClient } from './app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
 import { MarkdownView, CopyButton, SourceView } from './ContentView';
 export { MarkdownView } from './ContentView';
@@ -42,7 +43,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const [slashDismissed, setSlashDismissed] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = window.desktop.onSessionEvent(event => {
+    const unsubscribe = desktopClient.onSessionEvent(event => {
       if (event.id !== session.id) return;
       missingAssistantRendererDiagnostics.record('renderer-received', session.id, event);
       if (event.type === 'chat-queue-recovered') {
@@ -54,7 +55,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       } else if (event.type === 'chat-editor-text') changeDraft(event.text);
       else dispatch(event);
     });
-    void window.desktop.startSession(session.id).catch(error => onError(String(error)));
+    void desktopClient.startSession(session.id).catch(error => onError(String(error)));
     return unsubscribe;
   }, [session.id]);
 
@@ -80,25 +81,25 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     const mode = delivery ?? (busy ? 'steer' : 'prompt');
     sendingRef.current = true; setSending(true);
     try {
-      await window.desktop.sendChatMessage(session.id, { text: submitted.text, attachmentIds: submittedIds, delivery: mode });
+      await desktopClient.sendChatMessage(session.id, { text: submitted.text, attachmentIds: submittedIds, delivery: mode });
       if (draftRef.current.revision === submitted.revision) changeDraft('');
       setAttachments(current => current.filter(item => !submittedIds.includes(item.id)));
     } catch (error) { onError(String(error)); }
     finally { sendingRef.current = false; setSending(false); }
   };
   const chooseAttachments = async () => {
-    try { const selected = await window.desktop.chooseChatAttachments(session.id); setAttachments(current => [...current, ...selected]); }
+    try { const selected = await desktopClient.chooseChatAttachments(session.id); setAttachments(current => [...current, ...selected]); }
     catch (error) { onError(String(error)); }
   };
   const stop = async () => {
     if (stoppingRef.current || unavailable) return;
     stoppingRef.current = true;
     try {
-      await window.desktop.stopChat(session.id);
+      await desktopClient.stopChat(session.id);
     } catch (error) { onError(String(error)); } finally { stoppingRef.current = false; }
   };
   const answerDialog = async (response: ExtensionUIResponse) => {
-    try { await window.desktop.respondToExtensionUI(session.id, response); dispatch({ type: 'extension-ui-closed', id: session.id, requestId: response.id }); }
+    try { await desktopClient.respondToExtensionUI(session.id, response); dispatch({ type: 'extension-ui-closed', id: session.id, requestId: response.id }); }
     catch (error) { onError(String(error)); }
   };
 
@@ -122,7 +123,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       {!!queueText(state.queue).length && <div className="queue-strip"><strong>已排队</strong>{state.queue.steering.map((text, index) => <span key={`s${index}`}>引导 · {text}</span>)}{state.queue.followUp.map((text, index) => <span key={`f${index}`}>后续 · {text}</span>)}</div>}
       {!!slash.length && <div className="slash-menu" aria-label="Pi 命令建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSlashDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {slash.map(command => <button key={command.name} onClick={() => { changeDraft(`/${command.name} `); setSlashDismissed(true); textarea.current?.focus(); }}><code>/{command.name}</code><span>{command.description || command.source}</span></button>)}</div>}
       <div className="composer">
-        {!!attachments.length && <div className="attachment-list">{attachments.map(item => <div className="attachment-chip" key={item.id}>{item.previewUrl ? <img src={item.previewUrl} alt="" /> : <Icon name="file" />}<div>{item.name}<small>{formatBytes(item.size)}</small></div><button aria-label={`移除 ${item.name}`} onClick={() => void window.desktop.removeChatAttachment(session.id, item.id).then(() => setAttachments(current => current.filter(value => value.id !== item.id))).catch(error => onError(String(error)))}><Icon name="close" /></button></div>)}</div>}
+        {!!attachments.length && <div className="attachment-list">{attachments.map(item => <div className="attachment-chip" key={item.id}>{item.previewUrl ? <img src={item.previewUrl} alt="" /> : <Icon name="file" />}<div>{item.name}<small>{formatBytes(item.size)}</small></div><button aria-label={`移除 ${item.name}`} onClick={() => void desktopClient.removeChatAttachment(session.id, item.id).then(() => setAttachments(current => current.filter(value => value.id !== item.id))).catch(error => onError(String(error)))}><Icon name="close" /></button></div>)}</div>}
         <textarea disabled={unavailable} ref={textarea} aria-label="发送消息" placeholder={busy ? '输入可在当前工具完成后引导 Pi…' : '描述任务、粘贴内容或添加文件…'} value={draft} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} onChange={event => { changeDraft(event.target.value); setSlashDismissed(false); }} onKeyDown={event => {
           if (event.nativeEvent.isComposing || composing.current || event.keyCode === 229) return;
           if (event.key === 'Escape') { setSlashDismissed(true); return; }

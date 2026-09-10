@@ -1,4 +1,7 @@
 /** @vitest-environment jsdom */
+import { installDesktopFake } from './desktop-bridge-fake';
+import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
+let desktop: DesktopAPI;
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const transport = vi.hoisted(() => ({ instances: [] as { options: Record<string, unknown>; dispose: ReturnType<typeof vi.fn>; focus: ReturnType<typeof vi.fn> }[] }));
@@ -21,7 +24,7 @@ import { terminalThemes } from '../src/renderer/theme';
 beforeEach(() => {
   transport.instances.length = 0;
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
-  window.desktop = { onSessionEvent: vi.fn(() => vi.fn()), startSession: vi.fn().mockResolvedValue(undefined), resize: vi.fn() } as unknown as typeof window.desktop;
+  desktop = installDesktopFake({ onSessionEvent: vi.fn(() => vi.fn()), startSession: vi.fn().mockResolvedValue(undefined), resize: vi.fn() } as unknown as DesktopAPI);
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 it('updates the existing xterm palette without spawning or disposing a terminal on theme/session visibility changes', () => {
@@ -30,6 +33,6 @@ it('updates the existing xterm palette without spawning or disposing a terminal 
   const terminal = transport.instances[0]; expect(terminal.options.theme).toEqual(terminalThemes.light);
   rerender(<TerminalPane {...props} theme="dark" />); expect(terminal.options.theme).toEqual(terminalThemes.dark);
   rerender(<TerminalPane {...props} active={false} theme="light" />); expect(terminal.options.theme).toEqual(terminalThemes.light);
-  expect(transport.instances).toHaveLength(1); expect(window.desktop.startSession).toHaveBeenCalledTimes(1); expect(window.desktop.onSessionEvent).toHaveBeenCalledTimes(1); expect(terminal.dispose).not.toHaveBeenCalled();
+  expect(transport.instances).toHaveLength(1); expect(desktop.startSession).toHaveBeenCalledTimes(1); expect(desktop.onSessionEvent).toHaveBeenCalledTimes(1); expect(terminal.dispose).not.toHaveBeenCalled();
   unmount(); expect(terminal.dispose).toHaveBeenCalledTimes(1);
 });

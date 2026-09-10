@@ -1,3 +1,4 @@
+import { desktopClient } from '../../app/desktop-client';
 import { useState } from 'react';
 import type { Bootstrap, Preferences } from '../../../shared/contracts';
 
@@ -16,7 +17,7 @@ export function useSettingsDraft({ boot, onClose, onSave }: SettingsDraftOptions
 
   const pick = async (key: 'piPath' | 'nodePath') => {
     try {
-      const selected = await window.desktop.chooseFile();
+      const selected = await desktopClient.chooseFile();
       if (selected) setValue(current => ({ ...current, [key]: selected }));
     } catch (error) { setError(String(error)); }
   };
@@ -26,7 +27,7 @@ export function useSettingsDraft({ boot, onClose, onSave }: SettingsDraftOptions
     try {
       const parsed: unknown = JSON.parse(args);
       if (!Array.isArray(parsed) || !parsed.every(item => typeof item === 'string')) throw new Error('参数必须是 JSON 字符串数组');
-      void window.desktop.savePreferences({ ...value, args: parsed }).then(result => {
+      void desktopClient.savePreferences({ ...value, args: parsed }).then(result => {
         onSave(result);
         if (result.runtimeError) { setError(result.runtimeError); setBusy(false); }
         else onClose();

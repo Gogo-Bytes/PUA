@@ -1,0 +1,43 @@
+import { PreferencesApplication } from '../src/modules/preferences/index';
+import { expect, vi } from 'vitest';
+import type { ChangeReview } from '../src/modules/change-review/index';
+import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
+import { registerDesktopIPC, type DesktopIPCDependencies } from '../src/platform/electron/ipc/register-desktop-ipc';
+import { createWindowHolder } from '../src/app/main/create-window';
+import { createDesktopPreferences } from '../src/app/main/desktop-preferences';
+import { invokeChannels, sendChannels } from '../src/shared/ipc/channels';
+import { fakeCapabilities, fakeWindow } from './app/main/main-fakes';
+
+import { preloadFake } from './preload-fake';
+import { createDesktopClient } from '../src/renderer/app/desktop-client';
+const initial = { piPath: '', nodePath: '', args: [], fontSize: 14, recentProjects: ['/old'] };
+export function desktopIPCFake() {
+  const { fake, window } = fakeWindow(); const capabilities = fakeCapabilities(); const holder = createWindowHolder(); holder.set({ window, capabilities });
+  const invokes = new Map<string, (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown>();
+  const sends = new Map<string, (event: IpcMainEvent, ...args: unknown[]) => void>();
+  const ipcMain: DesktopIPCDependencies['ipcMain'] = {
+    handle: (channel, handler) => { expect(invokes.has(channel)).toBe(false); invokes.set(channel, handler); },
+    on: vi.fn((channel, handler) => { expect(sends.has(channel)).toBe(false); sends.set(channel, handler); }) as unknown as DesktopIPCDependencies['ipcMain']['on'],
+  };
+  const store = { write: vi.fn().mockResolvedValue(undefined) }; const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+  const resolveRuntime = vi.fn(() => runtime); const validateChatArguments = vi.fn();
+  const preferences = createDesktopPreferences({ application: new PreferencesApplication({ ...initial, recentProjects: [...initial.recentProjects] }, store), resolveRuntime, validateChatArguments, home: '/fake/home', platform: 'fake' });
+  const dialog = { showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: ['/fake/file'] }), showMessageBox: vi.fn().mockResolvedValue({ response: 1 }) };
+  const shell = { openExternal: vi.fn().mockResolvedValue(undefined), openPath: vi.fn().mockResolvedValue('') };
+  const clipboard = { readText: vi.fn(async () => 'clip'), has: vi.fn(async (type: string) => type === 'image/png'), writeText: vi.fn().mockResolvedValue(undefined) };
+  const getGitStatus = vi.fn<ChangeReview['snapshot']>().mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: 'now', files: [{ path: 'new\nname', originalPath: 'old', index: 'R', worktree: ' ' }] }); const getFileDiff = vi.fn<ChangeReview['preview']>().mockResolvedValue({ text: 'patch', kind: 'diff', truncated: false }); const inspectProjectResources = vi.fn().mockResolvedValue({ hasResources: false, paths: [] });
+  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL: fake.webContents.mainFrame.url, preferences, changeReview: { snapshot: getGitStatus, preview: getFileDiff }, inspectProjectResources });
+  const event = { sender: fake.webContents, senderFrame: fake.webContents.mainFrame } as unknown as IpcMainInvokeEvent & IpcMainEvent;
+  const rawCall = (method: keyof typeof invokeChannels, ...args: unknown[]) => invokes.get(invokeChannels[method])!(event, ...args);
+  const listeners = new Set<(event: unknown, value: unknown) => void>();
+  const bridge = preloadFake({
+    invoke: (channel, ...args) => Promise.resolve(invokes.get(channel)!(event, ...args)),
+    send: (channel, ...args) => sends.get(channel)!(event, ...args),
+    on: (_channel, listener) => { listeners.add(listener); },
+    removeListener: (_channel, listener) => { listeners.delete(listener); },
+  });
+  const client = createDesktopClient(() => bridge);
+  const call = (method: keyof typeof invokeChannels, ...args: unknown[]) => (client[method] as (...args: unknown[]) => Promise<unknown>)(...args);
+  const emit = (value: unknown) => { for (const listener of listeners) listener({ secretElectronEvent: true }, value); };
+  return { fake, window, holder, capabilities, invokes, sends, store, runtime, preferences, resolveRuntime, validateChatArguments, dialog, shell, clipboard, getGitStatus, getFileDiff, inspectProjectResources, event, call, rawCall, bridge, client, listeners, emit };
+}

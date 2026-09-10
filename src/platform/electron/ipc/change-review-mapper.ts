@@ -1,3 +1,4 @@
+import { DesktopApplicationError } from './desktop-errors.js';
 import { ReviewFailure, type RepositorySnapshot, type ReviewPreview, type ReviewScope } from '../../../modules/change-review/index.js';
 import type { DiffScope, FileDiff, GitStatus } from '../../../shared/git.js';
 
@@ -12,6 +13,6 @@ export function reviewPreviewDTO(preview: ReviewPreview): FileDiff {
   return { text: preview.text, kind: preview.kind, truncated: preview.truncated };
 }
 export function reviewError(error: unknown): never {
-  if (error instanceof ReviewFailure) throw new Error(error.code === 'INVALID_SCOPE' ? '未知 diff 范围' : '文件状态已变化，请刷新变更列表。');
+  if (error instanceof ReviewFailure) throw new DesktopApplicationError(error.code, error.code === 'INVALID_SCOPE' ? '未知 diff 范围' : '文件状态已变化，请刷新变更列表。');
   throw error;
 }

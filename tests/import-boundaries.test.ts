@@ -237,3 +237,20 @@ describe('TypeScript import/channel gate', () => {
     expect(checkSource(path.join(root, file), source, root)).toEqual([]);
   });
 });
+
+it.each([
+  'window.desktop.bootstrap()', "window['desktop'].bootstrap()", 'window[key].bootstrap()',
+  'const { desktop: renamed } = window; renamed.bootstrap()',
+  "const { ['desktop']: renamed } = window", 'const { [key]: renamed } = window',
+  'const w = window; w.desktop.bootstrap()', "const w = globalThis.window; w['desktop'].bootstrap()",
+  'const w = window; w[key].bootstrap()', 'let w; w = window; w[key].bootstrap()',
+  '({ desktop: renamed } = window)', "({ ['desktop']: renamed } = window)", '({ [key]: renamed } = window)',
+  '(window as Window).desktop.bootstrap()', 'globalThis.window.desktop.bootstrap()',
+])('rejects production raw Desktop access (AST): %s', text => {
+  expect(checkSource('src/renderer/ChatPane.tsx', text, process.cwd()).join('\n')).toMatch(/Desktop/);
+});
+it('allows only the named production client global seam; test/preview assembly is non-production', () => {
+  expect(checkSource('src/renderer/app/desktop-client.ts', 'window.desktop', process.cwd())).toEqual([]);
+  expect(checkSource('tests/desktop-bridge-fake.ts', 'window.desktop = fake', process.cwd())).toEqual([]);
+  expect(checkSource('src/renderer/features/other/desktop-client.ts', 'window.desktop', process.cwd()).join('\n')).toMatch(/Desktop/);
+});

@@ -63,7 +63,45 @@ export function checkSource(filename: string, text: string, root: string): strin
     if (targetModule && targetModule[1] !== sourceModule && !/^index\.[cm]?[jt]s$/.test(targetModule[2])) report(node, `cross-module import must use ${targetModule[1]}/index.ts`);
     if (relative.startsWith('src/') && (target.startsWith('tests/') || /(^|\/)fixtures?\//.test(target))) report(node, `production fixture import ${target} is forbidden`);
   };
+  const desktopSeam = relative === 'src/renderer/app/desktop-client.ts';
+  const hostAliases = new Set(['window', 'globalThis', 'self', 'global']);
+  const unwrap = (node: ts.Expression): ts.Expression => {
+    while (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isTypeAssertionExpression(node) || ts.isNonNullExpression(node)) node = node.expression;
+    return node;
+  };
+  const host = (expression: ts.Expression): boolean => {
+    const node = unwrap(expression);
+    return ts.isIdentifier(node) ? hostAliases.has(node.text)
+      : ts.isPropertyAccessExpression(node) ? host(node.expression) && ['window', 'self', 'globalThis'].includes(node.name.text)
+      : ts.isElementAccessExpression(node) && host(node.expression) && ts.isStringLiteralLike(node.argumentExpression) && ['window', 'self', 'globalThis'].includes(node.argumentExpression.text);
+  };
+  // Finite local alias analysis, not general JavaScript data flow.
+  let grew = true;
+  while (grew) {
+    grew = false;
+    const aliases = (node: ts.Node): void => {
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && host(node.initializer) && !hostAliases.has(node.name.text)) { hostAliases.add(node.name.text); grew = true; }
+      if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left) && host(node.right) && !hostAliases.has(node.left.text)) { hostAliases.add(node.left.text); grew = true; }
+      ts.forEachChild(node, aliases);
+    };
+    aliases(source);
+  }
   const visit = (node: ts.Node): void => {
+    if (renderer && !desktopSeam) {
+      if (ts.isPropertyAccessExpression(node) && node.name.text === 'desktop') report(node, 'Desktop bridge access belongs in renderer/app/desktop-client.ts');
+      if (ts.isElementAccessExpression(node) && ((ts.isStringLiteralLike(node.argumentExpression) && node.argumentExpression.text === 'desktop') || (host(node.expression) && !ts.isStringLiteralLike(node.argumentExpression)))) report(node, 'Desktop/computed host access belongs in renderer/app/desktop-client.ts');
+      if (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) {
+        const key = node.name;
+        const name = ts.isComputedPropertyName(key) ? key.expression : key;
+        const assignment = node.parent.parent;
+        if ((ts.isIdentifier(name) || ts.isStringLiteralLike(name)) && name.text === 'desktop' || ts.isComputedPropertyName(key) && ts.isBinaryExpression(assignment) && assignment.left === node.parent && host(assignment.right)) report(node, 'Desktop destructuring assignment belongs in renderer/app/desktop-client.ts');
+      }
+      if (ts.isBindingElement(node)) {
+        const key = node.propertyName ?? node.name;
+        if ((ts.isIdentifier(key) || ts.isStringLiteralLike(key)) && key.text === 'desktop' || ts.isComputedPropertyName(key)) report(node, 'Desktop/computed destructuring belongs in renderer/app/desktop-client.ts');
+      }
+    }
+
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteralLike(node.moduleSpecifier)) checkImport(node, node.moduleSpecifier.text);
     if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference) && node.moduleReference.expression && ts.isStringLiteralLike(node.moduleReference.expression)) checkImport(node, node.moduleReference.expression.text);
     if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument) && ts.isStringLiteralLike(node.argument.literal)) checkImport(node, node.argument.literal.text);
