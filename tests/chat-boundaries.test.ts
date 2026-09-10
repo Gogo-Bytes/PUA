@@ -1,27 +1,37 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Writable } from 'node:stream';
 import { extensionResponse, validBlockIndex } from '../src/shared/chat-validation';
-import { ExtensionDialogs } from '../src/main/extension-dialogs';
+import { ConversationRuntimeApplication } from '../src/modules/conversation/index';
 import { RpcWriter } from '../src/main/rpc-writer';
 import { contentImages } from '../src/main/chat-normalize';
 import { emptyChatState, reduceChatEvent } from '../src/renderer/chat-state';
 
 afterEach(() => vi.useRealTimers());
 describe('extension response boundary and lifecycle', () => {
-  it('reconstructs the union and rejects wrong, duplicate and expired dialog answers', () => {
+  it('reconstructs the union and rejects wrong, duplicate and expired dialog answers', async () => {
     vi.useFakeTimers();
-    const retired = vi.fn(); const dialogs = new ExtensionDialogs(retired);
-    dialogs.add({ id: 'd', method: 'select', title: 'Pick', options: ['yes'], expiresAt: Date.now() + 100 });
+    const retired = vi.fn(); const writeAnswer = vi.fn().mockResolvedValue(undefined);
+    const runtime = new ConversationRuntimeApplication({
+      clearQueue: async () => ({ steering: [], followUp: [] }), abort: async () => {}, writeAnswer,
+    }, {
+      now: () => Date.now(), at: (deadline, callback) => {
+        const timer = setTimeout(callback, deadline - Date.now()); return () => clearTimeout(timer);
+      },
+    }, event => { if (event.type === 'dialog-closed') retired(event.dialogId); });
+    const open = () => runtime.accept({ type: 'dialog', dialog: { id: 'd', kind: 'select', title: 'Pick', options: ['yes'], expiresAt: Date.now() + 100 } });
+    open();
     const hostile = { id: 'd', cancelled: true, type: 'switch_session', sessionPath: '/private/session' };
     expect(extensionResponse(hostile)).toEqual({ id: 'd', cancelled: true });
-    expect(dialogs.answer(hostile)).toEqual({ id: 'd', cancelled: true });
-    expect(() => dialogs.answer({ id: 'd', confirmed: true })).toThrow('类型');
-    expect(() => dialogs.answer({ id: 'd', value: 'other' })).toThrow('选项');
-    vi.advanceTimersByTime(100); expect(retired).toHaveBeenCalledWith('d');
-    expect(() => dialogs.answer(hostile)).toThrow('结束');
-    expect(dialogs.waiting).toBe(false);
-    dialogs.add({ id: 'e', method: 'input', title: 'Text' });
-    dialogs.remove('e'); expect(() => dialogs.answer({ id: 'e', value: '' })).toThrow('结束');
+    await expect(runtime.answer({ id: 'd', confirmed: true })).rejects.toMatchObject({ code: 'ANSWER_TYPE' });
+    await expect(runtime.answer({ id: 'd', value: 'other' })).rejects.toMatchObject({ code: 'INVALID_OPTION' });
+    await runtime.answer(extensionResponse(hostile));
+    expect(writeAnswer).toHaveBeenCalledExactlyOnceWith({ id: 'd', cancelled: true });
+    open(); vi.advanceTimersByTime(100); expect(retired).toHaveBeenCalledWith('d');
+    await expect(runtime.answer(extensionResponse(hostile))).rejects.toMatchObject({ code: 'DIALOG_ENDED' });
+    expect(runtime.waiting).toBe(false);
+    runtime.accept({ type: 'dialog', dialog: { id: 'e', kind: 'input', title: 'Text' } });
+    await runtime.answer({ id: 'e', value: '' });
+    await expect(runtime.answer({ id: 'e', value: '' })).rejects.toMatchObject({ code: 'DIALOG_ENDED' });
   });
   it('clears expired/exited dialogs without creating responding activity', () => {
     let state = reduceChatEvent(emptyChatState(), { id: 's', type: 'extension-ui', request: { id: 'd', method: 'input', title: 'Text' } });

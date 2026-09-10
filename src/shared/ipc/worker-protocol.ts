@@ -1,0 +1,42 @@
+import type { ExtensionUIResponse, SessionEvent } from '../chat.js';
+
+/** Internal utility wire only: no Pi commands, resource handles or attachment tokens. */
+export interface WorkerLaunch {
+  executable: string;
+  args: string[];
+  cwd: string;
+  env: Record<string, string>;
+}
+export interface WorkerImage { data: string; mimeType: string }
+export type RpcOperation =
+  | { type: 'send'; text: string; filePaths: string[]; images: WorkerImage[]; queuePreference: 'steer' | 'followUp' }
+  | { type: 'stop' }
+  | { type: 'extension-response'; response: ExtensionUIResponse }
+  | { type: 'rename'; name: string };
+export type RpcRequest = RpcOperation & { requestId: string };
+export type RpcWorkerInput =
+  | ({ type: 'start'; id: string } & WorkerLaunch)
+  | RpcRequest
+  | { type: 'close' };
+export type PtyWorkerInput =
+  | ({ type: 'start'; cols: number; rows: number } & WorkerLaunch)
+  | { type: 'write'; data: string }
+  | { type: 'resize'; cols: number; rows: number }
+  | { type: 'ack'; size: number }
+  | { type: 'close' };
+export type RpcWorkerEvent = Exclude<SessionEvent, { type: 'terminal-data' }>;
+export type RpcWorkerOutput =
+  | { type: 'event'; event: RpcWorkerEvent }
+  | { type: 'child-pid'; pid: number }
+  | { type: 'response'; requestId: string; success: true }
+  | { type: 'response'; requestId: string; success: false; error: string };
+export type PtyWorkerOutput =
+  | { type: 'data'; data: string }
+  | { type: 'child-pid'; pid: number }
+  | { type: 'error'; message: string }
+  | { type: 'exit'; exitCode: number };
+
+/** Implemented by Electron's transport at the edge; callers cannot send arbitrary commands. */
+export interface WorkerInputPort<Message extends RpcWorkerInput | PtyWorkerInput> {
+  postMessage(message: Message): void;
+}

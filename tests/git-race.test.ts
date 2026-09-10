@@ -4,7 +4,13 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
-import { getFileDiff } from '../src/main/git';
+import { ChangeReviewApplication } from '../src/modules/change-review/index';
+import { GitReviewAdapter } from '../src/platform/git/review-adapter';
+import { reviewPreviewDTO, reviewError } from '../src/platform/electron/ipc/change-review-mapper';
+import type { DiffScope } from '../src/shared/git';
+
+const review = new ChangeReviewApplication(new GitReviewAdapter());
+const getFileDiff = (cwd: string, path: string, scope: DiffScope) => review.preview({ cwd, path, scope }).then(reviewPreviewDTO).catch(reviewError);
 
 vi.mock('node:fs/promises', async importOriginal => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();

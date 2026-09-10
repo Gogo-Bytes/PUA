@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SessionInfo } from '../shared/contracts';
 import { Icon } from './Icon';
-import { groupProjects } from './session-state';
+import { groupProjects } from './features/workspace';
 
 export function ProjectNavigation({ sessions, recentProjects, project, onSelect }: { sessions: SessionInfo[]; recentProjects: string[]; project?: string; onSelect(cwd: string): void }) {
   const [query, setQuery] = useState('');

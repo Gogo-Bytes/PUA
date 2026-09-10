@@ -2,7 +2,15 @@
 
 产品名称为 **PUA — Pi Universal App**。为保持 app id 和用户数据路径，本次打包产物名称仍为 `Pi Desktop.app`。
 
-## 0.3.0（当前工作区）
+## 累计架构 checkpoint：strict Pi 有限收尾
+
+HEAD 仍为 `a4fb717`，累计 dirty/new/deleted 均保留；下方 0.3 记录是历史实测，不代表当前完整候选树通过桌面/发布验收。本次协议安全修正与后续未完成包见 [Strict Pi 状态](architecture.md#strict-pi-response有限协议收尾)。
+
+本轮仅执行三份 tsconfig 的 noEmit、经逐文件审计的内存 Fake/静态/jsdom 白名单、AST/44 文件保护与完整 before/after SHA/预览依赖闭包对照、`/tmp` 隔离 main/preload/renderer 纯构建及 emitted links 检查。新增红→绿测试经过真实 source RPC host/writer、utility parser、main Conversation token owner 与 ChatPane，证明弱 ACK 的协议缺口，不能证明用户助手缺失 P0 根因。旧合法 golden 迁移必要 command/clear 字段，畸形输入单列拒绝测试；mock/lifecycle Pi fixture 只读核对，无需协议修改且未运行。可重复测试在 `tests/rpc-host.test.ts` 与 `tests/missing-assistant-replay.test.tsx`，命令/红绿/类型/构建/hash 日志在 `/tmp/pua-closeout-protocol.logs/`。
+
+本机安装包版本从 package.json 只读核对为 Pi 0.85.1，未执行 Pi 或读取真实 history。未操作、退出或重启用户普通模式应用；当前 dist、renderer/UI/demo/辅助 workspace-preview、diagnostics/menu 和业务 core 原位原字节保留。未运行 Electron/Pi/browser/真实 fsGit fixture、smoke/lifecycle/IPC 集成、verify/dev/package/dist/全量测试，也未执行任何构建产物。另在 `/tmp/pua-closeout-protocol-candidate` 以 HEAD archive＋显式累计变更/删除路径构造候选树，不包含 ignored 设计资料；逐字节对照当前源码，再运行同一三 noEmit、白名单、AST/保护与隔离构建。路径清单和 source SHA 在本轮 logs 中。这只闭合所列有限检查，不替代全部累计行为验收或 Main 的提交审核。没有 stage/commit/push；独立累计 review、候选路径私密性/文档依赖审核与 staged diff 复核仍待 Main，纯构建已有大 chunk 告警保留。
+
+## 0.3.0（历史工作区验证）
 
 验证环境：macOS arm64、Node.js 22.22.3、Electron 44.2.0、本机 Pi 0.84.4。
 

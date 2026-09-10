@@ -3,10 +3,9 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { JsonlDecoder, TailBuffer } from '../src/main/rpc-jsonl';
-import { normalizeHistory } from '../src/main/chat-normalize';
-import { validateChatArguments } from '../src/main/runtime';
-import { imageMimeType, validateImageBudget } from '../src/main/attachment-policy';
-import { inspectProjectResources } from '../src/main/project-resources';
+import { validateChatArguments } from '../src/app/main/desktop-preferences';
+import { imageMimeType } from '../src/main/attachment-policy';
+import { inspectProjectResources } from '../src/platform/filesystem/project-resources';
 import { emptyChatState, reduceChatEvent } from '../src/renderer/chat-state';
 import type { SessionEvent } from '../src/shared/chat';
 
@@ -25,19 +24,10 @@ describe('strict RPC JSONL transport', () => {
   it('retains only the bounded stderr tail', () => { const tail = new TailBuffer(8); tail.append('abcdefghijklmnop'); expect(Buffer.byteLength(tail.toString())).toBeLessThanOrEqual(8); });
 });
 
-describe('Pi message normalization', () => {
-  it('merges historical tool results into their assistant tool call', () => {
-    const messages = normalizeHistory([
-      { role: 'assistant', timestamp: 1, content: [{ type: 'toolCall', id: 'a', name: 'read', arguments: { path: 'x' } }], stopReason: 'stop' },
-      { role: 'toolResult', toolCallId: 'a', toolName: 'read', content: [{ type: 'text', text: 'done' }], isError: false, timestamp: 2 },
-    ]);
-    expect(messages).toHaveLength(1); expect(messages[0].blocks[0]).toMatchObject({ type: 'tool', tool: { status: 'success', output: 'done' } });
-  });
-});
-
 describe('chat reducer', () => {
   const id = 'session';
-  const apply = (state: ReturnType<typeof emptyChatState>, event: Omit<SessionEvent, 'id'>) => reduceChatEvent(state, { ...event, id } as SessionEvent);
+  type WithoutId<T> = T extends unknown ? Omit<T, 'id'> : never;
+  const apply = (state: ReturnType<typeof emptyChatState>, event: WithoutId<SessionEvent>) => reduceChatEvent(state, { ...event, id } as SessionEvent);
   it('assembles indexed deltas and treats message_end as authoritative', () => {
     let state = emptyChatState();
     state = apply(state, { type: 'chat-message-start', message: { id: 'm', role: 'assistant', blocks: [], timestamp: 1, streaming: true } });
@@ -54,11 +44,8 @@ describe('chat reducer', () => {
 });
 
 describe('chat attachment policy', () => {
-  it('allows only supported image types and enforces count/per-file/total limits', () => {
+  it('allows only supported image types', () => {
     expect(imageMimeType('screen.PNG')).toBe('image/png'); expect(imageMimeType('notes.txt')).toBeUndefined();
-    expect(() => validateImageBudget([], { name: 'large.png', size: 5 * 1024 * 1024 + 1 })).toThrow('超过 5 MiB');
-    expect(() => validateImageBudget(Array.from({ length: 4 }, () => ({ size: 1 })), { name: 'fifth.png', size: 1 })).toThrow('最多 4');
-    expect(() => validateImageBudget([{ size: 5 * 1024 * 1024 }, { size: 5 * 1024 * 1024 }], { name: 'extra.png', size: 1 })).toThrow('总大小');
   });
 });
 

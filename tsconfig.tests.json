@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"]
+  },
+  // TS/TSX tests and fixtures only; .mjs smoke fixtures are exercised at runtime, not checked here.
+  "include": ["tests/**/*.ts", "tests/**/*.tsx", "scripts/**/*.ts", "vitest.config.ts", "vite.preload.config.ts"]
+}

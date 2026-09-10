@@ -3,10 +3,14 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { OutputFlow } from '../src/main/flow-control';
-import { defaults, PreferencesStore, validatePreferences } from '../src/main/preferences';
-import { expandHome, resolveRuntime, terminalEnvironment } from '../src/main/runtime';
+import { validatePreferences } from '../src/shared/ipc/schemas';
+import { defaults, JsonPreferencesStorage } from '../src/platform/filesystem/preferences-storage';
+import { expandHome } from '../src/platform/filesystem/expand-home';
+import { resolveRuntime } from '../src/platform/pi/runtime/discovery';
+import { terminalEnvironment } from '../src/platform/pi/process/environment';
 import { modifiedEnter, referencePaths } from '../src/renderer/terminal-keys';
-import { removeSession, type SessionWorkspace } from '../src/renderer/session-state';
+import { removeSession, type SessionWorkspace } from '../src/renderer/features/workspace';
+import type { SessionInfo } from '../src/shared/contracts';
 
 describe('terminal transport', () => {
   it('pauses until xterm has consumed the high-water backlog', () => {
@@ -58,7 +62,7 @@ describe('user-owned Pi runtime', () => {
 });
 
 describe('async session closure', () => {
-  const initial: SessionWorkspace = { sessions: ['A', 'B', 'C'].map(id => ({ id, cwd: '/project', title: id, status: 'running' })), activeId: 'A' };
+  const initial: SessionWorkspace<SessionInfo> = { sessions: ['A', 'B', 'C'].map(id => ({ id, cwd: '/project', title: id, kind: 'chat', processStatus: 'running', activity: 'idle' })), activeId: 'A' };
   it('reconciles out-of-order close responses without selecting a removed tab', () => {
     const next = removeSession(removeSession(initial, 'B'), 'A');
     expect(next.sessions.map(session => session.id)).toEqual(['C']);
@@ -84,7 +88,7 @@ describe('desktop preferences, separate from Pi config', () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'pi-desktop-test-'));
     const file = path.join(directory, 'settings.json');
     try {
-      const store = new PreferencesStore(file);
+      const store = new JsonPreferencesStorage(file);
       expect(await store.read()).toEqual(defaults);
       await Promise.all([store.write({ ...defaults, fontSize: 16 }), store.write({ ...defaults, fontSize: 18 })]);
       expect((await store.read()).fontSize).toBe(18);

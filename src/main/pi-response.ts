@@ -1,0 +1,44 @@
+import { isRecord } from './chat-normalize.js';
+
+// Pi-only spellings and consumed payloads; never part of the utility/Desktop wire.
+export type PiCommand =
+  | { type: 'get_state' | 'get_messages' | 'get_commands' | 'clear_queue' | 'abort' }
+  | { type: 'set_session_name'; name: string }
+  | { type: 'prompt'; message: string; images: Array<{ type: 'image'; data: string; mimeType: string }>; streamingBehavior: 'steer' | 'followUp' };
+
+export interface PiResponseData {
+  get_state: Record<string, unknown>;
+  get_messages: { messages: unknown[] };
+  get_commands: { commands: unknown[] };
+  clear_queue: { steering: string[]; followUp: string[] };
+  // These commands consume only the ACK; extra data is deliberately not constrained.
+  prompt: unknown;
+  abort: unknown;
+  set_session_name: unknown;
+}
+
+function stringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && Array.from(value).every(item => typeof item === 'string');
+}
+
+function validData<C extends PiCommand['type']>(command: C, data: unknown): data is PiResponseData[C] {
+  switch (command) {
+    case 'get_state': return isRecord(data);
+    case 'get_messages': return isRecord(data) && Array.isArray(data.messages);
+    case 'get_commands': return isRecord(data) && Array.isArray(data.commands);
+    case 'clear_queue': return isRecord(data) && stringArray(data.steering) && stringArray(data.followUp);
+    case 'prompt': case 'abort': case 'set_session_name': return true;
+  }
+}
+
+/** Caller correlates by pending ID first. A protocol failure does not prove non-acceptance. */
+export function parsePiResponse<C extends PiCommand['type']>(command: C, value: Record<string, unknown>): PiResponseData[C] {
+  const protocolError = () => new Error(`Pi RPC protocol error (${command}); acceptance unknown${command === 'clear_queue' ? '; recovery unknown' : ''}`);
+  if (value.type !== 'response' || value.command !== command || typeof value.success !== 'boolean') throw protocolError();
+  if (!value.success) {
+    if (typeof value.error !== 'string') throw protocolError();
+    throw new Error(value.error);
+  }
+  if (!validData(command, value.data)) throw protocolError();
+  return value.data;
+}

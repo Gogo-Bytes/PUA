@@ -1,3 +1,4 @@
+import { parsePtyWorkerOutput } from '../src/shared/ipc/worker-schemas';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 
@@ -23,7 +24,10 @@ beforeEach(async () => {
   await import('../src/main/pty-host');
   send({ type: 'start', executable: 'fixture', args: [], cwd: '/tmp', env: {}, cols: 80, rows: 24 });
 });
-afterEach(() => { (process as any).parentPort = originalPort; vi.restoreAllMocks(); });
+afterEach(() => {
+  (process as any).parentPort = originalPort; vi.restoreAllMocks();
+  for (const [message] of (port as EventEmitter & { postMessage: ReturnType<typeof vi.fn> }).postMessage.mock.calls) expect(parsePtyWorkerOutput(message)).toEqual(message);
+});
 
 it('ignores late PTY operations after root exit until descendant escalation completes', async () => {
   send({ type: 'close' });
@@ -52,4 +56,31 @@ it('operation failures use the same awaited cleanup instead of exiting immediate
   finishCleanup();
   await Promise.resolve();
   expect(process.exit).toHaveBeenCalledWith(1);
+});
+
+it('worker protocol ignores malformed and wrong-direction controls without PTY or cleanup effects', () => {
+  for (const data of [null, [], {}, { type: 'write', data: 7 }, { type: 'resize', cols: 1, rows: 24 },
+    { type: 'ack', size: -1 }, { type: 'command', command: { type: 'prompt' } }, { type: 'data', data: 'wrong' },
+    { type: 'start', executable: 'external', args: [], cwd: '/fake', env: { BAD: 1 }, cols: 80, rows: 24 }]) send(data);
+  expect(control.spawn).toHaveBeenCalledTimes(1); expect(terminal.write).not.toHaveBeenCalled();
+  expect(terminal.resize).not.toHaveBeenCalled(); expect(terminal.resume).not.toHaveBeenCalled();
+  expect(control.terminate).not.toHaveBeenCalled(); expect(process.exit).not.toHaveBeenCalled();
+});
+it('worker protocol preserves NUL/large paste and output ACK character units', () => {
+  const paste = '\0文'.repeat(200_000); send({ type: 'write', data: paste });
+  expect(terminal.write).toHaveBeenCalledExactlyOnceWith(paste);
+  const data = terminal.onData.mock.calls[0][0];
+  data('文'.repeat(256 * 1024)); expect(terminal.pause).toHaveBeenCalledTimes(1);
+  send({ type: 'ack', size: 192 * 1024 - 1 }); expect(terminal.resume).not.toHaveBeenCalled();
+  send({ type: 'ack', size: 1 }); expect(terminal.resume).toHaveBeenCalledTimes(1);
+  expect((port as EventEmitter & { postMessage: ReturnType<typeof vi.fn> }).postMessage.mock.calls.at(-1)![0]).toEqual({ type: 'data', data: '文'.repeat(256 * 1024) });
+});
+it('failed PTY output closes once without recursively posting an error or touching late controls', async () => {
+  const post = (port as EventEmitter & { postMessage: ReturnType<typeof vi.fn> }).postMessage;
+  post.mockImplementation(() => { throw new Error('output failed'); });
+  terminal.onData.mock.calls[0][0]('output');
+  send({ type: 'write', data: 'late' }); send({ type: 'close' }); rootExit({ exitCode: 0 });
+  expect(post).toHaveBeenCalledTimes(2); // initial PID, then one failed data post
+  expect(control.terminate).toHaveBeenCalledTimes(1); expect(terminal.write).not.toHaveBeenCalled();
+  finishCleanup(); await Promise.resolve(); expect(process.exit).toHaveBeenCalledExactlyOnceWith(1);
 });

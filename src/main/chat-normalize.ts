@@ -1,4 +1,4 @@
-import type { ChatBlock, ChatImageBlock, ChatMessage, ToolActivity } from '../shared/chat.js';
+import type { ConversationBlock, ConversationImage, ConversationMessage, ConversationHistoryItem, ConversationJson, ConversationObject, ToolOutput } from '../modules/conversation/index.js';
 
 const object = (value: unknown): Record<string, unknown> | undefined => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 const string = (value: unknown): string | undefined => typeof value === 'string' ? value : undefined;
@@ -15,10 +15,10 @@ export function contentText(content: unknown): string {
   }).filter(Boolean).join('\n');
 }
 
-export function contentImages(content: unknown): ChatImageBlock[] {
+export function contentImages(content: unknown): ConversationImage[] {
   if (!Array.isArray(content)) return [];
   let bytes = 0;
-  return content.flatMap((raw): ChatImageBlock[] => {
+  return content.flatMap((raw): ConversationImage[] => {
     const item = object(raw);
     if (item?.type !== 'image' || typeof item.data !== 'string' || typeof item.mimeType !== 'string') return [];
     if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(item.mimeType) || !/^[A-Za-z0-9+/]*={0,2}$/.test(item.data)) return [];
@@ -27,9 +27,9 @@ export function contentImages(content: unknown): ChatImageBlock[] {
   }).slice(0, 4);
 }
 
-function assistantBlocks(content: unknown): ChatBlock[] {
+function assistantBlocks(content: unknown): ConversationBlock[] {
   if (!Array.isArray(content)) return [];
-  return content.flatMap((item): ChatBlock[] => {
+  return content.flatMap((item): ConversationBlock[] => {
     const value = object(item);
     if (!value) return [];
     if (value.type === 'text') return [{ type: 'text', text: string(value.text) ?? '' }];
@@ -37,13 +37,13 @@ function assistantBlocks(content: unknown): ChatBlock[] {
     if (value.type === 'toolCall') return [{ type: 'tool', tool: {
       id: string(value.id) ?? `tool-${Math.random()}`,
       name: string(value.name) ?? 'tool',
-      arguments: object(value.arguments) ?? {}, status: 'pending', output: '',
+      arguments: jsonObject(value.arguments) ?? {}, status: 'pending', output: '',
     } }];
     return [];
   });
 }
 
-export function normalizeMessage(raw: unknown, sequence: number): ChatMessage | undefined {
+export function normalizeMessage(raw: unknown, sequence: number): ConversationMessage | undefined {
   const value = object(raw);
   const role = string(value?.role);
   if (!value || !role) return;
@@ -61,33 +61,45 @@ export function normalizeMessage(raw: unknown, sequence: number): ChatMessage | 
   return;
 }
 
-export function normalizeHistory(rawMessages: unknown): ChatMessage[] {
+/** Only structural normalization here; single-pass result association belongs to the stream core. */
+export function normalizeHistoryItems(rawMessages: unknown): ConversationHistoryItem[] {
   if (!Array.isArray(rawMessages)) return [];
-  const messages: ChatMessage[] = [];
-  const tools = new Map<string, ToolActivity>();
-  rawMessages.forEach((raw, index) => {
+  return rawMessages.flatMap((raw, index): ConversationHistoryItem[] => {
     const value = object(raw);
     if (value?.role === 'toolResult') {
-      const id = string(value.toolCallId);
-      if (id && tools.has(id)) {
-        const tool = tools.get(id)!;
-        tool.status = value.isError ? 'error' : 'success';
-        tool.output = contentText(value.content);
-        tool.details = value.details; tool.images = contentImages(value.content);
-      }
-      return;
+      return typeof value.toolCallId === 'string' ? [{ type: 'result', result: {
+        toolId: value.toolCallId, failed: !!value.isError, result: normalizeToolResult(value),
+      } }] : [];
     }
     const message = normalizeMessage(raw, index);
-    if (!message) return;
-    for (const block of message.blocks) if (block.type === 'tool') tools.set(block.tool.id, block.tool);
-    messages.push(message);
+    return message ? [{ type: 'message', message }] : [];
   });
-  return messages;
 }
 
-export function normalizeToolResult(result: unknown): { output: string; details?: unknown; images: ChatImageBlock[] } {
+export function normalizeToolResult(result: unknown): ToolOutput {
   const value = object(result);
-  return { output: contentText(value?.content), details: value?.details, images: contentImages(value?.content) };
+  return { output: contentText(value?.content), details: jsonValue(value?.details), images: contentImages(value?.content) };
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> { return !!object(value); }
+
+// JSONL payload leaves are shared read-only, not cloned into a second transcript.
+function isJson(value: unknown): value is ConversationJson {
+  const pending: unknown[] = [value];
+  const seen = new Set<object>();
+  while (pending.length) {
+    const item = pending.pop();
+    // JSON.parse can produce numeric overflow; do not narrow existing tool values.
+    if (item === null || typeof item === 'string' || typeof item === 'boolean' || typeof item === 'number') continue;
+    if (!Array.isArray(item) && !isRecord(item)) return false;
+    if (seen.has(item)) return false;
+    seen.add(item);
+    for (const child of Object.values(item)) pending.push(child);
+  }
+  return true;
+}
+export function jsonValue(value: unknown): ConversationJson | undefined { return isJson(value) ? value : undefined; }
+export function jsonObject(value: unknown): ConversationObject | undefined { return isRecord(value) && isJson(value) ? value as ConversationObject : undefined; }
+export function decodeArguments(text: string): ConversationObject | undefined {
+  try { return jsonObject(JSON.parse(text)); } catch { return undefined; }
+}

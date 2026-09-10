@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, writeFile, rm, access } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import { resolveRuntime } from '../dist/main/runtime.js';
+import { resolveRuntime } from '../dist/platform/pi/runtime/discovery.js';
 
 const root = process.cwd();
 const runtime = resolveRuntime({ piPath: process.env.PI_DESKTOP_TEST_PI || '', nodePath: process.env.PI_DESKTOP_TEST_NODE || '', args: [] });

@@ -4,8 +4,14 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
-import { getFileDiff, getGitStatus, parseStatus } from '../src/main/git';
-import { filesForScope } from '../src/shared/git';
+import { ChangeReviewApplication } from '../src/modules/change-review/index';
+import { GitReviewAdapter, parseStatus } from '../src/platform/git/review-adapter';
+import { repositorySnapshotDTO, reviewPreviewDTO, reviewError } from '../src/platform/electron/ipc/change-review-mapper';
+import { filesForScope, type DiffScope } from '../src/shared/git';
+
+const review = new ChangeReviewApplication(new GitReviewAdapter());
+const getFileDiff = (cwd: string, path: string, scope: DiffScope) => review.preview({ cwd, path, scope }).then(reviewPreviewDTO).catch(reviewError);
+const getGitStatus = (cwd: string) => review.snapshot(cwd).then(repositorySnapshotDTO);
 
 const exec = promisify(execFile);
 const temporary: string[] = [];

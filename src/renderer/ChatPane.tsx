@@ -6,6 +6,7 @@ import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../shared/chat';
 import type { SessionInfo } from '../shared/contracts';
 import { emptyChatState, queueText, reduceChatEvent, widgetsAt } from './chat-state';
+import { missingAssistantRendererDiagnostics } from './missing-assistant-diagnostics';
 
 interface Props {
   session: SessionInfo;
@@ -43,6 +44,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   useEffect(() => {
     const unsubscribe = window.desktop.onSessionEvent(event => {
       if (event.id !== session.id) return;
+      missingAssistantRendererDiagnostics.record('renderer-received', session.id, event);
       if (event.type === 'chat-queue-recovered') {
         if (!recoveredRequests.current.has(event.requestId)) {
           recoveredRequests.current.add(event.requestId);
@@ -56,6 +58,12 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     return unsubscribe;
   }, [session.id]);
 
+  useEffect(() => {
+    if (!missingAssistantRendererDiagnostics.enabled(session.id)) return;
+    missingAssistantRendererDiagnostics.record('renderer-reduced', session.id, {
+      type: 'chat-projection', message: [...state.messages].reverse().find(message => message.role === 'assistant') ?? state.messages.at(-1),
+    });
+  }, [state, session.id]);
   useEffect(() => onCommands(state.commands), [state.commands]);
   useEffect(() => {
     const node = textarea.current; if (!node) return;

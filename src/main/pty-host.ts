@@ -1,13 +1,8 @@
+import { parsePtyWorkerInput } from '../shared/ipc/worker-schemas.js';
+import type { PtyWorkerOutput } from '../shared/ipc/worker-protocol.js';
 import { terminateProcessTree } from './process-tree.js';
 import * as pty from 'node-pty';
 import { OutputFlow } from './flow-control.js';
-
-type HostMessage =
-  | { type: 'start'; executable: string; args: string[]; cwd: string; env: Record<string, string>; cols: number; rows: number }
-  | { type: 'write'; data: string }
-  | { type: 'resize'; cols: number; rows: number }
-  | { type: 'ack'; size: number }
-  | { type: 'close' };
 
 // Electron utility process: native PTY crashes cannot bring down the window/main process.
 const port = process.parentPort;
@@ -23,10 +18,20 @@ function shutdown(exitCode: number): void {
       process.exit(1);
     });
 }
-const send = (message: unknown) => port.postMessage(message);
+let outputFailed = false;
+function send(message: PtyWorkerOutput): void {
+  if (outputFailed) return;
+  try { port!.postMessage(message); }
+  catch {
+    outputFailed = true;
+    shutdown(1);
+  }
+}
 const flow = new OutputFlow(() => terminal?.pause(), () => terminal?.resume());
 
-port.on('message', ({ data }: { data: HostMessage }) => {
+port.on('message', ({ data: raw }: { data: unknown }) => {
+  const data = parsePtyWorkerInput(raw);
+  if (!data) return;
   // Queued resize/write/ACK messages must not touch a PTY whose root has exited
   // while descendant termination is still escalating. Close is idempotent too.
   if (closing) return;

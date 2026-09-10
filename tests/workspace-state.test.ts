@@ -2,60 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import type { SessionInfo } from '../src/shared/contracts';
-import { addSession, groupProjects, removeSession, selectProject, selectSession, type SessionWorkspace } from '../src/renderer/session-state';
 import { isConflictPatch, parseDiffLines } from '../src/renderer/diff-lines';
 import combinedConflict from './fixtures/combined-conflict.patch?raw';
-import { defaults, PreferencesStore, validatePreferences } from '../src/main/preferences';
+import { defaults, JsonPreferencesStorage } from '../src/platform/filesystem/preferences-storage';
+import { validatePreferences } from '../src/shared/ipc/schemas';
 import { resolveTheme } from '../src/renderer/theme';
-
-const session = (id: string, cwd: string): SessionInfo => ({ id, cwd, title: id, kind: 'chat', processStatus: 'running', activity: 'idle' });
-describe('project workspace state', () => {
-  const sessions = [session('a', '/one/app'), session('b', '/two/app'), session('c', '/one/app')];
-  it('aggregates open cwd and recent projects without merging matching basenames', () => {
-    const groups = groupProjects(sessions, ['/two/app', '/empty', '/empty']);
-    expect(groups.map(project => [project.cwd, project.name, project.sessions.map(s => s.id)])).toEqual([
-      ['/one/app', 'app', ['a', 'c']], ['/two/app', 'app', ['b']], ['/empty', 'empty', []],
-    ]);
-  });
-  it('remembers each project last selection and permits empty project selection', () => {
-    let state: SessionWorkspace = { sessions, activeId: 'a' };
-    state = selectSession(state, 'c'); state = selectProject(state, '/two/app');
-    expect(state.activeId).toBe('b');
-    state = selectProject(state, '/empty'); expect(state.activeId).toBeNull();
-    state = selectProject(state, '/one/app'); expect(state.activeId).toBe('c');
-    expect(selectSession(state, 'missing')).toBe(state);
-    state = addSession(state, session('new', '/empty')); expect(state.project).toBe('/empty'); expect(state.activeId).toBe('new');
-  });
-  it('closes to the previous same-project tab then stays in empty project, not another cwd', () => {
-    let state = selectSession({ sessions, activeId: 'a' }, 'c');
-    state = removeSession(state, 'c'); expect(state.activeId).toBe('a');
-    state = removeSession(state, 'a'); expect(state.activeId).toBeNull(); expect(state.project).toBe('/one/app');
-    expect(state.sessions.map(s => s.id)).toEqual(['b']);
-    expect(selectProject(state, '/one/app').activeId).toBeNull();
-  });
-  it('remembers the adjacent fallback when an async close completes in another project', () => {
-    const sessions = [session('a1', '/A'), session('a2', '/A'), session('a3', '/A'), session('b', '/B')];
-    const pending = selectSession({ sessions, activeId: null }, 'a3');
-    const completed = removeSession(selectProject(pending, '/B'), 'a3');
-    expect(completed.activeId).toBe('b'); expect(completed.project).toBe('/B');
-    expect(completed.lastActive?.['/A']).toBe('a2');
-    expect(selectProject(completed, '/A').activeId).toBe('a2');
-    const changed = selectProject(selectSession(pending, 'a1'), '/B');
-    expect(selectProject(removeSession(changed, 'a3'), '/A').activeId).toBe('a1');
-    const emptySelection = removeSession(selectProject(pending, '/empty'), 'a3');
-    expect(emptySelection.activeId).toBeNull(); expect(emptySelection.project).toBe('/empty');
-    expect(selectProject(emptySelection, '/A').activeId).toBe('a2');
-    const last = removeSession(selectProject(selectSession({ sessions: [session('a3', '/A'), session('b', '/B')], activeId: null }, 'a3'), '/B'), 'a3');
-    expect(last.activeId).toBe('b'); expect(last.lastActive?.['/A']).toBeUndefined();
-    expect(selectProject(last, '/A').activeId).toBeNull();
-  });
-  it('reconciles delayed and duplicate closes against newer user selections', () => {
-    const state = selectSession({ sessions, activeId: 'a' }, 'b');
-    expect(removeSession(removeSession(state, 'a'), 'a').activeId).toBe('b');
-    expect(removeSession(removeSession(state, 'c'), 'b').activeId).toBeNull();
-  });
-});
 
 describe('desktop theme compatibility', () => {
   it('defaults old preferences to system and rejects invalid theme at host boundary', () => {
@@ -71,7 +22,7 @@ describe('desktop theme compatibility', () => {
     try {
       const file = path.join(directory, 'settings.json'); const { theme: _, ...legacy } = defaults;
       await writeFile(file, JSON.stringify({ ...legacy, args: ['--extension', '/custom.ts'], recentProjects: ['/one/app'] }));
-      const store = new PreferencesStore(file); const old = await store.read(); expect(old.theme).toBe('system');
+      const store = new JsonPreferencesStorage(file); const old = await store.read(); expect(old.theme).toBe('system');
       await store.write({ ...old, theme: 'dark' }); expect(await store.read()).toEqual({ ...old, theme: 'dark' });
     } finally { await rm(directory, { recursive: true, force: true }); }
   });
