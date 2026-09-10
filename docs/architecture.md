@@ -52,7 +52,40 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 
 当前链路为应用 `DesktopAPI → renderer/app/desktop-client → DesktopBridge → sandbox preload → registrar → 原 application`。21 invoke 全面结构化成功/失败；3 send 保持同步 submission-only；1 event 每订阅精确取消、inactive/late guard。所有生产 global bridge 读取收归 client，App/ChatPane/TerminalPane/GitPanel/ContentView/features 原业务 owner、keys/effect deps/continuation 与视觉保持。wire guard 只查必要外层，不建递归 transcript schema。
 
-权威 Interface、错误分类/可见文本兼容差异、Fake/preview/smoke 迁移与 gate 的真实边界见 [Desktop client 契约](desktop-client-contract.md)。纯 Fake/noEmit/AST/hash/隔离 build 不代表 Electron/Pi/桌面或视觉验收；App composition-only、Prefs alias、bounds/lint/UI 与发布门禁仍后置。本 vertical 未 stage/commit，等待独立完整候选 review。
+权威 Interface、错误分类/可见文本兼容差异、Fake/preview/smoke 迁移与 gate 的真实边界见 [Desktop client 契约](desktop-client-contract.md)。纯 Fake/noEmit/AST/hash/隔离 build 不代表 Electron/Pi/桌面或视觉验收；DesktopResult/client 已提交为 `e7b5fa8`；App composition 收尾见下节，Prefs alias、bounds/lint/UI 与发布门禁仍后置。
+
+
+## App composition：窗口工作流归位（有限代码收尾）
+
+本包基于 clean `e7b5fa8861f50c4c0652d7a39af2760d2f0188d7`，仅整理 renderer presentation，不改变业务规则。`App.tsx` 现在保留 JSX、ID 绑定、窗口 capture 路由与 inspector 纯 layout；不直接调用 client、持草稿/handle registry 或实现 Promise continuation。`app/useWorkspaceComposition` 只连接命名 owner，无自身 state/effect/ref 或全字段 props bag。下文早期 renderer 各 slice 的“App 仍持有”描述是该批历史，不是当前所有权。
+
+| 当前唯一 owner | Interface 与不取得的职责 |
+| --- | --- |
+| `app/useDesktopPresentation` | bootstrap snapshot、全局 error、Settings open/publish/close、refresh；调用原 useTheme，不取得 main Preferences current/recents |
+| `features/workspace/useWorkspace` | 原 sessions/selection/events/close；无第二 Session 生命周期 owner |
+| `features/session-launch/useSessionLaunchController` | launch context/defaults/open、host create 成功 continuation；原 useNewSessionLaunch 仍持挂载局部表单、inspection/trust |
+| `features/workspace/useSessionPresentation` / `RenameDialog` | 提交捕获身份、改标题、打开目录、原 dialog；Terminal 名称仍仅窗口标签 |
+| `features/workspace/useSessionInput` | 按 ID 草稿文本、活 handle registry、search 呈现、command/reference/terminal picker 输入路由；不持 Chat revision/附件 token/发送锁或 xterm 实例 |
+| 原 palette、Settings draft、ChatPane、TerminalPane、GitPanel | 各自原状态与 effect 不迁；后端 Session/Conversation/Preferences 与 client seam 完全不动 |
+
+### 调用图与时序 Interface
+
+- `create → await host → Workspace add/select → launch close/reset → input.hideSearch → desktopPresentation.refresh` 在同一 continuation。两个 outlet 同步、不 await；关闭不取消旧 create，完成顺序仍决定追加/选择，旧完成仍可关闭新 dialog。refresh 非 async 包装：异步 reject 报全局错，同步 throw 会拒绝 create、进入已经卸载的原 form catch；不回滚成功 session。
+- `rename → 捕获提交 render 的 active → Chat await host(旧 ID) → 同 ID setTitle → close`。打开时不固定 ID；Terminal 不请求 host；reject 留原 dialog error。不加锁、generation 或取消。
+- `close → await host truthy → 最新 Workspace remove → input.forgetDraft(id)`；回调闭包延后执行，声明 input 前不读取。无新增 effect/ref 桥；false/reject 不删除，不给 close fallback 添加 hide search。
+- command 同步 snapshot append newline 或 live registry paste，正常返回才 dismiss palette；throw 不 reset。Git Chat reference 不 dismiss，立即 focus 当前 active textarea；Terminal 走 command insert。引用后窄窗只关闭 inspector，不抢 toggle 焦点。
+- terminal picker 保留发起 render 的 insert/目标 ID，完成才查当前 registry；不会改向最新 active，也不会保存已 disposed handle。原 snapshot append、关闭后旧 callback 可写 presentation 的局限保留，未新增失效政策。
+- search hide/toggle 不清 text/found、不清 decorations、不 focus；编辑才重置 found。关闭按钮仍 clear → hide → focus。所有 pane 按 session.id 常驻；Terminal 的 callbacks.current dereference、onReady/unregister 与原 exit callback 路径不变，Chat `[state.commands]` effect 不增 deps。
+- effect 相对顺序仍为原 useTheme 两个 effect → bootstrap `[]` → Workspace subscription `[]` → App capture `[boot?.platform, active?.kind]` → inspector Escape `[reviewOpen, active?.id]` → media `[]`。capture 保留原位置；palette toggle、input toggleSearch 仅 setter 稳定，listener 不依赖 owner 对象或 active ID。其他 action 按 render 捕获身份，不统一 latest-ref。
+- Settings 保存仍 publish 原引用 → runtimeError/close；旧 save 成功能关闭重开的 dialog，旧 runtimeError 能发布 theme 但不污染新 draft error。bootstrap 依完成顺序发布、client 每请求动态绑定；原同步 throw、callback throw 与 reject 的差异不统一修复。
+
+### 验证范围与后置项
+
+新增 `tests/App-composition.test.tsx` 先在旧 App 运行，再以同字节断言运行提取后 App；原 feature/vertical Fake 测试保留，不 mock 新 controller。覆盖 effect 注册/清理与 deps、反序 refresh、rename 提交前/后身份、两个 terminal registry 与旧 picker 卸载、search/fallback、Git 两分支/窄窗焦点、草稿 revision 编辑改回及附件身份、sync throw/reject 与动态 client。既有 old-save 三分支、close latest、create order 与真实 client/registrar/source-preload/Virtuoso 测试继续保留。`App-composition-structure.test.ts` 是 source AST 断言，单独计为静态证据，不是行为验收。新 App tests 的 Virtuoso 是真实实现；旧 workspace/renderer tests 仍 mock 列表，client vertical 使用官方 layout context，均不是布局/系统 IME 证明。
+
+候选以 HEAD archive + 明确 allowlist 构造，完整 before 包含 ignored 项目 docs/素材、模式/SHA、current dist 与三个源闭包。仅执行明确 Fake/jsdom 白名单、三个 noEmit、两 preview 类型检查、既有 AST/protected、隔离生产/preload/两 preview 纯构建及 source/emitted URL/require 静态核验；定向 `/tmp` 变异只证明断言敏感性，故意红不算产品失败。可恢复源码、日志、候选身份与完整增量见 `/tmp/pua-app-composition-before`、`/tmp/pua-app-composition.logs`、`/tmp/pua-app-composition-candidate` 和 `/tmp/pua-app-composition.diff`。本包未 stage/commit；独立 review 后由 Main 决定提交。
+
+原 ui/modules、44 保护集合、27 节点 demo 字节及边闭包、当前 dist 均保留；workspace-preview 入口/fixture/config 不改，仅随真实 App 增加 owner 的传递依赖。保护文档中旧 ContentView 直接依赖 window.desktop 的表述已落后于 client seam，本包不改保护文档。未操作用户运行旧 dist 的应用，未执行输出、Electron/Pi/browser/真实 fsGit fixture、smoke/lifecycle/IPC 集成、verify/dev/package/dist 或全量 npm test。jsdom 不代表真实 focus/IME/PTY/桌面验收。这里只达成 App 必要工作流归属，不要求所有局部 display 无 state；不是阶段 4 全完成、完整目标架构、原助手缺失 P0 修复、Preferences alias 修复或新桌面/发布验收。既有大 chunk 告警及真实验收后置。
 
 ## Session 核心有限提取（阶段 2 代码与纯测试）
 
@@ -292,7 +325,7 @@ App 保留草稿文本、Terminal handle 和原同步 insert：Chat 追加 newli
 
 ### 后续包与提交依赖
 
-strict Pi 代码/纯验证已在 `e709f4d` checkpoint 提交；后续 DesktopResult + renderer client vertical 的当前有限状态见上文与 [契约](desktop-client-contract.md)。随后仍需 App 必要 continuation 按 owner 收口，再处理 Preferences alias 行为修正及必要门禁。剩余 bounds 政策、Preferences 可变引用、App composition-only、生产 UI 收敛、formatter/完整 lint、真实桌面/跨平台 release gates 均未完成。原诊断默认关闭和 editMenu 修复保留；用户普通模式基本手验不等于当前候选树验收。
+strict Pi 代码/纯验证已在 `e709f4d` checkpoint 提交；后续 DesktopResult + renderer client vertical 的当前有限状态见上文与 [契约](desktop-client-contract.md)。App 必要 continuation 的当前收尾见 [App composition](#app-composition窗口工作流归位有限代码收尾)，后续仍需 Preferences alias 行为修正及必要门禁。剩余 bounds 政策、Preferences 可变引用、生产 UI 收敛、formatter/完整 lint、真实桌面/跨平台 release gates 均未完成。原诊断默认关闭和 editMenu 修复保留；用户普通模式基本手验不等于当前候选树验收。
 
 历史 strict Pi 候选当时是 `a4fb717` 以来累计 checkpoint，后经 review 提交为 `e709f4d`；以下保留当时依赖说明，不是当前 dirty 状态：新 helper/host 依赖累计 Conversation core/mappers、worker schema、process adapter、main composition/IPC/preload/build；App/Navigation 依赖新增 features 与旧源删除；diagnostics、测试/fixture/门禁/tsconfig、已 tracked 架构文档也须依赖闭合。ignored 设计材料保留但不自动纳入提交。Main 必须用 HEAD＋明确路径 allowlist 构造完整候选树验证、独立累计 review，再决定 stage/commit；本实现未 stage/commit/push，不能用未提交 imports 偷偷满足候选闭包。禁止应用/Pi/browser/Electron/真实 fsGit fixture、smoke/lifecycle/IPC 集成与发布命令的本轮约束保持；真实验收后置而非删除目标条款。
 
@@ -325,7 +358,7 @@ strict Pi 代码/纯验证已在 `e709f4d` checkpoint 提交；后续 DesktopRes
 - `processStatus`: `starting | running | exited`
 - `activity`: `idle | responding | compacting | retrying | waiting-input`
 
-App 以 session id 持草稿文本；每个 ChatPane 保持自己的 reducer、虚拟列表位置、草稿 revision/ref、附件和扩展对话。切换侧栏不会重启进程或丢失后台事件。Git 面板仍展示会话启动目录所属仓库的只读快照；文件引用直接进入原生 composer。
+Workspace input presentation 以 session id 持草稿文本；每个 ChatPane 保持自己的 reducer、虚拟列表位置、草稿 revision/ref、附件和扩展对话。切换侧栏不会重启进程或丢失后台事件。Git 面板仍展示会话启动目录所属仓库的只读快照；文件引用直接进入原生 composer。
 
 ## 已知能力差异
 

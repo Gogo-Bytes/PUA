@@ -4,7 +4,7 @@
 
 本批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。发布入口经 verify 只构建一次；生命周期当前仅 macOS 验证，其他平台明确阻塞发布，不代表 release matrix 完成。首批当时兼容 Promise 成功值/异常；后续 [DesktopResult/client 有限 vertical](desktop-client-contract.md) 已实现结构化结果与统一 renderer seam，未设上限的字符串策略仍未实施，旧 `contracts.ts` 类型再导出入口仍在。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 均未完成；阶段 3 仅 send/attachment、runtime stop/activity/waiting 与 stream/tool/history 有限落地，不能将首批有限落地视为 Spec P1 全完成；renderer 已按用户授权条件解冻，仅整理生产 App/Workspace 状态；原 `ui`、`modules`、44 项组件/demo 保护集合及视觉参考依赖闭包原位原字节保留，正式 UI 未替换，不删除后续 UI 收敛目标。具体范围与验证限制见 [现行架构的首批状态](architecture.md#desktop-ipc-首批重构有限落地)。
 
-有限收尾首包现完成 strict Pi response 代码与纯验证：pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约，真实 Fake worker→main token/renderer 草稿失败链闭合。这是安全契约修正，不是未知助手缺失 P0 修复。实际兼容来源、验证限制和累计提交依赖见 [Strict Pi 收尾](architecture.md#strict-pi-response有限协议收尾)。strict Pi checkpoint 已提交为 `e709f4d`。后续 DesktopResult/client 的有限代码契约现已闭合，范围与验证限制见 [契约说明](desktop-client-contract.md)；本 vertical 尚未 stage/commit，须 Main 完整候选树验证与独立 review。App 必要 continuation → Preferences alias 行为修正及门禁、bounds/UI/真实验收/发布目标均未完成。
+有限收尾首包现完成 strict Pi response 代码与纯验证：pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约，真实 Fake worker→main token/renderer 草稿失败链闭合。这是安全契约修正，不是未知助手缺失 P0 修复。实际兼容来源、验证限制和累计提交依赖见 [Strict Pi 收尾](architecture.md#strict-pi-response有限协议收尾)。strict Pi checkpoint 已提交为 `e709f4d`。后续 DesktopResult/client 的有限代码契约现已闭合，范围与验证限制见 [契约说明](desktop-client-contract.md)；该 vertical 已提交为 `e7b5fa8`。App 必要 continuation 已按下述阶段 4 有限收口，当前包未 stage/commit，须完整候选验证与独立 review；Preferences alias 行为修正及门禁、bounds/UI/真实验收/发布目标均未完成。
 
 ## 1. 目标与适用范围
 
@@ -319,11 +319,11 @@ interface ConversationRuntimePort {
 | utility/child process handle | Session runtime Adapter，由 SessionCoordinator 协调 | 不进入 domain 或 IPC DTO |
 | Agent Activity、消息、工具、队列 | Conversation state | Session View 只持派生投影；最终消息和事件顺序遵守协议不变量 |
 | 当前项目/会话选择、每项目 remembered selection | `renderer/features/workspace` 的唯一 hook state | 纯 selection Module 决策；不由 App 或单个 Tab 持第二份 |
-| 每会话草稿 | 当前 App 持文本；ChatPane 持 revision/ref 与附件 | 以 session id 索引，切换不卸载；后续 presentation 提取不改变提交身份语义 |
+| 每会话草稿 | Workspace input presentation 持文本；ChatPane 持 revision/ref 与附件 | 以 session id 索引，切换不卸载；后续 presentation 提取不改变提交身份语义 |
 | 附件 token / 文件路径 | Conversation application / main-side Attachment Adapter（分别拥有） | 目标是 renderer 只持 opaque id 和展示元数据；当前既有 `ChatAttachment.path` 仍返回 renderer，发送授权由 main 按 session token 查登记，不以路径不可见为保证 |
-| 命令面板 open/query、按 session 的命令缓存与展示投影 | `renderer/features/command-palette` 的 App 挂载级 hook | Chat 来源仍是 ChatPane 的 RPC snapshot；选择仅插入 App 草稿或 Terminal handle，不执行 |
+| 命令面板 open/query、按 session 的命令缓存与展示投影 | `renderer/features/command-palette` 的 App 挂载级 hook | Chat 来源仍是 ChatPane 的 RPC snapshot；选择仅经 Workspace input 插入草稿或 Terminal handle，不执行 |
 | panel 展开、tooltip、输入框高度 | React 局部 UI | 不进入 domain |
-| theme preference | main Preferences；renderer `features/preferences` 仅持挂载局部编辑草稿 | App boot 是保存结果投影；实际 resolved theme 应用仍由原 `useTheme` 持有 |
+| theme preference | main Preferences；renderer `features/preferences` 仅持挂载局部编辑草稿 | desktop presentation boot 是保存结果投影；实际 resolved theme 应用仍由原 `useTheme` 持有 |
 
 同一状态只能有一个权威所有者。派生状态通过 selector 计算；跨进程副本必须标明 snapshot 或 event projection，不能形成双写。
 
@@ -483,13 +483,13 @@ Electron smoke
 
 ### 阶段 4：按 Feature 重建 Renderer
 
-当前 Workspace 首 slice 与 Session launch presentation 有限落地：`renderer/features/workspace/index.ts` 是生产 caller 的唯一入口；无依赖泛型 selection Module 保留完整 cwd、分组/空组、remembered 与 close fallback 原规则；`useWorkspace` 拥有唯一窗口 session projection/selection、三类 session event 映射和 await close 后的最新状态修复。App 不再持 Workspace state/setter/订阅/close 编排，但保留 create/rename 请求 continuation、草稿文本及其余交互/JSX；旧 `session-state.ts` 与真实 imports 已删除。Session 生命周期与 Preferences recents 不迁入 Workspace，renderer 仍禁止 import 后端 `src/modules`。
+当前 App 必要工作流归属已有限收尾：`App.tsx` 仅 JSX/owner 连接、无业务窗口快捷路由与 inspector 纯 layout；无直接 host 请求、Promise continuation、draft/handle Map 或 create/rename 实现。`app/useWorkspaceComposition` 只组装真实 owner，无镜像 state、effect/ref 同步桥或整 App 改名容器。此为 composition-only 的必要职责完成，不要求局部展示无 state，也不表示下列阶段 4 全部完成条件已满足。
 
-`renderer/features/session-launch/index.ts` 现独占真实 NewSessionDialog view 与挂载局部 controller，保留 250ms advisory inspection、active cleanup、trust 选择、kind/mode、busy/error、目录选择和提交语义。App 无旧导出 shim，仍拥有 launch defaults/context、设置跳转与 create → Workspace add → close → bootstrap refresh；后端仍是 Session/实际 trust 能力权威。实际保留局限与纯验证范围见 [Session launch 当前状态](architecture.md#session-launchrenderer-有限提取)。
+`app/useDesktopPresentation` 持窗口 boot/error/Settings open 和 refresh/publish，复用 useTheme；`features/session-launch/useSessionLaunchController` 持 context/defaults/create continuation，原 mount-local form/inspection/trust controller 保留；`features/workspace/useSessionPresentation` 与原样迁入的 RenameDialog 持 rename 提交身份/回写和 openProject。`useSessionInput` 持按 ID 草稿、活 TerminalHandle registry、search 与命令/引用路由；原 `useWorkspace` 仍唯一拥有 sessions/selection/events/close。palette 与 Settings draft 原 owner 不变，所有跨 feature caller 仍经 index。
 
-`renderer/features/preferences/index.ts` 现独占真实 SettingsDialog view 与挂载局部 draft/args/filepick/busy/error/save continuation；App 无旧实现或 re-export shim，仍持 settings open/boot projection，theme 实际应用留原 `useTheme`。main Preferences current/recents 与 shared schema 权威不变。保留初始引用、live runtime/mount-only draft、picker 最新字段合并、publish → runtimeError/close 顺序，以及关闭不取消/重复 synthetic submit/乱序可变引用旧局限；无新增锁或修复。实际 Fake characterization、隔离变异及静态纯构建证据见 [Desktop settings 当前状态](architecture.md#desktop-settingsrenderer-有限提取)。命令面板现由 `renderer/features/command-palette/index.ts` 提供唯一入口：hook 持 App 挂载级 open/query、按 session 的原数组缓存与 active 来源投影，view 持原 Modal、过滤与列表键盘导航。App 保留同一个 capture 快捷监听、草稿/Terminal handle 及同步 insert，正常返回后调用 `dismissAfterInsert`；不自动发送或执行。Modal 关闭保留 query、sidebar open 清 query、快捷 toggle 不清、无 active 时内部 open 仍可切换；原异步附件捕获与焦点局限保留。实际 characterization/静态证据见 [命令面板当前状态](architecture.md#command-paletterenderer-有限提取)。Rename、inspector、conversation presentation/草稿与 App composition-only 等后续整理未做。
+create 的 add → close/reset → hide search → fire-and-forget refresh、rename 提交时旧 identity、await-close 最新选择及同 continuation 草稿删除、附件旧目标/当前 registry、snapshot append、palette 正常插入才 reset、search 保留与 focus/media/IME/keyboard 注册顺序均保留。ChatPane revision/附件/消息、TerminalPane xterm lifetime、GitPanel 和 Modal 本体未迁未改，session.id panes 常驻；backend Session/Conversation/Preferences 权威不迁 renderer。真实调用图、callback 稳定性与保留的异步局限见 [App composition 当前状态](architecture.md#app-composition窗口工作流归位有限代码收尾)。
 
-用户条件解冻只授权生产业务整理，不是视觉整合：原 44 项 `ui/modules/component-preview` 及视觉 demo 闭包保持；辅助 `tests/workspace-preview` 只随真实 App 产生已批准的 feature 依赖变化，入口/fixture 不改。其余 features、App composition-only、UI 收敛与真实桌面/视觉验收未完成。验证仅 Fake/jsdom、保存 before 源码 pure golden、AST/类型/字节与隔离纯构建；不执行产物或操作用户运行应用。当前 owner 与验证限制见 [Workspace 首 slice](architecture.md#workspacerenderer-首-slice有限业务提取)。
+用户条件解冻只授权生产架构职责归位，不是视觉整合：原 ui/modules、44 项保护集合、27 节点视觉 demo 原字节及边闭包保留，辅助 workspace-preview 入口/fixture/config 不改，仅真实 App 传递依赖变化。验证限定真实 App 的 before/after 内存 Fake/jsdom、原 feature/vertical 白名单、AST/三 noEmit/两 preview 类型与字节、HEAD+allowlist 隔离候选纯构建；不操作运行 app 或执行产物。生产 UI/Theme/Icon/Dialog 收敛、其余 feature presentation 整理、真实桌面/原生对话与跨平台验收仍未完成。
 
 完成条件：
 
