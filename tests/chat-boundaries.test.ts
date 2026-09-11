@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Writable } from 'node:stream';
 import { extensionResponse, validBlockIndex } from '../src/shared/chat-validation';
 import { ConversationRuntimeApplication } from '../src/modules/conversation/index';
-import { RpcWriter } from '../src/main/rpc-writer';
-import { contentImages } from '../src/main/chat-normalize';
+import { RpcWriter } from '../src/platform/pi/rpc/writer';
+import { contentImages } from '../src/platform/pi/rpc/chat-normalize';
 import { emptyChatState, reduceChatEvent } from '../src/renderer/chat-state';
 
 afterEach(() => vi.useRealTimers());

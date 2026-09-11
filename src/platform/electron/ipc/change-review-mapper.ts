@@ -1,4 +1,4 @@
-import { DesktopApplicationError } from './desktop-errors.js';
+import { DesktopApplicationError } from '../../../app/main/application-error.js';
 import { ReviewFailure, type RepositorySnapshot, type ReviewPreview, type ReviewScope } from '../../../modules/change-review/index.js';
 import type { DiffScope, FileDiff, GitStatus } from '../../../shared/git.js';
 

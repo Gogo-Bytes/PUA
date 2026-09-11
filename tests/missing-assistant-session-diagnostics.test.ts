@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { afterEach, expect, it, vi } from 'vitest';
 const platform = vi.hoisted(() => ({ fork: vi.fn() }));
 vi.mock('electron', () => ({ utilityProcess: { fork: platform.fork } }));
-vi.mock('../src/main/process-tree', () => ({ terminateProcessTree: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../src/platform/process/process-tree', () => ({ terminateProcessTree: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('node:fs/promises', () => ({ stat: () => { throw new Error('No filesystem'); }, open: () => { throw new Error('No filesystem'); } }));
 vi.mock('../src/platform/pi/process/environment', () => ({ runtimeEnvironment: () => ({ KEEP: 'Pi-value', PUA_MISSING_ASSISTANT_DIAGNOSTICS: 'next-chat' }), terminalEnvironment: () => ({ KEEP: 'terminal-value', PUA_MISSING_ASSISTANT_DIAGNOSTICS: 'next-chat' }) }));
 import { composeMain } from '../src/app/main/composition';

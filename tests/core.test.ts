@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { OutputFlow } from '../src/main/flow-control';
+import { OutputFlow } from '../src/platform/pty/output-flow';
 import { validatePreferences } from '../src/shared/ipc/schemas';
 import { defaults, JsonPreferencesStorage } from '../src/platform/filesystem/preferences-storage';
 import { expandHome } from '../src/platform/filesystem/expand-home';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RuntimeFailure, type RuntimeFailureCode } from '../src/modules/conversation/index';
-import { dialogDTO, normalizeDialog, normalizeQueue, normalizeRuntimeSeed, queueDTO, runtimeChangeDTO, runtimeError, runtimeViewDTO } from '../src/main/conversation-runtime-mapper';
+import { dialogDTO, normalizeDialog, normalizeQueue, normalizeRuntimeSeed, queueDTO, runtimeChangeDTO, runtimeError, runtimeViewDTO } from '../src/platform/pi/rpc/conversation-runtime-mapper';
 
 describe('Conversation runtime wire normalization and detached DTO mapping (no transport)', () => {
   it.each([undefined, null, false, 'bad', { steering: false, followUp: 1 }])('normalizes malformed queue %j without cached queue substitution', raw => {

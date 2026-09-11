@@ -18,22 +18,22 @@ describe('TypeScript import/channel gate', () => {
     ...['CommandPalette', 'useCommandPalette'].flatMap(name =>
       [`import './features/command-palette/${name}'`, `export * from './features/command-palette/${name}'`, `import type { Value } from './features/command-palette/${name}'`, `type Value = import('./features/command-palette/${name}').Value`, `require('./features/command-palette/${name}')`, `import('./features/command-palette/${name}')`, `import value = require('./features/command-palette/${name}')`].map(source => ['src/renderer/App.tsx', source])),
     ['src/renderer/features/command-palette/CommandPalette.tsx', "import '../workspace/useWorkspace'"],
-    ...['node:fs', 'electron', '../../../platform/filesystem/preferences-storage', '../../../modules/conversation/index', '../../../app/main/composition', '../../../main/session-mapper'].flatMap(target =>
+    ...['node:fs', 'electron', '../../../platform/filesystem/preferences-storage', '../../../modules/conversation/index', '../../../app/main/composition', '../../../app/main/session-mapper'].flatMap(target =>
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/renderer/features/command-palette/useCommandPalette.ts', source])),
     ...['SettingsDialog', 'useSettingsDraft'].flatMap(name =>
       [`import './features/preferences/${name}'`, `export * from './features/preferences/${name}'`, `import type { Value } from './features/preferences/${name}'`, `type Value = import('./features/preferences/${name}').Value`, `require('./features/preferences/${name}')`, `import('./features/preferences/${name}')`, `import value = require('./features/preferences/${name}')`].map(source => ['src/renderer/App.tsx', source])),
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import '../preferences/useSettingsDraft'"],
     ['src/renderer/features/preferences/SettingsDialog.tsx', "import '../workspace/useWorkspace'"],
-    ...['node:fs', 'electron', '../../../platform/filesystem/preferences-storage', '../../../modules/preferences/index', '../../../app/main/desktop-preferences', '../../../main/session-mapper'].flatMap(target =>
+    ...['node:fs', 'electron', '../../../platform/filesystem/preferences-storage', '../../../modules/preferences/index', '../../../app/main/desktop-preferences', '../../../app/main/session-mapper'].flatMap(target =>
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/renderer/features/preferences/useSettingsDraft.ts', source])),
     ['src/renderer/features/workspace/useWorkspace.ts', "import '../session-launch/useNewSessionLaunch'"],
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import '../workspace/useWorkspace'"],
-    ...['node:fs', 'electron', '../../../platform/filesystem/project-resources', '../../../modules/sessions/index', '../../../app/main/create-session', '../../../main/session-mapper'].flatMap(target =>
+    ...['node:fs', 'electron', '../../../platform/filesystem/project-resources', '../../../modules/sessions/index', '../../../app/main/create-session', '../../../app/main/session-mapper'].flatMap(target =>
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/renderer/features/session-launch/useNewSessionLaunch.ts', source])),
     ['src/renderer/features/workspace/useWorkspace.ts', "import '../../../modules/sessions/index.js'"],
-    // Retired main/renderer spellings below are intentional forbidden-path probes, not callers.
+    // Platform/application boundary probes below are synthetic forbidden imports, not callers.
     ...['project-resources', 'session-preparation'].flatMap(name =>
-      ['../../app/main/composition.js', '../../main/session-mapper.js', '../../renderer/App.js', '../../modules/sessions/index.js', '../pi/runtime/discovery.js', '../electron/ipc/registrar.js', 'electron', 'react'].flatMap(target =>
+      ['../../app/main/composition.js', '../../app/main/session-mapper.js', '../../renderer/App.js', '../../modules/sessions/index.js', '../pi/runtime/discovery.js', '../electron/ipc/registrar.js', 'electron', 'react'].flatMap(target =>
         [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => [`src/platform/filesystem/${name}.ts`, source]))),
     ...['project-resources', 'session-preparation'].flatMap(name => [
       [`src/platform/filesystem/${name}.ts`, 'import(name); require(name)'],
@@ -42,15 +42,15 @@ describe('TypeScript import/channel gate', () => {
     ]),
     ['src/platform/filesystem/session-preparation.ts', "import type { SessionInfo } from '../../shared/contracts.js'"],
     ...['src/platform/pi/runtime/discovery.ts', 'src/platform/pi/process/environment.ts'].flatMap(file =>
-      ['../../../app/main/desktop-preferences.js', '../../../main/session-preparation.js', '../../../renderer/App.js', '../../../shared/contracts.js', '../../../modules/preferences/index.js', '../../electron/ipc/registrar.js', 'electron', 'node-pty', 'node:child_process', 'child_process', 'node:worker_threads'].flatMap(target => [
+      ['../../../app/main/desktop-preferences.js', '../../filesystem/session-preparation.js', '../../../renderer/App.js', '../../../shared/contracts.js', '../../../modules/preferences/index.js', '../../electron/ipc/registrar.js', 'electron', 'node-pty', 'node:child_process', 'child_process', 'node:worker_threads'].flatMap(target => [
         [file, `import '${target}'`], [file, `export * from '${target}'`], [file, `import type { Value } from '${target}'`], [file, `type Value = import('${target}').Value`], [file, `require('${target}')`], [file, `import('${target}')`],
       ])),
-    ...['../pi/runtime/discovery.js', '../pi/process/environment.js', '../../app/main/desktop-preferences.js', '../../main/session-preparation.js', '../../renderer/App.js', 'electron'].flatMap(target =>
+    ...['../pi/runtime/discovery.js', '../pi/process/environment.js', '../../app/main/desktop-preferences.js', './session-preparation.js', '../../renderer/App.js', 'electron'].flatMap(target =>
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/platform/filesystem/expand-home.ts', source])),
     ...['src/renderer/App.tsx', 'src/shared/contracts.ts'].flatMap(file => ['../platform/pi/runtime/discovery.js', '../platform/pi/process/environment.js', '../platform/filesystem/expand-home.js'].map(target => [file, `import '${target}'`])),
     ['src/platform/pi/runtime/discovery.ts', 'import(name); require(name)'],
     ['src/platform/filesystem/expand-home.ts', 'import(name)'],
-    ...['node:fs/promises', 'electron', 'react', '@mariozechner/pi-ai', '../../../shared/ipc/schemas.js', '../../../main/runtime.js', '../../../app/main/bootstrap.js', '../../../platform/filesystem/preferences-storage.js'].flatMap(target => [
+    ...['node:fs/promises', 'electron', 'react', '@mariozechner/pi-ai', '../../../shared/ipc/schemas.js', '../../../platform/pi/runtime/discovery.js', '../../../app/main/bootstrap.js', '../../../platform/filesystem/preferences-storage.js'].flatMap(target => [
       ['src/modules/preferences/application/preferences-application.ts', `import '${target}'`],
       ['src/modules/preferences/application/preferences-application.ts', `export * from '${target}'`],
       ['src/modules/preferences/application/preferences-application.ts', `import type { Value } from '${target}'`],
@@ -62,7 +62,7 @@ describe('TypeScript import/channel gate', () => {
     ['src/modules/preferences/index.ts', "export * from '../../shared/contracts.js'"],
     ['src/modules/preferences/application/preferences-application.ts', "const lazy = import(name); require(name); globalThis['process'].env; Buffer.alloc(1); const timer: NodeJS.Timeout = process.timer"],
     ['src/platform/filesystem/preferences-storage.ts', "import type { PreferenceValues } from '../../modules/preferences/ports.js'"],
-    ...['../../app/main/bootstrap.js', '../../main/runtime.js', '../../renderer/App.js', '../electron/ipc/registrar.js', 'electron', 'react'].map(target => ['src/platform/filesystem/preferences-storage.ts', `import '${target}'`]),
+    ...['../../app/main/bootstrap.js', '../pi/runtime/discovery.js', '../../renderer/App.js', '../electron/ipc/registrar.js', 'electron', 'react'].map(target => ['src/platform/filesystem/preferences-storage.ts', `import '${target}'`]),
     ...['src/renderer/bad.ts', 'src/shared/bad.ts'].map(file => [file, "import { PreferencesApplication } from '../modules/preferences/index.js'"]),
     ['src/modules/change-review/domain/review.ts', "import type { GitStatus } from '../../../shared/git.js'"],
     ['src/modules/change-review/domain/review.ts', "import { lstat } from 'node:fs/promises'"],
@@ -106,7 +106,8 @@ describe('TypeScript import/channel gate', () => {
     ['src/shared/ipc/worker-protocol.ts', "import type { RuntimeSend } from '../../modules/conversation/index.js'"],
     ['src/shared/ipc/worker-schemas.ts', "import { spawn } from 'node:child_process'"],
     ['src/shared/ipc/worker-schemas.ts', "import type { ReactNode } from 'react'"],
-    ['src/shared/ipc/worker-protocol.ts', "import type { Terminal } from '../../main/terminal.js'"],
+    ['src/shared/ipc/worker-protocol.ts', "import type { Terminal } from '../../modules/terminal/index.js'"],
+    ['src/app/workers/helper.ts', "import '../../platform/pi/rpc/jsonl.js'"],
     ['src/modules/conversation/application/conversation-stream-application.ts', "import { spawn } from 'node:child_process'"],
     ['src/modules/conversation/application/conversation-stream-application.ts', "import { utilityProcess } from 'electron'"],
     ['src/modules/conversation/application/conversation-stream-application.ts', "import { gsap } from 'gsap'"],
@@ -116,7 +117,7 @@ describe('TypeScript import/channel gate', () => {
     ['src/modules/conversation/domain/stream.ts', "import type { ChatMessage } from '../../../shared/chat.js'"],
     ['src/modules/conversation/domain/stream.ts', "const lazy = import(name); globalThis['process'].env"],
     ['src/modules/conversation/domain/stream.ts', "import React from 'react'; const timer: NodeJS.Timeout = process.timer"],
-    ['src/main/conversation-stream-mapper.ts', "import type { ConversationMessage } from '../modules/conversation/domain/stream.js'"],
+    ['src/platform/pi/rpc/conversation-stream-mapper.ts', "import type { ConversationMessage } from '../../../modules/conversation/domain/stream.js'"],
     ['src/modules/conversation/application/conversation-runtime-application.ts', "import { spawn } from 'node:child_process'"],
     ['src/modules/conversation/application/conversation-runtime-application.ts', "import { utilityProcess } from 'electron'"],
     ['src/modules/conversation/application/conversation-runtime-application.ts', "import type { RpcEvent } from '@mariozechner/pi-coding-agent'"],
@@ -127,12 +128,12 @@ describe('TypeScript import/channel gate', () => {
     ['src/modules/conversation/application/bad.ts', "import { Adapter } from '../infrastructure/pi-adapter.js'"],
     ['src/modules/conversation/domain/bad.ts', "export * from '../ports.js'"],
     ['src/modules/conversation/ports.ts', "export * from './application/conversation-application.js'"],
-    ['src/modules/conversation/index.ts', "export * from '../../main/rpc-host.js'"],
+    ['src/modules/conversation/index.ts', "export * from '../../app/workers/pi-rpc.worker.js'"],
     ['src/modules/conversation/application/bad.ts', "const fs = require(dynamicPath)"],
     ['src/renderer/bad.ts', "import { ConversationApplication } from '../modules/conversation/index.js'"],
     ['src/shared/bad.ts', "export * from '../modules/conversation/index.js'"],
     ['src/modules/conversation/domain/bad.ts', "import type { ChatAttachment } from '../../../shared/contracts.js'"],
-    ['src/modules/conversation/domain/bad.ts', "export * from '../../../main/runtime.js'"],
+    ['src/modules/conversation/domain/bad.ts', "export * from '../../../platform/pi/runtime/discovery.js'"],
     ['src/modules/conversation/domain/bad.ts', "const id = import('node:crypto')"],
     ['src/modules/conversation/domain/bad.ts', "import fs = require('node:fs')"],
     ['src/modules/conversation/domain/bad.ts', "const React = require('react')"],
@@ -141,14 +142,14 @@ describe('TypeScript import/channel gate', () => {
     ['src/modules/conversation/domain/bad.ts', 'type Timer = NodeJS.Timeout; const env = process.env; Buffer.alloc(1)'],
     ['src/modules/conversation/domain/bad.ts', "export * from '../application/conversation-application.js'"],
     ['src/modules/conversation/ports.ts', "import type { UtilityProcess } from 'electron'"],
-    ['src/modules/conversation/application/bad.ts', "import runtime from '../../../main/runtime.js'"],
+    ['src/modules/conversation/application/bad.ts', "import runtime from '../../../platform/pi/runtime/discovery.js'"],
     ['src/modules/conversation/application/bad.ts', "type DTO = import('../../../shared/contracts.js').ChatAttachment"],
-    ['src/main/bad.ts', "export * from '../modules/conversation/application/conversation-application.js'"],
+    ['src/app/main/bad.ts', "export * from '../../modules/conversation/application/conversation-application.js'"],
     ['src/modules/other/application/bad.ts', "export * from '../../conversation/domain/conversation.js'"],
     ['src/renderer/bad.ts', "import { SessionCoordinator } from '../modules/sessions/index.js'"],
     ['src/shared/bad.ts', "export * from '../modules/sessions/index.js'"],
     ['src/modules/sessions/domain/bad.ts', "import type { SessionInfo } from '../../../shared/contracts.js'"],
-    ['src/modules/sessions/domain/bad.ts', "export * from '../../../main/runtime.js'"],
+    ['src/modules/sessions/domain/bad.ts', "export * from '../../../platform/pi/runtime/discovery.js'"],
     ['src/modules/sessions/domain/bad.ts', "const id = import('node:crypto')"],
     ['src/modules/sessions/domain/bad.ts', "import fs = require('node:fs')"],
     ['src/modules/sessions/domain/bad.ts', "const React = require('react')"],
@@ -157,26 +158,26 @@ describe('TypeScript import/channel gate', () => {
     ['src/modules/sessions/domain/bad.ts', 'type Timer = NodeJS.Timeout; const env = process.env; Buffer.alloc(1)'],
     ['src/modules/sessions/domain/bad.ts', "export * from '../application/session-coordinator.js'"],
     ['src/modules/sessions/ports.ts', "import type { UtilityProcess } from 'electron'"],
-    ['src/modules/sessions/application/bad.ts', "import runtime from '../../../main/runtime.js'"],
+    ['src/modules/sessions/application/bad.ts', "import runtime from '../../../platform/pi/runtime/discovery.js'"],
     ['src/modules/sessions/application/bad.ts', "type DTO = import('../../../shared/contracts.js').SessionInfo"],
-    ['src/main/bad.ts', "export * from '../modules/sessions/application/session-coordinator.js'"],
+    ['src/app/main/bad.ts', "export * from '../../modules/sessions/application/session-coordinator.js'"],
     ['src/modules/other/application/bad.ts', "export * from '../../sessions/domain/session-ownership.js'"],
     ['src/shared/ipc/bad.ts', "import type { BrowserWindow } from 'electron'"],
     ['src/shared/ipc/bad.ts', "export { readFile } from 'node:fs/promises'"],
     ['src/shared/bad.ts', "type R = import('react').ReactNode"],
     ['src/shared/ipc/bad.ts', "import React from 'react/jsx-runtime'"],
-    ['src/shared/ipc/bad.ts', "export * from '../../main/runtime.js'"],
+    ['src/shared/ipc/bad.ts', "export * from '../../platform/pi/runtime/discovery.js'"],
     ['src/renderer/bad.ts', "import fs from 'fs'"],
     ['src/renderer/bad.ts', "import pty from 'node-pty'"],
-    ['src/renderer/bad.ts', "import runtime from '../main/runtime.js'"],
-    ['src/renderer/bad.ts', "const worker = import('../main/pty-host.js')"],
+    ['src/renderer/bad.ts', "import runtime from '../platform/pi/runtime/discovery.js'"],
+    ['src/renderer/bad.ts', "const worker = import('../app/workers/pty.worker.js')"],
     ['src/renderer/bad.ts', "import electron = require('electron')"],
     ['src/renderer/bad.ts', "const fs = require('node:fs')"],
     ['src/renderer/bad.ts', 'const lazy = import(variable)'],
-    ['src/main/bad.ts', "const channel = 'desktop:bootstrap'"],
-    ['src/main/preload.cts', 'const channel = `desktop:event`'],
+    ['src/app/main/bad.ts', "const channel = 'desktop:bootstrap'"],
+    ['src/app/preload/desktop-api.cts', 'const channel = `desktop:event`'],
     ['src/renderer/bad.ts', "import data from '../../tests/component-preview/fixtures'"],
-    ['src/main/bad.ts', "export * from '../../tests/fixtures/fake'"],
+    ['src/app/main/bad.ts', "export * from '../../../tests/fixtures/fake'"],
   ])('rejects %s: %s', (file, source) => {
     expect(checkSource(file, source, root).length).toBeGreaterThan(0);
   });
@@ -197,18 +198,18 @@ describe('TypeScript import/channel gate', () => {
     ['src/app/main/desktop-preferences.ts', "import type { PreferencesApplication } from '../../modules/preferences/index.js'"],
     ['src/platform/electron/ipc/register-desktop-ipc.ts', "import type { WindowContext } from '../../../app/main/create-window.js'; import { invokeChannels } from '../../../shared/ipc/channels.js'"],
     ['src/app/main/bootstrap.ts', "import { registerDesktopIPC } from '../../platform/electron/ipc/register-desktop-ipc.js'"],
-    ['src/app/main/good.ts', "import { SessionCoordinator } from '../../modules/sessions/index.js'; import { SessionProcessAdapter } from '../../main/session-process-adapter.js'"],
+    ['src/app/main/good.ts', "import { SessionCoordinator } from '../../modules/sessions/index.js'; import { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js'"],
     ['src/modules/conversation/application/conversation-stream-application.ts', "import { completedTool } from '../domain/stream.js'; import type { StreamSchedulePort } from '../ports.js'"],
     ['src/modules/conversation/domain/stream.ts', "interface ConversationObject { readonly [key: string]: null | string }; const label = 'Pi/NodeJS is adapter-only'"],
-    ['src/main/conversation-stream-mapper.ts', "import type { ConversationStreamInput } from '../modules/conversation/index.js'"],
-    ['src/main/good.ts', "import { SessionCoordinator } from '../modules/sessions/index.js'"],
+    ['src/platform/pi/rpc/conversation-stream-mapper.ts', "import type { ConversationStreamInput } from '../../../modules/conversation/index.js'"],
+    ['src/app/main/good.ts', "import { SessionCoordinator } from '../../modules/sessions/index.js'"],
     ['src/modules/sessions/application/good.ts', "import { SessionOwnershipPolicy } from '../domain/session-ownership.js'; import type { SessionProcessPort } from '../ports.js'"],
     ['src/modules/sessions/domain/good.ts', '// process.env; Buffer; import fs from "node:fs";\nconst label = "NodeJS.Timeout"'],
     ['src/renderer/good.ts', "import React from 'react'; import type { DesktopAPI } from '../shared/contracts'"],
     ['src/shared/ipc/good.ts', "export type { SessionEvent } from '../chat.js'"],
-    ['src/main/good.ts', "import { ipcMain } from 'electron'; import { invokeChannels } from '../shared/ipc/channels.js'"],
+    ['src/platform/electron/ipc/good.ts', "import { ipcMain } from 'electron'; import { invokeChannels } from '../../../shared/ipc/channels.js'"],
     ['src/renderer/good.ts', '// import fs from "node:fs";\nconst label = "import electron from electron";'],
-    ['src/main/good.ts', "import { ConversationApplication } from '../modules/conversation/index.js'"],
+    ['src/app/main/good.ts', "import { ConversationApplication } from '../../modules/conversation/index.js'"],
     ['src/modules/conversation/application/good.ts', "import { ConversationFailure } from '../domain/conversation.js'; import type { ConversationRuntimePort } from '../ports.js'"],
     ['src/modules/conversation/domain/good.ts', '// process.env; Buffer; Pi RPC;\nconst label = "node:fs"'],
     ['src/modules/conversation/ports.ts', "import type { RuntimeSend } from './domain/conversation.js'"],

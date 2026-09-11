@@ -5,8 +5,8 @@ import { PassThrough } from 'node:stream';
 
 const control = vi.hoisted(() => ({ child: undefined as any, writes: [] as any[], failed: false, rejectDialog: false, dialogWrite: undefined as Promise<void> | undefined, closeWriter: vi.fn(), terminate: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('node:child_process', () => ({ spawn: () => control.child }));
-vi.mock('../src/main/process-tree', () => ({ terminateProcessTree: control.terminate }));
-vi.mock('../src/main/rpc-writer', () => ({ RpcWriter: class {
+vi.mock('../src/platform/process/process-tree', () => ({ terminateProcessTree: control.terminate }));
+vi.mock('../src/platform/pi/rpc/writer', () => ({ RpcWriter: class {
   get failed() { return control.failed; }
   write(value: any) { control.writes.push(value); if (value.type === 'extension_ui_response' && control.rejectDialog) { control.failed = true; return Promise.reject(new Error('input stalled')); } return value.type === 'extension_ui_response' && control.dialogWrite ? control.dialogWrite : Promise.resolve(); }
   close() { control.closeWriter(); }
@@ -29,7 +29,7 @@ beforeEach(async () => {
   port = Object.assign(new EventEmitter(), { postMessage: vi.fn() }); (process as any).parentPort = port;
   control.child = Object.assign(new EventEmitter(), { pid: 12345, exitCode: null, stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough() });
   vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-  await import('../src/main/rpc-host');
+  await import('../src/app/workers/pi-rpc.worker');
   port.emit('message', { data: { type: 'start', id: 's', executable: 'fixture', args: [], cwd: '/tmp', env: {} } });
   control.child.emit('spawn'); await turns();
 });

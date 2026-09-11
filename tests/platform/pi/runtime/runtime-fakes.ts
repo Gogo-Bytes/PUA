@@ -60,7 +60,7 @@ export function evaluateRuntime(sources: RuntimeSources | string, scenario: Scen
       if (name === 'node:os') return { homedir: () => { call('homedir'); return home; } };
       if (name === '../../filesystem/expand-home.js') return load('home');
       if (name === '../runtime/discovery.js') return load('discovery');
-      if (name === '../../main/session-mapper.js') return { unwrapSessionResult: () => { throw new Error('workflow not loaded in runtime VM'); } };
+      if (name === './session-mapper.js') return { unwrapSessionResult: () => { throw new Error('workflow not loaded in runtime VM'); } };
       throw new Error(`Forbidden VM import ${name}`);
     };
     const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;

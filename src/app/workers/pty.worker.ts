@@ -1,8 +1,8 @@
-import { parsePtyWorkerInput } from '../shared/ipc/worker-schemas.js';
-import type { PtyWorkerOutput } from '../shared/ipc/worker-protocol.js';
-import { terminateProcessTree } from './process-tree.js';
+import { parsePtyWorkerInput } from '../../shared/ipc/worker-schemas.js';
+import type { PtyWorkerOutput } from '../../shared/ipc/worker-protocol.js';
+import { terminateProcessTree } from '../../platform/process/process-tree.js';
 import * as pty from 'node-pty';
-import { OutputFlow } from './flow-control.js';
+import { OutputFlow } from '../../platform/pty/output-flow.js';
 
 // Electron utility process: native PTY crashes cannot bring down the window/main process.
 const port = process.parentPort;

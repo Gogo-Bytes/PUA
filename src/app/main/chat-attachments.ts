@@ -1,6 +1,6 @@
 import type { ConversationApplication } from '../../modules/conversation/index.js';
-import type { SessionProcessAdapter } from '../../main/session-process-adapter.js';
-import { conversationError } from '../../main/conversation-mapper.js';
+import type { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js';
+import { conversationError } from './conversation-mapper.js';
 import type { ChatAttachment } from '../../shared/chat.js';
 
 /** Staged sources transfer to Conversation on every outcome; display retains the existing path DTO. */

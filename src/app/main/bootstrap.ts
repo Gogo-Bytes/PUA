@@ -16,7 +16,7 @@ import { bindWindowLifecycle } from './lifecycle.js';
 import { installMenu } from './menu.js';
 
 const rendererURL = new URL('../../renderer/index.html', import.meta.url).href;
-const preloadPath = fileURLToPath(new URL('../../main/preload.cjs', import.meta.url));
+const preloadPath = fileURLToPath(new URL('../preload/preload.cjs', import.meta.url));
 
 // Electron delays ready until ESM evaluation completes; top-level await here deadlocks startup.
 void app.whenReady().then(async () => {

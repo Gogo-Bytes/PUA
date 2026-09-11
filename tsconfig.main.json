@@ -4,5 +4,5 @@
     "strict": true, "skipLibCheck": true, "esModuleInterop": true,
     "outDir": "dist", "rootDir": "src", "sourceMap": true
   },
-  "include": ["src/main", "src/shared", "src/modules", "src/app", "src/platform"]
+  "include": ["src/shared", "src/modules", "src/app", "src/platform"]
 }

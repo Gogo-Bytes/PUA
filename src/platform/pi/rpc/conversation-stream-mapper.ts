@@ -1,6 +1,6 @@
-import type { ConversationMessage, ConversationStreamInput, ConversationStreamNotification, ToolExecution } from '../modules/conversation/index.js';
-import type { ChatMessage, SessionEvent, ToolActivity } from '../shared/chat.js';
-import { validBlockIndex } from '../shared/chat-validation.js';
+import type { ConversationMessage, ConversationStreamInput, ConversationStreamNotification, ToolExecution } from '../../../modules/conversation/index.js';
+import type { ChatMessage, SessionEvent, ToolActivity } from '../../../shared/chat.js';
+import { validBlockIndex } from '../../../shared/chat-validation.js';
 import { isRecord, jsonObject, normalizeMessage, normalizeToolResult } from './chat-normalize.js';
 
 /** Adapter-only identity allocator; no active message, tool or fragment state. */

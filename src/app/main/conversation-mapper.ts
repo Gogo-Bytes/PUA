@@ -1,6 +1,6 @@
-import { DesktopApplicationError } from '../platform/electron/ipc/desktop-errors.js';
-import { ConversationFailure, type ConversationFailureCode, type ExtensionResponse, type SendIntent } from '../modules/conversation/index.js';
-import type { ChatDelivery, ExtensionUIResponse } from '../shared/chat.js';
+import { DesktopApplicationError } from './application-error.js';
+import { ConversationFailure, type ConversationFailureCode, type ExtensionResponse, type SendIntent } from '../../modules/conversation/index.js';
+import type { ChatDelivery, ExtensionUIResponse } from '../../shared/chat.js';
 
 const messages: Record<ConversationFailureCode, string> = {
   CLOSED: '会话已关闭',

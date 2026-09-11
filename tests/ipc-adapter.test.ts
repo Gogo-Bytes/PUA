@@ -133,13 +133,13 @@ describe('preload whitelist', () => {
   it('forwards all existing methods and removes the exact event listener on unsubscribe', async () => {
     let api!: DesktopBridge;
     const ipc = { invoke: vi.fn().mockResolvedValue('result'), send: vi.fn(), on: vi.fn(), removeListener: vi.fn() };
-    const code = ts.transpileModule(readFileSync(new URL('../src/main/preload.cts', import.meta.url), 'utf8'), {
+    const code = ts.transpileModule(readFileSync(new URL('../src/app/preload/desktop-api.cts', import.meta.url), 'utf8'), {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
     }).outputText;
     vm.runInNewContext(code, {
       exports: {}, require: (name: string) => {
         if (name === 'electron') return { ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (key: string, value: DesktopBridge) => { expect(key).toBe('desktop'); api = value; } } };
-        if (name === '../shared/ipc/channels.js') return { invokeChannels, sendChannels, eventChannels };
+        if (name === '../../shared/ipc/channels.js') return { invokeChannels, sendChannels, eventChannels };
         throw new Error(`Unexpected preload require: ${name}`);
       },
     });

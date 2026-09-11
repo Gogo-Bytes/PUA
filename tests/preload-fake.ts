@@ -12,13 +12,13 @@ export function preloadFake(ipc: {
   removeListener(channel: string, listener: (event: unknown, value: unknown) => void): void;
 }): DesktopBridge {
   let bridge!: DesktopBridge;
-  const code = ts.transpileModule(readFileSync(`${process.cwd()}/src/main/preload.cts`, 'utf8'), {
+  const code = ts.transpileModule(readFileSync(`${process.cwd()}/src/app/preload/desktop-api.cts`, 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   vm.runInNewContext(code, {
     exports: {}, require(name: string) {
       if (name === 'electron') return { ipcRenderer: ipc, contextBridge: { exposeInMainWorld(key: string, value: DesktopBridge) { if (key !== 'desktop') throw new Error('Unexpected capability'); bridge = value; } } };
-      if (name === '../shared/ipc/channels.js') return { invokeChannels, sendChannels, eventChannels };
+      if (name === '../../shared/ipc/channels.js') return { invokeChannels, sendChannels, eventChannels };
       throw new Error(`Unexpected preload import: ${name}`);
     },
   });

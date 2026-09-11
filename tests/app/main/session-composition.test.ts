@@ -3,11 +3,11 @@ import { fileURLToPath } from 'node:url';
 import { composeMain, type CompositionDependencies } from '../../../src/app/main/composition';
 import { SessionCoordinator, type SessionProcessEvent, type SessionSnapshot } from '../../../src/modules/sessions';
 import { ConversationApplication, type AttachmentSourceId } from '../../../src/modules/conversation';
-import type { SessionProcessAdapter, SessionProcessContext } from '../../../src/main/session-process-adapter';
-import { applySessionStartResult, isSessionBusy, requireSessionSnapshot, sessionInfo, unwrapSessionResult } from '../../../src/main/session-mapper';
+import type { SessionProcessAdapter, SessionProcessContext } from '../../../src/platform/electron/utility/session-process-adapter';
+import { applySessionStartResult, isSessionBusy, requireSessionSnapshot, sessionInfo, unwrapSessionResult } from '../../../src/app/main/session-mapper';
 
 // Composition uses an entirely in-memory Adapter. Even accidentally constructing the default fails.
-vi.mock('../../../src/main/session-process-adapter', () => ({ SessionProcessAdapter: class { constructor() { throw new Error('Real adapter forbidden'); } } }));
+vi.mock('../../../src/platform/electron/utility/session-process-adapter', () => ({ SessionProcessAdapter: class { constructor() { throw new Error('Real adapter forbidden'); } } }));
 vi.mock('../../../src/platform/filesystem/session-preparation', () => ({ prepareProject: () => { throw new Error('Real fs forbidden'); } }));
 const runtime = { executable: '/fake/pi', source: '/fake/pi', args: ['--model', 'fake'] };
 const options = { cwd: '/input', kind: 'chat' as const, startMode: 'new' as const, projectTrust: 'default' as const };
@@ -34,12 +34,12 @@ function harness(emit = vi.fn(), overrides: Omit<CompositionDependencies, 'creat
 afterEach(() => vi.restoreAllMocks());
 
 describe('main composition and prepared create', () => {
-  it('returns actual typed core instances and injects absolute workers at the unchanged main siblings', () => {
+  it('returns actual typed core instances and injects absolute workers from the worker boundary', () => {
     const h = harness();
     expect(h.capabilities.session).toBeInstanceOf(SessionCoordinator);
     expect(h.capabilities.conversation).toBeInstanceOf(ConversationApplication);
     expect(h.capabilities.terminal).toBe(h.adapter);
-    expect(h.context.workerPaths).toEqual({ chat: fileURLToPath(new URL('../../../src/main/rpc-host.js', import.meta.url)), terminal: fileURLToPath(new URL('../../../src/main/pty-host.js', import.meta.url)) });
+    expect(h.context.workerPaths).toEqual({ chat: fileURLToPath(new URL('../../../src/app/workers/pi-rpc.worker.js', import.meta.url)), terminal: fileURLToPath(new URL('../../../src/app/workers/pty.worker.js', import.meta.url)) });
     if (false) {
       // @ts-expect-error main cannot bypass preparation with core create
       h.capabilities.session.create({});

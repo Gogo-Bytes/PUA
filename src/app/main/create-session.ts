@@ -1,7 +1,7 @@
 import type { SessionCoordinator } from '../../modules/sessions/index.js';
 import type { ConversationApplication } from '../../modules/conversation/index.js';
-import type { SessionProcessAdapter } from '../../main/session-process-adapter.js';
-import { sessionInfo, unwrapSessionResult } from '../../main/session-mapper.js';
+import type { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js';
+import { sessionInfo, unwrapSessionResult } from './session-mapper.js';
 import { validateCreateSessionOptions } from '../../shared/ipc/schemas.js';
 import type { CreateSessionOptions, RuntimeInfo, SessionInfo } from '../../shared/contracts.js';
 

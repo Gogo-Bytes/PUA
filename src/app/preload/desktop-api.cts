@@ -1,6 +1,6 @@
-import { invokeChannels, sendChannels, eventChannels } from '../shared/ipc/channels.js';
+import { invokeChannels, sendChannels, eventChannels } from '../../shared/ipc/channels.js';
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DesktopBridge } from '../shared/ipc/desktop-api.js';
+import type { DesktopBridge } from '../../shared/ipc/desktop-api.js';
 
 const api: DesktopBridge = {
   bootstrap: () => ipcRenderer.invoke(invokeChannels.bootstrap),

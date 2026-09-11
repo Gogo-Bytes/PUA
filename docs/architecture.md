@@ -10,6 +10,8 @@
 
 PTY/xterm 不再是主界面，但仍是一个真实 adapter：RPC 明确无法承载任意 `ctx.ui.custom()`、自定义 editor/header/footer/theme 和 TUI renderer，登录、设置及首期未原生化的历史/树操作也继续从兼容终端进入。
 
+当前结构迁移已退休 `src/main`：main composition 位于 `src/app/main`，sandbox preload 唯一入口位于 `src/app/preload/desktop-api.cts`，两个 utility 入口位于 `src/app/workers/{pi-rpc,pty}.worker.ts`；Electron utility 资源 Adapter、Pi RPC helper、PTY 流控和进程树分别位于 `src/platform/electron/utility`、`src/platform/pi/rpc`、`src/platform/pty` 与 `src/platform/process`。`Terminal` 窄 Interface 位于 `src/modules/terminal/index.ts`。本次只移动职责与修正 import/URL/config，不改变 Session/Conversation 状态所有权或 IPC 契约；按用户要求未运行自动测试、构建、typecheck、smoke 或应用，不能据此声称运行验证通过。
+
 ## 进程与依赖方向
 
 ```text
@@ -24,9 +26,11 @@ Electron main / typed composition
   └─ terminal adapter ── utilityProcess pty-host ── node-pty ── user pi TUI
 ```
 
-`src/shared/chat.ts` 是 renderer 唯一需要理解的对话 interface。Pi 原始 RPC 对象、JSONL framing、请求 id、结构归一化和协议错误留在 `src/main/rpc-host.ts` 及其 Adapter；delta/tool/final/历史关联现由 worker 的 Conversation stream core 独占。renderer 不能发送任意 RPC command。
+`src/shared/chat.ts` 是 renderer 唯一需要理解的对话 interface。Pi 原始 RPC 对象、JSONL framing、请求 id、结构归一化和协议错误留在 `src/app/workers/pi-rpc.worker.ts` 与 `src/platform/pi/rpc` Adapter；delta/tool/final/历史关联现由 worker 的 Conversation stream core 独占。renderer 不能发送任意 RPC command。
 
 ## Desktop IPC 首批重构（有限落地）
+
+本节及后续有限批次保留当时实施路径作为历史记录；其中出现的 `src/main/*` 当前均已由文首所列 app/platform/module 路径替代，不再是运行入口。
 
 首批只建立 IPC 单一来源与可执行验证基线；后续 Session 有限提取见下节，Conversation send/attachment 子阶段见后文；本段为首批历史范围；worker typed 协议的后续有限落地见下文，目录树迁移未做。首批当时冻结 renderer；当前用户已条件解冻生产 App/Workspace 业务整理，原 `ui`、`modules`、44 项组件/demo 集合与视觉参考依赖闭包继续原位原字节保护。正式 UI 未替换，目标架构的后续 UI 收敛仍保留。
 

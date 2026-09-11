@@ -13,11 +13,11 @@ import { VirtuosoMockContext } from 'react-virtuoso';
 import { afterEach, expect, it, vi } from 'vitest';
 import * as conversation from '../src/modules/conversation';
 import * as schemas from '../src/shared/ipc/worker-schemas';
-import * as runtimeMapper from '../src/main/conversation-runtime-mapper';
-import * as streamMapper from '../src/main/conversation-stream-mapper';
-import * as normalize from '../src/main/chat-normalize';
-import * as jsonl from '../src/main/rpc-jsonl';
-import * as piResponse from '../src/main/pi-response';
+import * as runtimeMapper from '../src/platform/pi/rpc/conversation-runtime-mapper';
+import * as streamMapper from '../src/platform/pi/rpc/conversation-stream-mapper';
+import * as normalize from '../src/platform/pi/rpc/chat-normalize';
+import * as jsonl from '../src/platform/pi/rpc/jsonl';
+import * as piResponse from '../src/platform/pi/rpc/pi-response';
 import * as diagnosticModule from '../src/shared/missing-assistant-diagnostics';
 import { ChatPane } from '../src/renderer/ChatPane';
 import { reduceChatEvent, emptyChatState } from '../src/renderer/chat-state';
@@ -32,12 +32,12 @@ vi.mock('electron', () => ({ utilityProcess: { fork: platform.fork } }));
 // two composition worker URLs are converted to artificial filesystem paths.
 vi.mock('node:url', () => {
   const module = { fileURLToPath: (url: URL) => {
-    if (!/\/main\/(rpc-host|pty-host)\.(js|ts)$/.test(url.pathname)) throw new Error(`Unexpected worker URL: ${url.pathname}`);
+    if (!/\/app\/workers\/(pi-rpc|pty)\.worker\.(js|ts)$/.test(url.pathname)) throw new Error(`Unexpected worker URL: ${url.pathname}`);
     return `/fake${url.pathname}`;
   } };
   return { ...module, default: module };
 });
-vi.mock('../src/main/process-tree', () => ({ terminateProcessTree: platform.tree }));
+vi.mock('../src/platform/process/process-tree', () => ({ terminateProcessTree: platform.tree }));
 vi.mock('node:fs/promises', () => {
   const forbidden = () => { throw new Error('Forbidden product filesystem'); };
   const fs = { stat: async (path: string) => { if (path !== '/fake/submitted.txt') return forbidden(); return { isFile: () => true, size: 12 }; }, open: forbidden };
@@ -45,11 +45,14 @@ vi.mock('node:fs/promises', () => {
 });
 vi.mock('../src/platform/pi/process/environment', () => ({ runtimeEnvironment: () => ({}), terminalEnvironment: () => { throw new Error('No terminal in replay'); } }));
 import { composeMain } from '../src/app/main/composition';
-import { applySessionStartResult } from '../src/main/session-mapper';
-import { sendIntent } from '../src/main/conversation-mapper';
+import { applySessionStartResult } from '../src/app/main/session-mapper';
+import { sendIntent } from '../src/app/main/conversation-mapper';
 
 // Read repository source only. Never import/execute the installed Pi or read session files in tests.
-const sources = Object.fromEntries(['rpc-host', 'rpc-writer'].map(name => [name, readFileSync(`${process.cwd()}/src/main/${name}.ts`, 'utf8')]));
+const sources: Record<string, string> = {
+  'rpc-host': readFileSync(`${process.cwd()}/src/app/workers/pi-rpc.worker.ts`, 'utf8'),
+  'rpc-writer': readFileSync(`${process.cwd()}/src/platform/pi/rpc/writer.ts`, 'utf8'),
+};
 const turns = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
 function workerReplay() {
   let sequence = 0;
@@ -64,11 +67,11 @@ function workerReplay() {
   const env: Record<string, string | undefined> = {};
   const port = Object.assign(new EventEmitter(), { postMessage: (message: RpcWorkerOutput) => { const detached = structuredClone(message); wire.push(detached); host.emit('message', detached); } });
   const imports: Record<string, unknown> = {
-    '../shared/ipc/worker-schemas.js': schemas, '../modules/conversation/index.js': conversation,
-    '../shared/missing-assistant-diagnostics.js': diagnosticModule,
-    './conversation-runtime-mapper.js': runtimeMapper, './conversation-stream-mapper.js': streamMapper,
-    './chat-normalize.js': normalize, './rpc-jsonl.js': jsonl, './pi-response.js': piResponse,
-    './process-tree.js': { terminateProcessTree: platform.tree },
+    '../../shared/ipc/worker-schemas.js': schemas, '../../modules/conversation/index.js': conversation,
+    '../../shared/missing-assistant-diagnostics.js': diagnosticModule,
+    '../../platform/pi/rpc/conversation-runtime-mapper.js': runtimeMapper, '../../platform/pi/rpc/conversation-stream-mapper.js': streamMapper,
+    '../../platform/pi/rpc/chat-normalize.js': normalize, '../../platform/pi/rpc/jsonl.js': jsonl, '../../platform/pi/rpc/pi-response.js': piResponse,
+    '../../platform/process/process-tree.js': { terminateProcessTree: platform.tree },
     'node:child_process': { spawn: () => child }, 'node:crypto': { randomUUID: () => `fake-${++sequence}` },
   };
   const exits: number[] = [];
@@ -82,7 +85,7 @@ function workerReplay() {
     }, { filename: `source-replay/${name}.ts`, timeout: 1000 });
     return exports;
   }
-  imports['./rpc-writer.js'] = evaluate('rpc-writer');
+  imports['../../platform/pi/rpc/writer.js'] = evaluate('rpc-writer');
   evaluate('rpc-host');
   const incoming = (value: unknown) => child.stdout.write(Buffer.from(`${JSON.stringify(value)}\n`));
   const response = (command: string, data?: unknown) => {

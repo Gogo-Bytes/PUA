@@ -1,18 +1,18 @@
-import { parseRpcWorkerInput } from '../shared/ipc/worker-schemas.js';
-import type { RpcWorkerInput, RpcWorkerOutput, RpcWorkerEvent } from '../shared/ipc/worker-protocol.js';
-import { ConversationRuntimeApplication, ConversationStreamApplication } from '../modules/conversation/index.js';
-import { dialogDTO, normalizeDialog, normalizeQueue, normalizeRuntimeSeed, queueDTO, runtimeChangeDTO, runtimeError, runtimeViewDTO } from './conversation-runtime-mapper.js';
-import { RpcWriter } from './rpc-writer.js';
-import { terminateProcessTree } from './process-tree.js';
+import { parseRpcWorkerInput } from '../../shared/ipc/worker-schemas.js';
+import type { RpcWorkerInput, RpcWorkerOutput, RpcWorkerEvent } from '../../shared/ipc/worker-protocol.js';
+import { ConversationRuntimeApplication, ConversationStreamApplication } from '../../modules/conversation/index.js';
+import { dialogDTO, normalizeDialog, normalizeQueue, normalizeRuntimeSeed, queueDTO, runtimeChangeDTO, runtimeError, runtimeViewDTO } from '../../platform/pi/rpc/conversation-runtime-mapper.js';
+import { RpcWriter } from '../../platform/pi/rpc/writer.js';
+import { terminateProcessTree } from '../../platform/process/process-tree.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { JsonlDecoder, TailBuffer } from './rpc-jsonl.js';
-import { decodeArguments, isRecord, normalizeHistoryItems } from './chat-normalize.js';
-import { ConversationStreamMapper, messageDTO, streamNotificationDTO } from './conversation-stream-mapper.js';
-import type { ChatCommand } from '../shared/chat.js';
-import { createMissingAssistantDiagnostics } from '../shared/missing-assistant-diagnostics.js';
+import { JsonlDecoder, TailBuffer } from '../../platform/pi/rpc/jsonl.js';
+import { decodeArguments, isRecord, normalizeHistoryItems } from '../../platform/pi/rpc/chat-normalize.js';
+import { ConversationStreamMapper, messageDTO, streamNotificationDTO } from '../../platform/pi/rpc/conversation-stream-mapper.js';
+import type { ChatCommand } from '../../shared/chat.js';
+import { createMissingAssistantDiagnostics } from '../../shared/missing-assistant-diagnostics.js';
 
-import { parsePiResponse, type PiCommand, type PiResponseData } from './pi-response.js';
+import { parsePiResponse, type PiCommand, type PiResponseData } from '../../platform/pi/rpc/pi-response.js';
 
 type StartMessage = Extract<RpcWorkerInput, { type: 'start' }>;
 

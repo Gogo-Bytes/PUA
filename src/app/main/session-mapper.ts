@@ -1,7 +1,7 @@
-import { DesktopApplicationError } from '../platform/electron/ipc/desktop-errors.js';
-import { processStatus, type SessionFailureCode, type SessionResult, type SessionSnapshot, type SessionChange } from '../modules/sessions/index.js';
-import type { SessionActivity, SessionEvent } from '../shared/chat.js';
-import type { SessionInfo } from '../shared/contracts.js';
+import { DesktopApplicationError } from './application-error.js';
+import { processStatus, type SessionFailureCode, type SessionResult, type SessionSnapshot, type SessionChange } from '../../modules/sessions/index.js';
+import type { SessionActivity, SessionEvent } from '../../shared/chat.js';
+import type { SessionInfo } from '../../shared/contracts.js';
 
 const messages: Record<SessionFailureCode, string> = {
   SHUTTING_DOWN: '应用正在关闭，不能创建会话',

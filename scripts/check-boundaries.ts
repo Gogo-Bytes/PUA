@@ -22,19 +22,26 @@ export function checkSource(filename: string, text: string, root: string): strin
   const workspaceGlobals = ['window', 'document', 'process', 'Buffer', 'NodeJS', '__dirname', '__filename', 'setImmediate', 'clearImmediate'];
   const shared = relative.startsWith('src/shared/');
   const appMain = relative.startsWith('src/app/main/');
+  const appPreload = relative.startsWith('src/app/preload/');
+  const appWorkerDirectory = relative.startsWith('src/app/workers/');
+  const workerKind = /^src\/app\/workers\/(pi-rpc|pty)\.worker\.ts$/.exec(relative)?.[1];
+  const appWorker = workerKind !== undefined;
   const electronMain = relative.startsWith('src/platform/electron/');
   const piRuntime = /^src\/platform\/pi\/(runtime|process)\//.test(relative);
+  const platformAdapter = /^src\/platform\/(pi\/rpc|pty|process)\//.test(relative);
   const filesystemHome = relative === 'src/platform/filesystem/expand-home.ts';
   const filesystemProject = /^src\/platform\/filesystem\/(project-resources|session-preparation)\.ts$/.test(relative);
-  const main = relative.startsWith('src/main/') || appMain || electronMain;
-  const coreModule = /^src\/modules\/(sessions|conversation|change-review|preferences)\//.exec(relative)?.[1];
+  const main = appMain || electronMain;
+  const desktopHost = main || appPreload;
+  const coreModule = /^src\/modules\/(sessions|conversation|change-review|preferences|terminal)\//.exec(relative)?.[1];
   const coreRoot = `src/modules/${coreModule}/`;
   const businessCore = !!coreModule && !relative.startsWith(`${coreRoot}infrastructure/`);
-  const coreLabel = ({ sessions: 'Session', conversation: 'Conversation', 'change-review': 'Change Review', preferences: 'Preferences' } as Record<string, string>)[coreModule ?? ''] ?? 'business';
+  const coreLabel = ({ sessions: 'Session', conversation: 'Conversation', 'change-review': 'Change Review', preferences: 'Preferences', terminal: 'Terminal' } as Record<string, string>)[coreModule ?? ''] ?? 'business';
   const domain = relative.startsWith(`${coreRoot}domain/`);
   const application = relative.startsWith(`${coreRoot}application/`);
   const ports = relative === `${coreRoot}ports.ts`;
   const report = (node: ts.Node, message: string) => errors.push(`${relative}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}: ${message}`);
+  if (appWorkerDirectory && !appWorker) report(source, 'src/app/workers contains only the pi-rpc and pty process entry files; helpers belong in platform adapters');
   const checkImport = (node: ts.Node, name: string) => {
     if (workspaceSelection) report(node, `Workspace selection is dependency-free; import ${name} is forbidden`);
     if ((shared || renderer) && platformModule(name)) report(node, `platform import ${name} is forbidden`);
@@ -46,6 +53,12 @@ export function checkSource(filename: string, text: string, root: string): strin
     if (relative.startsWith('src/') && targetFeature && sourceFeature !== targetFeature[1] && !/^index\.[cm]?[jt]s$/.test(targetFeature[2])) report(node, `Renderer feature callers must use ${targetFeature[1]}/index.ts`);
     if (renderer && /^src\/(app|main|preload|workers|platform|modules)\//.test(target)) report(node, `renderer implementation import ${target} is forbidden`);
     if (shared && /^src\/(app|main|preload|workers|platform|renderer|modules)\//.test(target)) report(node, `shared implementation import ${target} is forbidden`);
+    if (appPreload && name !== 'electron' && !target.startsWith('src/shared/ipc/')) report(node, `preload import ${name} is forbidden`);
+    if (appWorker) {
+      const workerPlatform = workerKind === 'pi-rpc' ? /^src\/platform\/(pi\/rpc|process)\//.test(target) : /^src\/platform\/(pty|process)\//.test(target);
+      if (reactModule(name) || name === 'electron' || name.startsWith('electron/') || (workerKind === 'pi-rpc' && (name === 'node-pty' || name.startsWith('node-pty/'))) || /^src\/(renderer|app\/(main|preload|workers)|platform\/electron)\//.test(target) || target.startsWith('src/platform/') && !workerPlatform) report(node, `${workerKind} worker import ${name} is forbidden`);
+    }
+    if (platformAdapter && (reactModule(name) || /^src\/renderer\//.test(target))) report(node, `platform adapter import ${name} is forbidden`);
     if (relative.startsWith('src/platform/git/') && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|shared|renderer)\//.test(target) || target.startsWith('src/platform/electron/'))) report(node, `Git adapter import ${name} is forbidden`);
     if (relative === 'src/platform/filesystem/preferences-storage.ts' && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|renderer)\//.test(target) || target.startsWith('src/platform/electron/'))) report(node, `Preferences storage import ${name} is forbidden`);
     if (piRuntime && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || name === 'node-pty' || name.startsWith('node-pty/') || /^(node:)?(child_process|worker_threads|cluster)(\/|$)/.test(name) || /^src\/(app|main|shared|renderer|modules)\//.test(target) || target.startsWith('src/platform/electron/'))) report(node, `Pi runtime/environment import ${name} is forbidden`);
@@ -108,7 +121,7 @@ export function checkSource(filename: string, text: string, root: string): strin
     if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === 'require'))) {
       const arg = node.arguments[0];
       if (arg && ts.isStringLiteralLike(arg)) checkImport(node, arg.text);
-      else if (shared || renderer || businessCore || piRuntime || filesystemHome || filesystemProject) report(node, `computed import cannot be checked in shared/renderer/${coreLabel} core`);
+      else if (shared || renderer || appPreload || appWorker || businessCore || piRuntime || platformAdapter || filesystemHome || filesystemProject) report(node, `computed import cannot be checked in constrained source`);
     }
     if (workspaceSelection && ts.isIdentifier(node) && workspaceGlobals.includes(node.text)) {
       const propertyName = ts.isPropertyAccessExpression(node.parent) && node.parent.name === node;
@@ -128,7 +141,7 @@ export function checkSource(filename: string, text: string, root: string): strin
       const key = node.argumentExpression;
       if (!ts.isStringLiteralLike(key) || ['process', 'Buffer', 'NodeJS'].includes(key.text)) report(node, `Node/computed global access is forbidden in ${coreLabel} core`);
     }
-    if (main && ts.isStringLiteralLike(node) && node.text.startsWith('desktop:')) report(node, 'desktop channel literal belongs in shared/ipc/channels.ts');
+    if (desktopHost && ts.isStringLiteralLike(node) && node.text.startsWith('desktop:')) report(node, 'desktop channel literal belongs in shared/ipc/channels.ts');
     ts.forEachChild(node, visit);
   };
   visit(source);

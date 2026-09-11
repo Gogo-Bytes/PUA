@@ -54,7 +54,7 @@ try {
     } });
     void foreign.loadURL(trusted.webContents.getURL());
     return foreign.id;
-  }, path.join(root, 'dist/main/preload.cjs'));
+  }, path.join(root, 'dist/app/preload/preload.cjs'));
   try {
     const foreignPage = await foreignWindow;
     foreignPage.setDefaultTimeout(15000);

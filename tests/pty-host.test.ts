@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 
 const control = vi.hoisted(() => ({ spawn: vi.fn(), terminate: vi.fn() }));
 vi.mock('node-pty', () => ({ spawn: control.spawn }));
-vi.mock('../src/main/process-tree', () => ({ terminateProcessTree: control.terminate }));
+vi.mock('../src/platform/process/process-tree', () => ({ terminateProcessTree: control.terminate }));
 let originalPort: unknown;
 let port: EventEmitter;
 let rootExit: (event: { exitCode: number }) => void;
@@ -21,7 +21,7 @@ beforeEach(async () => {
   control.spawn.mockReset().mockReturnValue(terminal);
   control.terminate.mockReset().mockImplementation(() => new Promise<void>(resolve => { finishCleanup = resolve; }));
   vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-  await import('../src/main/pty-host');
+  await import('../src/app/workers/pty.worker');
   send({ type: 'start', executable: 'fixture', args: [], cwd: '/tmp', env: {}, cols: 80, rows: 24 });
 });
 afterEach(() => {

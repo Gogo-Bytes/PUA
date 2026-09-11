@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // Every platform effect is fake: no Electron instance, process, Pi, or filesystem work.
 const fake = vi.hoisted(() => ({ hosts: [] as Array<EventEmitter & { postMessage: ReturnType<typeof vi.fn>; kill: ReturnType<typeof vi.fn> }>, fork: vi.fn(), tree: vi.fn(), stat: vi.fn(), open: vi.fn() }));
 vi.mock('electron', () => ({ utilityProcess: { fork: fake.fork } }));
-vi.mock('../src/main/process-tree', () => ({ terminateProcessTree: fake.tree }));
+vi.mock('../src/platform/process/process-tree', () => ({ terminateProcessTree: fake.tree }));
 vi.mock('node:fs/promises', () => ({ stat: fake.stat, open: fake.open }));
 // Environment discovery otherwise probes the user's optional NVM directory on fake spawn.
 vi.mock('../src/platform/pi/process/environment', () => ({
@@ -13,9 +13,9 @@ vi.mock('../src/platform/pi/process/environment', () => ({
   terminalEnvironment: () => ({ TERM: 'xterm-256color' }),
 }));
 import { composeMain } from '../src/app/main/composition';
-import { applySessionStartResult, requireSessionSnapshot, sessionInfo, unwrapSessionResult } from '../src/main/session-mapper';
-import { conversationError, extensionResponse, sendIntent } from '../src/main/conversation-mapper';
-import { SessionProcessAdapter } from '../src/main/session-process-adapter';
+import { applySessionStartResult, requireSessionSnapshot, sessionInfo, unwrapSessionResult } from '../src/app/main/session-mapper';
+import { conversationError, extensionResponse, sendIntent } from '../src/app/main/conversation-mapper';
+import { SessionProcessAdapter } from '../src/platform/electron/utility/session-process-adapter';
 import type { ExtensionUIRequest, SessionEvent } from '../src/shared/chat';
 
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (error: Error) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
@@ -278,12 +278,12 @@ describe('SessionProcessAdapter resource contract through main composition', () 
   });
   it('keeps absolute sibling worker paths, terminal spawn readiness and PTY control bytes', async () => {
     const { sessions, host, id } = await running();
-    expect(fake.fork.mock.calls[0][0]).toBe(fileURLToPath(new URL('../src/main/rpc-host.js', import.meta.url)));
+    expect(fake.fork.mock.calls[0][0]).toBe(fileURLToPath(new URL('../src/app/workers/pi-rpc.worker.js', import.meta.url)));
     const closed = sessions.session.close(id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
     const terminal = await sessions.createSession(runtime, { ...options, kind: 'terminal', startMode: 'resume', cols: 80, rows: 24 });
     applySessionStartResult(sessions.session.start(terminal.id)); const pty = fake.hosts[1];
     expect(sessionInfo(requireSessionSnapshot(sessions.session.get(terminal.id)), sessions.activity(terminal.id)).processStatus).toBe('starting');
-    expect(fake.fork.mock.calls[1][0]).toBe(fileURLToPath(new URL('../src/main/pty-host.js', import.meta.url)));
+    expect(fake.fork.mock.calls[1][0]).toBe(fileURLToPath(new URL('../src/app/workers/pty.worker.js', import.meta.url)));
     pty.emit('spawn'); expect(sessionInfo(requireSessionSnapshot(sessions.session.get(terminal.id)), sessions.activity(terminal.id)).processStatus).toBe('running');
     expect(pty.postMessage.mock.calls[0][0]).toMatchObject({ type: 'start', args: ['--resume'], cols: 80, rows: 24 });
     sessions.terminal.write(terminal.id, '\0\x1b[31m'); sessions.terminal.resize(terminal.id, 100, 30); sessions.terminal.acknowledge(terminal.id, 9);

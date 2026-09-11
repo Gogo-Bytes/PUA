@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { App } from '../src/renderer/App';
 import { desktopIPCFake } from './desktop-ipc-fake';
 import { deferred, sessionInfo, snapshot, success } from './app/main/main-fakes';
-import { DesktopApplicationError } from '../src/platform/electron/ipc/desktop-errors';
+import { DesktopApplicationError } from '../src/app/main/application-error';
 
 // Real App/ChatPane/Virtuoso/client/registrar/preload; only native xterm import is inert.
 vi.mock('@xterm/xterm', () => ({ Terminal: vi.fn() }));

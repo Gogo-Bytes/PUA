@@ -1,19 +1,19 @@
-import type { RpcOperation, RpcWorkerInput, PtyWorkerInput, WorkerInputPort } from '../shared/ipc/worker-protocol.js';
-import { parseRpcWorkerOutput, parsePtyWorkerOutput, workerRequestId } from '../shared/ipc/worker-schemas.js';
-import type { Terminal } from './terminal.js';
+import type { RpcOperation, RpcWorkerInput, PtyWorkerInput, WorkerInputPort } from '../../../shared/ipc/worker-protocol.js';
+import { parseRpcWorkerOutput, parsePtyWorkerOutput, workerRequestId } from '../../../shared/ipc/worker-schemas.js';
+import type { Terminal } from '../../../modules/terminal/index.js';
 import { utilityProcess, type UtilityProcess } from 'electron';
 import { open, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { terminateProcessTree } from './process-tree.js';
-import { runtimeEnvironment, terminalEnvironment } from '../platform/pi/process/environment.js';
+import { terminateProcessTree } from '../../process/process-tree.js';
+import { runtimeEnvironment, terminalEnvironment } from '../../pi/process/environment.js';
 import { MissingAssistantDiagnosticSession, withoutMissingAssistantDiagnostics } from './missing-assistant-diagnostics.js';
-import { imageMimeType } from './attachment-policy.js';
-import { validSize } from '../shared/ipc/schemas.js';
-import type { ChatAttachment, SessionEvent, SessionActivity } from '../shared/chat.js';
-import type { CreateSessionOptions, RuntimeInfo } from '../shared/contracts.js';
-import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../modules/sessions/index.js';
-import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ExtensionResponse, RuntimeSend } from '../modules/conversation/index.js';
+import { imageMimeType } from '../../filesystem/attachment-policy.js';
+import { validSize } from '../../../shared/ipc/schemas.js';
+import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../shared/chat.js';
+import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/contracts.js';
+import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../../../modules/sessions/index.js';
+import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
 
 type ProcessHost = Omit<UtilityProcess, 'postMessage'> & WorkerInputPort<RpcWorkerInput | PtyWorkerInput>;
 interface AttachmentPayload extends ChatAttachment { imageData?: string }
@@ -45,8 +45,7 @@ export interface SessionProcessContext {
   invalidateConversation(id: string): void;
 }
 
-/** Main-side resource owner. Lifecycle permissions are read from the coordinator, never cached here.
- * Worker paths remain siblings in dist/main; no worker protocol or packaging relocation. */
+/** Main-side resource owner. Lifecycle permissions are read from the coordinator, never cached here. */
 export class SessionProcessAdapter implements SessionProcessPort, ConversationRuntimePort, AttachmentResourcesPort, Terminal {
   private readonly resources = new Map<string, ProcessResource>();
   private readonly diagnostics = new MissingAssistantDiagnosticSession(process.env.PUA_MISSING_ASSISTANT_DIAGNOSTICS, line => console.info(line));

@@ -1,4 +1,4 @@
-import type { ConversationBlock, ConversationImage, ConversationMessage, ConversationHistoryItem, ConversationJson, ConversationObject, ToolOutput } from '../modules/conversation/index.js';
+import type { ConversationBlock, ConversationImage, ConversationMessage, ConversationHistoryItem, ConversationJson, ConversationObject, ToolOutput } from '../../../modules/conversation/index.js';
 
 const object = (value: unknown): Record<string, unknown> | undefined => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 const string = (value: unknown): string | undefined => typeof value === 'string' ? value : undefined;

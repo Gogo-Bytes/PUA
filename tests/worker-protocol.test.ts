@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseRpcWorkerInput, parseRpcWorkerOutput, parsePtyWorkerInput, parsePtyWorkerOutput } from '../src/shared/ipc/worker-schemas';
 import type { RpcWorkerInput, RpcWorkerOutput, PtyWorkerInput, PtyWorkerOutput, WorkerInputPort } from '../src/shared/ipc/worker-protocol';
-import type { Terminal } from '../src/main/terminal';
+import type { Terminal } from '../src/modules/terminal';
 import type { ExtensionUIRequest } from '../src/shared/chat';
 
 // Compile-time callers use the real port Interface, not assertion casts. Never executed.

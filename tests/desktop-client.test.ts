@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DesktopAPI, DesktopBridge } from '../src/shared/ipc/desktop-api';
 import { invokeChannels, sendChannels, type InvokeMethod } from '../src/shared/ipc/channels';
 import { createIPCRegistrar, checkSender } from '../src/platform/electron/ipc/registrar';
-import { DesktopApplicationError, desktopFailure } from '../src/platform/electron/ipc/desktop-errors';
+import { DesktopApplicationError } from '../src/app/main/application-error';
+import { desktopFailure } from '../src/platform/electron/ipc/desktop-errors';
 import { createDesktopClient, DesktopClientError } from '../src/renderer/app/desktop-client';
 import { desktopSuccess, desktopVoidMethods, isDesktopSessionEvent, parseDesktopResult } from '../src/shared/ipc/desktop-result';
 import { requestParsers } from '../src/shared/ipc/schemas';
@@ -149,8 +150,8 @@ describe('Desktop event subscription ownership', () => {
 });
 
 it('preserves stable codes from the three real edge mappers without moving errors into domain', async () => {
-  const { unwrapSessionResult } = await import('../src/main/session-mapper');
-  const { conversationError } = await import('../src/main/conversation-mapper');
+  const { unwrapSessionResult } = await import('../src/app/main/session-mapper');
+  const { conversationError } = await import('../src/app/main/conversation-mapper');
   const { ConversationFailure } = await import('../src/modules/conversation');
   const { reviewError } = await import('../src/platform/electron/ipc/change-review-mapper');
   const { ReviewFailure } = await import('../src/modules/change-review');

@@ -1,5 +1,5 @@
 import type { app as ElectronApp, dialog as ElectronDialog } from 'electron';
-import { isSessionBusy, unwrapSessionResult } from '../../main/session-mapper.js';
+import { isSessionBusy, unwrapSessionResult } from './session-mapper.js';
 import type { WindowContext } from './create-window.js';
 
 type Dependencies = WindowContext & {

@@ -51,7 +51,7 @@ describe('production bootstrap source with fully Fake Electron/store/composition
     });
     h.settings.resolve({ piPath: '', nodePath: '', args: [], fontSize: 14, recentProjects: [] }); await settle();
     expect(h.fake.loadURL).toHaveBeenCalledExactlyOnceWith(new URL('../../../src/renderer/index.html', import.meta.url).href);
-    expect(fake.BrowserWindow.mock.calls[0][0].webPreferences.preload).toBe(fileURLToPath(new URL('../../../src/main/preload.cjs', import.meta.url)));
+    expect(fake.BrowserWindow.mock.calls[0][0].webPreferences.preload).toBe(fileURLToPath(new URL('../../../src/app/preload/preload.cjs', import.meta.url)));
     expect(fake.GitAdapter).toHaveBeenCalledOnce(); expect(fake.captureSnapshot).not.toHaveBeenCalled(); expect(fake.readAuthorizedPreview).not.toHaveBeenCalled();
     expect(fake.error).not.toHaveBeenCalled();
     expect(fake.on.mock.calls.map(call => call[0])).toEqual(['window-all-closed']); fake.on.mock.calls[0][1](); expect(fake.quit).toHaveBeenCalledOnce();

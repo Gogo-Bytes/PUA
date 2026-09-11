@@ -1,7 +1,7 @@
 import type { Bootstrap, CreateSessionOptions, Preferences, SessionInfo } from '../../shared/contracts.js';
 import type { PreferencesApplication } from '../../modules/preferences/index.js';
 import type { resolveRuntime as ResolveRuntime } from '../../platform/pi/runtime/discovery.js';
-import { unwrapSessionResult } from '../../main/session-mapper.js';
+import { unwrapSessionResult } from './session-mapper.js';
 import type { composeMain } from './composition.js';
 
 type SessionCreation = Pick<ReturnType<typeof composeMain>, 'createSession'> & {

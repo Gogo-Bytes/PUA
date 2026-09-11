@@ -2,8 +2,8 @@ import type { clipboard as ElectronClipboard, dialog as ElectronDialog, ipcMain 
 import { checkSender, createIPCRegistrar } from './registrar.js';
 import type { WindowContext } from '../../../app/main/create-window.js';
 import type { createDesktopPreferences } from '../../../app/main/desktop-preferences.js';
-import { applySessionStartResult, isSessionBusy, requireSessionSnapshot, unwrapSessionResult } from '../../../main/session-mapper.js';
-import { conversationError, extensionResponse, sendIntent } from '../../../main/conversation-mapper.js';
+import { applySessionStartResult, isSessionBusy, requireSessionSnapshot, unwrapSessionResult } from '../../../app/main/session-mapper.js';
+import { conversationError, extensionResponse, sendIntent } from '../../../app/main/conversation-mapper.js';
 import type { ChangeReview } from '../../../modules/change-review/index.js';
 import { repositorySnapshotDTO, reviewPreviewDTO, reviewScopeInput, reviewError } from './change-review-mapper.js';
 import type { inspectProjectResources as InspectResources } from '../../filesystem/project-resources.js';

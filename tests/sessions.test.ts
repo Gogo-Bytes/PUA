@@ -8,10 +8,10 @@ const hosts = vi.hoisted(() => [] as Array<EventEmitter & { postMessage: ReturnT
 vi.mock('electron', () => ({ utilityProcess: { fork: () => {
   const host = Object.assign(new EventEmitter(), { postMessage: vi.fn(), kill: vi.fn() }); hosts.push(host); return host;
 } } }));
-vi.mock('../src/main/process-tree', () => ({ terminateProcessTree: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../src/platform/process/process-tree', () => ({ terminateProcessTree: vi.fn().mockResolvedValue(undefined) }));
 import { composeMain } from '../src/app/main/composition';
-import { applySessionStartResult, unwrapSessionResult } from '../src/main/session-mapper';
-import { conversationError, extensionResponse, sendIntent } from '../src/main/conversation-mapper';
+import { applySessionStartResult, unwrapSessionResult } from '../src/app/main/session-mapper';
+import { conversationError, extensionResponse, sendIntent } from '../src/app/main/conversation-mapper';
 let cwd: string;
 const runtime = { executable: process.execPath, source: process.execPath, args: [] };
 const options = () => ({ cwd, kind: 'chat' as const, startMode: 'new' as const, projectTrust: 'default' as const });

@@ -2,10 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { SessionCoordinator } from '../../modules/sessions/index.js';
 import { ConversationApplication } from '../../modules/conversation/index.js';
-import { SessionProcessAdapter, type SessionProcessContext } from '../../main/session-process-adapter.js';
-import type { Terminal } from '../../main/terminal.js';
+import { SessionProcessAdapter, type SessionProcessContext } from '../../platform/electron/utility/session-process-adapter.js';
+import type { Terminal } from '../../modules/terminal/index.js';
 import { prepareProject } from '../../platform/filesystem/session-preparation.js';
-import { sessionChangeEvent, unwrapSessionResult } from '../../main/session-mapper.js';
+import { sessionChangeEvent, unwrapSessionResult } from './session-mapper.js';
 import type { CreateSessionOptions, RuntimeInfo } from '../../shared/contracts.js';
 import type { SessionEvent } from '../../shared/chat.js';
 import { createSession } from './create-session.js';
@@ -25,8 +25,8 @@ export function composeMain(emit: (event: SessionEvent) => void, dependencies: C
   const notify = (event: SessionEvent) => { try { emit(event); } catch { /* Projection failure is not cleanup failure. */ } };
   const context: SessionProcessContext = {
     workerPaths: {
-      chat: fileURLToPath(new URL('../../main/rpc-host.js', import.meta.url)),
-      terminal: fileURLToPath(new URL('../../main/pty-host.js', import.meta.url)),
+      chat: fileURLToPath(new URL('../workers/pi-rpc.worker.js', import.meta.url)),
+      terminal: fileURLToPath(new URL('../workers/pty.worker.js', import.meta.url)),
     },
     snapshot: id => coordinator.get(id),
     close: async id => { unwrapSessionResult(await coordinator.close(id)); },

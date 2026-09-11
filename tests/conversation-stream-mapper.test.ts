@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { decodeArguments, normalizeHistoryItems, normalizeMessage, normalizeToolResult } from '../src/main/chat-normalize';
-import { ConversationStreamMapper, messageDTO, streamNotificationDTO } from '../src/main/conversation-stream-mapper';
+import { decodeArguments, normalizeHistoryItems, normalizeMessage, normalizeToolResult } from '../src/platform/pi/rpc/chat-normalize';
+import { ConversationStreamMapper, messageDTO, streamNotificationDTO } from '../src/platform/pi/rpc/conversation-stream-mapper';
 import type { ConversationMessage } from '../src/modules/conversation/index';
 
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });

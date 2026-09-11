@@ -1,10 +1,10 @@
 # PUA 目标架构
 
-状态：**目标设计，首批 IPC / 验证基线、Session 核心及 Conversation send/attachment、runtime stop/activity/waiting、stream/tool/history、Change Review、Preferences、用户安装 runtime/environment 与 renderer Workspace 首 slice 有限落地，非全量重构完成**。本文是后续架构重构、新模块设计和代码评审的规范来源；当前已实现行为仍以代码、测试、[现行架构](architecture.md) 和 [原生对话设计](native-chat-design.md) 为准。
+状态：**目标设计，进程入口与平台 Adapter 目录边界、首批 IPC / 验证基线、Session 核心及 Conversation send/attachment、runtime stop/activity/waiting、stream/tool/history、Change Review、Preferences、用户安装 runtime/environment 与 renderer Workspace 首 slice 有限落地，非全量重构完成**。本文是后续架构重构、新模块设计和代码评审的规范来源；当前已实现行为仍以代码、测试、[现行架构](architecture.md) 和 [原生对话设计](native-chat-design.md) 为准。
 
 本批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。发布入口经 verify 只构建一次；生命周期当前仅 macOS 验证，其他平台明确阻塞发布，不代表 release matrix 完成。首批当时兼容 Promise 成功值/异常；后续 [DesktopResult/client 有限 vertical](desktop-client-contract.md) 已实现结构化结果与统一 renderer seam，未设上限的字符串策略仍未实施，旧 `contracts.ts` 类型再导出入口仍在。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 均未完成；阶段 3 仅 send/attachment、runtime stop/activity/waiting 与 stream/tool/history 有限落地，不能将首批有限落地视为 Spec P1 全完成；renderer 已按用户授权条件解冻，仅整理生产 App/Workspace 状态；原 `ui`、`modules`、44 项组件/demo 保护集合及视觉参考依赖闭包原位原字节保留，正式 UI 未替换，不删除后续 UI 收敛目标。具体范围与验证限制见 [现行架构的首批状态](architecture.md#desktop-ipc-首批重构有限落地)。
 
-有限收尾首包现完成 strict Pi response 代码与纯验证：pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约，真实 Fake worker→main token/renderer 草稿失败链闭合。这是安全契约修正，不是未知助手缺失 P0 修复。实际兼容来源、验证限制和累计提交依赖见 [Strict Pi 收尾](architecture.md#strict-pi-response有限协议收尾)。strict Pi checkpoint 已提交为 `e709f4d`。后续 DesktopResult/client 的有限代码契约现已闭合，范围与验证限制见 [契约说明](desktop-client-contract.md)；该 vertical 已提交为 `e7b5fa8`。App 必要 continuation 已按下述阶段 4 有限收口，当前包未 stage/commit，须完整候选验证与独立 review；Preferences alias 行为修正及门禁、bounds/UI/真实验收/发布目标均未完成。
+有限收尾首包现完成 strict Pi response 代码与纯验证：pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约，真实 Fake worker→main token/renderer 草稿失败链闭合。这是安全契约修正，不是未知助手缺失 P0 修复。实际兼容来源、验证限制和累计提交依赖见 [Strict Pi 收尾](architecture.md#strict-pi-response有限协议收尾)。strict Pi checkpoint 已提交为 `e709f4d`。后续 DesktopResult/client 的有限代码契约现已闭合，范围与验证限制见 [契约说明](desktop-client-contract.md)；该 vertical 已提交为 `e7b5fa8`。App 必要 continuation 已按下述阶段 4 有限收口并提交为 `1d9c491`。其后的进程边界归位只完成源码移动、import/URL/config/静态门禁与文档更新；按用户要求未运行自动测试、构建、typecheck、smoke 或应用。Preferences alias 行为修正及门禁、bounds/UI/真实验收/发布目标均未完成。
 
 ## 1. 目标与适用范围
 
@@ -142,6 +142,7 @@ src/
   platform/
     electron/
       ipc/
+      utility/
       dialogs/
       clipboard/
       shell/
@@ -149,6 +150,8 @@ src/
       rpc/
       runtime/
       process/
+    process/
+    pty/
     git/
     filesystem/
 
@@ -458,7 +461,7 @@ Electron smoke
 
 当前：`modules/sessions` 已落地纯 `SessionOwnershipPolicy`、`SessionCoordinator` 与 ID 寻址 lifecycle Port，main-side process adapter 隐藏 utility/PID/pending/附件物理资源。采用同步 prepared `create`，使异步 cwd 检查后的最终准入、预留及材料登记成为无 await/无外部通知的原子段；§7 Promise 签名仅为目标示意。cleanup 确认成功前不释放，失败 sticky。`SessionInfo` 与 activity 留在边缘映射，core 不引 shared DTO。
 
-**阶段 2 代码/纯测试完成；桌面生命周期待用户人工确认，完整完成条件未满足。** 本轮用户禁止应用及替代启动自动化，未运行 lifecycle smoke/verify，纯 build 的静态路径检查不等同 Electron 验收。视觉参考 UI/modules/组件预览继续保护；renderer 当前条件解冻范围见阶段 4。后续 Conversation 子阶段见阶段 3。`main/sessions.ts` 已由 `app/main/composition.ts` 的唯一实例装配、独立 create/附件用例与 `platform/filesystem/session-preparation.ts`、`main/session-mapper.ts` 替代并删除；main 直接消费 typed core/Terminal，未叠加 facade。实际所有权与验证范围见 [现行架构](architecture.md#session-核心有限提取阶段-2-代码与纯测试)。
+**阶段 2 代码/纯测试完成；桌面生命周期待用户人工确认，完整完成条件未满足。** 本轮用户禁止应用及替代启动自动化，未运行 lifecycle smoke/verify，纯 build 的静态路径检查不等同 Electron 验收。视觉参考 UI/modules/组件预览继续保护；renderer 当前条件解冻范围见阶段 4。后续 Conversation 子阶段见阶段 3。`main/sessions.ts` 已由 `app/main/composition.ts` 的唯一实例装配、独立 create/附件用例与 `platform/filesystem/session-preparation.ts`、`app/main/session-mapper.ts` 替代并删除；main 直接消费 typed core/Terminal，未叠加 facade。实际所有权与验证范围见 [现行架构](architecture.md#session-核心有限提取阶段-2-代码与纯测试)。
 
 完成条件：
 
@@ -520,14 +523,14 @@ Preferences 后续已有限提取：`modules/preferences` 独占 current、owned
 | 当前区域 | 目标职责 |
 |---|---|
 | `src/app/main/bootstrap.ts`（真实 entry，旧 main/IPC 源已删除） | 有限落地的 bootstrap/window/lifecycle/menu + `platform/electron/ipc` registrars；见现行架构 Main 边缘拆分 |
-| 已删除 `src/main/sessions.ts`；现 `src/app/main/{composition,create-session,chat-attachments}.ts` 与 `platform/filesystem/session-preparation.ts`、`main/session-mapper.ts` | 有限 main 装配与 Node 边缘用例、bootstrap/window/lifecycle/menu/IPC 已落地；其余 platform/worker 与桌面人工验收仍未完成 |
+| 已删除 `src/main/sessions.ts`；现 `src/app/main/{composition,create-session,chat-attachments,session-mapper,conversation-mapper}.ts`、`platform/electron/utility/session-process-adapter.ts` 与 `platform/filesystem/session-preparation.ts` | 有限 main 装配、应用边缘映射与 Electron utility 资源 Adapter 已分责；桌面人工验收仍未完成 |
 | 已删除 `src/main/runtime.ts`；现 `platform/pi/runtime/discovery.ts`、`platform/pi/process/environment.ts`、`platform/filesystem/expand-home.ts`、`app/main/desktop-preferences.ts` | 用户安装同步发现、环境、home expansion 与既有 Chat 参数边缘分责；不是新增业务核心 |
 | 已删除 `src/main/{project-resources,session-preparation}.ts`；现 `platform/filesystem/{project-resources,session-preparation}.ts` | 资源存在性祖先扫描与 cwd 准备 Adapter，复用 expand-home；app 保留 UUID 与同步创建段，无 Workspace 空层 |
-| `src/main/rpc-host.ts` | `platform/pi/rpc` 与 RPC worker |
-| `src/main/pty-host.ts` | Terminal PTY Adapter 与 worker |
+| 已删除 `src/main/rpc-host.ts`；现 `src/app/workers/pi-rpc.worker.ts` 与 `platform/pi/rpc/*` | Pi RPC utility entry 与 framing/writer/mapping Adapter 分离；Conversation owner 不变 |
+| 已删除 `src/main/pty-host.ts`；现 `src/app/workers/pty.worker.ts`、`platform/pty/output-flow.ts` 与 `platform/process/process-tree.ts` | PTY utility entry、输出流控与共享进程树 Adapter 分离 |
 | 已删除 `src/main/git.ts`；现 `modules/change-review` + `platform/git/review-adapter.ts` + IPC mapper | 有限落地的 scope/成员准入与 Git/fs 资源分离；真实仓库/桌面验收后置 |
 | 已删除 `src/main/preferences.ts`；现 `modules/preferences` + `platform/filesystem/preferences-storage.ts` | 唯一 current/owned recents 与磁盘兼容/串行 IO 分离；main 保留 runtime/DTO/Session 补偿 |
-| `src/main/preload.cts` | `app/preload/desktop-api` |
+| 已删除 `src/main/preload.cts`；现 `src/app/preload/desktop-api.cts` | 唯一 sandbox preload entry，构建输出为 `dist/app/preload/preload.cjs` |
 | `src/shared/*.ts` | 拆分为领域内部类型或 `shared/ipc` DTO/schema |
 | `src/renderer/App.tsx` | `renderer/app` composition + `renderer/features/*` |
 | `src/renderer/ChatPane.tsx` | Conversation Presentation |

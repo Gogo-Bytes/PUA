@@ -1,9 +1,6 @@
+import { DesktopApplicationError } from '../../../app/main/application-error.js';
 import { safeErrorMessage, type DesktopError } from '../../../shared/ipc/desktop-result.js';
 
-/** Edge-only code carrier; domain results and successful application values stay wire-free. */
-export class DesktopApplicationError extends Error {
-  constructor(readonly code: string, message: string) { super(message); }
-}
 export class DesktopAuthorizationError extends Error {
   constructor() { super('Untrusted IPC sender'); }
 }

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
-import { terminateProcessTree } from '../src/main/process-tree';
+import { terminateProcessTree } from '../src/platform/process/process-tree';
 
 it.skipIf(process.platform === 'win32')('escalates ignored SIGTERM and kills inherited plus Pi-style detached descendants', async () => {
   const script = `const {spawn}=require('node:child_process'); process.on('SIGTERM',()=>{}); process.stdin.resume(); process.stdin.on('end',()=>{}); const code="process.on('SIGTERM',()=>{}); console.log(process.pid); setInterval(()=>{},1000)"; for(const detached of [false,true]) spawn(process.execPath,['-e',code],{detached,stdio:['ignore','pipe','ignore']}).stdout.pipe(process.stdout); setInterval(()=>{},1000);`;
