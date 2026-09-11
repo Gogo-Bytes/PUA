@@ -1,4 +1,4 @@
-import type { ExtensionUIResponse, SessionEvent } from '../chat.js';
+import type { ExtensionUIResponse, SessionEvent } from './conversation.js';
 
 /** Internal utility wire only: no Pi commands, resource handles or attachment tokens. */
 export interface WorkerLaunch {

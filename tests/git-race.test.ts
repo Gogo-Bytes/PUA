@@ -7,7 +7,7 @@ import path from 'node:path';
 import { ChangeReviewApplication } from '../src/modules/change-review/index';
 import { GitReviewAdapter } from '../src/platform/git/review-adapter';
 import { reviewPreviewDTO, reviewError } from '../src/platform/electron/ipc/change-review-mapper';
-import type { DiffScope } from '../src/shared/git';
+import type { DiffScope } from '../src/shared/ipc/change-review';
 
 const review = new ChangeReviewApplication(new GitReviewAdapter());
 const getFileDiff = (cwd: string, path: string, scope: DiffScope) => review.preview({ cwd, path, scope }).then(reviewPreviewDTO).catch(reviewError);

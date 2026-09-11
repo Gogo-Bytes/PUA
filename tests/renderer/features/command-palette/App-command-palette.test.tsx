@@ -5,7 +5,7 @@ let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bootstrap } from '../../../../src/shared/ipc/desktop-api';
-import type { ChatCommand, SessionEvent } from '../../../../src/shared/chat';
+import type { ChatCommand, SessionEvent } from '../../../../src/shared/ipc/conversation';
 
 // Only native terminal/canvas and Desktop bridge are faked. App, ChatPane,
 // Virtuoso, Modal and TerminalPane execute their real renderer implementation.

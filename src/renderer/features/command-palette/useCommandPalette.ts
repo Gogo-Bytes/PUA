@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { ChatCommand, SessionKind } from '../../../shared/chat';
+import type { ChatCommand, SessionKind } from '../../../shared/ipc/conversation';
 
 const terminalCommands = [
   { name: 'model', label: '选择模型', description: '使用 Pi 原生模型选择器' }, { name: 'thinking', label: '思考强度', description: '选择推理等级' },

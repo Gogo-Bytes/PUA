@@ -1,7 +1,7 @@
 import type { ConversationApplication } from '../../modules/conversation/index.js';
 import type { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js';
 import { conversationError } from './conversation-mapper.js';
-import type { ChatAttachment } from '../../shared/chat.js';
+import type { ChatAttachment } from '../../shared/ipc/conversation.js';
 
 /** Staged sources transfer to Conversation on every outcome; display retains the existing path DTO. */
 export async function registerChatAttachments(

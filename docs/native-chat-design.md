@@ -44,7 +44,7 @@ Streamdown 对流式 Markdown 很有针对性，但当前包预设 Tailwind/shad
 
 ## 对话领域 interface
 
-renderer 只依赖 `src/shared/chat.ts`：
+renderer 只依赖 `src/shared/ipc/conversation.ts`：
 
 - `ChatMessage` 由 text/thinking/tool blocks 组成；
 - `ToolActivity` 独立表达 pending/running/success/error、参数、累计输出和 details；

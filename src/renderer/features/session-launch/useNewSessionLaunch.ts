@@ -1,6 +1,6 @@
 import { desktopClient } from '../../app/desktop-client';
 import { useEffect, useState } from 'react';
-import type { ProjectTrust, SessionKind } from '../../../shared/chat';
+import type { ProjectTrust, SessionKind } from '../../../shared/ipc/conversation';
 
 export interface SessionLaunchOptions {
   initialKind?: SessionKind;

@@ -2,7 +2,7 @@ import {
   RuntimeFailure, type ConversationDialog, type ConversationQueue, type RuntimeChange,
   type RuntimeSeed, type RuntimeView,
 } from '../../../modules/conversation/index.js';
-import type { ChatQueue, ChatRuntimeState, ExtensionUIRequest } from '../../../shared/chat.js';
+import type { ChatQueue, ChatRuntimeState, ExtensionUIRequest } from '../../../shared/ipc/conversation.js';
 import { isRecord } from './chat-normalize.js';
 
 export function runtimeError(error: unknown): unknown {

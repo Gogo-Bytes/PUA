@@ -1,5 +1,5 @@
-import { extensionResponse, validBlockIndex } from '../chat-validation.js';
-import type { ExtensionUIRequest } from '../chat.js';
+import { extensionResponse, validBlockIndex } from './conversation-validation.js';
+import type { ExtensionUIRequest } from './conversation.js';
 import { validSize } from './schemas.js';
 import type { RpcWorkerEvent, RpcWorkerInput, RpcWorkerOutput, PtyWorkerInput, PtyWorkerOutput, WorkerLaunch } from './worker-protocol.js';
 

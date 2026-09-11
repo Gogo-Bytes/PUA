@@ -1,4 +1,4 @@
-import type { ExtensionUIResponse } from './chat.js';
+import type { ExtensionUIResponse } from './conversation.js';
 
 export const MAX_CONTENT_BLOCKS = 4096;
 export function validBlockIndex(value: unknown): value is number {

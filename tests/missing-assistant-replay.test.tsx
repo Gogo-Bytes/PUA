@@ -18,11 +18,11 @@ import * as streamMapper from '../src/platform/pi/rpc/conversation-stream-mapper
 import * as normalize from '../src/platform/pi/rpc/chat-normalize';
 import * as jsonl from '../src/platform/pi/rpc/jsonl';
 import * as piResponse from '../src/platform/pi/rpc/pi-response';
-import * as diagnosticModule from '../src/shared/missing-assistant-diagnostics';
+import * as diagnosticModule from '../src/shared/ipc/missing-assistant-diagnostics';
 import { ChatPane, reduceChatEvent, emptyChatState } from '../src/renderer/features/conversation';
 import { windowEventEmitter } from '../src/app/main/create-window';
 import type { BrowserWindow } from 'electron';
-import type { SessionEvent } from '../src/shared/chat';
+import type { SessionEvent } from '../src/shared/ipc/conversation';
 import type { RpcWorkerOutput } from '../src/shared/ipc/worker-protocol';
 
 const platform = vi.hoisted(() => ({ fork: vi.fn(), tree: vi.fn().mockResolvedValue(undefined) }));
@@ -67,7 +67,7 @@ function workerReplay() {
   const port = Object.assign(new EventEmitter(), { postMessage: (message: RpcWorkerOutput) => { const detached = structuredClone(message); wire.push(detached); host.emit('message', detached); } });
   const imports: Record<string, unknown> = {
     '../../shared/ipc/worker-schemas.js': schemas, '../../modules/conversation/index.js': conversation,
-    '../../shared/missing-assistant-diagnostics.js': diagnosticModule,
+    '../../shared/ipc/missing-assistant-diagnostics.js': diagnosticModule,
     '../../platform/pi/rpc/conversation-runtime-mapper.js': runtimeMapper, '../../platform/pi/rpc/conversation-stream-mapper.js': streamMapper,
     '../../platform/pi/rpc/chat-normalize.js': normalize, '../../platform/pi/rpc/jsonl.js': jsonl, '../../platform/pi/rpc/pi-response.js': piResponse,
     '../../platform/process/process-tree.js': { terminateProcessTree: platform.tree },

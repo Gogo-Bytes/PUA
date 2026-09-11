@@ -5,7 +5,7 @@ let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bootstrap, Preferences } from '../src/shared/ipc/desktop-api';
-import type { SessionEvent } from '../src/shared/chat';
+import type { SessionEvent } from '../src/shared/ipc/conversation';
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data = [], itemContent }: { data?: unknown[]; itemContent(index: number, item: unknown): React.ReactNode }) => <div>{data.map((item, index) => <div key={index}>{itemContent(index, item)}</div>)}</div> }));
 // These tests mount the real ChatPane, not a terminal. xterm's import probes canvas in jsdom.
 vi.mock('@xterm/xterm', () => ({ Terminal: vi.fn() }));

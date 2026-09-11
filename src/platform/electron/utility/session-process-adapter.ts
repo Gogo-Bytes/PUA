@@ -10,7 +10,7 @@ import { runtimeEnvironment, terminalEnvironment } from '../../pi/process/enviro
 import { MissingAssistantDiagnosticSession, withoutMissingAssistantDiagnostics } from './missing-assistant-diagnostics.js';
 import { imageMimeType } from '../../filesystem/attachment-policy.js';
 import { validSize } from '../../../shared/ipc/schemas.js';
-import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../shared/chat.js';
+import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../shared/ipc/conversation.js';
 import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/ipc/desktop-api.js';
 import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../../../modules/sessions/index.js';
 import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';

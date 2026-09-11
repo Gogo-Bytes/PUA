@@ -1,6 +1,6 @@
 import type { BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 import { eventChannels } from '../../shared/ipc/channels.js';
-import type { SessionEvent } from '../../shared/chat.js';
+import type { SessionEvent } from '../../shared/ipc/conversation.js';
 import type { composeMain } from './composition.js';
 
 export interface WindowContext {

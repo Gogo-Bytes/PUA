@@ -1,4 +1,4 @@
-import { createMissingAssistantDiagnostics, diagnosticId } from '../../../shared/missing-assistant-diagnostics.js';
+import { createMissingAssistantDiagnostics, diagnosticId } from '../../../shared/ipc/missing-assistant-diagnostics.js';
 
 const optInKey = 'PUA_MISSING_ASSISTANT_DIAGNOSTICS';
 const targetKey = 'PUA_MISSING_ASSISTANT_DIAGNOSTIC_SESSION';

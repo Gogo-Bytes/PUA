@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ReviewFailure, reviewFilesForScope, type RepositorySnapshot } from '../../../../src/modules/change-review/index';
 import { repositorySnapshotDTO, reviewPreviewDTO, reviewScopeInput, reviewError } from '../../../../src/platform/electron/ipc/change-review-mapper';
-import { filesForScope } from '../../../../src/shared/git';
+import { filesForScope } from '../../../../src/renderer/features/change-review';
 
 describe('Change Review IPC projection', () => {
   it('matches the frozen renderer projection for all status character combinations without sharing core policy', () => {

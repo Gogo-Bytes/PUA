@@ -10,7 +10,7 @@
 
 PTY/xterm 不再是主界面，但仍是一个真实 adapter：RPC 明确无法承载任意 `ctx.ui.custom()`、自定义 editor/header/footer/theme 和 TUI renderer，登录、设置及首期未原生化的历史/树操作也继续从兼容终端进入。
 
-当前结构迁移已退休 `src/main`：main composition 位于 `src/app/main`，sandbox preload 唯一入口位于 `src/app/preload/desktop-api.cts`，两个 utility 入口位于 `src/app/workers/{pi-rpc,pty}.worker.ts`；Electron utility 资源 Adapter、Pi RPC helper、PTY 流控和进程树分别位于 `src/platform/electron/utility`、`src/platform/pi/rpc`、`src/platform/pty` 与 `src/platform/process`。`Terminal` 窄 Interface 位于 `src/modules/terminal/index.ts`。本次只移动职责与修正 import/URL/config，不改变 Session/Conversation 状态所有权或 IPC 契约；按用户要求未运行自动测试、构建、typecheck、smoke 或应用，不能据此声称运行验证通过。
+当前结构迁移已退休 `src/main`：main composition 位于 `src/app/main`，sandbox preload 唯一入口位于 `src/app/preload/desktop-api.cts`，两个 utility 入口位于 `src/app/workers/{pi-rpc,pty}.worker.ts`；Electron utility 资源 Adapter、Pi RPC helper、PTY 流控和进程树分别位于 `src/platform/electron/utility`、`src/platform/pi/rpc`、`src/platform/pty` 与 `src/platform/process`。`Terminal` 窄 Interface 位于 `src/modules/terminal/index.ts`。跨进程 DTO、事件、验证器与诊断 metadata codec 全部位于 `src/shared/ipc`，`src/shared` 顶层源码路径已退休；Change Review 的 renderer scope 投影归 `renderer/features/change-review/scope.ts`。这些批次只移动职责与修正 import/URL/config，不改变 Session/Conversation 状态所有权或 IPC 契约；按用户要求未运行自动测试、构建、typecheck、smoke 或应用，不能据此声称运行验证通过。
 
 ## 进程与依赖方向
 
@@ -26,7 +26,7 @@ Electron main / typed composition
   └─ terminal adapter ── utilityProcess pty-host ── node-pty ── user pi TUI
 ```
 
-`src/shared/chat.ts` 是 renderer 唯一需要理解的对话 interface。Pi 原始 RPC 对象、JSONL framing、请求 id、结构归一化和协议错误留在 `src/app/workers/pi-rpc.worker.ts` 与 `src/platform/pi/rpc` Adapter；delta/tool/final/历史关联现由 worker 的 Conversation stream core 独占。renderer 不能发送任意 RPC command。
+`src/shared/ipc/conversation.ts` 是 renderer 唯一需要理解的对话 wire interface。Pi 原始 RPC 对象、JSONL framing、请求 id、结构归一化和协议错误留在 `src/app/workers/pi-rpc.worker.ts` 与 `src/platform/pi/rpc` Adapter；delta/tool/final/历史关联现由 worker 的 Conversation stream core 独占。renderer 不能发送任意 RPC command。
 
 ## Desktop IPC 首批重构（有限落地）
 
@@ -34,7 +34,7 @@ Electron main / typed composition
 
 首批只建立 IPC 单一来源与可执行验证基线；后续 Session 有限提取见下节，Conversation send/attachment 子阶段见后文；本段为首批历史范围；worker typed 协议的后续有限落地见下文，目录树迁移未做。首批当时冻结 renderer；当前用户已条件解冻生产 App/Workspace 业务整理，原 `ui`、`modules`、44 项组件/demo 集合与视觉参考依赖闭包继续原位原字节保护。正式 UI 未替换，目标架构的后续 UI 收敛仍保留。
 
-- `src/shared/ipc/desktop-api.ts` 是 DesktopAPI 和桌面 DTO 的唯一声明，复用现有 `chat.ts` / `git.ts` DTO。旧 `src/shared/contracts.ts` 类型再导出已删除，生产与测试调用方直接引用该 canonical seam；边界门禁禁止重建或从生产源码导入旧路径。
+- `src/shared/ipc/desktop-api.ts` 是 DesktopAPI 和桌面 DTO 的唯一声明，复用同目录 `conversation.ts` / `change-review.ts` DTO。旧 `src/shared/contracts.ts` 及其它 shared 顶层契约路径已删除，生产与测试调用方直接引用 canonical seam；边界门禁禁止重建或从生产源码导入旧路径。
 - `channels.ts` 按现有 invoke/send/event 分类；`schemas.ts` 用 DesktopAPI 参数 tuple 穷尽所有入站方法。`platform/electron/ipc/registrar.ts` 统一执行当前窗口身份、主 frame、精确页面 URL 校验，再解析参数，再调用原 Implementation。invoke 保持原成功值/异常，send 保持记录并丢弃失败，不新增结果 envelope。
 - Preferences、create 纯形状、终端尺寸、diff scope 校验被原 main-side Implementation 复用；extension response 继续重建既有白名单。会话准入、关闭 race、项目真实路径、Git 成员资格、附件 token 与文件路径映射、recentProjects 所有权仍在 main；未向 ChatAttachment 新增路径或任意 Pi command。
 - seam 额外拒绝参数数量错误、错误枚举/尺寸、稀疏附件/设置数组。聊天缺省 text、PTY 控制字节（含 NUL）、相对/`~` 项目路径语义保留。既有限额见 schema；没有为剪贴板、终端粘贴、ID/路径或 Preferences CLI 参数擅加长度上限，剩余限额策略与结构化错误仍待单独授权。
@@ -44,7 +44,7 @@ Electron main / typed composition
 
 `npm run verify` 执行冻结文件集合/hash 检查、TypeScript AST import/channel 门禁、main/renderer 及 tests/fixtures 的 TS/TSX 类型检查、全单测/组件测试、一次生产构建、隔离 Electron IPC smoke 和生命周期 smoke；`package` / `dist` 依赖它。`.mjs` smoke/fixture 不在 `tsconfig.tests.json` 类型检查范围内，由可执行回归与 smoke 验证。脚本使用现有 TypeScript 和 Node 原生类型擦除（Node 22.18+ / 24），没有新增依赖。
 
-import 门禁只检查当前生产树：shared/renderer 禁 Node、Electron、node-pty 与平台 Implementation 引用，shared 禁 React/renderer 引用，生产禁 fixture import，main/preload 禁内联 desktop channel；同时识别静态 import/re-export、类型 import、require 和字面量动态 import。它不是完整 lint、通用依赖治理或 formatter。`check:protected` 的 manifest 对应本批保护点 `a4fb717`，未来 UI 修改须先获得新的范围授权，而非将本批冻结当成永久架构目标。
+import 门禁只检查当前生产树：shared/renderer 禁 Node、Electron、node-pty 与平台 Implementation 引用，shared 禁 React/renderer 引用，`src/shared` 顶层源码路径禁止重建，生产禁 fixture import，main/preload 禁内联 desktop channel；同时识别静态 import/re-export、类型 import、require 和字面量动态 import。它不是完整 lint、通用依赖治理或 formatter。`check:protected` 的 manifest 对应本批保护点 `a4fb717`，未来 UI 修改须先获得新的范围授权，而非将本批冻结当成永久架构目标。
 
 IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runtime、不启动 Pi；验证真实 sandbox preload、窄方法、异窗口 sender 拒绝、非法请求和 event 取消订阅，不使用系统剪贴板、外链或真实 Git 仓库。`test:lifecycle` 可单独构建并运行原五场景；`verify` 在已有构建后直接调用同一个生命周期脚本，避免重复 build 或 verify/build 递归。生命周期脚本目前仅验证 macOS，其他平台明确非零退出并阻塞 package/dist，不静默跳过；跨平台发布仍未验收。门禁 wiring 测试在临时目录保留真实 npm 调用链、替换叶子步骤与打包器，检查失败传播，不实际打包。
 
@@ -230,7 +230,7 @@ preload buildStart 的迁移清单只 rm `dist/main/` 下的 `sessions.js`、`ex
 | scope 策略、每次最新 snapshot 的精确 destination 成员准入、tracked/untracked 选择 | Change Review domain/application；独立 readonly 值和稳定 `INVALID_SCOPE` / `STATUS_CHANGED` 失败 |
 | root/branch/porcelain-z、clock timestamp、Git 参数/环境/timeout/buffer、路径安全/descriptor、binary/截断/overflow | Git Adapter；Port 仅 `captureSnapshot` / `readAuthorizedPreview`，core 不见任意命令或文件句柄 |
 | sender → parser → Session cwd → 用例 → DTO / 原中文业务错误 | 既有 IPC registrar 与 `change-review-mapper.ts`；Git/fs 错误原样传播，外部 DTO/schema 不变 |
-| renderer scope projection | 冻结 `shared/git.ts` 的 `filesForScope`；不是第二业务 owner，由全状态字符组合对照测试约束，不被 domain import |
+| renderer scope projection | `renderer/features/change-review/scope.ts` 的 `filesForScope`；不是第二业务 owner，由全状态字符组合对照测试约束，不被 domain import |
 
 Snapshot 是观察，不与后续 diff/read 原子一致；不缓存、不锁、不重试。`AuthorizedPreview` 只是进程内成员准入值，不是防伪 token。保留 NUL 记录、换行/Unicode/leading-dash 路径和 rename destination/source 顺序，以及 lexical → lstat → realpath → O_NOFOLLOW open → fd/current identity 与 ancestry → read → finally close 原顺序。字符截断仍按 UTF-16 code unit，untracked 先读最多 200001 字节再 UTF-8 解码且依初次 size 标 truncated；stdout overflow 保留前缀、仍为 diff。这不扩大为无 TOCTOU 或跨 OS 安全证明。
 

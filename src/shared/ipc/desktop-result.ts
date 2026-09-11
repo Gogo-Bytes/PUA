@@ -95,7 +95,7 @@ function extension(v: unknown): boolean {
 }
 
 /** Control fields/outer containers only. Nested transcript blocks/tool JSON trust the same-version mapper. */
-export function isDesktopSessionEvent(v: unknown): v is import('../chat.js').SessionEvent {
+export function isDesktopSessionEvent(v: unknown): v is import('./conversation.js').SessionEvent {
   try {
     if (!record(v) || !text(v.id)) return false;
     switch (v.type) {

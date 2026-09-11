@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Bootstrap, SessionInfo } from '../../../shared/ipc/desktop-api';
-import type { ProjectTrust, SessionKind } from '../../../shared/chat';
+import type { ProjectTrust, SessionKind } from '../../../shared/ipc/conversation';
 import { desktopClient } from '../../app/desktop-client';
 
 type LaunchContext = { cwd: string; kind: SessionKind; mode: 'new' | 'continue' };

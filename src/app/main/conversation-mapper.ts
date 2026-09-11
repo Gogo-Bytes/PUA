@@ -1,6 +1,6 @@
 import { DesktopApplicationError } from './application-error.js';
 import { ConversationFailure, type ConversationFailureCode, type ExtensionResponse, type SendIntent } from '../../modules/conversation/index.js';
-import type { ChatDelivery, ExtensionUIResponse } from '../../shared/chat.js';
+import type { ChatDelivery, ExtensionUIResponse } from '../../shared/ipc/conversation.js';
 
 const messages: Record<ConversationFailureCode, string> = {
   CLOSED: '会话已关闭',

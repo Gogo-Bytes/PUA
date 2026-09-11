@@ -22,6 +22,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
   const workspaceGlobals = ['window', 'document', 'process', 'Buffer', 'NodeJS', '__dirname', '__filename', 'setImmediate', 'clearImmediate'];
   const shared = relative.startsWith('src/shared/');
+  const sharedRootSource = /^src\/shared\/[^/]+\.[cm]?[jt]sx?$/.test(relative);
   const retiredSharedContracts = relative === 'src/shared/contracts.ts';
   const appMain = relative.startsWith('src/app/main/');
   const appPreload = relative.startsWith('src/app/preload/');
@@ -43,18 +44,19 @@ export function checkSource(filename: string, text: string, root: string): strin
   const application = relative.startsWith(`${coreRoot}application/`);
   const ports = relative === `${coreRoot}ports.ts`;
   const report = (node: ts.Node, message: string) => errors.push(`${relative}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}: ${message}`);
+  if (sharedRootSource) report(source, 'top-level src/shared contract sources are retired; cross-process contracts belong in src/shared/ipc');
   if (retiredSharedContracts) report(source, 'src/shared/contracts.ts is retired; desktop DTOs belong in src/shared/ipc/desktop-api.ts');
   if (retiredRendererPresentation) report(source, 'top-level renderer domain presentation paths are retired; use the owning renderer feature');
   if (appWorkerDirectory && !appWorker) report(source, 'src/app/workers contains only the pi-rpc and pty process entry files; helpers belong in platform adapters');
   const checkImport = (node: ts.Node, name: string) => {
-    const retiredContractsImport = /(^|\/)shared\/contracts(?:\.[cm]?[jt]s)?$/.test(slash(name));
+    const retiredSharedImport = /(^|\/)shared\/(contracts|chat|chat-validation|git|missing-assistant-diagnostics)(?:\.[cm]?[jt]s)?$/.test(slash(name));
     if (workspaceSelection) report(node, `Workspace selection is dependency-free; import ${name} is forbidden`);
     if ((shared || renderer) && platformModule(name)) report(node, `platform import ${name} is forbidden`);
     if (shared && reactModule(name)) report(node, `React import ${name} is forbidden in shared`);
     const resolved = ts.resolveModuleName(name, file, { moduleResolution: ts.ModuleResolutionKind.Bundler, allowJs: true }, ts.sys).resolvedModule?.resolvedFileName;
     const target = slash(path.relative(root, resolved ?? path.resolve(path.dirname(file), name)));
-    const retiredContractsTarget = /^src\/shared\/contracts(?:\.[cm]?[jt]s)?$/.test(target);
-    if (relative.startsWith('src/') && (retiredContractsImport || retiredContractsTarget)) report(node, 'shared/contracts is retired; import shared/ipc/desktop-api directly');
+    const retiredSharedTarget = /^src\/shared\/(contracts|chat|chat-validation|git|missing-assistant-diagnostics)(?:\.[cm]?[jt]s)?$/.test(target);
+    if (relative.startsWith('src/') && (retiredSharedImport || retiredSharedTarget)) report(node, 'top-level shared contract import is retired; import the canonical shared/ipc module directly');
     const retiredRendererTarget = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererTarget) report(node, 'top-level renderer domain presentation import is retired; use the owning feature index');
     const targetFeature = /^src\/renderer\/features\/([^/]+)\/(.+)$/.exec(target);

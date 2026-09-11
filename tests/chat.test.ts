@@ -7,7 +7,7 @@ import { validateChatArguments } from '../src/app/main/desktop-preferences';
 import { imageMimeType } from '../src/platform/filesystem/attachment-policy';
 import { inspectProjectResources } from '../src/platform/filesystem/project-resources';
 import { emptyChatState, reduceChatEvent } from '../src/renderer/features/conversation';
-import type { SessionEvent } from '../src/shared/chat';
+import type { SessionEvent } from '../src/shared/ipc/conversation';
 
 describe('strict RPC JSONL transport', () => {
   it('handles arbitrary UTF-8 chunks, CRLF, and Unicode separators without splitting them', () => {

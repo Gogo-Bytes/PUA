@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GitPanel } from '../src/renderer/features/change-review';
 import { CopyButton, MarkdownView } from '../src/renderer/ContentView';
 import { ToolCard } from '../src/renderer/features/conversation';
-import type { FileDiff } from '../src/shared/git';
+import type { FileDiff } from '../src/shared/ipc/change-review';
 import combinedConflict from './fixtures/combined-conflict.patch?raw';
 
 beforeEach(() => {

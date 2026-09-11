@@ -1,6 +1,7 @@
 import { desktopClient } from '../../app/desktop-client';
 import { useEffect, useRef, useState } from 'react';
-import { filesForScope, type DiffScope, type FileDiff, type GitStatus } from '../../../shared/git';
+import type { DiffScope, FileDiff, GitStatus } from '../../../shared/ipc/change-review';
+import { filesForScope } from './scope';
 import { referencePaths } from '../workspace';
 import { Icon } from '../../Icon';
 import { CopyButton, MarkdownView, SourceView } from '../../ContentView';

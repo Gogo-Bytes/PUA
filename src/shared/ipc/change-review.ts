@@ -11,9 +11,6 @@ export interface GitStatus {
   capturedAt: string;
 }
 export type DiffScope = 'worktree' | 'index';
-export function filesForScope(files: ChangedFile[], scope: DiffScope): ChangedFile[] {
-  return files.filter(file => scope === 'index' ? ![' ', '?', '!'].includes(file.index) : file.index === '?' || file.worktree !== ' ');
-}
 
 export interface FileDiff {
   text: string;

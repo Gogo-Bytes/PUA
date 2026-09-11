@@ -16,7 +16,7 @@ import { composeMain } from '../src/app/main/composition';
 import { applySessionStartResult, requireSessionSnapshot, sessionInfo, unwrapSessionResult } from '../src/app/main/session-mapper';
 import { conversationError, extensionResponse, sendIntent } from '../src/app/main/conversation-mapper';
 import { SessionProcessAdapter } from '../src/platform/electron/utility/session-process-adapter';
-import type { ExtensionUIRequest, SessionEvent } from '../src/shared/chat';
+import type { ExtensionUIRequest, SessionEvent } from '../src/shared/ipc/conversation';
 
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (error: Error) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 const runtime = { executable: '/fake/pi', source: '/fake/pi', args: [] };

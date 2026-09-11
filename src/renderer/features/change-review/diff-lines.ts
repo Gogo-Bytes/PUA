@@ -1,4 +1,4 @@
-import type { ChangedFile } from '../../../shared/git';
+import type { ChangedFile } from '../../../shared/ipc/change-review';
 
 type ConflictStatus = Pick<ChangedFile, 'index' | 'worktree'>;
 /** Multi-parent/unmerged output is raw, not a two-sided unified comparison. */

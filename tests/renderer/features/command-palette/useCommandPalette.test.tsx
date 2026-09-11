@@ -2,7 +2,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useCommandPalette } from '../../../../src/renderer/features/command-palette';
-import type { ChatCommand } from '../../../../src/shared/chat';
+import type { ChatCommand } from '../../../../src/shared/ipc/conversation';
 afterEach(cleanup);
 describe('useCommandPalette public state actions', () => {
   it('keeps shortcut and registration actions stable, same-array no-op and per-session cache at App lifetime', () => {

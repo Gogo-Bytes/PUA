@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createMissingAssistantDiagnostics, missingAssistantDiagnosticPrefix } from '../src/shared/missing-assistant-diagnostics';
+import { createMissingAssistantDiagnostics, missingAssistantDiagnosticPrefix } from '../src/shared/ipc/missing-assistant-diagnostics';
 import { MissingAssistantDiagnosticSession, withoutMissingAssistantDiagnostics } from '../src/platform/electron/utility/missing-assistant-diagnostics';
 
 const event = { type: 'message_end', message: { id: 'm-1', role: 'assistant', content: [{ type: 'text', text: 'private before PUA_ACCEPTANCE_OK private after' }, { type: 'toolCall', id: 'tool', arguments: { token: 'not-for-logs' } }], errorMessage: 'secret-error' }, extra: 'secret-extra' };

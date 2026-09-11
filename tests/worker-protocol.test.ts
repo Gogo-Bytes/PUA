@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseRpcWorkerInput, parseRpcWorkerOutput, parsePtyWorkerInput, parsePtyWorkerOutput } from '../src/shared/ipc/worker-schemas';
 import type { RpcWorkerInput, RpcWorkerOutput, PtyWorkerInput, PtyWorkerOutput, WorkerInputPort } from '../src/shared/ipc/worker-protocol';
 import type { Terminal } from '../src/modules/terminal';
-import type { ExtensionUIRequest } from '../src/shared/chat';
+import type { ExtensionUIRequest } from '../src/shared/ipc/conversation';
 
 // Compile-time callers use the real port Interface, not assertion casts. Never executed.
 function negativeCallers(rpc: WorkerInputPort<RpcWorkerInput>, pty: WorkerInputPort<PtyWorkerInput>, terminal: Terminal) {

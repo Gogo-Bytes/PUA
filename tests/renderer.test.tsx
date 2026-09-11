@@ -9,7 +9,7 @@ vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data = [], itemContent }: { data
 import { ChatPane, MarkdownView, ToolCard } from '../src/renderer/features/conversation';
 
 afterEach(cleanup);
-let emit: ((event: import('../src/shared/chat').SessionEvent) => void) | undefined;
+let emit: ((event: import('../src/shared/ipc/conversation').SessionEvent) => void) | undefined;
 beforeEach(() => {
   emit = undefined;
   desktop = installDesktopFake({

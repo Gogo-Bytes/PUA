@@ -1,6 +1,6 @@
 import { DesktopApplicationError } from '../../../app/main/application-error.js';
 import { ReviewFailure, type RepositorySnapshot, type ReviewPreview, type ReviewScope } from '../../../modules/change-review/index.js';
-import type { DiffScope, FileDiff, GitStatus } from '../../../shared/git.js';
+import type { DiffScope, FileDiff, GitStatus } from '../../../shared/ipc/change-review.js';
 
 export function reviewScopeInput(scope: DiffScope): ReviewScope { return scope; }
 export function repositorySnapshotDTO(snapshot: RepositorySnapshot): GitStatus {

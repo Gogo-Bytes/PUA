@@ -1,5 +1,5 @@
-import { extensionResponse } from '../chat-validation.js';
-import type { DiffScope } from '../git.js';
+import { extensionResponse } from './conversation-validation.js';
+import type { DiffScope } from './change-review.js';
 import type { CreateSessionOptions, Preferences } from './desktop-api.js';
 import type { RequestArgs, RequestMethod } from './channels.js';
 

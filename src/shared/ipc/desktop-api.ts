@@ -1,9 +1,9 @@
 import type { DesktopResult, WireValue } from './desktop-result.js';
-import type { DiffScope, FileDiff, GitStatus } from '../git.js';
+import type { DiffScope, FileDiff, GitStatus } from './change-review.js';
 import type {
   ChatAttachment, ChatDelivery, ExtensionUIResponse, ProjectTrust, SessionActivity,
   SessionEvent, SessionKind, SessionProcessStatus,
-} from '../chat.js';
+} from './conversation.js';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 

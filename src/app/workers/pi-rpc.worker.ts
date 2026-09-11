@@ -9,8 +9,8 @@ import { randomUUID } from 'node:crypto';
 import { JsonlDecoder, TailBuffer } from '../../platform/pi/rpc/jsonl.js';
 import { decodeArguments, isRecord, normalizeHistoryItems } from '../../platform/pi/rpc/chat-normalize.js';
 import { ConversationStreamMapper, messageDTO, streamNotificationDTO } from '../../platform/pi/rpc/conversation-stream-mapper.js';
-import type { ChatCommand } from '../../shared/chat.js';
-import { createMissingAssistantDiagnostics } from '../../shared/missing-assistant-diagnostics.js';
+import type { ChatCommand } from '../../shared/ipc/conversation.js';
+import { createMissingAssistantDiagnostics } from '../../shared/ipc/missing-assistant-diagnostics.js';
 
 import { parsePiResponse, type PiCommand, type PiResponseData } from '../../platform/pi/rpc/pi-response.js';
 
