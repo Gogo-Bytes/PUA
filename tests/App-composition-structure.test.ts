@@ -31,11 +31,11 @@ describe('App composition source ownership (static, not behavioral journeys)', (
     const panes = nodes(app).filter(ts.isJsxSelfClosingElement).filter(node => ['ChatPane', 'TerminalPane'].includes(node.tagName.getText(app)));
     expect(panes).toHaveLength(2);
     for (const pane of panes) expect(pane.attributes.properties.find(node => ts.isJsxAttribute(node) && node.name.getText(app) === 'key')?.getText(app)).toBe('key={session.id}');
-    const terminal = source('src/renderer/TerminalPane.tsx');
+    const terminal = source('src/renderer/features/terminal/TerminalPane.tsx');
     expect(calls(terminal).filter(node => node.expression.getText(terminal) === 'useEffect').map(node => node.arguments[1].getText(terminal))).toEqual(['[session.id]', '[theme]', '[active, fontSize]']);
     expect(terminal.text).toContain('callbacks.current = { onExit, onError, onReady };');
     expect(terminal.text).toContain('callbacks.current.onReady(id, null);');
-    const chat = source('src/renderer/ChatPane.tsx');
+    const chat = source('src/renderer/features/conversation/ChatPane.tsx');
     expect(chat.text).toContain('useEffect(() => onCommands(state.commands), [state.commands]);');
     expect(chat.text).toContain('draftRef.current.revision === submitted.revision');
   });

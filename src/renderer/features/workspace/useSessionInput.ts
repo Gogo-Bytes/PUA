@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
-import type { TerminalHandle } from '../../TerminalPane';
-import { referencePaths } from '../../terminal-keys';
+import type { TerminalHandle } from '../terminal';
+import { referencePaths } from './reference-paths';
 import { desktopClient } from '../../app/desktop-client';
 
 interface SessionInputOptions {

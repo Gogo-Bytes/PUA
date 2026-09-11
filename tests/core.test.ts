@@ -8,7 +8,8 @@ import { defaults, JsonPreferencesStorage } from '../src/platform/filesystem/pre
 import { expandHome } from '../src/platform/filesystem/expand-home';
 import { resolveRuntime } from '../src/platform/pi/runtime/discovery';
 import { terminalEnvironment } from '../src/platform/pi/process/environment';
-import { modifiedEnter, referencePaths } from '../src/renderer/terminal-keys';
+import { modifiedEnter } from '../src/renderer/features/terminal';
+import { referencePaths } from '../src/renderer/features/workspace';
 import { removeSession, type SessionWorkspace } from '../src/renderer/features/workspace';
 import type { SessionInfo } from '../src/shared/ipc/desktop-api';
 

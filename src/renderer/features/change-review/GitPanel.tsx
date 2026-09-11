@@ -1,9 +1,9 @@
-import { desktopClient } from './app/desktop-client';
+import { desktopClient } from '../../app/desktop-client';
 import { useEffect, useRef, useState } from 'react';
-import { filesForScope, type DiffScope, type FileDiff, type GitStatus } from '../shared/git';
-import { referencePaths } from './terminal-keys';
-import { Icon } from './Icon';
-import { CopyButton, MarkdownView, SourceView } from './ContentView';
+import { filesForScope, type DiffScope, type FileDiff, type GitStatus } from '../../../shared/git';
+import { referencePaths } from '../workspace';
+import { Icon } from '../../Icon';
+import { CopyButton, MarkdownView, SourceView } from '../../ContentView';
 import { isConflictPatch, parseDiffLines } from './diff-lines';
 
 export function GitPanel({ sessionId, onClose, onReference }: { sessionId: string; onClose(): void; onReference(text: string): void }) {

@@ -31,6 +31,13 @@ describe('TypeScript import/channel gate', () => {
     ...['node:fs', 'electron', '../../../platform/filesystem/project-resources', '../../../modules/sessions/index', '../../../app/main/create-session', '../../../app/main/session-mapper'].flatMap(target =>
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/renderer/features/session-launch/useNewSessionLaunch.ts', source])),
     ['src/renderer/features/workspace/useWorkspace.ts', "import '../../../modules/sessions/index.js'"],
+    ...['workspace/WorkspaceNavigation', 'conversation/ChatPane', 'conversation/chat-state', 'terminal/TerminalPane', 'terminal/terminal-keys', 'change-review/GitPanel', 'change-review/diff-lines'].map(target =>
+      ['src/renderer/App.tsx', `import './features/${target}'`]),
+    ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace/reference-paths'"],
+    ...['WorkspaceNavigation', 'ChatPane', 'chat-state', 'missing-assistant-diagnostics', 'TerminalPane', 'terminal-keys', 'GitPanel', 'diff-lines'].flatMap(target => [
+      [`src/renderer/${target}${/^[A-Z]/.test(target) ? '.tsx' : '.ts'}`, 'export {}'],
+      ['src/renderer/App.tsx', `import './${target}'`],
+    ]),
     // Platform/application boundary probes below are synthetic forbidden imports, not callers.
     ...['project-resources', 'session-preparation'].flatMap(name =>
       ['../../app/main/composition.js', '../../app/main/session-mapper.js', '../../renderer/App.js', '../../modules/sessions/index.js', '../pi/runtime/discovery.js', '../electron/ipc/registrar.js', 'electron', 'react'].flatMap(target =>
@@ -239,8 +246,11 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import { Modal } from '../../Modal'; import { useNewSessionLaunch } from './useNewSessionLaunch'"],
     ['src/renderer/features/session-launch/useNewSessionLaunch.ts', "import { useState } from 'react'; import type { ProjectTrust } from '../../../shared/chat'"],
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import { useWorkspace } from '../workspace'"],
-    ['src/renderer/App.tsx', "import { useWorkspace } from './features/workspace'"],
-    ['src/renderer/WorkspaceNavigation.tsx', "import { groupProjects } from './features/workspace/index'"],
+    ['src/renderer/App.tsx', "import { ProjectNavigation } from './features/workspace'; import { ChatPane } from './features/conversation'; import { TerminalPane } from './features/terminal'; import { GitPanel } from './features/change-review'"],
+    ['src/renderer/features/workspace/WorkspaceNavigation.tsx', "import { groupProjects } from './selection'; import { Icon } from '../../Icon'"],
+    ['src/renderer/features/workspace/useSessionInput.ts', "import type { TerminalHandle } from '../terminal'; import { referencePaths } from './reference-paths'"],
+    ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace'; import { parseDiffLines } from './diff-lines'"],
+    ['src/renderer/features/conversation/ChatPane.tsx', "import { reduceChatEvent } from './chat-state'; import { MarkdownView } from '../../ContentView'"],
   ])('allows %s: %s without grep false positives', (file, source) => {
     expect(checkSource(path.join(root, file), source, root)).toEqual([]);
   });
@@ -255,7 +265,7 @@ it.each([
   '({ desktop: renamed } = window)', "({ ['desktop']: renamed } = window)", '({ [key]: renamed } = window)',
   '(window as Window).desktop.bootstrap()', 'globalThis.window.desktop.bootstrap()',
 ])('rejects production raw Desktop access (AST): %s', text => {
-  expect(checkSource('src/renderer/ChatPane.tsx', text, process.cwd()).join('\n')).toMatch(/Desktop/);
+  expect(checkSource('src/renderer/features/conversation/ChatPane.tsx', text, process.cwd()).join('\n')).toMatch(/Desktop/);
 });
 it('allows only the named production client global seam; test/preview assembly is non-production', () => {
   expect(checkSource('src/renderer/app/desktop-client.ts', 'window.desktop', process.cwd())).toEqual([]);

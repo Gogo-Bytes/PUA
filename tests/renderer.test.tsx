@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data = [], itemContent }: { data?: unknown[]; itemContent(index: number, item: unknown): React.ReactNode }) => <div>{data.map((item, index) => <div key={index}>{itemContent(index, item)}</div>)}</div> }));
-import { ChatPane, MarkdownView, ToolCard } from '../src/renderer/ChatPane';
+import { ChatPane, MarkdownView, ToolCard } from '../src/renderer/features/conversation';
 
 afterEach(cleanup);
 let emit: ((event: import('../src/shared/chat').SessionEvent) => void) | undefined;

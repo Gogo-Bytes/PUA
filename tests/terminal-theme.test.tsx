@@ -18,7 +18,7 @@ vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} } }));
 vi.mock('@xterm/addon-search', () => ({ SearchAddon: class {} }));
 vi.mock('@xterm/addon-web-links', () => ({ WebLinksAddon: class {} }));
 vi.mock('@xterm/addon-image', () => ({ ImageAddon: class {} }));
-import { TerminalPane } from '../src/renderer/TerminalPane';
+import { TerminalPane } from '../src/renderer/features/terminal';
 import { terminalThemes } from '../src/renderer/theme';
 
 beforeEach(() => {

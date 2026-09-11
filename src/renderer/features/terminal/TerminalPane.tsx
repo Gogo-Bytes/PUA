@@ -1,4 +1,4 @@
-import { desktopClient } from './app/desktop-client';
+import { desktopClient } from '../../app/desktop-client';
 import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -7,8 +7,8 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { ImageAddon } from '@xterm/addon-image';
 import '@xterm/xterm/css/xterm.css';
 import { modifiedEnter } from './terminal-keys';
-import type { SessionInfo } from '../shared/ipc/desktop-api';
-import { terminalThemes, type ResolvedTheme } from './theme';
+import type { SessionInfo } from '../../../shared/ipc/desktop-api';
+import { terminalThemes, type ResolvedTheme } from '../../theme';
 
 export interface TerminalHandle {
   focus(): void;

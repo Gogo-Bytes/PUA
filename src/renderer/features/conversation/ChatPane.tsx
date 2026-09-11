@@ -1,11 +1,11 @@
-import { desktopClient } from './app/desktop-client';
+import { desktopClient } from '../../app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
-import { MarkdownView, CopyButton, SourceView } from './ContentView';
-export { MarkdownView } from './ContentView';
-import { Icon } from './Icon';
+import { MarkdownView, CopyButton, SourceView } from '../../ContentView';
+export { MarkdownView } from '../../ContentView';
+import { Icon } from '../../Icon';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
-import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../shared/chat';
-import type { SessionInfo } from '../shared/ipc/desktop-api';
+import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../../../shared/chat';
+import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { emptyChatState, queueText, reduceChatEvent, widgetsAt } from './chat-state';
 import { missingAssistantRendererDiagnostics } from './missing-assistant-diagnostics';
 

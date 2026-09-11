@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { isConflictPatch, parseDiffLines } from '../src/renderer/diff-lines';
+import { isConflictPatch, parseDiffLines } from '../src/renderer/features/change-review';
 import combinedConflict from './fixtures/combined-conflict.patch?raw';
 import { defaults, JsonPreferencesStorage } from '../src/platform/filesystem/preferences-storage';
 import { validatePreferences } from '../src/shared/ipc/schemas';

@@ -17,6 +17,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
   const errors: string[] = [];
   const renderer = relative.startsWith('src/renderer/');
+  const retiredRendererPresentation = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const workspaceRoot = 'src/renderer/features/workspace/';
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
   const workspaceGlobals = ['window', 'document', 'process', 'Buffer', 'NodeJS', '__dirname', '__filename', 'setImmediate', 'clearImmediate'];
@@ -43,6 +44,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const ports = relative === `${coreRoot}ports.ts`;
   const report = (node: ts.Node, message: string) => errors.push(`${relative}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}: ${message}`);
   if (retiredSharedContracts) report(source, 'src/shared/contracts.ts is retired; desktop DTOs belong in src/shared/ipc/desktop-api.ts');
+  if (retiredRendererPresentation) report(source, 'top-level renderer domain presentation paths are retired; use the owning renderer feature');
   if (appWorkerDirectory && !appWorker) report(source, 'src/app/workers contains only the pi-rpc and pty process entry files; helpers belong in platform adapters');
   const checkImport = (node: ts.Node, name: string) => {
     const retiredContractsImport = /(^|\/)shared\/contracts(?:\.[cm]?[jt]s)?$/.test(slash(name));
@@ -53,6 +55,8 @@ export function checkSource(filename: string, text: string, root: string): strin
     const target = slash(path.relative(root, resolved ?? path.resolve(path.dirname(file), name)));
     const retiredContractsTarget = /^src\/shared\/contracts(?:\.[cm]?[jt]s)?$/.test(target);
     if (relative.startsWith('src/') && (retiredContractsImport || retiredContractsTarget)) report(node, 'shared/contracts is retired; import shared/ipc/desktop-api directly');
+    const retiredRendererTarget = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(target);
+    if (relative.startsWith('src/') && retiredRendererTarget) report(node, 'top-level renderer domain presentation import is retired; use the owning feature index');
     const targetFeature = /^src\/renderer\/features\/([^/]+)\/(.+)$/.exec(target);
     const sourceFeature = /^src\/renderer\/features\/([^/]+)\//.exec(relative)?.[1];
     if (relative.startsWith('src/') && targetFeature && sourceFeature !== targetFeature[1] && !/^index\.[cm]?[jt]s$/.test(targetFeature[2])) report(node, `Renderer feature callers must use ${targetFeature[1]}/index.ts`);

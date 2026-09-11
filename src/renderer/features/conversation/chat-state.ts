@@ -1,5 +1,5 @@
-import { validBlockIndex } from '../shared/chat-validation';
-import type { ChatCommand, ChatMessage, ChatQueue, ChatRuntimeState, ChatWidget, ExtensionUIRequest, SessionEvent, ToolActivity } from '../shared/chat';
+import { validBlockIndex } from '../../../shared/chat-validation';
+import type { ChatCommand, ChatMessage, ChatQueue, ChatRuntimeState, ChatWidget, ExtensionUIRequest, SessionEvent, ToolActivity } from '../../../shared/chat';
 
 export interface ChatNotice { id: string; level: 'info' | 'warning' | 'error'; message: string }
 export interface ChatViewState extends ChatRuntimeState {

@@ -1,4 +1,4 @@
-import { createMissingAssistantDiagnostics } from '../shared/missing-assistant-diagnostics';
+import { createMissingAssistantDiagnostics } from '../../../shared/missing-assistant-diagnostics';
 
 // User must explicitly set the target Desktop session ID in this renderer's
 // sessionStorage. No bridge capability, URL flag, persistence or automatic opt-in.

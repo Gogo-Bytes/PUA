@@ -4,7 +4,7 @@ import { extensionResponse, validBlockIndex } from '../src/shared/chat-validatio
 import { ConversationRuntimeApplication } from '../src/modules/conversation/index';
 import { RpcWriter } from '../src/platform/pi/rpc/writer';
 import { contentImages } from '../src/platform/pi/rpc/chat-normalize';
-import { emptyChatState, reduceChatEvent } from '../src/renderer/chat-state';
+import { emptyChatState, reduceChatEvent } from '../src/renderer/features/conversation';
 
 afterEach(() => vi.useRealTimers());
 describe('extension response boundary and lifecycle', () => {

@@ -6,8 +6,3 @@ export function modifiedEnter(event: KeyInput): string | undefined {
   const modifier = 1 + (event.shiftKey ? 1 : 0) + (event.altKey ? 2 : 0) + (event.ctrlKey ? 4 : 0);
   return modifier > 1 ? `\x1b[13;${modifier}u` : undefined;
 }
-
-export function referencePaths(paths: string[]): string {
-  // This is text for Pi's editor, not a shell command. Newlines must never become submits.
-  return paths.map(value => `@${JSON.stringify(value)}`).join(' ') + (paths.length ? ' ' : '');
-}

@@ -1,13 +1,12 @@
 import { useWorkspaceComposition } from './app/useWorkspaceComposition';
 import { useEffect, useRef, useState } from 'react';
-import { TerminalPane } from './TerminalPane';
-import { ChatPane } from './ChatPane';
-import { GitPanel } from './GitPanel';
-import { projectName, RenameDialog } from './features/workspace';
+import { TerminalPane } from './features/terminal';
+import { ChatPane } from './features/conversation';
+import { GitPanel } from './features/change-review';
+import { ProjectNavigation, projectName, RenameDialog, SessionTabs } from './features/workspace';
 import { NewSessionDialog } from './features/session-launch';
 import { SettingsDialog } from './features/preferences';
 import { CommandPalette } from './features/command-palette';
-import { ProjectNavigation, SessionTabs } from './WorkspaceNavigation';
 import { Icon } from './Icon';
 
 export function App() {

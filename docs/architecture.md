@@ -91,6 +91,14 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 
 原 ui/modules、44 保护集合、27 节点 demo 字节及边闭包、当前 dist 均保留；workspace-preview 入口/fixture/config 不改，仅随真实 App 增加 owner 的传递依赖。保护文档中旧 ContentView 直接依赖 window.desktop 的表述已落后于 client seam，本包不改保护文档。未操作用户运行旧 dist 的应用，未执行输出、Electron/Pi/browser/真实 fsGit fixture、smoke/lifecycle/IPC 集成、verify/dev/package/dist 或全量 npm test。jsdom 不代表真实 focus/IME/PTY/桌面验收。这里只达成 App 必要工作流归属，不要求所有局部 display 无 state；不是阶段 4 全完成、完整目标架构、原助手缺失 P0 修复、Preferences alias 修复或新桌面/发布验收。既有大 chunk 告警及真实验收后置。
 
+## Renderer 领域 Presentation 路径归位（阶段 4 仍未完成）
+
+Workspace、Conversation、Terminal 与 Change Review 的生产展示入口现分别位于 `renderer/features/{workspace,conversation,terminal,change-review}/index.ts`。原顶层 `WorkspaceNavigation.tsx`、`ChatPane.tsx`、`chat-state.ts`、renderer diagnostics、`TerminalPane.tsx`、`terminal-keys.ts`、`GitPanel.tsx` 与 `diff-lines.ts` 已删除，不留转发；App 与跨 Feature 调用均经对应 index。原 `terminal-keys.ts` 仅按职责拆为 Terminal 的 modified Enter 协议适配和 Workspace 的 reference path 文本格式化，函数行为不变。
+
+本批只移动路径、调整 import/export、静态边界门禁和既有测试引用。Chat reducer/revision/附件、xterm 生命周期、Git 检查区局部状态、Workspace 草稿/handle registry、`session.id` 常驻 key、DOM/CSS 与 Desktop Client 均不变。顶层 `ContentView.tsx` 仍是 Conversation 与 Change Review 共用的临时 presentation seam；`Icon.tsx`、`Modal.tsx`、`theme.ts` 和样式也保持原位，待后续正式 UI 系统收敛，不把它们误归某个 Feature。
+
+按用户要求未运行自动测试、build、typecheck、smoke、Electron、Pi、浏览器或产物；只做源码 read/search、diff 与 `git diff --check`。因此相对 import、barrel export、真实桌面交互和视觉仍未执行验证，本批不是阶段 4 或全量架构完成。
+
 ## Session 核心有限提取（阶段 2 代码与纯测试）
 
 实际调用路径：`app/main/bootstrap.ts → app/main/composition.ts` 装配单个 `SessionCoordinator`、`ConversationApplication` 与 `SessionProcessAdapter`；main 直接消费收窄的真实 Session/Conversation/Terminal 能力。`modules/sessions/index.ts → SessionCoordinator / SessionOwnershipPolicy → SessionProcessPort ← main/session-process-adapter.ts → 既有 rpc-host / pty-host`。IPC 方法、DTO、错误传递方式与 renderer 均不迁移。
@@ -275,11 +283,11 @@ Chat 附加参数 exact/prefix policy 归已有 `app/main/desktop-preferences.ts
 
 ## Workspace/Renderer 首 slice（有限业务提取）
 
-`renderer/features/workspace/index.ts` 是 App、WorkspaceNavigation 与 selection 测试的唯一入口。`selection.ts` 是无 React/shared DTO/Node 依赖的纯 Module，用结构泛型携带调用方 session payload；`useWorkspace.ts` 接受现有 DesktopAPI 的 `onSessionEvent/closeSession` 窄 Pick，持唯一窗口内会话投影、active project/session、每项目 remembered selection。分组消费 Preferences 的 recents snapshot，不取得其 current/recents 权威；Session 生命周期、准入、释放与 Conversation 状态仍归原后端 owner。
+`renderer/features/workspace/index.ts` 是 App、跨 Feature 调用和测试的公开入口；同 Feature 内的 `WorkspaceNavigation.tsx` 直接使用本地 selection。`selection.ts` 是无 React/shared DTO/Node 依赖的纯 Module，用结构泛型携带调用方 session payload；`useWorkspace.ts` 接受现有 DesktopAPI 的 `onSessionEvent/closeSession` 窄 Pick，持唯一窗口内会话投影、active project/session、每项目 remembered selection。分组消费 Preferences 的 recents snapshot，不取得其 current/recents 权威；Session 生命周期、准入、释放与 Conversation 状态仍归原后端 owner。
 
 App 已删除 Workspace state、通用 sessions setter、session-info/chat-state/exit 订阅与 close 协调。hook 将事件按原 id map 成显示投影；unknown/早到事件不创建 session，exit 不移除 tab。纯 selection 保留完整 cwd 身份、分组首次出现顺序、recent 空组、失效 remembered fallback，以及最后 active session 关闭后保留当前项目的规则。close 仅在 host truthy 后对最新 state 移除/修复；等待期切项目/选择其它会话/完成新建不会被旧选择覆盖，项目 memory 修复独立于当前全局选择；false 不变、异常仍 `String(error)`，不新增锁、去重或取消策略。
 
-App 保留 create/rename 请求及完成顺序、每会话草稿文本、commands/search/review 和其余 dialogs；NewSessionDialog 的后续独立 owner 见 [Session launch](#session-launchrenderer-有限提取)。成功 close 在原同一 Promise continuation 先 enqueue Workspace 移除、再同步回调 App 删除对应草稿；草稿删除不进 React updater，也不额外 await。所有 ChatPane/TerminalPane 仍按原 session.id key 始终挂载，仅切 active；ChatPane、TerminalPane、样式、P0 诊断与 editMenu 均未修改。旧 `renderer/session-state.ts` 和真实 imports 已删除，无兼容转发或独立退休 JS 清理（renderer 由 Vite bundle）。
+App 保留 create/rename 请求及完成顺序、每会话草稿文本、commands/search/review 和其余 dialogs；NewSessionDialog 的后续独立 owner 见 [Session launch](#session-launchrenderer-有限提取)。成功 close 在原同一 Promise continuation 先 enqueue Workspace 移除、再同步回调 App 删除对应草稿；草稿删除不进 React updater，也不额外 await。所有 ChatPane/TerminalPane 仍按原 session.id key 始终挂载，仅切 active；其后仅路径迁入对应 Feature，组件体、样式、P0 诊断与 editMenu 不变。旧 `renderer/session-state.ts` 和真实 imports 已删除，无兼容转发或独立退休 JS 清理（renderer 由 Vite bundle）。
 
 **当前授权与预览**：renderer 是条件解冻，不是永久整层冻结。此次只整理批准的生产业务；原 `ui/modules`、44 项组件 tests/视觉 demo `tests/component-preview` 保持路径、字节及 27 节点 import 闭包。辅助 `tests/workspace-preview` 仍使用真实 App，入口/fixture 未改，仅允许旧 selection 节点退出和新 feature 节点进入的传递依赖变化。未进行视觉整合、demo 搬迁、浏览器/动效或真实桌面验收，不能把静态构建称为视觉批准。
 
