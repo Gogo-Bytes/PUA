@@ -7,7 +7,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { ImageAddon } from '@xterm/addon-image';
 import '@xterm/xterm/css/xterm.css';
 import { modifiedEnter } from './terminal-keys';
-import type { SessionInfo } from '../shared/contracts';
+import type { SessionInfo } from '../shared/ipc/desktop-api';
 import { terminalThemes, type ResolvedTheme } from './theme';
 
 export interface TerminalHandle {

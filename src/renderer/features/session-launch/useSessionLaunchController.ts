@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Bootstrap, SessionInfo } from '../../../shared/contracts';
+import type { Bootstrap, SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ProjectTrust, SessionKind } from '../../../shared/chat';
 import { desktopClient } from '../../app/desktop-client';
 

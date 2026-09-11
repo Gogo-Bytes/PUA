@@ -10,7 +10,7 @@ import { resolveRuntime } from '../src/platform/pi/runtime/discovery';
 import { terminalEnvironment } from '../src/platform/pi/process/environment';
 import { modifiedEnter, referencePaths } from '../src/renderer/terminal-keys';
 import { removeSession, type SessionWorkspace } from '../src/renderer/features/workspace';
-import type { SessionInfo } from '../src/shared/contracts';
+import type { SessionInfo } from '../src/shared/ipc/desktop-api';
 
 describe('terminal transport', () => {
   it('pauses until xterm has consumed the high-water backlog', () => {

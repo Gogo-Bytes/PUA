@@ -1,4 +1,4 @@
-import type { Bootstrap, CreateSessionOptions, Preferences, SessionInfo } from '../../shared/contracts.js';
+import type { Bootstrap, CreateSessionOptions, Preferences, SessionInfo } from '../../shared/ipc/desktop-api.js';
 import type { PreferencesApplication } from '../../modules/preferences/index.js';
 import type { resolveRuntime as ResolveRuntime } from '../../platform/pi/runtime/discovery.js';
 import { unwrapSessionResult } from './session-mapper.js';

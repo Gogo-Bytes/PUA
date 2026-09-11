@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { SessionInfo } from '../shared/contracts';
+import type { SessionInfo } from '../shared/ipc/desktop-api';
 import { Icon } from './Icon';
 import { groupProjects } from './features/workspace';
 

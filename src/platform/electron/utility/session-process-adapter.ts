@@ -11,7 +11,7 @@ import { MissingAssistantDiagnosticSession, withoutMissingAssistantDiagnostics }
 import { imageMimeType } from '../../filesystem/attachment-policy.js';
 import { validSize } from '../../../shared/ipc/schemas.js';
 import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../shared/chat.js';
-import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/contracts.js';
+import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/ipc/desktop-api.js';
 import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../../../modules/sessions/index.js';
 import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
 

@@ -1,7 +1,7 @@
 import { PreferencesApplication } from '../../../src/modules/preferences/index';
 import { describe, expect, it, vi } from 'vitest';
 import { createDesktopPreferences, validateChatArguments } from '../../../src/app/main/desktop-preferences';
-import type { Preferences, SessionInfo } from '../../../src/shared/contracts';
+import type { Preferences, SessionInfo } from '../../../src/shared/ipc/desktop-api';
 import { deferred, failure, fakeCapabilities, sessionInfo, success } from './main-fakes';
 
 const options = { cwd: '/fake/project', kind: 'chat', startMode: 'new', projectTrust: 'default' } as const;

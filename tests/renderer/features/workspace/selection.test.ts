@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SessionInfo } from '../../../../src/shared/contracts';
+import type { SessionInfo } from '../../../../src/shared/ipc/desktop-api';
 import { addSession, groupProjects, projectName, removeSession, selectProject, selectSession, type SessionWorkspace } from '../../../../src/renderer/features/workspace';
 
 const session = (id: string, cwd: string): SessionInfo => ({ id, cwd, title: id, kind: 'chat', processStatus: 'running', activity: 'idle' });

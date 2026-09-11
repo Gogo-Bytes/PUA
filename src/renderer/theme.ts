@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ThemePreference } from '../shared/contracts';
+import type { ThemePreference } from '../shared/ipc/desktop-api';
 
 export type ResolvedTheme = 'light' | 'dark';
 export function resolveTheme(preference: ThemePreference = 'system', systemDark: boolean): ResolvedTheme {

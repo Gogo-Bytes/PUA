@@ -5,7 +5,7 @@ export { MarkdownView } from './ContentView';
 import { Icon } from './Icon';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../shared/chat';
-import type { SessionInfo } from '../shared/contracts';
+import type { SessionInfo } from '../shared/ipc/desktop-api';
 import { emptyChatState, queueText, reduceChatEvent, widgetsAt } from './chat-state';
 import { missingAssistantRendererDiagnostics } from './missing-assistant-diagnostics';
 

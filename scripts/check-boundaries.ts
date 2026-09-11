@@ -21,6 +21,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
   const workspaceGlobals = ['window', 'document', 'process', 'Buffer', 'NodeJS', '__dirname', '__filename', 'setImmediate', 'clearImmediate'];
   const shared = relative.startsWith('src/shared/');
+  const retiredSharedContracts = relative === 'src/shared/contracts.ts';
   const appMain = relative.startsWith('src/app/main/');
   const appPreload = relative.startsWith('src/app/preload/');
   const appWorkerDirectory = relative.startsWith('src/app/workers/');
@@ -41,13 +42,17 @@ export function checkSource(filename: string, text: string, root: string): strin
   const application = relative.startsWith(`${coreRoot}application/`);
   const ports = relative === `${coreRoot}ports.ts`;
   const report = (node: ts.Node, message: string) => errors.push(`${relative}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}: ${message}`);
+  if (retiredSharedContracts) report(source, 'src/shared/contracts.ts is retired; desktop DTOs belong in src/shared/ipc/desktop-api.ts');
   if (appWorkerDirectory && !appWorker) report(source, 'src/app/workers contains only the pi-rpc and pty process entry files; helpers belong in platform adapters');
   const checkImport = (node: ts.Node, name: string) => {
+    const retiredContractsImport = /(^|\/)shared\/contracts(?:\.[cm]?[jt]s)?$/.test(slash(name));
     if (workspaceSelection) report(node, `Workspace selection is dependency-free; import ${name} is forbidden`);
     if ((shared || renderer) && platformModule(name)) report(node, `platform import ${name} is forbidden`);
     if (shared && reactModule(name)) report(node, `React import ${name} is forbidden in shared`);
     const resolved = ts.resolveModuleName(name, file, { moduleResolution: ts.ModuleResolutionKind.Bundler, allowJs: true }, ts.sys).resolvedModule?.resolvedFileName;
     const target = slash(path.relative(root, resolved ?? path.resolve(path.dirname(file), name)));
+    const retiredContractsTarget = /^src\/shared\/contracts(?:\.[cm]?[jt]s)?$/.test(target);
+    if (relative.startsWith('src/') && (retiredContractsImport || retiredContractsTarget)) report(node, 'shared/contracts is retired; import shared/ipc/desktop-api directly');
     const targetFeature = /^src\/renderer\/features\/([^/]+)\/(.+)$/.exec(target);
     const sourceFeature = /^src\/renderer\/features\/([^/]+)\//.exec(relative)?.[1];
     if (relative.startsWith('src/') && targetFeature && sourceFeature !== targetFeature[1] && !/^index\.[cm]?[jt]s$/.test(targetFeature[2])) report(node, `Renderer feature callers must use ${targetFeature[1]}/index.ts`);

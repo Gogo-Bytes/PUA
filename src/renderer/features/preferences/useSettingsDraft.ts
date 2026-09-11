@@ -1,6 +1,6 @@
 import { desktopClient } from '../../app/desktop-client';
 import { useState } from 'react';
-import type { Bootstrap, Preferences } from '../../../shared/contracts';
+import type { Bootstrap, Preferences } from '../../../shared/ipc/desktop-api';
 
 export interface SettingsDraftOptions {
   boot: Bootstrap;

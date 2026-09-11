@@ -3,7 +3,7 @@
 import { installDesktopFake } from './desktop-bridge-fake';
 import { createRoot } from 'react-dom/client';
 import { App } from '../src/renderer/App';
-import type { DesktopAPI, Preferences, SessionInfo } from '../src/shared/contracts';
+import type { DesktopAPI, Preferences, SessionInfo } from '../src/shared/ipc/desktop-api';
 import type { SessionEvent } from '../src/shared/chat';
 import '../src/renderer/styles.css';
 import '../src/renderer/review.css';

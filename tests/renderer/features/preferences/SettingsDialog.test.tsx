@@ -6,7 +6,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsDialog } from '../../../../src/renderer/features/preferences';
-import type { Bootstrap, Preferences } from '../../../../src/shared/contracts';
+import type { Bootstrap, Preferences } from '../../../../src/shared/ipc/desktop-api';
 
 // No host storage/chooser, clipboard, filesystem, Pi or runtime implementation is loaded.
 type Props = ComponentProps<typeof SettingsDialog>;

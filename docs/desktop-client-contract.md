@@ -4,7 +4,7 @@
 
 ## Interface 与 owner
 
-- `shared/ipc/desktop-api.ts` 的 `DesktopAPI` 保留应用成功值；`DesktopBridge` 派生 raw Result，`Window.desktop` 可缺失。`contracts.ts` 仍是类型兼容入口。
+- `shared/ipc/desktop-api.ts` 的 `DesktopAPI` 保留应用成功值；`DesktopBridge` 派生 raw Result，`Window.desktop` 可缺失。旧 `shared/contracts.ts` 类型兼容入口已删除，所有调用方直接引用该 canonical seam；本次只迁 import 并增加退休路径门禁，不改类型声明或 wire shape。
 - `shared/ipc/desktop-result.ts` 定义 Result、按方法穷尽的成功值 guard 和全部当前 SessionEvent 分支的外层检查。void 在 wire 为显式 `null`，client 还原 `undefined`；picker 的 null、close 的 false、空数组都是成功。缺 value、矛盾分支、非 boolean ok、未知 error kind 或非法 payload 不作成功或旧值 fallback。
 - `platform/electron/ipc/registrar.ts` 保持 sender → 主 frame → 精确 URL → tuple parser → Implementation。拒绝 sender 不触发 parser 或资源准备；invoke 的同步/异步异常都编码。合法 handler 成功类型仍是应用值，不把 wire error 搬入业务 core。
 - `desktop-errors.ts` 的边缘 Error carrier 保留 Session / Conversation / Review mapper 稳定 code 与原中文 message。明确 sender 拒绝是 authorization；parser 是 validation；业务/普通 Error 是 application；未知对象/不可读 Error 是 internal。requireCurrent 等其它异常不会冒充 sender 拒绝。
@@ -31,7 +31,7 @@
 - smoke-ipc / smoke-desktop 仅静态迁移 raw 结果与拒绝断言；transport rejection 不再可冒充业务拒绝。smoke-pi 只有 send/event，不需要结果迁移。未运行任何 smoke。
 - 本轮允许的验证仅逐文件审核的纯 Fake/jsdom 白名单（含 worker-protocol）、三个 noEmit、两 preview 类型检查、AST/44 保护与27节点闭包/hash、HEAD archive + 明确 allowlist 的隔离生产/preload/两 preview build 及静态 source/emitted links。当前运行 dist 不写入，产物不执行。
 
-外层 guard 不递归验证 transcript blocks/tool JSON；同版本 mapper 仍是这些嵌套值的信任来源。没有 Electron structured clone/contextBridge、真实 Pi/PTY/Git/fs、浏览器/视觉或生命周期实测。保留现有大 chunk 告警；不运行 verify/dev/package/dist/全量 npm test，不安装依赖。
+外层 guard 不递归验证 transcript blocks/tool JSON；同版本 mapper 仍是这些嵌套值的信任来源。没有 Electron structured clone/contextBridge、真实 Pi/PTY/Git/fs、浏览器/视觉或生命周期实测。保留现有大 chunk 告警；不运行 verify/dev/package/dist/全量 npm test，不安装依赖。后续删除旧 contracts 入口的架构批次也按用户要求未运行自动测试、build、typecheck、smoke 或应用，仅做静态 read/search/diff 检查。
 
 ## 后置项与维护入口
 

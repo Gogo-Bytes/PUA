@@ -4,7 +4,7 @@ import type { DesktopAPI } from '../../../../src/shared/ipc/desktop-api';
 let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Bootstrap } from '../../../../src/shared/contracts';
+import type { Bootstrap } from '../../../../src/shared/ipc/desktop-api';
 import type { ChatCommand, SessionEvent } from '../../../../src/shared/chat';
 
 // Only native terminal/canvas and Desktop bridge are faked. App, ChatPane,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { DesktopAPI, SessionInfo } from '../../../shared/contracts';
+import type { DesktopAPI, SessionInfo } from '../../../shared/ipc/desktop-api';
 import { addSession, removeSession, selectProject, selectSession, type SessionWorkspace } from './selection';
 
 /** Window-local projection and selection owner; the host still owns Session lifecycle. */

@@ -1,6 +1,6 @@
 import { access } from 'node:fs/promises';
 import path from 'node:path';
-import type { ProjectResourceInfo } from '../../shared/contracts.js';
+import type { ProjectResourceInfo } from '../../shared/ipc/desktop-api.js';
 import { expandHome } from './expand-home.js';
 
 const candidates = ['.pi/settings.json', '.pi/extensions', '.pi/skills', '.pi/prompts', '.pi/packages', '.agents/skills'];

@@ -4,7 +4,7 @@ import type { DesktopAPI } from '../../../../src/shared/ipc/desktop-api';
 let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Bootstrap, Preferences } from '../../../../src/shared/contracts';
+import type { Bootstrap, Preferences } from '../../../../src/shared/ipc/desktop-api';
 // Import probe only; these empty-workspace journeys never mount a terminal.
 vi.mock('@xterm/xterm', () => ({ Terminal: vi.fn() }));
 import { App } from '../../../../src/renderer/App';

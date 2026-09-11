@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Bootstrap } from '../../shared/contracts';
+import type { Bootstrap } from '../../shared/ipc/desktop-api';
 import { useTheme } from '../theme';
 import { desktopClient, isDesktopAvailable } from './desktop-client';
 

@@ -6,7 +6,7 @@ import { SessionProcessAdapter, type SessionProcessContext } from '../../platfor
 import type { Terminal } from '../../modules/terminal/index.js';
 import { prepareProject } from '../../platform/filesystem/session-preparation.js';
 import { sessionChangeEvent, unwrapSessionResult } from './session-mapper.js';
-import type { CreateSessionOptions, RuntimeInfo } from '../../shared/contracts.js';
+import type { CreateSessionOptions, RuntimeInfo } from '../../shared/ipc/desktop-api.js';
 import type { SessionEvent } from '../../shared/chat.js';
 import { createSession } from './create-session.js';
 import { registerChatAttachments } from './chat-attachments.js';

@@ -3,7 +3,7 @@ import type { ConversationApplication } from '../../modules/conversation/index.j
 import type { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js';
 import { sessionInfo, unwrapSessionResult } from './session-mapper.js';
 import { validateCreateSessionOptions } from '../../shared/ipc/schemas.js';
-import type { CreateSessionOptions, RuntimeInfo, SessionInfo } from '../../shared/contracts.js';
+import type { CreateSessionOptions, RuntimeInfo, SessionInfo } from '../../shared/ipc/desktop-api.js';
 
 export interface CreateSessionDependencies {
   session: SessionCoordinator;

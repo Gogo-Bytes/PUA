@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { SessionInfo } from '../../../shared/contracts';
+import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { desktopClient } from '../../app/desktop-client';
 
 /** Session label/dialog presentation, not host Session lifecycle or Pi persistence policy. */

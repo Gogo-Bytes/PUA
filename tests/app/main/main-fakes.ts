@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { vi } from 'vitest';
 import type { BrowserWindow } from 'electron';
 import type { WindowContext } from '../../../src/app/main/create-window';
-import type { SessionInfo } from '../../../src/shared/contracts';
+import type { SessionInfo } from '../../../src/shared/ipc/desktop-api';
 import type { SessionResult, SessionSnapshot } from '../../../src/modules/sessions';
 
 export const success: SessionResult = { ok: true, value: undefined };

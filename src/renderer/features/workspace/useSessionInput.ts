@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { SessionInfo } from '../../../shared/contracts';
+import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { TerminalHandle } from '../../TerminalPane';
 import { referencePaths } from '../../terminal-keys';
 import { desktopClient } from '../../app/desktop-client';

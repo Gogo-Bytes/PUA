@@ -34,7 +34,7 @@ Electron main / typed composition
 
 首批只建立 IPC 单一来源与可执行验证基线；后续 Session 有限提取见下节，Conversation send/attachment 子阶段见后文；本段为首批历史范围；worker typed 协议的后续有限落地见下文，目录树迁移未做。首批当时冻结 renderer；当前用户已条件解冻生产 App/Workspace 业务整理，原 `ui`、`modules`、44 项组件/demo 集合与视觉参考依赖闭包继续原位原字节保护。正式 UI 未替换，目标架构的后续 UI 收敛仍保留。
 
-- `src/shared/ipc/desktop-api.ts` 是 DesktopAPI 和桌面 DTO 的唯一声明，复用现有 `chat.ts` / `git.ts` DTO。`contracts.ts` 只做类型再导出，待后续允许迁移 renderer 调用路径时删除。
+- `src/shared/ipc/desktop-api.ts` 是 DesktopAPI 和桌面 DTO 的唯一声明，复用现有 `chat.ts` / `git.ts` DTO。旧 `src/shared/contracts.ts` 类型再导出已删除，生产与测试调用方直接引用该 canonical seam；边界门禁禁止重建或从生产源码导入旧路径。
 - `channels.ts` 按现有 invoke/send/event 分类；`schemas.ts` 用 DesktopAPI 参数 tuple 穷尽所有入站方法。`platform/electron/ipc/registrar.ts` 统一执行当前窗口身份、主 frame、精确页面 URL 校验，再解析参数，再调用原 Implementation。invoke 保持原成功值/异常，send 保持记录并丢弃失败，不新增结果 envelope。
 - Preferences、create 纯形状、终端尺寸、diff scope 校验被原 main-side Implementation 复用；extension response 继续重建既有白名单。会话准入、关闭 race、项目真实路径、Git 成员资格、附件 token 与文件路径映射、recentProjects 所有权仍在 main；未向 ChatAttachment 新增路径或任意 Pi command。
 - seam 额外拒绝参数数量错误、错误枚举/尺寸、稀疏附件/设置数组。聊天缺省 text、PTY 控制字节（含 NUL）、相对/`~` 项目路径语义保留。既有限额见 schema；没有为剪贴板、终端粘贴、ID/路径或 Preferences CLI 参数擅加长度上限，剩余限额策略与结构化错误仍待单独授权。
@@ -50,7 +50,7 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 
 生命周期 fixture 必须收到普通与 detached 两个后代的 readiness 确认后，才回复不兼容 handshake。旧 fixture 先回复、产品随即正常清理，后代可能尚未登记 ready，导致 `Pi and both descendant fixtures started` 少于 3；该竞态在 `a4fb717` 也可复现，不是本批 IPC 新增的产品清理回归。spawn 日志独立于 ready 日志，异常清理也能识别迟缓后代；每场景限制启动、运行与清理时长，保持三进程已启动及全部退出断言，且先验证产品清理再兜底回收。`test:desktop` 会触及系统剪贴板，`test:pi` 会定位真实用户 Pi，二者不在本批无副作用默认门禁内。
 
-本批不是阶段 0 或 Spec P1 全完成：formatter、完整 lint、完整产品 smoke、preview-only export 清理、UI 迁移、跨平台发布矩阵尚未落地；Session 完整桌面验收/Conversation 提取、结构化 IPC 结果、未设上限的参数长度策略及旧类型兼容入口删除仍待后续。UI 统一由用户冻结后置。此前单次 IPC timeout 未建立根因，本轮通过不构成其已修复的证据。现有组件预览浏览器检查仍是独立验收，冻结前已经失败的项必须保留并报告；不能通过修改冻结文件或减少脚本覆盖使本批变绿。构建仍有既有大 chunk 告警。
+本批不是阶段 0 或 Spec P1 全完成：formatter、完整 lint、完整产品 smoke、preview-only export 清理、UI 迁移、跨平台发布矩阵尚未落地；Session 完整桌面验收/Conversation 提取、结构化 IPC 结果及未设上限的参数长度策略仍待后续。旧类型兼容入口已在后续架构批次删除。UI 统一由用户冻结后置。此前单次 IPC timeout 未建立根因，本轮通过不构成其已修复的证据。现有组件预览浏览器检查仍是独立验收，冻结前已经失败的项必须保留并报告；不能通过修改冻结文件或减少脚本覆盖使本批变绿。构建仍有既有大 chunk 告警。
 
 ## DesktopResult / Renderer client（有限 vertical）
 
@@ -176,7 +176,7 @@ worker 未移动。composition 注入由 `import.meta.url` 转换的绝对 worke
 - worker 输出失败沿幂等 cleanup，不递归 post；PTY 新增同样的输出失效闩锁。main 普通 request 的同步 post 失败仍仅拒绝本次并允许显式重试，close fallback 仍先于发送安装。Session core、Conversation send/runtime/stream owner 与所有 timeout/cleanup 时序未迁移。
 - `main/terminal.ts` 只有 submission-only `Terminal` Interface，由 `SessionProcessAdapter` 直接实现。`app/main/composition.ts` 装配该窄能力，main 三个 handler 直接使用它；旧 facade write/resize/acknowledge 转发方法已删除，无 TerminalApplication class、第二 registry 或所有权副本。早到 write 丢弃、resize 缓存启动尺寸及三种 missing-ID 行为保持。
 
-typed worker 子阶段当时保留的 `main/sessions.ts` 已由下述 composition 子批真实删除；没有整类更名或叠加 facade。`contracts.ts` alias 与冻结 UI 收敛仍后置。
+typed worker 子阶段当时保留的 `main/sessions.ts` 已由下述 composition 子批真实删除；没有整类更名或叠加 facade。当时后置的 `contracts.ts` alias 已由后续架构批次删除；冻结 UI 收敛仍后置。
 
 本批验证为三个 tsc、显式无 spawn 内存 Fake 白名单（含 worker/runtime/stream/send/Session core）、静态 AST 和冻结集合/hash、纯 build 与产物路径/CJS 静态检查；日志与增量在 `/tmp/pua-worker-terminal-*`。既有所有 host golden 输出也逐条经过新 main-side envelope parser；新覆盖 typed port 编译负例、语义 send/rename 精确 Pi mapping、非法/错误方向/缺 ID/错 session/close PID/PTY 大粘贴与输出失败。`tests/sessions.test.ts` 只迁移断言并 typecheck，因真实文件副作用未执行；protected-files 的临时文件测试亦未执行，只运行静态 checker。应用/desktop/Electron/Pi/browser/child fixture、smoke/lifecycle/IPC 验收、verify/package/dist/dev 均未启动，产物未执行。桌面人工验收、原 browser 红项与完整阶段 3 未完成，纯构建既有 chunk 告警不视为消除。
 
@@ -188,7 +188,7 @@ typed worker 子阶段当时保留的 `main/sessions.ts` 已由下述 compositio
 - worker 绝对路径由 composition 的 `../../main/{rpc-host,pty-host}.js` 按文件 URL 计算，编译后仍指向 dist/main。tsc 不删除已移除源的旧输出，当时 preload 纯 buildStart 只清理 `dist/main/sessions.js` 和 `.map`；本次 main 入口退休后的有限清单见下节，仍非完整 clean-build 治理。
 - 本轮验证使用新 Fake composition/create、纯 fs preparation mock、迁移后的 process adapter 与原 Session/Conversation/worker/IPC mock 白名单，三 tsc、AST（补 src/app 禁入与 channel seam）、44 冻结及全 renderer/hash、纯 build/静态输出链接检查。`tests/sessions.test.ts` 保留真实 fs characterization，仅迁移 Interface 与 typecheck，不执行；所有应用/产物、Electron/Pi/browser/外部 fixture、smoke/lifecycle/IPC 验收、verify/package/dist/dev 均未运行。具体命令与本轮证据在 `/tmp/pua-sessions-composition-*`，不以此前绿项代替本轮验证。
 
-这是删除过渡 facade 的有限完成，不是整个目标架构完成。阶段 2 桌面生命周期及阶段 3 原生对话待用户人工验收；后续 main 边缘拆分的当前状态见下节；后续 Git/Preferences 有限状态见下文；Workspace 与 renderer/UI 治理、其余 platform/worker 迁移仍未完成，类型兼容入口继续保留。
+这是删除过渡 facade 的有限完成，不是整个目标架构完成。阶段 2 桌面生命周期及阶段 3 原生对话待用户人工验收；后续 main 边缘拆分的当前状态见下节；后续 Git/Preferences 有限状态见下文；Workspace 与 renderer/UI 治理、其余 platform/worker 迁移仍未完成。该批当时保留的类型兼容入口已由后续架构批次删除。
 
 ## Main 启动 / 窗口 / lifecycle / menu / IPC（有限边缘拆分）
 
@@ -249,7 +249,7 @@ module 保存成功后发布**原输入引用**，紧接窄 completion 回调生
 
 本批验证限于审查后的内存 Fake storage（真实实现 + 完全 mock fs）、真实 module 与 main runtime/Session Fake、原 sender → parser-before-effect 回归、AST 实际新路径正负例、三个 tsc、44 保护集合/Git a4fb717 字节与整 renderer/shared/范围外 SHA、纯 build/静态 emitted links。保存的迁移前 Store/workflow 源与迁移后真实组合通过全 Fake VM 比较结果、IO、publish→runtime、write failure→close 及并发 snapshot 序列；不执行 bootstrap/build 入口，VM 禁时钟/环境/未知 import，产品 fs 完全内存。证据与本轮相对 dirty-before 的增量位于 `/tmp/pua-preferences/` 和 `/tmp/pua-preferences.diff`。retired 精确清单前十项原序保留，仅追加 `dist/main/preferences.js`/`.map`，绝对路径、force、非 recursive/glob。
 
-未运行 app/desktop/Electron/Pi/browser、真实 fs/Git fixture、外部进程产品测试、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或任何产物；bootstrap Fake 文件只迁 mock/typecheck，未运行。桌面/原生对话人工验收、原 browser 红项、真实 IO 与跨平台发布仍欠；Workspace、其余 platform/runtime/worker、renderer/UI 收敛、格式/完整 lint 和 shared/contracts 类型兼容入口仍后置。此为 Preferences 有限代码/纯验证，不是阶段 5 或全量目标架构完成，构建既有大 chunk 告警保留。
+未运行 app/desktop/Electron/Pi/browser、真实 fs/Git fixture、外部进程产品测试、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或任何产物；bootstrap Fake 文件只迁 mock/typecheck，未运行。桌面/原生对话人工验收、原 browser 红项、真实 IO 与跨平台发布仍欠；Workspace、其余 platform/runtime/worker、renderer/UI 收敛及格式/完整 lint 仍后置。该批当时保留的 shared/contracts 类型兼容入口已由后续架构批次删除。此为 Preferences 有限代码/纯验证，不是阶段 5 或全量目标架构完成，构建既有大 chunk 告警保留。
 
 ## 用户安装 Runtime / 环境 / Home expansion（有限平台归位）
 
