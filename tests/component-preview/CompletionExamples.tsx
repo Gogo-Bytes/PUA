@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Breadcrumbs, Button, Dialog, DropdownMenu, Message, ToastHost, type MessageTone, type ToastItem } from '../../src/renderer/ui';
-import { Composer, type ComposerAttachment, type ComposerLabels, type ComposerSubmission } from '../../src/renderer/modules';
-import { ChatMessage } from '../../src/renderer/features/conversation';
+import { ChatMessage, Composer, type ComposerAttachment, type ComposerLabels, type ComposerSubmission } from '../../src/renderer/features/conversation';
 /** Delays belong to preview adapters only; unmount settles and cancels every simulated operation. */
 function usePreviewDelay() {
   const timers = useRef(new Map<ReturnType<typeof setTimeout>, (live: boolean) => void>());

@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Button, Icon, IconButton, Message } from '../ui';
+import { useLayoutEffect, useRef, useState, type KeyboardEventHandler, type ReactNode, type Ref } from 'react';
+import { Button, Icon, IconButton, Message } from '../../ui';
 export interface ComposerAttachment { id: string; name: string; detail?: ReactNode }
 export interface ComposerSubmission { conversationKey: string; value: string; attachments: readonly ComposerAttachment[] }
 export interface ComposerLabels {
@@ -29,8 +29,30 @@ export interface ComposerProps {
   queuedCount?: number;
   labels?: Partial<ComposerLabels>;
 }
-/** The caller owns data and successful-send clearing policy. This module never clears a draft or attachment. */
-export function Composer(props: ComposerProps) { return <ComposerDraft key={props.conversationKey} {...props}/>; }
+export interface TranscriptComposerProps {
+  variant: 'transcript';
+  attachmentList?: ReactNode;
+  editorRef?: Ref<HTMLTextAreaElement>;
+  editorLabel: string;
+  placeholder: string;
+  value: string;
+  disabled?: boolean;
+  onCompositionChange(composing: boolean): void;
+  onValueChange(value: string): void;
+  onEditorKeyDown: KeyboardEventHandler<HTMLTextAreaElement>;
+  actions: ReactNode;
+}
+/** The caller owns data and successful-send clearing policy. This component never clears a draft or attachment. */
+export function Composer(props: ComposerProps | TranscriptComposerProps) {
+  if ('variant' in props) return <div className="composer">
+    {props.attachmentList}
+    <textarea disabled={props.disabled} ref={props.editorRef} aria-label={props.editorLabel} placeholder={props.placeholder} value={props.value}
+      onCompositionStart={() => props.onCompositionChange(true)} onCompositionEnd={() => props.onCompositionChange(false)}
+      onChange={event => props.onValueChange(event.target.value)} onKeyDown={props.onEditorKeyDown} />
+    <div className="composer-actions">{props.actions}</div>
+  </div>;
+  return <ComposerDraft key={props.conversationKey} {...props}/>;
+}
 function ComposerDraft({ conversationKey, value, onValueChange, attachments, onAddAttachments, onRemoveAttachment, onSend, onQueue, onStop, busy = false, disabled = false, queuedCount = 0, labels }: ComposerProps) {
   const text = { ...defaults, ...labels };
   const [pending, setPending] = useState(false), [stopping, setStopping] = useState(false), [error, setError] = useState('');

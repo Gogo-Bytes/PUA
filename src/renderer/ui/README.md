@@ -6,8 +6,8 @@
 
 ## 分层与封装流程（原则单一事实源）
 
-1. 修改界面前先查 `ui/index.ts` 与现有 `modules/index.ts` 迁移来源。先复用或扩展已有接口，确有新职责时再新增；完成必要接口、独立预览与行为测试后，再请求用户确认生产接入。
-2. **封装触发**：跨场景复用，或具有统一交互、可访问性、动效状态的控件进入 `ui`；生产工作台领域组合进入对应 `renderer/features/*`。现有 `renderer/modules` 只在迁移期间服务隔离预览，接入后按职责移入 Feature 或下沉 UI。一次性业务分支留在调用方，不为封装制造纯透传、万能组件或预设全部业务的 props。
+1. 修改界面前先查 `ui/index.ts`、所属 `renderer/features/*/index.ts` 与本轮仍保留的 [迁移契约](../modules/README.md)。先复用或扩展已有接口，确有新职责时再新增；完成必要接口、独立预览与行为测试后，再请求用户确认生产接入。
+2. **封装触发**：跨场景复用，或具有统一交互、可访问性、动效状态的控件进入 `ui`；生产工作台领域组合进入对应 `renderer/features/*`。`renderer/modules` 的运行时代码与聚合入口已经退休；一次性业务分支留在调用方，不为封装制造纯透传、万能组件或预设全部业务的 props。
 3. 每个模块按职责拆文件，入口只 re-export；接口类型和行为约定放在实现附近。配色、尺寸、层级和动效通过统一 token，样式始终限定于 UIProvider。
 4. 新组件、新状态或接口变动必须同步预览、文档和接口测试。按适用性覆盖 default、hover、focus、disabled、busy、error、键盘、IME、明暗主题、窄窗与 reduced-motion。
 5. 结构动效使用 `motion.tsx` 的 GSAP seam；上下文持有量必须有界、可中断、卸载可清理。拖拽实时尺寸不创建逐帧 Tween；不能仅凭活跃 Tween 数宣称无泄漏，长时间操作还需检查 context 历史对象。菜单、改名、拖拽要验证焦点恢复与快速中断。
@@ -27,7 +27,7 @@
 - `ui/index.ts`：UIProvider、Button/IconButton、TextField、Select/DropdownMenu、Tooltip、Tag/StatusBadge、Tabs、Dialog、Collapsible、InlineRename、ResizableWorkspace、Message、ToastHost、Breadcrumbs 与动效工具。
 - `tokens.css`、`theme.tsx`：语义颜色、明暗主题、排版、尺寸与外观上下文。生产样式入口已引入 tokens 与 primitive 样式；预览保持显式、隔离引入。
 - `motion.tsx`：统一结构动效参数；系统 reduced-motion 优先于 normal/slow，off 立即就位。
-- `modules/index.ts`：Composer 的迁移来源；ProjectNav 与 SessionTabs 已迁入 `features/workspace`，InspectorHeader 与 FileRow 已迁入 `features/change-review`，ToolExecutionCard 与 ChatMessage 已迁入 `features/conversation`。真实接入前必读 [模块契约](../modules/README.md)，生产落点为所属 Feature 或 `ui`。
+- `features/*/index.ts`：生产领域展示组件入口。ProjectNav 与 SessionTabs 位于 `features/workspace`，InspectorHeader 与 FileRow 位于 `features/change-review`，ToolExecutionCard、ChatMessage 与 Composer 位于 `features/conversation`。历史迁移约束暂见 [模块契约](../modules/README.md)。
 - `tests/component-preview/`：独立展示、内存 Adapter 与浏览器验证；不会进入生产入口。组合交互页是中文工作台场景，模块卡片展示安全正文与受控 Composer。
 
 ## 新通用接口

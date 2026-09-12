@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
-import { Composer, type ComposerProps } from '../src/renderer/modules';
+import { Composer, type ComposerProps } from '../src/renderer/features/conversation';
 import { UIProvider } from '../src/renderer/ui';
 const files = [{ id: 'f', name: 'notes.txt' }];
 const base: ComposerProps = { conversationKey: 'a', value: 'original', attachments: files, onValueChange: vi.fn() };

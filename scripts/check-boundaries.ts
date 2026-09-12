@@ -21,7 +21,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const retiredRendererPresentation = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererUi = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererSessionPresentation = /^src\/renderer\/features\/session-launch\//.test(relative) || /^src\/renderer\/features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(relative);
-  const retiredRendererFeatureComponents = /^src\/renderer\/(?:features\/workspace\/WorkspaceNavigation|modules\/(?:ProjectNav|SessionTabs|InspectorHeader|FileRow|ToolExecutionCard|ChatMessage))(?:\.[cm]?[jt]sx?)?$/.test(relative);
+  const retiredRendererFeatureComponents = /^src\/renderer\/(?:features\/workspace\/WorkspaceNavigation|modules\/(?:ProjectNav|SessionTabs|InspectorHeader|FileRow|ToolExecutionCard|ChatMessage|Composer))(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const workspaceRoot = 'src/renderer/features/workspace/';
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
   const workspaceGlobals = ['window', 'document', 'process', 'Buffer', 'NodeJS', '__dirname', '__filename', 'setImmediate', 'clearImmediate'];
