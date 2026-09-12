@@ -461,7 +461,7 @@ Electron smoke
 
 当前：`modules/sessions` 已落地纯 `SessionOwnershipPolicy`、`SessionCoordinator` 与 ID 寻址 lifecycle Port，main-side process adapter 隐藏 utility/PID/pending/附件物理资源。采用同步 prepared `create`，使异步 cwd 检查后的最终准入、预留及材料登记成为无 await/无外部通知的原子段；§7 Promise 签名仅为目标示意。cleanup 确认成功前不释放，失败 sticky。`SessionInfo` 与 activity 留在边缘映射，core 不引 shared DTO。
 
-**阶段 2 代码/纯测试完成；桌面生命周期待用户人工确认，完整完成条件未满足。** 本轮用户禁止应用及替代启动自动化，未运行 lifecycle smoke/verify，纯 build 的静态路径检查不等同 Electron 验收。视觉参考 UI/modules/组件预览继续保护；renderer 当前条件解冻范围见阶段 4。后续 Conversation 子阶段见阶段 3。`main/sessions.ts` 已由 `app/main/composition.ts` 的唯一实例装配、独立 create/附件用例与 `platform/filesystem/session-preparation.ts`、`app/main/session-mapper.ts` 替代并删除；main 直接消费 typed core/Terminal，未叠加 facade。实际所有权与验证范围见 [现行架构](architecture.md#session-核心有限提取阶段-2-代码与纯测试)。
+**阶段 2 代码/纯测试完成；桌面生命周期待用户人工确认，完整完成条件未满足。** 本轮用户禁止应用及替代启动自动化，未运行 lifecycle smoke/verify，纯 build 的静态路径检查不等同 Electron 验收。视觉参考 UI/modules/组件预览继续保护；renderer 当前条件解冻范围见阶段 4。后续 Conversation 子阶段见阶段 3。`main/sessions.ts` 已由 `app/main/composition.ts` 的唯一实例装配、独立 create/附件用例与 `platform/filesystem/session-preparation.ts`、`app/main/session-mapper.ts` 替代并删除；main 直接消费 typed core/Terminal，未叠加 facade。后续 Port 去具体化使 create 与 attachment use case 分别依赖本地 `SessionResourceRegistrationPort` / `ChatAttachmentStagingPort`，具体 `SessionProcessAdapter` 只在 composition root 构造，仍保持单实例资源 owner。该后续批次按用户要求未运行自动测试、build、typecheck、smoke 或应用。实际所有权与验证范围见 [现行架构](architecture.md#session-核心有限提取阶段-2-代码与纯测试)。
 
 完成条件：
 
@@ -523,7 +523,7 @@ Preferences 后续已有限提取：`modules/preferences` 独占 current、owned
 | 当前区域 | 目标职责 |
 |---|---|
 | `src/app/main/bootstrap.ts`（真实 entry，旧 main/IPC 源已删除） | 有限落地的 bootstrap/window/lifecycle/menu + `platform/electron/ipc` registrars；见现行架构 Main 边缘拆分 |
-| 已删除 `src/main/sessions.ts`；现 `src/app/main/{composition,create-session,chat-attachments,session-mapper,conversation-mapper}.ts`、`platform/electron/utility/session-process-adapter.ts` 与 `platform/filesystem/session-preparation.ts` | 有限 main 装配、应用边缘映射与 Electron utility 资源 Adapter 已分责；桌面人工验收仍未完成 |
+| 已删除 `src/main/sessions.ts`；现 `src/app/main/{composition,create-session,chat-attachments,session-mapper,conversation-mapper}.ts`、`platform/electron/utility/session-process-adapter.ts` 与 `platform/filesystem/session-preparation.ts` | create/attachment use case 依赖窄本地 Port，composition 唯一构造单实例 Electron utility 资源 Adapter；桌面人工验收仍未完成 |
 | 已删除 `src/main/runtime.ts`；现 `platform/pi/runtime/discovery.ts`、`platform/pi/process/environment.ts`、`platform/filesystem/expand-home.ts`、`app/main/desktop-preferences.ts` | 用户安装同步发现、环境、home expansion 与既有 Chat 参数边缘分责；不是新增业务核心 |
 | 已删除 `src/main/{project-resources,session-preparation}.ts`；现 `platform/filesystem/{project-resources,session-preparation}.ts` | 资源存在性祖先扫描与 cwd 准备 Adapter，复用 expand-home；app 保留 UUID 与同步创建段，无 Workspace 空层 |
 | 已删除 `src/main/rpc-host.ts`；现 `src/app/workers/pi-rpc.worker.ts` 与 `platform/pi/rpc/*` | Pi RPC utility entry 与 framing/writer/mapping Adapter 分离；Conversation owner 不变 |

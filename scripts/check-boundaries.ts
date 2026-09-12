@@ -26,6 +26,8 @@ export function checkSource(filename: string, text: string, root: string): strin
   const sharedRootSource = /^src\/shared\/[^/]+\.[cm]?[jt]sx?$/.test(relative);
   const retiredSharedContracts = relative === 'src/shared/contracts.ts';
   const appMain = relative.startsWith('src/app/main/');
+  const appMainUseCase = /^src\/app\/main\/(create-session|chat-attachments)\.ts$/.test(relative);
+  const mainComposition = relative === 'src/app/main/composition.ts';
   const appPreload = relative.startsWith('src/app/preload/');
   const appWorkerDirectory = relative.startsWith('src/app/workers/');
   const workerKind = /^src\/app\/workers\/(pi-rpc|pty)\.worker\.ts$/.exec(relative)?.[1];
@@ -59,6 +61,9 @@ export function checkSource(filename: string, text: string, root: string): strin
     const target = slash(path.relative(root, resolved ?? path.resolve(path.dirname(file), name)));
     const retiredSharedTarget = /^src\/shared\/(contracts|chat|chat-validation|git|missing-assistant-diagnostics)(?:\.[cm]?[jt]s)?$/.test(target);
     if (relative.startsWith('src/') && (retiredSharedImport || retiredSharedTarget)) report(node, 'top-level shared contract import is retired; import the canonical shared/ipc module directly');
+    const sessionProcessAdapterTarget = target === 'src/platform/electron/utility/session-process-adapter.ts';
+    if (appMainUseCase && target.startsWith('src/platform/')) report(node, 'main use cases depend on injected Ports, not platform implementations');
+    if (relative.startsWith('src/') && sessionProcessAdapterTarget && !mainComposition) report(node, 'only app/main/composition.ts may import the concrete SessionProcessAdapter');
     const retiredRendererAppTarget = /^src\/renderer\/App(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererAppTarget) report(node, 'top-level renderer App import is retired; use renderer/app/App.tsx');
     const retiredRendererTarget = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(target);
@@ -136,7 +141,7 @@ export function checkSource(filename: string, text: string, root: string): strin
     if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === 'require'))) {
       const arg = node.arguments[0];
       if (arg && ts.isStringLiteralLike(arg)) checkImport(node, arg.text);
-      else if (shared || renderer || appPreload || appWorker || businessCore || piRuntime || platformAdapter || filesystemHome || filesystemProject) report(node, `computed import cannot be checked in constrained source`);
+      else if (shared || renderer || appMainUseCase || appPreload || appWorker || businessCore || piRuntime || platformAdapter || filesystemHome || filesystemProject) report(node, `computed import cannot be checked in constrained source`);
     }
     if (workspaceSelection && ts.isIdentifier(node) && workspaceGlobals.includes(node.text)) {
       const propertyName = ts.isPropertyAccessExpression(node.parent) && node.parent.name === node;

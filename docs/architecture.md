@@ -103,15 +103,17 @@ Workspace、Conversation、Terminal 与 Change Review 的生产展示入口现�
 
 ## Session 核心有限提取（阶段 2 代码与纯测试）
 
-实际调用路径：`app/main/bootstrap.ts → app/main/composition.ts` 装配单个 `SessionCoordinator`、`ConversationApplication` 与 `SessionProcessAdapter`；main 直接消费收窄的真实 Session/Conversation/Terminal 能力。`modules/sessions/index.ts → SessionCoordinator / SessionOwnershipPolicy → SessionProcessPort ← main/session-process-adapter.ts → 既有 rpc-host / pty-host`。IPC 方法、DTO、错误传递方式与 renderer 均不迁移。
+实际调用路径：`app/main/bootstrap.ts → app/main/composition.ts` 装配单个 `SessionCoordinator`、`ConversationApplication` 与 `SessionProcessAdapter`；main 直接消费收窄的真实 Session/Conversation/Terminal 能力。`modules/sessions/index.ts → SessionCoordinator / SessionOwnershipPolicy → SessionProcessPort ← platform/electron/utility/session-process-adapter.ts → app/workers/{pi-rpc,pty}.worker.ts`。IPC 方法、DTO、错误传递方式与 renderer 均不迁移。
+
+后续 Port 去具体化批次使 `app/main/create-session.ts` 只依赖本地 `SessionResourceRegistrationPort`，`app/main/chat-attachments.ts` 只依赖本地 `ChatAttachmentStagingPort`；`app/main/composition.ts` 是生产源码中唯一引用并构造具体 `SessionProcessAdapter` 的位置，并以 Session、Conversation、Terminal 与两个边缘 Port 的交集描述同一个物理资源 owner。没有拆分 Adapter、增加 registry、转发层或运行语句；静态边界门禁禁止两个 use case 导入 platform，并禁止其它生产源码直接依赖具体 Adapter。
 
 | 状态/规则 | 当前唯一所有者 |
 |---|---|
 | 同步预留、Chat 并行/恢复互斥、Terminal 全局独占 | `SessionOwnershipPolicy` + coordinator registry |
 | reserved/starting/running/closing/cleanup-failed/exited、shutdown 准入与释放 | `SessionCoordinator`；不引 Electron、Node、shared DTO 或 activity |
 | utility handle、PID、退出确认、唯一树清理任务、pending/watchdog、附件物理资源 | `SessionProcessAdapter`；只读查询 core 许可，不另存 processStatus |
-| activity | worker Conversation runtime 决策，main adapter 只持事件 projection；与 Session 生命周期仅在纯 `main/session-mapper.ts` 映射 `SessionInfo` 时组合 |
-| cwd / UUID 准备、创建编排、运行参数登记、中文错误/DTO | `platform/filesystem/session-preparation.ts` / `app/main/composition.ts`、`app/main/create-session.ts`、process adapter、`main/session-mapper.ts`（各自专职） |
+| activity | worker Conversation runtime 决策，main adapter 只持事件 projection；与 Session 生命周期仅在纯 `app/main/session-mapper.ts` 映射 `SessionInfo` 时组合 |
+| cwd / UUID 准备、创建编排、运行参数登记、中文错误/DTO | `platform/filesystem/session-preparation.ts` / `app/main/composition.ts`、`app/main/create-session.ts`、process adapter、`app/main/session-mapper.ts`（各自专职） |
 
 创建先复用 schema/intent 校验，仍以 `expandHome + resolve + stat` 准备目录（不是 realpath 身份）；异步检查后重新进入 coordinator 的同步 `create`。最终准入、预留与 adapter 材料登记间无 await/外部通知；登记失败走清理补偿。core 返回稳定拒绝 code，中文文案只在边缘映射。core `get/list` 返回 detached snapshot；纯 mapper 新建 DTO，不暴露内部 handle/Map。
 
@@ -121,7 +123,7 @@ worker 未移动。composition 注入由 `import.meta.url` 转换的绝对 worke
 
 本批实际验证：三个 tsconfig 的 `tsc --noEmit`、显式 Vitest 文件白名单（ownership/coordinator/session-process-adapter/sessions/import-boundaries/protected-files/rpc-host/pty-host/ipc-adapter/ipc-contract/lifecycle-deadline）、AST/44 文件集合与 hash 检查、纯 tsc/Vite build。应用/桌面/Electron/浏览器/真实 Pi/child fixture 均未启动；`verify`、smoke、发布 gate 刻意未运行。**阶段 2 代码/纯测试完成，桌面生命周期待用户人工确认**，不是阶段 2 完整验收或其它阶段完成。UI 与组件预览冻结保持；既有大 chunk 告警保留。
 
-本轮已满足旧 facade 的局部删除条件：`main/sessions.ts` 已删除，创建/附件用例与纯 mapper 分离，生产与测试均无旧入口 import，无第二 facade。当前 raw request/附件物理资源仍与 process adapter 组合；业务登记与发送通过下述 Conversation Interface。POSIX 已知 PID 登记/daemonize 窗口不扩大保证；Windows taskkill 忽略错误的既有实现不等同 POSIX 清理确认，非 macOS 发布 gate 仍阻塞。
+本轮已满足旧 facade 的局部删除条件：`main/sessions.ts` 已删除，创建/附件用例与纯 mapper 分离，生产与测试均无旧入口 import，无第二 facade。当前 raw request/附件物理资源仍与 process adapter 组合；业务登记与发送通过下述 Conversation Interface。后续 Port 去具体化仅以源码 read/search、diff 与 `git diff --check` 检查，按用户要求未运行自动测试、build、typecheck、smoke 或应用，因此组合交集与 Fake 的编译兼容性尚未执行验证。POSIX 已知 PID 登记/daemonize 窗口不扩大保证；Windows taskkill 忽略错误的既有实现不等同 POSIX 清理确认，非 macOS 发布 gate 仍阻塞。
 
 ## Conversation send + attachment 子阶段（阶段 3 未完成）
 

@@ -1,12 +1,16 @@
-import type { ConversationApplication } from '../../modules/conversation/index.js';
-import type { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js';
+import type { Attachment, AttachmentSourceId, ConversationApplication } from '../../modules/conversation/index.js';
 import { conversationError } from './conversation-mapper.js';
 import type { ChatAttachment } from '../../shared/ipc/conversation.js';
+
+export interface ChatAttachmentStagingPort {
+  stageSources(id: string, paths: readonly string[]): AttachmentSourceId[];
+  attachmentView(id: string, attachment: Attachment): ChatAttachment;
+}
 
 /** Staged sources transfer to Conversation on every outcome; display retains the existing path DTO. */
 export async function registerChatAttachments(
   conversation: Pick<ConversationApplication, 'registerAttachments'>,
-  adapter: Pick<SessionProcessAdapter, 'stageSources' | 'attachmentView'>,
+  adapter: ChatAttachmentStagingPort,
   id: string,
   paths: string[],
 ): Promise<ChatAttachment[]> {

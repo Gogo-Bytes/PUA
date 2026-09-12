@@ -1,18 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { SessionCoordinator } from '../../modules/sessions/index.js';
-import { ConversationApplication } from '../../modules/conversation/index.js';
+import { SessionCoordinator, type SessionProcessPort } from '../../modules/sessions/index.js';
+import { ConversationApplication, type AttachmentResourcesPort, type ConversationRuntimePort } from '../../modules/conversation/index.js';
 import { SessionProcessAdapter, type SessionProcessContext } from '../../platform/electron/utility/session-process-adapter.js';
 import type { Terminal } from '../../modules/terminal/index.js';
 import { prepareProject } from '../../platform/filesystem/session-preparation.js';
 import { sessionChangeEvent, unwrapSessionResult } from './session-mapper.js';
 import type { CreateSessionOptions, RuntimeInfo } from '../../shared/ipc/desktop-api.js';
 import type { SessionEvent } from '../../shared/ipc/conversation.js';
-import { createSession } from './create-session.js';
-import { registerChatAttachments } from './chat-attachments.js';
+import { createSession, type SessionResourceRegistrationPort } from './create-session.js';
+import { registerChatAttachments, type ChatAttachmentStagingPort } from './chat-attachments.js';
 
-// Structural material/Port surface allows in-memory Fakes without exposing the resource owner to main.
-type ProcessAdapter = Pick<SessionProcessAdapter, keyof SessionProcessAdapter>;
+// One physical owner implements the injected Ports; only this composition root knows its concrete class.
+type ProcessAdapter = SessionProcessPort & ConversationRuntimePort & AttachmentResourcesPort & Terminal
+  & SessionResourceRegistrationPort & ChatAttachmentStagingPort & { forget(id: string): void };
 export interface CompositionDependencies {
   prepareProject?(cwd: string): Promise<{ cwd: string; title: string }>;
   createId?(): string;

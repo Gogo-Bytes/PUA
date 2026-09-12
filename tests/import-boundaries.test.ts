@@ -41,6 +41,11 @@ describe('TypeScript import/channel gate', () => {
       ['src/renderer/app/App.tsx', `import '../${target}'`],
     ]),
     // Platform/application boundary probes below are synthetic forbidden imports, not callers.
+    ...['src/app/main/create-session.ts', 'src/app/main/chat-attachments.ts'].flatMap(file =>
+      ['../../platform/electron/utility/session-process-adapter.js', '../../platform/filesystem/session-preparation.js'].flatMap(target =>
+        [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => [file, source]))),
+    ...['src/app/main/create-session.ts', 'src/app/main/chat-attachments.ts'].map(file => [file, 'import(name); require(name)']),
+    ['src/app/main/other.ts', "import { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js'"],
     ...['project-resources', 'session-preparation'].flatMap(name =>
       ['../../app/main/composition.js', '../../app/main/session-mapper.js', '../../renderer/app/App.js', '../../modules/sessions/index.js', '../pi/runtime/discovery.js', '../electron/ipc/registrar.js', 'electron', 'react'].flatMap(target =>
         [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => [`src/platform/filesystem/${name}.ts`, source]))),
@@ -216,7 +221,7 @@ describe('TypeScript import/channel gate', () => {
     ['src/app/main/desktop-preferences.ts', "import type { PreferencesApplication } from '../../modules/preferences/index.js'"],
     ['src/platform/electron/ipc/register-desktop-ipc.ts', "import type { WindowContext } from '../../../app/main/create-window.js'; import { invokeChannels } from '../../../shared/ipc/channels.js'"],
     ['src/app/main/bootstrap.ts', "import { registerDesktopIPC } from '../../platform/electron/ipc/register-desktop-ipc.js'"],
-    ['src/app/main/good.ts', "import { SessionCoordinator } from '../../modules/sessions/index.js'; import { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js'"],
+    ['src/app/main/composition.ts', "import { SessionCoordinator } from '../../modules/sessions/index.js'; import { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js'"],
     ['src/modules/conversation/application/conversation-stream-application.ts', "import { completedTool } from '../domain/stream.js'; import type { StreamSchedulePort } from '../ports.js'"],
     ['src/modules/conversation/domain/stream.ts', "interface ConversationObject { readonly [key: string]: null | string }; const label = 'Pi/NodeJS is adapter-only'"],
     ['src/platform/pi/rpc/conversation-stream-mapper.ts', "import type { ConversationStreamInput } from '../../../modules/conversation/index.js'"],

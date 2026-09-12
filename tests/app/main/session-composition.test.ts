@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { composeMain, type CompositionDependencies } from '../../../src/app/main/composition';
 import { SessionCoordinator, type SessionProcessEvent, type SessionSnapshot } from '../../../src/modules/sessions';
 import { ConversationApplication, type AttachmentSourceId } from '../../../src/modules/conversation';
-import type { SessionProcessAdapter, SessionProcessContext } from '../../../src/platform/electron/utility/session-process-adapter';
+import type { SessionProcessContext } from '../../../src/platform/electron/utility/session-process-adapter';
 import { applySessionStartResult, isSessionBusy, requireSessionSnapshot, sessionInfo, unwrapSessionResult } from '../../../src/app/main/session-mapper';
 
 // Composition uses an entirely in-memory Adapter. Even accidentally constructing the default fails.
@@ -11,6 +11,7 @@ vi.mock('../../../src/platform/electron/utility/session-process-adapter', () => 
 vi.mock('../../../src/platform/filesystem/session-preparation', () => ({ prepareProject: () => { throw new Error('Real fs forbidden'); } }));
 const runtime = { executable: '/fake/pi', source: '/fake/pi', args: ['--model', 'fake'] };
 const options = { cwd: '/input', kind: 'chat' as const, startMode: 'new' as const, projectTrust: 'default' as const };
+type ProcessAdapter = ReturnType<NonNullable<CompositionDependencies['createAdapter']>>;
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (error: Error) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 function harness(emit = vi.fn(), overrides: Omit<CompositionDependencies, 'createAdapter'> = {}) {
   let context!: SessionProcessContext;
@@ -18,13 +19,13 @@ function harness(emit = vi.fn(), overrides: Omit<CompositionDependencies, 'creat
   let next = 0;
   const adapter = {
     observe: vi.fn((listener: typeof observer) => { observer = listener; }),
-    register: vi.fn<SessionProcessAdapter['register']>(), forget: vi.fn<SessionProcessAdapter['forget']>(), activity: vi.fn(() => 'idle' as const),
+    register: vi.fn<ProcessAdapter['register']>(), forget: vi.fn<ProcessAdapter['forget']>(), activity: vi.fn(() => 'idle' as const),
     start: vi.fn(), close: vi.fn(async (id: string) => { context.invalidateConversation(id); return { exitCode: 0 }; }),
-    send: vi.fn<SessionProcessAdapter['send']>().mockResolvedValue(undefined), stop: vi.fn<SessionProcessAdapter['stop']>().mockResolvedValue(undefined),
-    respond: vi.fn<SessionProcessAdapter['respond']>().mockResolvedValue(undefined), rename: vi.fn<SessionProcessAdapter['rename']>().mockResolvedValue(undefined),
-    write: vi.fn<SessionProcessAdapter['write']>(), resize: vi.fn<SessionProcessAdapter['resize']>(), acknowledge: vi.fn<SessionProcessAdapter['acknowledge']>(), assertAvailable: vi.fn<SessionProcessAdapter['assertAvailable']>(),
-    read: vi.fn<SessionProcessAdapter['read']>().mockResolvedValue({ id: 'token', name: 'fake.txt', kind: 'file', size: 4 }),
-    release: vi.fn<SessionProcessAdapter['release']>(), discardSources: vi.fn<SessionProcessAdapter['discardSources']>(), stageSources: vi.fn(() => ['source' as AttachmentSourceId]),
+    send: vi.fn<ProcessAdapter['send']>().mockResolvedValue(undefined), stop: vi.fn<ProcessAdapter['stop']>().mockResolvedValue(undefined),
+    respond: vi.fn<ProcessAdapter['respond']>().mockResolvedValue(undefined), rename: vi.fn<ProcessAdapter['rename']>().mockResolvedValue(undefined),
+    write: vi.fn<ProcessAdapter['write']>(), resize: vi.fn<ProcessAdapter['resize']>(), acknowledge: vi.fn<ProcessAdapter['acknowledge']>(), assertAvailable: vi.fn<ProcessAdapter['assertAvailable']>(),
+    read: vi.fn<ProcessAdapter['read']>().mockResolvedValue({ id: 'token', name: 'fake.txt', kind: 'file', size: 4 }),
+    release: vi.fn<ProcessAdapter['release']>(), discardSources: vi.fn<ProcessAdapter['discardSources']>(), stageSources: vi.fn(() => ['source' as AttachmentSourceId]),
     attachmentView: vi.fn(() => ({ id: 'token', name: 'fake.txt', kind: 'file' as const, size: 4, path: '/fake.txt' })),
   };
   const prepareProject = vi.fn(async () => ({ cwd: '/prepared', title: 'Project' }));

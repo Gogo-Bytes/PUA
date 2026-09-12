@@ -1,13 +1,18 @@
 import type { SessionCoordinator } from '../../modules/sessions/index.js';
 import type { ConversationApplication } from '../../modules/conversation/index.js';
-import type { SessionProcessAdapter } from '../../platform/electron/utility/session-process-adapter.js';
 import { sessionInfo, unwrapSessionResult } from './session-mapper.js';
 import { validateCreateSessionOptions } from '../../shared/ipc/schemas.js';
 import type { CreateSessionOptions, RuntimeInfo, SessionInfo } from '../../shared/ipc/desktop-api.js';
+import type { SessionActivity } from '../../shared/ipc/conversation.js';
+
+export interface SessionResourceRegistrationPort {
+  register(id: string, runtime: RuntimeInfo, options: CreateSessionOptions): void;
+  activity(id: string): SessionActivity;
+}
 
 export interface CreateSessionDependencies {
   session: SessionCoordinator;
-  adapter: Pick<SessionProcessAdapter, 'register' | 'activity'>;
+  adapter: SessionResourceRegistrationPort;
   conversation: Pick<ConversationApplication, 'open'>;
   prepareProject(cwd: string): Promise<{ cwd: string; title: string }>;
   createId(): string;
