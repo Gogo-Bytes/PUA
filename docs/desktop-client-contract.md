@@ -10,7 +10,7 @@
 - `desktop-errors.ts` 的边缘 Error carrier 保留 Session / Conversation / Review mapper 稳定 code 与原中文 message。明确 sender 拒绝是 authorization；parser 是 validation；业务/普通 Error 是 application；未知对象/不可读 Error 是 internal。requireCurrent 等其它异常不会冒充 sender 拒绝。
 - preload 仍是逐方法白名单、单 sandbox CJS，仅 require Electron。event callback 不暴露 ElectronEvent，remover 精确移除原 listener；没有任意 channel 能力。
 - `renderer/app/desktop-client.ts` 是唯一生产 global bridge seam。稳定 client 不在模块初始化捕获 bridge；每次请求读取最新 bridge/方法、保持 this。invoke wrapper 不声明 async，raw 同步 throw 同步转换，Promise reject 保持异步 transport。decode 的 application/protocol 错误不会再次包装为 transport。
-- App、ChatPane、TerminalPane、GitPanel、ContentView、preferences/session-launch 全走 client；Workspace 仍注入应用侧窄 Interface。原 mount-only 订阅、effect deps、session key 常驻、草稿/附件/queue、closure 与 continuation 不提取或优化。
+- App、ChatPane、TerminalPane、GitPanel、ContentView、preferences/sessions 全走 client；Workspace 仍注入应用侧窄 Interface。原 mount-only 订阅、effect deps、session key 常驻、草稿/附件/queue、closure 与 continuation 不提取或优化。
 
 ## 错误与订阅生命周期
 

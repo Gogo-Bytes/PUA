@@ -2,9 +2,9 @@
 
 状态：**目标设计，进程入口与平台 Adapter 目录边界、shared/ipc 契约边界、首批 IPC / 验证基线、Session 核心及 Conversation send/attachment、runtime stop/activity/waiting、stream/tool/history、Change Review、Preferences、用户安装 runtime/environment 与 renderer Workspace/领域 presentation 路径有限落地，非全量重构完成**。本文是后续架构重构、新模块设计和代码评审的规范来源；当前已实现行为仍以代码、测试、[现行架构](architecture.md) 和 [原生对话设计](native-chat-design.md) 为准。
 
-本批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。发布入口经 verify 只构建一次；生命周期当前仅 macOS 验证，其他平台明确阻塞发布，不代表 release matrix 完成。首批当时兼容 Promise 成功值/异常；后续 [DesktopResult/client 有限 vertical](desktop-client-contract.md) 已实现结构化结果与统一 renderer seam，旧 `contracts.ts` 与其余 shared 顶层契约入口也已删除，Desktop、Conversation 与 Change Review DTO 由 `shared/ipc` 单一声明。未设上限的字符串策略仍未实施。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 均未完成；阶段 3 仅 send/attachment、runtime stop/activity/waiting 与 stream/tool/history 有限落地，不能将首批有限落地视为 Spec P1 全完成；renderer 已按用户授权条件解冻，生产 App/Workspace 状态及 Conversation/Terminal/Change Review/Workspace presentation 路径已有限归位；原 `ui`、`modules`、44 项组件/demo 保护集合及视觉参考依赖闭包原位原字节保留，正式 UI 未替换，不删除后续 UI 收敛目标。具体范围与验证限制见 [现行架构的首批状态](architecture.md#desktop-ipc-首批重构有限落地)。
+本批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。发布入口经 verify 只构建一次；生命周期当前仅 macOS 验证，其他平台明确阻塞发布，不代表 release matrix 完成。首批当时兼容 Promise 成功值/异常；后续 [DesktopResult/client 有限 vertical](desktop-client-contract.md) 已实现结构化结果与统一 renderer seam，旧 `contracts.ts` 与其余 shared 顶层契约入口也已删除，Desktop、Conversation 与 Change Review DTO 由 `shared/ipc` 单一声明。未设上限的字符串策略仍未实施。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 均未完成；阶段 3 仅 send/attachment、runtime stop/activity/waiting 与 stream/tool/history 有限落地，不能将首批有限落地视为 Spec P1 全完成；renderer 已按用户授权条件解冻，生产 App/Workspace 状态及 Session/Conversation/Terminal/Change Review/Workspace presentation 路径已有限归位；原 `ui`、`modules`、44 项组件/demo 保护集合及视觉参考依赖闭包原位原字节保留，正式 UI 未替换，不删除后续 UI 收敛目标。具体范围与验证限制见 [现行架构的首批状态](architecture.md#desktop-ipc-首批重构有限落地)。
 
-有限收尾首包现完成 strict Pi response 代码与纯验证：pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约，真实 Fake worker→main token/renderer 草稿失败链闭合。这是安全契约修正，不是未知助手缺失 P0 修复。实际兼容来源、验证限制和累计提交依赖见 [Strict Pi 收尾](architecture.md#strict-pi-response有限协议收尾)。strict Pi checkpoint 已提交为 `e709f4d`。后续 DesktopResult/client 的有限代码契约现已闭合，范围与验证限制见 [契约说明](desktop-client-contract.md)；该 vertical 已提交为 `e7b5fa8`。App 必要 continuation 已按下述阶段 4 有限收口并提交为 `1d9c491`。其后的进程边界归位只完成源码移动、import/URL/config/静态门禁与文档更新；再后的 contracts 退休批次只迁 canonical type import、删除兼容入口并增加静态门禁；renderer 领域 presentation 批次只移动文件、拆分既有 helper 职责并更新公开入口；shared 边界批次将剩余跨进程 DTO/验证/诊断 codec 归入 `shared/ipc`，并将 renderer-only scope 投影归入 Change Review feature。四批均按用户要求未运行自动测试、构建、typecheck、smoke 或应用。Preferences 可变引用 alias 行为修正及门禁、bounds/UI/真实验收/发布目标均未完成。
+有限收尾首包现完成 strict Pi response 代码与纯验证：pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约，真实 Fake worker→main token/renderer 草稿失败链闭合。这是安全契约修正，不是未知助手缺失 P0 修复。实际兼容来源、验证限制和累计提交依赖见 [Strict Pi 收尾](architecture.md#strict-pi-response有限协议收尾)。strict Pi checkpoint 已提交为 `e709f4d`。后续 DesktopResult/client 的有限代码契约现已闭合，范围与验证限制见 [契约说明](desktop-client-contract.md)；该 vertical 已提交为 `e7b5fa8`。App 必要 continuation 已按下述阶段 4 有限收口并提交为 `1d9c491`。其后的进程边界归位只完成源码移动、import/URL/config/静态门禁与文档更新；再后的 contracts 退休批次只迁 canonical type import、删除兼容入口并增加静态门禁；renderer 领域 presentation 批次只移动文件、拆分既有 helper 职责并更新公开入口；shared 边界批次将剩余跨进程 DTO/验证/诊断 codec 归入 `shared/ipc`，并将 renderer-only scope 投影归入 Change Review feature；Session presentation consolidation 将 launch/form/rename 归入 `features/sessions`，Workspace 继续只持 selection/input/navigation。以上纯迁移批次均按用户要求未运行自动测试、构建、typecheck、smoke 或应用。Preferences 可变引用 alias 行为修正及门禁、bounds/UI/真实验收/发布目标均未完成。
 
 ## 1. 目标与适用范围
 
@@ -229,7 +229,7 @@ tests/
 - Chat 并行、恢复互斥、Terminal 独占等所有权策略；
 - 关闭准入和所有权释放时机。
 
-`SessionCoordinator` 负责编排 use case；`SessionOwnershipPolicy` 以显式结果表达允许或拒绝及原因；具体 utility process 位于 Adapter。
+`SessionCoordinator` 负责编排 use case；`SessionOwnershipPolicy` 以显式结果表达允许或拒绝及原因；具体 utility process 位于 Adapter。renderer 的 launch/form/rename presentation 已统一归入 `renderer/features/sessions`，不取得后端生命周期权威。
 
 ### 5.3 Conversation
 
@@ -488,7 +488,7 @@ Electron smoke
 
 当前 App 必要工作流归属已有限收尾：renderer composition root 已从旧 `renderer/App.tsx` 迁至 `renderer/app/App.tsx`，旧路径删除且无兼容转发；App 仅 JSX/owner 连接、无业务窗口快捷路由与 inspector 纯 layout，无直接 host 请求、Promise continuation、draft/handle Map 或 create/rename 实现。`app/useWorkspaceComposition` 只组装真实 owner，无镜像 state、effect/ref 同步桥或整 App 改名容器。该纯路径迁移按用户要求未运行自动测试、build、typecheck、smoke 或应用，只完成静态 read/search/diff 检查。此为 composition-only 的必要职责完成，不要求局部展示无 state，也不表示下列阶段 4 全部完成条件已满足。
 
-`app/useDesktopPresentation` 持窗口 boot/error/Settings open 和 refresh/publish，复用 useTheme；`features/session-launch/useSessionLaunchController` 持 context/defaults/create continuation，原 mount-local form/inspection/trust controller 保留；`features/workspace/useSessionPresentation` 与原样迁入的 RenameDialog 持 rename 提交身份/回写和 openProject。`useSessionInput` 持按 ID 草稿、活 TerminalHandle registry、search 与命令/引用路由；原 `useWorkspace` 仍唯一拥有 sessions/selection/events/close。palette 与 Settings draft 原 owner 不变，所有跨 feature caller 仍经 index。
+`app/useDesktopPresentation` 持窗口 boot/error/Settings open 和 refresh/publish，复用 useTheme；`features/sessions` 统一持有 `useSessionLaunchController`、mount-local form/inspection/trust、`useSessionPresentation` 与两个 Dialog，分别保持 create continuation 和 rename 提交身份/回写/openProject。`features/workspace/useSessionInput` 持按 ID 草稿、活 TerminalHandle registry、search 与命令/引用路由；`useWorkspace` 仍唯一拥有 sessions/selection/events/close。palette 与 Settings draft 原 owner 不变，所有跨 feature caller 仍经 index。
 
 create 的 add → close/reset → hide search → fire-and-forget refresh、rename 提交时旧 identity、await-close 最新选择及同 continuation 草稿删除、附件旧目标/当前 registry、snapshot append、palette 正常插入才 reset、search 保留与 focus/media/IME/keyboard 注册顺序均保留。ChatPane revision/附件/消息、TerminalPane xterm lifetime、GitPanel 局部状态与 session.id panes 常驻语义不变；这些领域 presentation 及 reducer/helper 已在后续纯路径批次迁入 `features/{conversation,terminal,change-review,workspace}`，旧顶层路径删除且跨 Feature 调用经 index。backend Session/Conversation/Preferences 权威不迁 renderer。真实调用图、callback 稳定性与保留的异步局限见 [App composition 当前状态](architecture.md#app-composition窗口工作流归位有限代码收尾)。
 
@@ -536,7 +536,8 @@ Preferences 后续已有限提取：`modules/preferences` 独占 current、owned
 | 已删除顶层 `src/renderer/ChatPane.tsx`；现 `src/renderer/features/conversation/{ChatPane,chat-state,missing-assistant-diagnostics}.ts(x)` | Conversation Presentation、投影 reducer 与 renderer 诊断，公开入口为 feature index |
 | 已删除顶层 `src/renderer/TerminalPane.tsx` / `terminal-keys.ts`；现 `src/renderer/features/terminal` | Terminal Presentation 与 modified Enter 协议适配，公开入口为 feature index |
 | 已删除顶层 `src/renderer/GitPanel.tsx` / `diff-lines.ts`；现 `src/renderer/features/change-review` | Change Review Presentation、diff 与 scope projection，公开入口为 feature index |
-| 已删除 `src/renderer/session-state.ts` 与顶层 `WorkspaceNavigation.tsx`；现 `renderer/features/workspace` | 唯一窗口投影/选择、导航、草稿/handle 与 reference path 格式化；不是后端生命周期 owner |
+| 已删除 `src/renderer/features/session-launch` 与 Workspace 下的 Session rename/action 文件；现 `renderer/features/sessions` | Session launch/form/rename presentation，公开入口为 feature index；不取得后端生命周期权威 |
+| 已删除 `src/renderer/session-state.ts` 与顶层 `WorkspaceNavigation.tsx`；现 `renderer/features/workspace` | 唯一窗口投影/选择、导航、草稿/handle 与 reference path 格式化；不持 launch/rename 或后端生命周期权威 |
 | `src/renderer/ContentView.tsx` | Conversation 与 Change Review 暂时共用的 presentation seam；待 UI 收敛阶段决定最终归属 |
 | `src/renderer/ui` | 唯一通用 UI 系统，清除业务与 preview 内容 |
 | `src/renderer/modules` | 按所属领域迁入 `renderer/features/*` 或下沉到 `renderer/ui`；不保留模糊聚合目录 |

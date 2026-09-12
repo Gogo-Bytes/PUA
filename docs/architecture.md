@@ -67,8 +67,8 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 | --- | --- |
 | `app/useDesktopPresentation` | bootstrap snapshot、全局 error、Settings open/publish/close、refresh；调用原 useTheme，不取得 main Preferences current/recents |
 | `features/workspace/useWorkspace` | 原 sessions/selection/events/close；无第二 Session 生命周期 owner |
-| `features/session-launch/useSessionLaunchController` | launch context/defaults/open、host create 成功 continuation；原 useNewSessionLaunch 仍持挂载局部表单、inspection/trust |
-| `features/workspace/useSessionPresentation` / `RenameDialog` | 提交捕获身份、改标题、打开目录、原 dialog；Terminal 名称仍仅窗口标签 |
+| `features/sessions/useSessionLaunchController` / `useNewSessionLaunch` | launch context/defaults/open、host create 成功 continuation；挂载局部表单仍持 inspection/trust |
+| `features/sessions/useSessionPresentation` / `RenameDialog` | 提交捕获身份、改标题、打开目录、原 dialog；Terminal 名称仍仅窗口标签 |
 | `features/workspace/useSessionInput` | 按 ID 草稿文本、活 handle registry、search 呈现、command/reference/terminal picker 输入路由；不持 Chat revision/附件 token/发送锁或 xterm 实例 |
 | 原 palette、Settings draft、ChatPane、TerminalPane、GitPanel | 各自原状态与 effect 不迁；后端 Session/Conversation/Preferences 与 client seam 完全不动 |
 
@@ -291,7 +291,7 @@ Chat 附加参数 exact/prefix policy 归已有 `app/main/desktop-preferences.ts
 
 App 已删除 Workspace state、通用 sessions setter、session-info/chat-state/exit 订阅与 close 协调。hook 将事件按原 id map 成显示投影；unknown/早到事件不创建 session，exit 不移除 tab。纯 selection 保留完整 cwd 身份、分组首次出现顺序、recent 空组、失效 remembered fallback，以及最后 active session 关闭后保留当前项目的规则。close 仅在 host truthy 后对最新 state 移除/修复；等待期切项目/选择其它会话/完成新建不会被旧选择覆盖，项目 memory 修复独立于当前全局选择；false 不变、异常仍 `String(error)`，不新增锁、去重或取消策略。
 
-App 保留 create/rename 请求及完成顺序、每会话草稿文本、commands/search/review 和其余 dialogs；NewSessionDialog 的后续独立 owner 见 [Session launch](#session-launchrenderer-有限提取)。成功 close 在原同一 Promise continuation 先 enqueue Workspace 移除、再同步回调 App 删除对应草稿；草稿删除不进 React updater，也不额外 await。所有 ChatPane/TerminalPane 仍按原 session.id key 始终挂载，仅切 active；其后仅路径迁入对应 Feature，组件体、样式、P0 诊断与 editMenu 不变。旧 `renderer/session-state.ts` 和真实 imports 已删除，无兼容转发或独立退休 JS 清理（renderer 由 Vite bundle）。
+App 保留 create/rename 请求及完成顺序、每会话草稿文本、commands/search/review 和其余 dialogs；NewSessionDialog 的后续独立 owner 见 [Session Presentation](#session-presentationrenderer-有限提取)。成功 close 在原同一 Promise continuation 先 enqueue Workspace 移除、再同步回调 App 删除对应草稿；草稿删除不进 React updater，也不额外 await。所有 ChatPane/TerminalPane 仍按原 session.id key 始终挂载，仅切 active；其后仅路径迁入对应 Feature，组件体、样式、P0 诊断与 editMenu 不变。旧 `renderer/session-state.ts` 和真实 imports 已删除，无兼容转发或独立退休 JS 清理（renderer 由 Vite bundle）。
 
 **当前授权与预览**：renderer 是条件解冻，不是永久整层冻结。此次只整理批准的生产业务；原 `ui/modules`、44 项组件 tests/视觉 demo `tests/component-preview` 保持路径、字节及 27 节点 import 闭包。辅助 `tests/workspace-preview` 仍使用真实 App，入口/fixture 未改，仅允许旧 selection 节点退出和新 feature 节点进入的传递依赖变化。未进行视觉整合、demo 搬迁、浏览器/动效或真实桌面验收，不能把静态构建称为视觉批准。
 
@@ -299,15 +299,19 @@ App 保留 create/rename 请求及完成顺序、每会话草稿文本、command
 
 证据在 `/tmp/pua-workspace-renderer-before`、`/tmp/pua-workspace-renderer.logs/`、`/tmp/pua-workspace-renderer.{diff,status,freeze,previewclosure}`，增量相对累计 dirty-before，不是 HEAD 清理。其余 renderer features、App composition-only、通用 UI 收敛、完整目标架构与真实产品 release matrix 仍欠；本批未操作/退出/重启用户应用，未运行 Electron/Pi/browser/真实 fs/Git fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev 或全量测试。用户普通模式粘贴、连续对话和切换手验通过的事实保留；助手回复缺失 P0 根因未定，纯测试不证明修复，也不宣新增 bugfix。
 
-## Session launch/Renderer 有限提取
+## Session Presentation/Renderer 有限提取
 
-`renderer/features/session-launch/index.ts` 是真实 `NewSessionDialog` 的唯一入口；App 不再实现或 re-export 旧入口。view 保留原 Modal、DOM/className、文案、radio 与 HTML required；内部 `useNewSessionLaunch` 拥有挂载局部 cwd/kind/mode/trust、250ms 检查与 active cleanup、busy/error、目录选择和提交 gate。它不是通用工作流 hook，也不复制 Session 准入、文件系统权限或 Pi trust 权威；资源检查只解释 host snapshot，trust 只作为本次创建参数。
+原有限提取先落在 `renderer/features/session-launch`，并将 rename presentation 暂放 Workspace；后续纯路径 consolidation 已将 `NewSessionDialog`、`useNewSessionLaunch`、`useSessionLaunchController`、`RenameDialog` 与 `useSessionPresentation` 统一迁入 `renderer/features/sessions`，旧目录和 Workspace 旧文件删除且无兼容转发。App 与 composition 只经 `features/sessions/index.ts` 使用这些能力；Workspace 继续独占 selection、输入与导航关系，不新增 launch/rename 状态。
+
+`renderer/features/sessions/index.ts` 是真实 Session presentation 的唯一跨 Feature 入口。view 保留原 Modal、DOM/className、文案、radio 与 HTML required；内部 `useNewSessionLaunch` 拥有挂载局部 cwd/kind/mode/trust、250ms 检查与 active cleanup、busy/error、目录选择和提交 gate。它不是通用工作流 hook，也不复制 Session 准入、文件系统权限或 Pi trust 权威；资源检查只解释 host snapshot，trust 只作为本次创建参数。
 
 App 仍决定 launch defaults/context 与设置跳转，保留 `createSession → workspace.addCreatedSession → close/reset modal → bootstrap refresh` 原 continuation，无额外 await、锁、缓存或自动提交。initial props 只初始化挂载状态；runtime/callback props 更新仍生效。当前保留的行为包括：未完成检查按 effect active 标志失效（即使 A→B→A）；已完成同 cwd snapshot 在重访 debounce 期间可复用；旧 inspection error 到下一结果前仍显示；Terminal 不受 Chat 检查 gate 限制；从 resume 切 Chat 的 kind effect 重置 new。目录选择按完成顺序覆盖输入，无 picker lock/cancel；成功提交由 App 卸载，异步 reject 恢复 busy，而同步 callback throw 仍逃逸并保持 busy。无 runtime 的原 form synthetic-submit bypass、autoFocus 先于 Modal 捕获焦点导致关闭后 body focus 等已记录而未趁提取修复。
 
 验证为提取前后同一真实 dialog/App + 内存 Desktop/jsdom characterization、隔离敏感变异、三个 noEmit、AST feature index/宿主禁令、44 项与 27 节点视觉闭包/范围外/dist SHA、隔离生产与两 preview 纯构建及静态链接；不执行产物。`ui/modules/component-preview` 原位原字节，辅助 workspace-preview 入口/fixture 不改，仅新增 feature 传递依赖。本批未操作运行应用或运行 Electron/Pi/browser、真实 fs/Git/外部进程 fixture、smoke/lifecycle/IPC 集成、verify/dev/package/dist 或全量测试。证据在 `/tmp/pua-session-launch-before`、`/tmp/pua-session-launch.logs/` 与 `/tmp/pua-session-launch.{diff,status,freezes}`，相对累计 dirty-before。
 
-Settings 的后续 owner 见下节；Rename、palette、inspector、conversation presentation 与草稿等剩余 renderer 整理未做，App 尚非 composition-only；没有视觉替换或完整目标架构/桌面验收。用户普通模式粘贴/连续对话/切换手验事实不变，助手回复缺失 P0 根因未定，纯测试不宣称修复。
+后续 consolidation 只执行文件移动、import/index、静态边界、测试 source lookup 与文档更新；组件/hook 函数体、DOM/CSS/文案、状态、回调及异步/effect 行为不改。按用户要求未运行测试、npm、build、typecheck、smoke 或应用，仅做静态 read/search/diff 检查，因此模块解析与运行行为仍未执行确认。
+
+Settings 的后续 owner 见下节；palette、inspector、conversation presentation 与草稿等剩余 renderer 整理不在原提取批次；没有视觉替换或完整目标架构/桌面验收。用户普通模式粘贴/连续对话/切换手验事实不变，助手回复缺失 P0 根因未定，纯测试不宣称修复。
 
 ## Desktop settings/Renderer 有限提取
 

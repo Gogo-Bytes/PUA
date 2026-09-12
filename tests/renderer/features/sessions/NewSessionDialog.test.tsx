@@ -5,7 +5,7 @@ let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NewSessionDialog } from '../../../../src/renderer/features/session-launch';
+import { NewSessionDialog } from '../../../../src/renderer/features/sessions';
 import type { ProjectResourceInfo } from '../../../../src/shared/ipc/desktop-api';
 
 type Props = ComponentProps<typeof NewSessionDialog>;

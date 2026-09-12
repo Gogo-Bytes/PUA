@@ -1,5 +1,5 @@
-import { useWorkspace, useSessionInput, useSessionPresentation } from '../features/workspace';
-import { useSessionLaunchController } from '../features/session-launch';
+import { useWorkspace, useSessionInput } from '../features/workspace';
+import { useSessionLaunchController, useSessionPresentation } from '../features/sessions';
 import { useCommandPalette } from '../features/command-palette';
 import { desktopClient, isDesktopAvailable } from './desktop-client';
 import { useDesktopPresentation } from './useDesktopPresentation';
