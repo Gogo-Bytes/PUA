@@ -1,10 +1,10 @@
 # PUA 目标架构
 
-状态：**目标设计，进程入口与平台 Adapter 目录边界、shared/ipc 契约边界、首批 IPC / 验证基线、Session 核心及 Conversation send/attachment、runtime stop/activity/waiting、stream/tool/history、Change Review、Preferences、用户安装 runtime/environment 与 renderer Workspace/领域 presentation 路径有限落地，非全量重构完成**。本文是后续架构重构、新模块设计和代码评审的规范来源；当前已实现行为仍以代码、测试、[现行架构](architecture.md) 和 [原生对话设计](native-chat-design.md) 为准。
+状态：**目标设计；用户授权的非 UI 源码结构迁移已形成 checkpoint，全量重构与运行验收未完成**。进程入口、平台 Adapter、shared/ipc、领域 Module、main composition 与 renderer app/Feature 路径已归位；当前已实现行为仍以代码、测试、[现行架构](architecture.md) 和 [原生对话设计](native-chat-design.md) 为准。
 
-本批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。发布入口经 verify 只构建一次；生命周期当前仅 macOS 验证，其他平台明确阻塞发布，不代表 release matrix 完成。首批当时兼容 Promise 成功值/异常；后续 [DesktopResult/client 有限 vertical](desktop-client-contract.md) 已实现结构化结果与统一 renderer seam，旧 `contracts.ts` 与其余 shared 顶层契约入口也已删除，Desktop、Conversation 与 Change Review DTO 由 `shared/ipc` 单一声明。未设上限的字符串策略仍未实施。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 均未完成；阶段 3 仅 send/attachment、runtime stop/activity/waiting 与 stream/tool/history 有限落地，不能将首批有限落地视为 Spec P1 全完成；renderer 已按用户授权条件解冻，生产 App/Workspace 状态及 Session/Conversation/Terminal/Change Review/Workspace presentation 路径已有限归位；原 `ui`、`modules`、44 项组件/demo 保护集合及视觉参考依赖闭包原位原字节保留，正式 UI 未替换，不删除后续 UI 收敛目标。具体范围与验证限制见 [现行架构的首批状态](architecture.md#desktop-ipc-首批重构有限落地)。
+首批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。后续结构批次又退休旧 `src/main` 与 shared 顶层契约，归位 app/preload/workers/platform/modules/renderer features，并将 main create/attachment 用例从具体 process Adapter 去耦。`SessionProcessAdapter` 作为单 registry、多窄 Port 的物理资源 owner 有意保留，只有 composition root 构造；不为目录对称拆出共享 registry 或浅代理。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 仍未完成；阶段 3 已落地 send/attachment、runtime stop/activity/waiting 与 stream/tool/history，但未获本轮运行验证。原 `ui`、`modules`、44 项组件/demo 保护集合及视觉参考依赖闭包保留，正式 UI 未替换。具体结构 checkpoint 与验证限制见 [现行架构](architecture.md#非-ui-结构迁移-checkpoint)。
 
-有限收尾首包现完成 strict Pi response 代码与纯验证：pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约，真实 Fake worker→main token/renderer 草稿失败链闭合。这是安全契约修正，不是未知助手缺失 P0 修复。实际兼容来源、验证限制和累计提交依赖见 [Strict Pi 收尾](architecture.md#strict-pi-response有限协议收尾)。strict Pi checkpoint 已提交为 `e709f4d`。后续 DesktopResult/client 的有限代码契约现已闭合，范围与验证限制见 [契约说明](desktop-client-contract.md)；该 vertical 已提交为 `e7b5fa8`。App 必要 continuation 已按下述阶段 4 有限收口并提交为 `1d9c491`。其后的进程边界归位只完成源码移动、import/URL/config/静态门禁与文档更新；再后的 contracts 退休批次只迁 canonical type import、删除兼容入口并增加静态门禁；renderer 领域 presentation 批次只移动文件、拆分既有 helper 职责并更新公开入口；shared 边界批次将剩余跨进程 DTO/验证/诊断 codec 归入 `shared/ipc`，并将 renderer-only scope 投影归入 Change Review feature；Session presentation consolidation 将 launch/form/rename 归入 `features/sessions`，Workspace 继续只持 selection/input/navigation。以上纯迁移批次均按用户要求未运行自动测试、构建、typecheck、smoke 或应用。Preferences 可变引用 alias 行为修正及门禁、bounds/UI/真实验收/发布目标均未完成。
+Strict Pi response checkpoint `e709f4d` 完成 pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约；DesktopResult/client vertical `e7b5fa8` 完成结构化结果与统一 renderer seam；App continuation checkpoint `1d9c491` 完成窗口工作流归位。后续纯迁移批次完成进程与 platform 路径、shared/ipc、renderer 领域 presentation、Session presentation 与 use case Port 去具体化，未改产品功能。按用户要求，这些后续批次未运行自动测试、构建、typecheck、smoke 或应用，不能将静态 checkpoint 当作行为证明。Preferences 可变引用 alias 行为、bounds、生产 UI、真实验收与发布目标均未完成。
 
 ## 1. 目标与适用范围
 
@@ -438,6 +438,12 @@ Electron smoke
 
 允许大型重构，但实施必须保持可验证的增量。禁止只移动目录却保留原耦合，也禁止在同一步同时重写协议、领域规则和视觉系统。
 
+### 当前非 UI 结构 checkpoint
+
+用户授权范围内的非 UI 源码结构迁移已经完成：进程入口、领域 owner、平台 Adapter、IPC 契约、main composition 与 renderer Feature 均可按当前树定位，旧路径和兼容胶水已删除。目标目录是职责示意，不要求创建空 Workspace backend/application、Terminal 转发 application class、单实现 infrastructure/ports 目录，也不要求拆分持有唯一 registry 的 `SessionProcessAdapter`。
+
+该 checkpoint 未执行 typecheck、自动测试、build、Electron/Pi/lifecycle smoke 或应用，不满足阶段 2–5 的行为验收和发布条件。下一阶段按用户顺序处理 UI/design-system/`renderer/modules`/Demo 的生产收敛；formatter、完整 lint、运行验证和跨平台 release matrix 仍是独立门禁。不得将此状态写成全量目标架构完成。
+
 ### 阶段 0：冻结事实
 
 完成条件：
@@ -505,7 +511,7 @@ create 的 add → close/reset → hide search → fire-and-forget refresh、ren
 
 Change Review 代码与纯验证已有限闭合：`modules/change-review` 独占 scope、最新 snapshot destination 成员准入与 tracked/untracked 选择；两个语义 Port 后的 `platform/git/review-adapter.ts` 保留命令/parser/clock、路径与 descriptor 安全、原单位截断和错误。IPC edge 映射独立值/稳定业务失败到冻结 DTO/中文异常，shared scope helper 只作 renderer projection，并以矩阵对照约束。snapshot 非事务，无缓存/锁/重试。旧 `main/git.ts` 与旧 import 已删除，retired build 清单在前八条上只加 git.js/map。实际白名单 Fake/源码 golden、类型/AST/冻结及纯 build 静态证据见 [Change Review 当前状态](architecture.md#change-review规则与-git-adapter-有限提取)。
 
-Preferences 后续已有限提取：`modules/preferences` 独占 current、owned recents 与成功发布，`platform/filesystem/preferences-storage.ts` 仅持 JSON/fs/串行 IO queue，无第二 current。main 保留 runtime/bootstrap DTO 与创建后写失败的 Session close/unwrap 补偿；窄 completion 回调保留 publish→bootstrap 和 write failure→close 的 continuation。shared schema 仍在 IPC/disk 边缘，默认 JSON merge、同步校验/调用时 validated snapshot 与既有可变引用局限均保留；queue 不给并发 save/create 提供事务、锁或全局线性化。旧 `main/preferences.ts`/imports 已删除，retired 清单在前十项上只加 preferences.js/map。实际纯 Fake/golden 与静态证据见 [Preferences 当前状态](architecture.md#preferences桌面状态与磁盘-adapter-有限提取)。用户安装定位/环境已有限归位 `platform/pi/{runtime/discovery,process/environment}.ts`，home expansion 在 `platform/filesystem/expand-home.ts`，Chat 参数 policy 在现有 main 创建边缘；旧 `main/runtime.ts` 已退休，无 Runtime/Workspace 空业务层。resource/preparation 本体后续已归位 `platform/filesystem/{project-resources,session-preparation}.ts`，旧 main 源/imports 删除，复用 expand-home；扫描/异步准备与 app 的 UUID/reserve/register/open 顺序不变，无通用 FS 或空 Workspace 层。Workspace 真实状态现有限收归 renderer feature，未新增后端 Workspace；当前状态见阶段 4。其余 platform/worker、renderer/UI 与发布治理仍未完成；真实 Git/fs、桌面/原生对话、跨平台发布与原 browser 红项未运行、未验收。不是阶段 5 完成。
+Preferences 后续已有限提取：`modules/preferences` 独占 current、owned recents 与成功发布，`platform/filesystem/preferences-storage.ts` 仅持 JSON/fs/串行 IO queue，无第二 current。main 保留 runtime/bootstrap DTO 与创建后写失败的 Session close/unwrap 补偿；窄 completion 回调保留 publish→bootstrap 和 write failure→close 的 continuation。shared schema 仍在 IPC/disk 边缘，默认 JSON merge、同步校验/调用时 validated snapshot 与既有可变引用局限均保留；queue 不给并发 save/create 提供事务、锁或全局线性化。旧 `main/preferences.ts`/imports 已删除，retired 清单在前十项上只加 preferences.js/map。实际纯 Fake/golden 与静态证据见 [Preferences 当前状态](architecture.md#preferences桌面状态与磁盘-adapter-有限提取)。用户安装定位/环境已有限归位 `platform/pi/{runtime/discovery,process/environment}.ts`，home expansion 在 `platform/filesystem/expand-home.ts`，Chat 参数 policy 在现有 main 创建边缘；旧 `main/runtime.ts` 已退休，无 Runtime/Workspace 空业务层。resource/preparation 本体后续已归位 `platform/filesystem/{project-resources,session-preparation}.ts`，旧 main 源/imports 删除，复用 expand-home；扫描/异步准备与 app 的 UUID/reserve/register/open 顺序不变，无通用 FS 或空 Workspace 层。Workspace 真实状态现归 renderer feature，未新增后端 Workspace；其余非 UI platform/worker/renderer 结构也已在后续 checkpoint 归位。生产 UI 与发布治理仍未完成；真实 Git/fs、桌面/原生对话、跨平台发布与原 browser 红项未运行、未验收。不是阶段 5 完成。
 
 完成条件：
 
@@ -542,7 +548,7 @@ Preferences 后续已有限提取：`modules/preferences` 独占 current、owned
 | `src/renderer/ui` | 唯一通用 UI 系统，清除业务与 preview 内容 |
 | `src/renderer/modules` | 按所属领域迁入 `renderer/features/*` 或下沉到 `renderer/ui`；不保留模糊聚合目录 |
 
-此表是迁移入口，不是机械的一对一搬运清单。移动前先确认所有权和 Interface，移动后删除旧路径。
+此表记录当前归属并指导后续维护，不是机械的一对一搬运清单。目标树中的可选空层不构成待办；只有新的职责或真实变化点出现时才创建。移动前先确认所有权和 Interface，移动后删除旧路径。
 
 ## 15. Agent 执行协议
 

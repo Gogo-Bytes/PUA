@@ -12,6 +12,14 @@ PTY/xterm 不再是主界面，但仍是一个真实 adapter：RPC 明确无法�
 
 当前结构迁移已退休 `src/main`：main composition 位于 `src/app/main`，sandbox preload 唯一入口位于 `src/app/preload/desktop-api.cts`，两个 utility 入口位于 `src/app/workers/{pi-rpc,pty}.worker.ts`；Electron utility 资源 Adapter、Pi RPC helper、PTY 流控和进程树分别位于 `src/platform/electron/utility`、`src/platform/pi/rpc`、`src/platform/pty` 与 `src/platform/process`。`Terminal` 窄 Interface 位于 `src/modules/terminal/index.ts`。跨进程 DTO、事件、验证器与诊断 metadata codec 全部位于 `src/shared/ipc`，`src/shared` 顶层源码路径已退休；Change Review 的 renderer scope 投影归 `renderer/features/change-review/scope.ts`。renderer composition root 现为 `src/renderer/app/App.tsx`，旧顶层 `src/renderer/App.tsx` 已删除且无兼容转发。这些批次只移动职责与修正 import/URL/config，不改变 Session/Conversation 状态所有权或 IPC 契约；按用户要求未运行自动测试、构建、typecheck、smoke 或应用，不能据此声称运行验证通过。
 
+## 非 UI 结构迁移 checkpoint
+
+用户授权的非 UI 源码结构迁移现已完成：main、preload、utility worker 与 renderer 入口可按进程定位；Electron、Pi RPC、PTY、Git、filesystem 与 process 实现位于 `platform` Adapter；Session、Conversation、Change Review、Preferences、Terminal 通过各自 `modules/*/index.ts` 暴露；renderer 的 Workspace、Sessions、Conversation、Terminal、Change Review、Preferences 已按 Feature 归位；跨进程契约集中在 `shared/ipc`。旧入口和兼容转发已删除，边界脚本覆盖已退休路径、core → platform、跨 Feature 深层引用及 main use case → 具体 process Adapter 等主要漂移。
+
+`SessionProcessAdapter` 有意保留为单个物理资源 registry 对多个窄 Port 的实现：只有 `app/main/composition.ts` 构造具体类，create 与 attachment 用例只依赖各自 Port。拆出多个 class 会触及 pending、cleanup、附件、activity 与进程生命周期，或引入共享 registry/浅代理，因此不属于本 checkpoint 的安全结构迁移。`app/main/{create-session,chat-attachments}.ts` 同样保留为跨 Session、Conversation 与资源边界的 composition-edge 编排；不为目录对称增加空 Workspace backend、Terminal 转发 application class 或单实现空层。
+
+该 checkpoint 只基于源码 read/search/diff 静态审查。迁移后的 TypeScript 模块解析、构建产物路径、Electron/Pi/PTY 生命周期和真实桌面行为均未执行验证。后续范围是生产 UI/design-system/`renderer/modules`/Demo 接入，以及 formatter、完整 lint、typecheck、自动测试、build、smoke 和跨平台 release matrix；因此这不是全量目标架构完成、行为验收或发布完成。
+
 ## 进程与依赖方向
 
 ```text
@@ -50,7 +58,7 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 
 生命周期 fixture 必须收到普通与 detached 两个后代的 readiness 确认后，才回复不兼容 handshake。旧 fixture 先回复、产品随即正常清理，后代可能尚未登记 ready，导致 `Pi and both descendant fixtures started` 少于 3；该竞态在 `a4fb717` 也可复现，不是本批 IPC 新增的产品清理回归。spawn 日志独立于 ready 日志，异常清理也能识别迟缓后代；每场景限制启动、运行与清理时长，保持三进程已启动及全部退出断言，且先验证产品清理再兜底回收。`test:desktop` 会触及系统剪贴板，`test:pi` 会定位真实用户 Pi，二者不在本批无副作用默认门禁内。
 
-本批不是阶段 0 或 Spec P1 全完成：formatter、完整 lint、完整产品 smoke、preview-only export 清理、UI 迁移、跨平台发布矩阵尚未落地；Session 完整桌面验收/Conversation 提取、结构化 IPC 结果及未设上限的参数长度策略仍待后续。旧类型兼容入口已在后续架构批次删除。UI 统一由用户冻结后置。此前单次 IPC timeout 未建立根因，本轮通过不构成其已修复的证据。现有组件预览浏览器检查仍是独立验收，冻结前已经失败的项必须保留并报告；不能通过修改冻结文件或减少脚本覆盖使本批变绿。构建仍有既有大 chunk 告警。
+首批当时不是阶段 0 或 Spec P1 全完成：formatter、完整 lint、完整产品 smoke、preview-only export 清理、UI 迁移、跨平台发布矩阵尚未落地；当时尚欠的 Conversation 提取、结构化 IPC 结果与旧类型兼容入口已由后续有限批次落地，未设上限的参数长度策略及完整桌面验收仍待后续。UI 统一由用户冻结后置。此前单次 IPC timeout 未建立根因，本轮通过不构成其已修复的证据。现有组件预览浏览器检查仍是独立验收，冻结前已经失败的项必须保留并报告；不能通过修改冻结文件或减少脚本覆盖使本批变绿。构建仍有既有大 chunk 告警。
 
 ## DesktopResult / Renderer client（有限 vertical）
 
@@ -200,7 +208,7 @@ typed worker 子阶段当时保留的 `main/sessions.ts` 已由下述 compositio
 - worker 绝对路径由 composition 的 `../../main/{rpc-host,pty-host}.js` 按文件 URL 计算，编译后仍指向 dist/main。tsc 不删除已移除源的旧输出，当时 preload 纯 buildStart 只清理 `dist/main/sessions.js` 和 `.map`；本次 main 入口退休后的有限清单见下节，仍非完整 clean-build 治理。
 - 本轮验证使用新 Fake composition/create、纯 fs preparation mock、迁移后的 process adapter 与原 Session/Conversation/worker/IPC mock 白名单，三 tsc、AST（补 src/app 禁入与 channel seam）、44 冻结及全 renderer/hash、纯 build/静态输出链接检查。`tests/sessions.test.ts` 保留真实 fs characterization，仅迁移 Interface 与 typecheck，不执行；所有应用/产物、Electron/Pi/browser/外部 fixture、smoke/lifecycle/IPC 验收、verify/package/dist/dev 均未运行。具体命令与本轮证据在 `/tmp/pua-sessions-composition-*`，不以此前绿项代替本轮验证。
 
-这是删除过渡 facade 的有限完成，不是整个目标架构完成。阶段 2 桌面生命周期及阶段 3 原生对话待用户人工验收；后续 main 边缘拆分的当前状态见下节；后续 Git/Preferences 有限状态见下文；Workspace 与 renderer/UI 治理、其余 platform/worker 迁移仍未完成。该批当时保留的类型兼容入口已由后续架构批次删除。
+这是删除过渡 facade 的有限完成，不是整个目标架构完成。阶段 2 桌面生命周期及阶段 3 原生对话待用户人工验收；后续 main 边缘拆分的当前状态见下节；后续 Git/Preferences 有限状态见下文。该批当时尚欠的非 UI platform/worker、Workspace/renderer 路径与类型兼容入口已由后续结构迁移完成；UI 治理和运行验证仍后置。
 
 ## Main 启动 / 窗口 / lifecycle / menu / IPC（有限边缘拆分）
 
@@ -223,7 +231,7 @@ preload buildStart 的迁移清单只 rm `dist/main/` 下的 `sessions.js`、`ex
 
 本次验证仅三个 tsc、明确 Fake/静态白名单（真实注册函数、source bootstrap 的全部环境依赖 mock、窗口/菜单/关闭时序和真实 Session core + Fake Port）、扩展 app/platform AST 正负例、44 文件及全 renderer/AGENTS/依赖/Git 字节冻结、纯 build 与输出链接静态检查。原 IPC registrar/preload 白名单覆盖保留；rmSync 完全 mock 的构建清单测试不删除测试环境文件。证据与增量在 `/tmp/pua-main-boundaries-*`，初轮测试 Fake 时序/类型错误已修正并重跑，不引用旧批绿项。
 
-没有运行任何应用/desktop/Electron/Pi/browser/外部进程 fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或任何产物。原 smoke/deadline/lifecycle fixture/gate 源保持，旧真实 fs 测试未运行。原生菜单 Quit 和各平台退出事件顺序未实测，不能声称 native Quit 已证明先调用 window.close；桌面/原生对话、跨平台发布、既有浏览器红项仍待用户人工验收。Git/Preferences 在该边缘拆分批次未提取（后续有限状态见下文）；Workspace、其余 platform/worker、renderer/UI、格式/完整 lint 及旧类型入口不在该批，目标架构并未全量完成，构建既有大 chunk 告警仍在。
+没有运行任何应用/desktop/Electron/Pi/browser/外部进程 fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或任何产物。原 smoke/deadline/lifecycle fixture/gate 源保持，旧真实 fs 测试未运行。原生菜单 Quit 和各平台退出事件顺序未实测，不能声称 native Quit 已证明先调用 window.close；桌面/原生对话、跨平台发布、既有浏览器红项仍待用户人工验收。Git/Preferences 在该边缘拆分批次未提取（后续有限状态见下文）；该批当时尚欠的 Workspace、其余非 UI platform/worker、renderer 路径和旧类型入口已由后续结构迁移完成。UI、格式/完整 lint 与运行验证仍后置，目标架构并未全量完成，构建既有大 chunk 告警仍在。
 
 ## Change Review：规则与 Git Adapter 有限提取
 
@@ -242,7 +250,7 @@ Snapshot 是观察，不与后续 diff/read 原子一致；不缓存、不锁、
 
 **该 Change Review 批次未提取 Preferences**；后续实际状态见下节。其独立实施仍保留冻结 shared schema、原并发 snapshot 局限与 Session 补偿优先级，不管理 Pi auth/trust/config。
 
-未启动 app/桌面/Electron/Pi/browser/外部进程 fixture，未运行真实 Git/fs fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev 或全量 test。真实仓库与手工桌面/原生对话、原 browser 红项、跨平台发布仍待用户授权验收；Workspace、其余 platform/runtime/worker 迁移、renderer/UI 收敛、格式/完整 lint 和旧 shared 类型入口仍后置。该批仅 Change Review 代码与纯验证闭合，Preferences 后续有限状态见下节；两者不代表阶段 5 / 全量目标架构完成；构建既有大 chunk 告警保留。
+未启动 app/桌面/Electron/Pi/browser/外部进程 fixture，未运行真实 Git/fs fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev 或全量 test。真实仓库与手工桌面/原生对话、原 browser 红项、跨平台发布仍待用户授权验收；该批当时尚欠的 Workspace、其余非 UI platform/runtime/worker、renderer 路径和旧 shared 类型入口已由后续结构迁移完成。UI 收敛、格式/完整 lint 与运行验证仍后置。该批仅 Change Review 代码与纯验证闭合，Preferences 后续有限状态见下节；两者不代表阶段 5 / 全量目标架构完成；构建既有大 chunk 告警保留。
 
 ## Preferences：桌面状态与磁盘 Adapter 有限提取
 
@@ -261,7 +269,7 @@ module 保存成功后发布**原输入引用**，紧接窄 completion 回调生
 
 本批验证限于审查后的内存 Fake storage（真实实现 + 完全 mock fs）、真实 module 与 main runtime/Session Fake、原 sender → parser-before-effect 回归、AST 实际新路径正负例、三个 tsc、44 保护集合/Git a4fb717 字节与整 renderer/shared/范围外 SHA、纯 build/静态 emitted links。保存的迁移前 Store/workflow 源与迁移后真实组合通过全 Fake VM 比较结果、IO、publish→runtime、write failure→close 及并发 snapshot 序列；不执行 bootstrap/build 入口，VM 禁时钟/环境/未知 import，产品 fs 完全内存。证据与本轮相对 dirty-before 的增量位于 `/tmp/pua-preferences/` 和 `/tmp/pua-preferences.diff`。retired 精确清单前十项原序保留，仅追加 `dist/main/preferences.js`/`.map`，绝对路径、force、非 recursive/glob。
 
-未运行 app/desktop/Electron/Pi/browser、真实 fs/Git fixture、外部进程产品测试、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或任何产物；bootstrap Fake 文件只迁 mock/typecheck，未运行。桌面/原生对话人工验收、原 browser 红项、真实 IO 与跨平台发布仍欠；Workspace、其余 platform/runtime/worker、renderer/UI 收敛及格式/完整 lint 仍后置。该批当时保留的 shared/contracts 类型兼容入口已由后续架构批次删除。此为 Preferences 有限代码/纯验证，不是阶段 5 或全量目标架构完成，构建既有大 chunk 告警保留。
+未运行 app/desktop/Electron/Pi/browser、真实 fs/Git fixture、外部进程产品测试、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或任何产物；bootstrap Fake 文件只迁 mock/typecheck，未运行。桌面/原生对话人工验收、原 browser 红项、真实 IO 与跨平台发布仍欠；该批当时尚欠的 Workspace、其余非 UI platform/runtime/worker、renderer 路径和 shared/contracts 兼容入口已由后续结构迁移完成。UI 收敛、格式/完整 lint 与运行验证仍后置。此为 Preferences 有限代码/纯验证，不是阶段 5 或全量目标架构完成，构建既有大 chunk 告警保留。
 
 ## 用户安装 Runtime / 环境 / Home expansion（有限平台归位）
 
@@ -273,7 +281,7 @@ Chat 附加参数 exact/prefix policy 归已有 `app/main/desktop-preferences.ts
 
 验证仅 source VM 的真实 adapter + 人工 fs/os/env/platform（Windows 配套 win32 path）、保存的 dirty-before runtime 与新链路结果/IO 顺序 golden、具名纯 Fake resource/preparation/Preferences/Session/worker-protocol、AST 新路径正负例、三 tsc、44 保护集合与全 renderer/shared/范围外字节冻结、纯 build/静态输出链接。证据在 `/tmp/pua-platform-runtime-before`、`/tmp/pua-platform-runtime.{diff,status,freeze}` 与 `/tmp/pua-platform-runtime.logs/`；旧 core/chat 真实 fs characterization 仅迁 import/typecheck、不删断言、不执行，bootstrap/process-adapter 测试本批只迁 mock/typecheck。
 
-未运行 app/desktop/Electron/Pi/browser、真实 fs/Git 或外部进程 fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或产物。真实安装/OS、桌面原生对话与生命周期、原 browser 红项、跨平台发布仍欠验收；其余 worker/Pi adaptation、Workspace/UI、IPC 结构化结果与 bounds、格式/完整 lint-release 治理仍后置，不是完整阶段 3/5 或目标架构完成。
+未运行 app/desktop/Electron/Pi/browser、真实 fs/Git 或外部进程 fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev、全量 test 或产物。真实安装/OS、桌面原生对话与生命周期、原 browser 红项、跨平台发布仍欠验收；该批当时尚欠的 worker/Pi 目录、Workspace 与 IPC 结构化结果已由后续结构迁移完成。UI、bounds、格式/完整 lint-release 治理与运行验证仍后置，不是完整阶段 3/5 或目标架构完成。
 
 ## Project resources / Session preparation（有限 filesystem 归位）
 
@@ -297,7 +305,7 @@ App 保留 create/rename 请求及完成顺序、每会话草稿文本、command
 
 **纯验证与余项**：先在旧实现运行新增 selection 与真实 App + 内存 Fake Desktop/jsdom characterization，再在提取后重跑；Deferred 通过真实 dialog/tab/project/composer 操作覆盖 close/create 乱序、最新选择、false/reject、重复关闭、后台事件、草稿/附件身份与卸载订阅。隔离 stale-close 变异使三个选择断言失败；保存 before 源码 VM golden 对比纯状态输出/identity/输入不变。AST 门禁新增 selection 无依赖/宿主 global 禁令及 feature index seam，旧 backend 禁令不放宽。三个 tsc、component-preview tsc、明确 Fake/AST 白名单及隔离生产/preload/两套 preview 纯构建用于静态检查，不执行输出；当前运行 dist hash 保持。mixed `core/workspace-state` 的真实 fs 测试保留但不运行，前者仅迁 import/泛型类型，后者只迁出纯 Workspace 断言。
 
-证据在 `/tmp/pua-workspace-renderer-before`、`/tmp/pua-workspace-renderer.logs/`、`/tmp/pua-workspace-renderer.{diff,status,freeze,previewclosure}`，增量相对累计 dirty-before，不是 HEAD 清理。其余 renderer features、App composition-only、通用 UI 收敛、完整目标架构与真实产品 release matrix 仍欠；本批未操作/退出/重启用户应用，未运行 Electron/Pi/browser/真实 fs/Git fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev 或全量测试。用户普通模式粘贴、连续对话和切换手验通过的事实保留；助手回复缺失 P0 根因未定，纯测试不证明修复，也不宣新增 bugfix。
+证据在 `/tmp/pua-workspace-renderer-before`、`/tmp/pua-workspace-renderer.logs/`、`/tmp/pua-workspace-renderer.{diff,status,freeze,previewclosure}`，增量相对累计 dirty-before，不是 HEAD 清理。该批当时尚欠的 renderer Feature 与 App composition 路径已由后续结构迁移完成；通用 UI 收敛、完整目标架构与真实产品 release matrix 仍欠。本批未操作/退出/重启用户应用，未运行 Electron/Pi/browser/真实 fs/Git fixture、smoke/lifecycle/IPC 集成、verify/package/dist/dev 或全量测试。用户普通模式粘贴、连续对话和切换手验通过的事实保留；助手回复缺失 P0 根因未定，纯测试不证明修复，也不宣新增 bugfix。
 
 ## Session Presentation/Renderer 有限提取
 
@@ -311,7 +319,7 @@ App 仍决定 launch defaults/context 与设置跳转，保留 `createSession �
 
 后续 consolidation 只执行文件移动、import/index、静态边界、测试 source lookup 与文档更新；组件/hook 函数体、DOM/CSS/文案、状态、回调及异步/effect 行为不改。按用户要求未运行测试、npm、build、typecheck、smoke 或应用，仅做静态 read/search/diff 检查，因此模块解析与运行行为仍未执行确认。
 
-Settings 的后续 owner 见下节；palette、inspector、conversation presentation 与草稿等剩余 renderer 整理不在原提取批次；没有视觉替换或完整目标架构/桌面验收。用户普通模式粘贴/连续对话/切换手验事实不变，助手回复缺失 P0 根因未定，纯测试不宣称修复。
+Settings 的后续 owner 见下节；该批当时未整理的 palette、conversation presentation、草稿 owner 与 App composition 路径已由后续结构迁移完成，inspector 布局和视觉系统仍属后置 UI 范围。没有视觉替换或完整目标架构/桌面验收。用户普通模式粘贴/连续对话/切换手验事实不变，助手回复缺失 P0 根因未定，纯测试不宣称修复。
 
 ## Desktop settings/Renderer 有限提取
 
@@ -319,7 +327,7 @@ Settings 的后续 owner 见下节；palette、inspector、conversation presenta
 
 保留初始 `boot.preferences` 引用与 `JSON.stringify(args)`，props 更新只改变 live runtime display/callback，不重置 dirty draft。picker 完成 functional merge 最新字段，普通输入仍用 render closure；save 先 busy/清错，再原 JSON array/string-only 检查与 host 调用。保存结果原引用先 `onSave` 发布，再检查 runtimeError：有错误仍更新 App boot/theme，但保留 dialog 并恢复 busy；成功同 continuation close，回调抛错仍由原 catch 处理。关闭不取消 pending；synthetic 重复提交无额外锁，旧 save 成功可关闭后来重开的 dialog，乱序结果按完成顺序发布；这些既有限制没有借提取修复。
 
-验证为提取前保存源码 VM 的真实 dialog与旧 App、提取后 public index/真实 App 的同一 Fake Desktop/jsdom characterization，覆盖选文件 → parse → runtimeError 发布保留 → 修正保存关闭、theme/bootstrap 和迟到 completion；隔离变异证明 picker merge、发布顺序、初始引用、无锁和同 continuation close 的断言敏感。三 noEmit、具名 Fake/AST 白名单、44 文件与 27 节点视觉闭包、范围外/dist SHA、隔离生产/preload/两 preview 纯构建及静态链接通过；未执行输出或操作运行应用。辅助 workspace-preview 入口/fixture/config 不改，仅新增 preferences feature 传递依赖；无视觉整合、Electron/Pi/browser/真实 IO/桌面或全量验收。证据在 `/tmp/pua-renderer-settings-before`、`/tmp/pua-renderer-settings.{diff,status,logs,freezes,closure}`，增量相对本批 dirty-before。Rename/palette/inspector/conversation 与 App composition-only、目标架构和 release matrix 仍未完成；普通模式手验事实与助手缺失 P0 未定位的观察保持。
+验证为提取前保存源码 VM 的真实 dialog与旧 App、提取后 public index/真实 App 的同一 Fake Desktop/jsdom characterization，覆盖选文件 → parse → runtimeError 发布保留 → 修正保存关闭、theme/bootstrap 和迟到 completion；隔离变异证明 picker merge、发布顺序、初始引用、无锁和同 continuation close 的断言敏感。三 noEmit、具名 Fake/AST 白名单、44 文件与 27 节点视觉闭包、范围外/dist SHA、隔离生产/preload/两 preview 纯构建及静态链接通过；未执行输出或操作运行应用。辅助 workspace-preview 入口/fixture/config 不改，仅新增 preferences feature 传递依赖；无视觉整合、Electron/Pi/browser/真实 IO/桌面或全量验收。证据在 `/tmp/pua-renderer-settings-before`、`/tmp/pua-renderer-settings.{diff,status,logs,freezes,closure}`，增量相对本批 dirty-before。该批当时尚欠的 Rename、palette、conversation 与 App composition 路径已由后续结构迁移完成；inspector/UI、完整目标架构和 release matrix 仍未完成。普通模式手验事实与助手缺失 P0 未定位的观察保持。
 
 ## Command palette/Renderer 有限提取
 
@@ -331,7 +339,7 @@ App 保留草稿文本、Terminal handle 和原同步 insert：Chat 追加 newli
 
 验证先运行真实旧 App/ChatPane/TerminalPane/Modal 与 Fake Desktop/native xterm 的 jsdom characterization，再同字节断言重跑提取后实现；不 mock App、面板、ChatPane 或 Virtuoso。覆盖动态/后台/多 session、草稿追加与九条 Terminal 插入不执行、生命周期、platform/IME/modifiers/capture、过滤与焦点、同数组不重投影、throw 与旧附件 continuation；独立 public hook 测试补稳定 action/reference。隔离源码副本变异检查状态 reset、错误 session 来源及自动执行防线的断言敏感性；三 noEmit、具名 Fake/AST 白名单、44 项和 27 节点视觉闭包、范围外/current dist SHA、隔离生产及两 preview 纯构建与静态链接证据位于 `/tmp/pua-command-palette-before`、`/tmp/pua-command-palette.{diff,status,logs,freeze,closure}`。增量相对累计 dirty-before，未清理既有改动或 main 退休输出清单。证据局限：开始快照漏掉 Git ignored 的 57 项设计文档/素材，后经批准单独 late-capture；它们未被编辑是实施方陈述与当前快照，不冒充本批 before 字节证明。实际修改路径均在本批改前保存；44/27/dist129 检查不受此遗漏影响。
 
-原 ui/modules/component-preview 原位原字节；辅助 workspace-preview 入口/fixture/config 不改，仅随真实 App 增加 feature 依赖。未操作或重启运行应用，未执行产物、Electron/Pi/browser/真实 fs/Git fixture、smoke/lifecycle/IPC 集成、verify/dev/package/dist 或全量 test；静态构建不等于视觉/原生验收。Rename、inspector、conversation presentation/草稿与 App composition-only、完整目标架构/release matrix 仍欠。用户普通模式粘贴/对话/切换手验事实保留，助手缺失 P0 根因未定，不宣称修复。
+原 ui/modules/component-preview 原位原字节；辅助 workspace-preview 入口/fixture/config 不改，仅随真实 App 增加 feature 依赖。未操作或重启运行应用，未执行产物、Electron/Pi/browser/真实 fs/Git fixture、smoke/lifecycle/IPC 集成、verify/dev/package/dist 或全量 test；静态构建不等于视觉/原生验收。该批当时尚欠的 Rename、conversation presentation/草稿 owner 与 App composition 路径已由后续结构迁移完成；inspector/UI、完整目标架构和 release matrix 仍欠。用户普通模式粘贴/对话/切换手验事实保留，助手缺失 P0 根因未定，不宣称修复。
 
 ## Strict Pi response：有限协议收尾
 
