@@ -17,6 +17,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
   const errors: string[] = [];
   const renderer = relative.startsWith('src/renderer/');
+  const retiredRendererApp = relative === 'src/renderer/App.tsx';
   const retiredRendererPresentation = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const workspaceRoot = 'src/renderer/features/workspace/';
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
@@ -46,6 +47,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const report = (node: ts.Node, message: string) => errors.push(`${relative}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}: ${message}`);
   if (sharedRootSource) report(source, 'top-level src/shared contract sources are retired; cross-process contracts belong in src/shared/ipc');
   if (retiredSharedContracts) report(source, 'src/shared/contracts.ts is retired; desktop DTOs belong in src/shared/ipc/desktop-api.ts');
+  if (retiredRendererApp) report(source, 'src/renderer/App.tsx is retired; the renderer composition root belongs in src/renderer/app/App.tsx');
   if (retiredRendererPresentation) report(source, 'top-level renderer domain presentation paths are retired; use the owning renderer feature');
   if (appWorkerDirectory && !appWorker) report(source, 'src/app/workers contains only the pi-rpc and pty process entry files; helpers belong in platform adapters');
   const checkImport = (node: ts.Node, name: string) => {
@@ -57,6 +59,8 @@ export function checkSource(filename: string, text: string, root: string): strin
     const target = slash(path.relative(root, resolved ?? path.resolve(path.dirname(file), name)));
     const retiredSharedTarget = /^src\/shared\/(contracts|chat|chat-validation|git|missing-assistant-diagnostics)(?:\.[cm]?[jt]s)?$/.test(target);
     if (relative.startsWith('src/') && (retiredSharedImport || retiredSharedTarget)) report(node, 'top-level shared contract import is retired; import the canonical shared/ipc module directly');
+    const retiredRendererAppTarget = /^src\/renderer\/App(?:\.[cm]?[jt]sx?)?$/.test(target);
+    if (relative.startsWith('src/') && retiredRendererAppTarget) report(node, 'top-level renderer App import is retired; use renderer/app/App.tsx');
     const retiredRendererTarget = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererTarget) report(node, 'top-level renderer domain presentation import is retired; use the owning feature index');
     const targetFeature = /^src\/renderer\/features\/([^/]+)\/(.+)$/.exec(target);

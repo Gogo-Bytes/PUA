@@ -486,13 +486,13 @@ Electron smoke
 
 ### 阶段 4：按 Feature 重建 Renderer
 
-当前 App 必要工作流归属已有限收尾：`App.tsx` 仅 JSX/owner 连接、无业务窗口快捷路由与 inspector 纯 layout；无直接 host 请求、Promise continuation、draft/handle Map 或 create/rename 实现。`app/useWorkspaceComposition` 只组装真实 owner，无镜像 state、effect/ref 同步桥或整 App 改名容器。此为 composition-only 的必要职责完成，不要求局部展示无 state，也不表示下列阶段 4 全部完成条件已满足。
+当前 App 必要工作流归属已有限收尾：renderer composition root 已从旧 `renderer/App.tsx` 迁至 `renderer/app/App.tsx`，旧路径删除且无兼容转发；App 仅 JSX/owner 连接、无业务窗口快捷路由与 inspector 纯 layout，无直接 host 请求、Promise continuation、draft/handle Map 或 create/rename 实现。`app/useWorkspaceComposition` 只组装真实 owner，无镜像 state、effect/ref 同步桥或整 App 改名容器。该纯路径迁移按用户要求未运行自动测试、build、typecheck、smoke 或应用，只完成静态 read/search/diff 检查。此为 composition-only 的必要职责完成，不要求局部展示无 state，也不表示下列阶段 4 全部完成条件已满足。
 
 `app/useDesktopPresentation` 持窗口 boot/error/Settings open 和 refresh/publish，复用 useTheme；`features/session-launch/useSessionLaunchController` 持 context/defaults/create continuation，原 mount-local form/inspection/trust controller 保留；`features/workspace/useSessionPresentation` 与原样迁入的 RenameDialog 持 rename 提交身份/回写和 openProject。`useSessionInput` 持按 ID 草稿、活 TerminalHandle registry、search 与命令/引用路由；原 `useWorkspace` 仍唯一拥有 sessions/selection/events/close。palette 与 Settings draft 原 owner 不变，所有跨 feature caller 仍经 index。
 
 create 的 add → close/reset → hide search → fire-and-forget refresh、rename 提交时旧 identity、await-close 最新选择及同 continuation 草稿删除、附件旧目标/当前 registry、snapshot append、palette 正常插入才 reset、search 保留与 focus/media/IME/keyboard 注册顺序均保留。ChatPane revision/附件/消息、TerminalPane xterm lifetime、GitPanel 局部状态与 session.id panes 常驻语义不变；这些领域 presentation 及 reducer/helper 已在后续纯路径批次迁入 `features/{conversation,terminal,change-review,workspace}`，旧顶层路径删除且跨 Feature 调用经 index。backend Session/Conversation/Preferences 权威不迁 renderer。真实调用图、callback 稳定性与保留的异步局限见 [App composition 当前状态](architecture.md#app-composition窗口工作流归位有限代码收尾)。
 
-用户条件解冻只授权生产架构职责归位，不是视觉整合：原 ui/modules、44 项保护集合、27 节点视觉 demo 原字节及边闭包保留，辅助 workspace-preview 入口/fixture/config 不改，仅真实 App 传递依赖变化。后续领域路径归位批次同样不修改这些范围，并按用户要求不运行自动测试、build、typecheck、smoke 或应用，只做静态检查。顶层 `ContentView.tsx` 暂作 Conversation/Change Review 共享 presentation seam；生产 UI/Theme/Icon/Dialog 收敛、真实桌面/原生对话与跨平台验收仍未完成。
+用户条件解冻只授权生产架构职责归位，不是视觉整合：原 ui/modules、44 项保护集合、27 节点视觉 demo 原字节及边闭包保留；辅助 workspace-preview 的 fixture/config/行为不改，composition-root 归位时仅更新 App import 路径。后续领域路径归位批次同样不修改这些范围，并按用户要求不运行自动测试、build、typecheck、smoke 或应用，只做静态检查。顶层 `ContentView.tsx` 暂作 Conversation/Change Review 共享 presentation seam；生产 UI/Theme/Icon/Dialog 收敛、真实桌面/原生对话与跨平台验收仍未完成。
 
 完成条件：
 
@@ -532,7 +532,7 @@ Preferences 后续已有限提取：`modules/preferences` 独占 current、owned
 | 已删除 `src/main/preferences.ts`；现 `modules/preferences` + `platform/filesystem/preferences-storage.ts` | 唯一 current/owned recents 与磁盘兼容/串行 IO 分离；main 保留 runtime/DTO/Session 补偿 |
 | 已删除 `src/main/preload.cts`；现 `src/app/preload/desktop-api.cts` | 唯一 sandbox preload entry，构建输出为 `dist/app/preload/preload.cjs` |
 | 已删除 `src/shared/{contracts,chat,chat-validation,git,missing-assistant-diagnostics}.ts`；现 `src/shared/ipc/{desktop-api,conversation,conversation-validation,change-review,missing-assistant-diagnostics}.ts` | 跨进程 DTO、事件、验证与诊断 metadata codec 由 IPC seam 单一声明；无 shared 顶层兼容入口 |
-| `src/renderer/App.tsx` | `renderer/app` composition + `renderer/features/*` |
+| 已删除 `src/renderer/App.tsx`；现 `src/renderer/app/App.tsx` | renderer composition root，连接 `renderer/app` owner 与 `renderer/features/*` |
 | 已删除顶层 `src/renderer/ChatPane.tsx`；现 `src/renderer/features/conversation/{ChatPane,chat-state,missing-assistant-diagnostics}.ts(x)` | Conversation Presentation、投影 reducer 与 renderer 诊断，公开入口为 feature index |
 | 已删除顶层 `src/renderer/TerminalPane.tsx` / `terminal-keys.ts`；现 `src/renderer/features/terminal` | Terminal Presentation 与 modified Enter 协议适配，公开入口为 feature index |
 | 已删除顶层 `src/renderer/GitPanel.tsx` / `diff-lines.ts`；现 `src/renderer/features/change-review` | Change Review Presentation、diff 与 scope projection，公开入口为 feature index |

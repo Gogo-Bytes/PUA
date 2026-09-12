@@ -2,7 +2,7 @@
 // No Pi process, filesystem access, model request, simulated streaming or timers.
 import { installDesktopFake } from './desktop-bridge-fake';
 import { createRoot } from 'react-dom/client';
-import { App } from '../src/renderer/App';
+import { App } from '../src/renderer/app/App';
 import type { DesktopAPI, Preferences, SessionInfo } from '../src/shared/ipc/desktop-api';
 import type { SessionEvent } from '../src/shared/ipc/conversation';
 import '../src/renderer/styles.css';

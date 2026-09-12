@@ -22,7 +22,7 @@ vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} } }));
 vi.mock('@xterm/addon-search', () => ({ SearchAddon: class { findNext = terminal.search; findPrevious = terminal.search; clearDecorations() {} } }));
 vi.mock('@xterm/addon-image', () => ({ ImageAddon: class {} }));
 vi.mock('@xterm/addon-web-links', () => ({ WebLinksAddon: class {} }));
-import { App } from '../../../../src/renderer/App';
+import { App } from '../../../../src/renderer/app/App';
 let boot: Bootstrap, listeners: Set<(event: SessionEvent) => void>;
 const flush = async () => { await act(async () => {}); };
 const emit = (event: SessionEvent) => act(() => listeners.forEach(listener => listener(event)));

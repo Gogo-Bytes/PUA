@@ -12,16 +12,16 @@ describe('TypeScript import/channel gate', () => {
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`, `import value = require('${target}')`].map(source => ['src/renderer/features/workspace/selection.ts', source])),
     ...['window.desktop', 'document.title', 'process.env', 'Buffer.alloc(1)', 'type T = NodeJS.Timeout', 'globalThis.window', 'globalThis["document"]', 'globalThis[name]', '__dirname', 'setImmediate(callback)', 'import(name)'].map(source => ['src/renderer/features/workspace/selection.ts', source]),
     ...['selection', 'useWorkspace'].flatMap(name =>
-      [`import './features/workspace/${name}'`, `export * from './features/workspace/${name}'`, `import type { Value } from './features/workspace/${name}'`, `type Value = import('./features/workspace/${name}').Value`, `require('./features/workspace/${name}')`, `import('./features/workspace/${name}')`].map(source => ['src/renderer/App.tsx', source])),
+      [`import '../features/workspace/${name}'`, `export * from '../features/workspace/${name}'`, `import type { Value } from '../features/workspace/${name}'`, `type Value = import('../features/workspace/${name}').Value`, `require('../features/workspace/${name}')`, `import('../features/workspace/${name}')`].map(source => ['src/renderer/app/App.tsx', source])),
     ...['NewSessionDialog', 'useNewSessionLaunch'].flatMap(name =>
-      [`import './features/session-launch/${name}'`, `export * from './features/session-launch/${name}'`, `import type { Value } from './features/session-launch/${name}'`, `type Value = import('./features/session-launch/${name}').Value`, `require('./features/session-launch/${name}')`, `import('./features/session-launch/${name}')`, `import value = require('./features/session-launch/${name}')`].map(source => ['src/renderer/App.tsx', source])),
+      [`import '../features/session-launch/${name}'`, `export * from '../features/session-launch/${name}'`, `import type { Value } from '../features/session-launch/${name}'`, `type Value = import('../features/session-launch/${name}').Value`, `require('../features/session-launch/${name}')`, `import('../features/session-launch/${name}')`, `import value = require('../features/session-launch/${name}')`].map(source => ['src/renderer/app/App.tsx', source])),
     ...['CommandPalette', 'useCommandPalette'].flatMap(name =>
-      [`import './features/command-palette/${name}'`, `export * from './features/command-palette/${name}'`, `import type { Value } from './features/command-palette/${name}'`, `type Value = import('./features/command-palette/${name}').Value`, `require('./features/command-palette/${name}')`, `import('./features/command-palette/${name}')`, `import value = require('./features/command-palette/${name}')`].map(source => ['src/renderer/App.tsx', source])),
+      [`import '../features/command-palette/${name}'`, `export * from '../features/command-palette/${name}'`, `import type { Value } from '../features/command-palette/${name}'`, `type Value = import('../features/command-palette/${name}').Value`, `require('../features/command-palette/${name}')`, `import('../features/command-palette/${name}')`, `import value = require('../features/command-palette/${name}')`].map(source => ['src/renderer/app/App.tsx', source])),
     ['src/renderer/features/command-palette/CommandPalette.tsx', "import '../workspace/useWorkspace'"],
     ...['node:fs', 'electron', '../../../platform/filesystem/preferences-storage', '../../../modules/conversation/index', '../../../app/main/composition', '../../../app/main/session-mapper'].flatMap(target =>
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/renderer/features/command-palette/useCommandPalette.ts', source])),
     ...['SettingsDialog', 'useSettingsDraft'].flatMap(name =>
-      [`import './features/preferences/${name}'`, `export * from './features/preferences/${name}'`, `import type { Value } from './features/preferences/${name}'`, `type Value = import('./features/preferences/${name}').Value`, `require('./features/preferences/${name}')`, `import('./features/preferences/${name}')`, `import value = require('./features/preferences/${name}')`].map(source => ['src/renderer/App.tsx', source])),
+      [`import '../features/preferences/${name}'`, `export * from '../features/preferences/${name}'`, `import type { Value } from '../features/preferences/${name}'`, `type Value = import('../features/preferences/${name}').Value`, `require('../features/preferences/${name}')`, `import('../features/preferences/${name}')`, `import value = require('../features/preferences/${name}')`].map(source => ['src/renderer/app/App.tsx', source])),
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import '../preferences/useSettingsDraft'"],
     ['src/renderer/features/preferences/SettingsDialog.tsx', "import '../workspace/useWorkspace'"],
     ...['node:fs', 'electron', '../../../platform/filesystem/preferences-storage', '../../../modules/preferences/index', '../../../app/main/desktop-preferences', '../../../app/main/session-mapper'].flatMap(target =>
@@ -32,31 +32,33 @@ describe('TypeScript import/channel gate', () => {
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/renderer/features/session-launch/useNewSessionLaunch.ts', source])),
     ['src/renderer/features/workspace/useWorkspace.ts', "import '../../../modules/sessions/index.js'"],
     ...['workspace/WorkspaceNavigation', 'conversation/ChatPane', 'conversation/chat-state', 'terminal/TerminalPane', 'terminal/terminal-keys', 'change-review/GitPanel', 'change-review/diff-lines'].map(target =>
-      ['src/renderer/App.tsx', `import './features/${target}'`]),
+      ['src/renderer/app/App.tsx', `import '../features/${target}'`]),
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace/reference-paths'"],
+    ['src/renderer/App.tsx', 'export {}'],
+    ['src/renderer/main.tsx', "import './App'"],
     ...['WorkspaceNavigation', 'ChatPane', 'chat-state', 'missing-assistant-diagnostics', 'TerminalPane', 'terminal-keys', 'GitPanel', 'diff-lines'].flatMap(target => [
       [`src/renderer/${target}${/^[A-Z]/.test(target) ? '.tsx' : '.ts'}`, 'export {}'],
-      ['src/renderer/App.tsx', `import './${target}'`],
+      ['src/renderer/app/App.tsx', `import '../${target}'`],
     ]),
     // Platform/application boundary probes below are synthetic forbidden imports, not callers.
     ...['project-resources', 'session-preparation'].flatMap(name =>
-      ['../../app/main/composition.js', '../../app/main/session-mapper.js', '../../renderer/App.js', '../../modules/sessions/index.js', '../pi/runtime/discovery.js', '../electron/ipc/registrar.js', 'electron', 'react'].flatMap(target =>
+      ['../../app/main/composition.js', '../../app/main/session-mapper.js', '../../renderer/app/App.js', '../../modules/sessions/index.js', '../pi/runtime/discovery.js', '../electron/ipc/registrar.js', 'electron', 'react'].flatMap(target =>
         [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => [`src/platform/filesystem/${name}.ts`, source]))),
     ...['project-resources', 'session-preparation'].flatMap(name => [
       [`src/platform/filesystem/${name}.ts`, 'import(name); require(name)'],
-      ['src/renderer/App.tsx', `import '../platform/filesystem/${name}.js'`],
+      ['src/renderer/app/App.tsx', `import '../../platform/filesystem/${name}.js'`],
       ['src/shared/ipc/desktop-api.ts', `import '../../platform/filesystem/${name}.js'`],
       ['src/modules/sessions/application/session-coordinator.ts', `import '../../../platform/filesystem/${name}.js'`],
     ]),
     ['src/platform/filesystem/session-preparation.ts', "import type { SessionInfo } from '../../shared/ipc/desktop-api.js'"],
     ...['src/platform/pi/runtime/discovery.ts', 'src/platform/pi/process/environment.ts'].flatMap(file =>
-      ['../../../app/main/desktop-preferences.js', '../../filesystem/session-preparation.js', '../../../renderer/App.js', '../../../shared/ipc/desktop-api.js', '../../../modules/preferences/index.js', '../../electron/ipc/registrar.js', 'electron', 'node-pty', 'node:child_process', 'child_process', 'node:worker_threads'].flatMap(target => [
+      ['../../../app/main/desktop-preferences.js', '../../filesystem/session-preparation.js', '../../../renderer/app/App.js', '../../../shared/ipc/desktop-api.js', '../../../modules/preferences/index.js', '../../electron/ipc/registrar.js', 'electron', 'node-pty', 'node:child_process', 'child_process', 'node:worker_threads'].flatMap(target => [
         [file, `import '${target}'`], [file, `export * from '${target}'`], [file, `import type { Value } from '${target}'`], [file, `type Value = import('${target}').Value`], [file, `require('${target}')`], [file, `import('${target}')`],
       ])),
-    ...['../pi/runtime/discovery.js', '../pi/process/environment.js', '../../app/main/desktop-preferences.js', './session-preparation.js', '../../renderer/App.js', 'electron'].flatMap(target =>
+    ...['../pi/runtime/discovery.js', '../pi/process/environment.js', '../../app/main/desktop-preferences.js', './session-preparation.js', '../../renderer/app/App.js', 'electron'].flatMap(target =>
       [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/platform/filesystem/expand-home.ts', source])),
     ...['pi/runtime/discovery.js', 'pi/process/environment.js', 'filesystem/expand-home.js'].flatMap(target => [
-      ['src/renderer/App.tsx', `import '../platform/${target}'`],
+      ['src/renderer/app/App.tsx', `import '../../platform/${target}'`],
       ['src/shared/ipc/desktop-api.ts', `import '../../platform/${target}'`],
     ]),
     ['src/platform/pi/runtime/discovery.ts', 'import(name); require(name)'],
@@ -73,7 +75,7 @@ describe('TypeScript import/channel gate', () => {
     ['src/modules/preferences/index.ts', "export * from '../../shared/ipc/desktop-api.js'"],
     ['src/modules/preferences/application/preferences-application.ts', "const lazy = import(name); require(name); globalThis['process'].env; Buffer.alloc(1); const timer: NodeJS.Timeout = process.timer"],
     ['src/platform/filesystem/preferences-storage.ts', "import type { PreferenceValues } from '../../modules/preferences/ports.js'"],
-    ...['../../app/main/bootstrap.js', '../pi/runtime/discovery.js', '../../renderer/App.js', '../electron/ipc/registrar.js', 'electron', 'react'].map(target => ['src/platform/filesystem/preferences-storage.ts', `import '${target}'`]),
+    ...['../../app/main/bootstrap.js', '../pi/runtime/discovery.js', '../../renderer/app/App.js', '../electron/ipc/registrar.js', 'electron', 'react'].map(target => ['src/platform/filesystem/preferences-storage.ts', `import '${target}'`]),
     ...['src/renderer/bad.ts', 'src/shared/bad.ts'].map(file => [file, "import { PreferencesApplication } from '../modules/preferences/index.js'"]),
     ['src/modules/change-review/domain/review.ts', "import type { GitStatus } from '../../../shared/ipc/change-review.js'"],
     ['src/modules/change-review/domain/review.ts', "import { lstat } from 'node:fs/promises'"],
@@ -81,9 +83,9 @@ describe('TypeScript import/channel gate', () => {
     ['src/modules/change-review/application/change-review.ts', "import type { Pi } from '@mariozechner/pi-ai'"],
     ['src/modules/change-review/ports.ts', "const lazy = import(name); Buffer.alloc(1); process.env"],
     ['src/platform/electron/ipc/change-review-mapper.ts', "import type { ReviewFile } from '../../../modules/change-review/domain/review.js'"],
-    ...['../../shared/ipc/change-review.js', '../../app/main/bootstrap.js', '../../renderer/App.js', 'electron'].map(target => ['src/platform/git/review-adapter.ts', `import '${target}'`]),
+    ...['../../shared/ipc/change-review.js', '../../app/main/bootstrap.js', '../../renderer/app/App.js', 'electron'].map(target => ['src/platform/git/review-adapter.ts', `import '${target}'`]),
     ...['app/main/bootstrap.js', 'app/main/lifecycle.js', 'app/main/create-window.js', 'app/main/menu.js', 'platform/electron/ipc/register-desktop-ipc.js', 'platform/electron/ipc/registrar.js'].flatMap(target =>
-      [['src/renderer/App.tsx', `../${target}`], ['src/shared/ipc/desktop-api.ts', `../../${target}`]].flatMap(([file, specifier]) => [
+      [['src/renderer/app/App.tsx', `../../${target}`], ['src/shared/ipc/desktop-api.ts', `../../${target}`]].flatMap(([file, specifier]) => [
         [file, `import { value } from '${specifier}'`], [file, `export * from '${specifier}'`],
         [file, `import type { Value } from '${specifier}'`], [file, `type Value = import('${specifier}').Value`],
         [file, `require('${specifier}')`], [file, `import('${specifier}')`],
@@ -234,21 +236,21 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/workspace/selection.ts', '// window.desktop; process.env; import React from "react";\ninterface WorkspaceSession { id: string; cwd: string }; const label = "document"'],
     ['src/renderer/features/workspace/useWorkspace.ts', "import { useState } from 'react'; import type { DesktopAPI } from '../../../shared/ipc/desktop-api'; import { selectSession } from './selection'"],
     ['src/renderer/features/workspace/index.ts', "export { useWorkspace } from './useWorkspace'; export { selectSession } from './selection'"],
-    ['src/renderer/App.tsx', "import { CommandPalette, useCommandPalette } from './features/command-palette'"],
+    ['src/renderer/app/App.tsx', "import { CommandPalette, useCommandPalette } from '../features/command-palette'"],
     ['src/renderer/features/command-palette/index.ts', "export { CommandPalette } from './CommandPalette'; export { useCommandPalette } from './useCommandPalette'"],
     ['src/renderer/features/command-palette/CommandPalette.tsx', "import { Modal } from '../../Modal'; import type { useCommandPalette } from './useCommandPalette'"],
     ['src/renderer/features/command-palette/useCommandPalette.ts', "import { useCallback, useState } from 'react'; import type { ChatCommand } from '../../../shared/ipc/conversation'"],
-    ['src/renderer/App.tsx', "import { SettingsDialog } from './features/preferences'"],
+    ['src/renderer/app/App.tsx', "import { SettingsDialog } from '../features/preferences'"],
     ['src/renderer/features/preferences/index.ts', "export { SettingsDialog } from './SettingsDialog'"],
     ['src/renderer/features/preferences/SettingsDialog.tsx', "import { Modal } from '../../Modal'; import { useSettingsDraft } from './useSettingsDraft'"],
     ['src/renderer/features/preferences/useSettingsDraft.ts', "import { useState } from 'react'; import type { Bootstrap, Preferences } from '../../../shared/ipc/desktop-api'"],
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import { SettingsDialog } from '../preferences'"],
-    ['src/renderer/App.tsx', "import { NewSessionDialog } from './features/session-launch'"],
+    ['src/renderer/app/App.tsx', "import { NewSessionDialog } from '../features/session-launch'"],
     ['src/renderer/features/session-launch/index.ts', "export { NewSessionDialog } from './NewSessionDialog'"],
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import { Modal } from '../../Modal'; import { useNewSessionLaunch } from './useNewSessionLaunch'"],
     ['src/renderer/features/session-launch/useNewSessionLaunch.ts', "import { useState } from 'react'; import type { ProjectTrust } from '../../../shared/ipc/conversation'"],
     ['src/renderer/features/session-launch/NewSessionDialog.tsx', "import { useWorkspace } from '../workspace'"],
-    ['src/renderer/App.tsx', "import { ProjectNavigation } from './features/workspace'; import { ChatPane } from './features/conversation'; import { TerminalPane } from './features/terminal'; import { GitPanel } from './features/change-review'"],
+    ['src/renderer/app/App.tsx', "import { ProjectNavigation } from '../features/workspace'; import { ChatPane } from '../features/conversation'; import { TerminalPane } from '../features/terminal'; import { GitPanel } from '../features/change-review'"],
     ['src/renderer/features/workspace/WorkspaceNavigation.tsx', "import { groupProjects } from './selection'; import { Icon } from '../../Icon'"],
     ['src/renderer/features/workspace/useSessionInput.ts', "import type { TerminalHandle } from '../terminal'; import { referencePaths } from './reference-paths'"],
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace'; import { parseDiffLines } from './diff-lines'"],

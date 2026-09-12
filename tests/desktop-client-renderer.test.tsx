@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { VirtuosoMockContext } from 'react-virtuoso';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { App } from '../src/renderer/App';
+import { App } from '../src/renderer/app/App';
 import { desktopIPCFake } from './desktop-ipc-fake';
 import { deferred, sessionInfo, snapshot, success } from './app/main/main-fakes';
 import { DesktopApplicationError } from '../src/app/main/application-error';

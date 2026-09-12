@@ -10,7 +10,7 @@
 
 PTY/xterm 不再是主界面，但仍是一个真实 adapter：RPC 明确无法承载任意 `ctx.ui.custom()`、自定义 editor/header/footer/theme 和 TUI renderer，登录、设置及首期未原生化的历史/树操作也继续从兼容终端进入。
 
-当前结构迁移已退休 `src/main`：main composition 位于 `src/app/main`，sandbox preload 唯一入口位于 `src/app/preload/desktop-api.cts`，两个 utility 入口位于 `src/app/workers/{pi-rpc,pty}.worker.ts`；Electron utility 资源 Adapter、Pi RPC helper、PTY 流控和进程树分别位于 `src/platform/electron/utility`、`src/platform/pi/rpc`、`src/platform/pty` 与 `src/platform/process`。`Terminal` 窄 Interface 位于 `src/modules/terminal/index.ts`。跨进程 DTO、事件、验证器与诊断 metadata codec 全部位于 `src/shared/ipc`，`src/shared` 顶层源码路径已退休；Change Review 的 renderer scope 投影归 `renderer/features/change-review/scope.ts`。这些批次只移动职责与修正 import/URL/config，不改变 Session/Conversation 状态所有权或 IPC 契约；按用户要求未运行自动测试、构建、typecheck、smoke 或应用，不能据此声称运行验证通过。
+当前结构迁移已退休 `src/main`：main composition 位于 `src/app/main`，sandbox preload 唯一入口位于 `src/app/preload/desktop-api.cts`，两个 utility 入口位于 `src/app/workers/{pi-rpc,pty}.worker.ts`；Electron utility 资源 Adapter、Pi RPC helper、PTY 流控和进程树分别位于 `src/platform/electron/utility`、`src/platform/pi/rpc`、`src/platform/pty` 与 `src/platform/process`。`Terminal` 窄 Interface 位于 `src/modules/terminal/index.ts`。跨进程 DTO、事件、验证器与诊断 metadata codec 全部位于 `src/shared/ipc`，`src/shared` 顶层源码路径已退休；Change Review 的 renderer scope 投影归 `renderer/features/change-review/scope.ts`。renderer composition root 现为 `src/renderer/app/App.tsx`，旧顶层 `src/renderer/App.tsx` 已删除且无兼容转发。这些批次只移动职责与修正 import/URL/config，不改变 Session/Conversation 状态所有权或 IPC 契约；按用户要求未运行自动测试、构建、typecheck、smoke 或应用，不能据此声称运行验证通过。
 
 ## 进程与依赖方向
 
@@ -61,7 +61,7 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 
 ## App composition：窗口工作流归位（有限代码收尾）
 
-本包基于 clean `e7b5fa8861f50c4c0652d7a39af2760d2f0188d7`，仅整理 renderer presentation，不改变业务规则。`App.tsx` 现在保留 JSX、ID 绑定、窗口 capture 路由与 inspector 纯 layout；不直接调用 client、持草稿/handle registry 或实现 Promise continuation。`app/useWorkspaceComposition` 只连接命名 owner，无自身 state/effect/ref 或全字段 props bag。下文早期 renderer 各 slice 的“App 仍持有”描述是该批历史，不是当前所有权。
+本包基于 clean `e7b5fa8861f50c4c0652d7a39af2760d2f0188d7`，仅整理 renderer presentation，不改变业务规则。当前 `renderer/app/App.tsx` 保留 JSX、ID 绑定、窗口 capture 路由与 inspector 纯 layout；不直接调用 client、持草稿/handle registry 或实现 Promise continuation。旧 `renderer/App.tsx` 已在后续纯路径批次删除，不留兼容入口；`app/useWorkspaceComposition` 只连接命名 owner，无自身 state/effect/ref 或全字段 props bag。下文早期 renderer 各 slice 的“App 仍持有”描述是该批历史，不是当前所有权。
 
 | 当前唯一 owner | Interface 与不取得的职责 |
 | --- | --- |
@@ -98,6 +98,8 @@ Workspace、Conversation、Terminal 与 Change Review 的生产展示入口现�
 本批只移动路径、调整 import/export、静态边界门禁和既有测试引用。Chat reducer/revision/附件、xterm 生命周期、Git 检查区局部状态、Workspace 草稿/handle registry、`session.id` 常驻 key、DOM/CSS 与 Desktop Client 均不变。顶层 `ContentView.tsx` 仍是 Conversation 与 Change Review 共用的临时 presentation seam；`Icon.tsx`、`Modal.tsx`、`theme.ts` 和样式也保持原位，待后续正式 UI 系统收敛，不把它们误归某个 Feature。
 
 按用户要求未运行自动测试、build、typecheck、smoke、Electron、Pi、浏览器或产物；只做源码 read/search、diff 与 `git diff --check`。因此相对 import、barrel export、真实桌面交互和视觉仍未执行验证，本批不是阶段 4 或全量架构完成。
+
+后续 composition-root 纯路径批次又将 `renderer/App.tsx` 迁至 `renderer/app/App.tsx`，生产 `main.tsx`、直接测试/预览引用及静态 source lookup 全部直连新路径，旧路径由边界门禁禁止重建。App 函数体、hook/effect 顺序、JSX、key、DOM/CSS 与状态所有权未改；`tests/workspace-preview.tsx` 仅更新 App import。该批同样未运行任何自动验证或应用，模块解析与运行行为仍未执行确认。
 
 ## Session 核心有限提取（阶段 2 代码与纯测试）
 

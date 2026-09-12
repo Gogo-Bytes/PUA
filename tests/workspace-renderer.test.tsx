@@ -9,7 +9,7 @@ import type { SessionEvent } from '../src/shared/ipc/conversation';
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data = [], itemContent }: { data?: unknown[]; itemContent(index: number, item: unknown): React.ReactNode }) => <div>{data.map((item, index) => <div key={index}>{itemContent(index, item)}</div>)}</div> }));
 // These tests mount the real ChatPane, not a terminal. xterm's import probes canvas in jsdom.
 vi.mock('@xterm/xterm', () => ({ Terminal: vi.fn() }));
-import { App } from '../src/renderer/App';
+import { App } from '../src/renderer/app/App';
 
 let listeners: Set<(event: SessionEvent) => void>;
 let mediaListeners: Set<(event: MediaQueryListEvent) => void>;

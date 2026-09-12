@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bootstrap, Preferences } from '../../../../src/shared/ipc/desktop-api';
 // Import probe only; these empty-workspace journeys never mount a terminal.
 vi.mock('@xterm/xterm', () => ({ Terminal: vi.fn() }));
-import { App } from '../../../../src/renderer/App';
+import { App } from '../../../../src/renderer/app/App';
 
 function deferred<T>() {
   let resolve!: (value: T) => void, reject!: (reason: unknown) => void;

@@ -1,13 +1,13 @@
-import { useWorkspaceComposition } from './app/useWorkspaceComposition';
+import { useWorkspaceComposition } from './useWorkspaceComposition';
 import { useEffect, useRef, useState } from 'react';
-import { TerminalPane } from './features/terminal';
-import { ChatPane } from './features/conversation';
-import { GitPanel } from './features/change-review';
-import { ProjectNavigation, projectName, RenameDialog, SessionTabs } from './features/workspace';
-import { NewSessionDialog } from './features/session-launch';
-import { SettingsDialog } from './features/preferences';
-import { CommandPalette } from './features/command-palette';
-import { Icon } from './Icon';
+import { TerminalPane } from '../features/terminal';
+import { ChatPane } from '../features/conversation';
+import { GitPanel } from '../features/change-review';
+import { ProjectNavigation, projectName, RenameDialog, SessionTabs } from '../features/workspace';
+import { NewSessionDialog } from '../features/session-launch';
+import { SettingsDialog } from '../features/preferences';
+import { CommandPalette } from '../features/command-palette';
+import { Icon } from '../Icon';
 
 export function App() {
   const [reviewOpen, setReviewOpen] = useState(() => window.innerWidth > 1100);
