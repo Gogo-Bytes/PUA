@@ -1,0 +1,14 @@
+.ui-provider .ui-tool-card { display: block; width: 100%; min-width: 0; color: var(--ui-tertiary); }
+.ui-provider .ui-tool-card .ui-collapsible > .ui-button { display: flex; width: 100%; max-width: 100%; justify-content: flex-start; padding: var(--ui-space-1) 0; border: 0; border-radius: 0; gap: var(--ui-space-2); color: inherit; background: transparent; white-space: normal; text-align: left; font-weight: var(--ui-weight-normal); }
+.ui-provider .ui-tool-card .ui-collapsible > .ui-button:hover { color: var(--ui-text); }
+.ui-provider .ui-tool-card .ui-collapsible > .ui-button > .icon { order: 5; width: 12px; height: 12px; flex-basis: 12px; opacity: 0; }
+.ui-provider .ui-tool-card .ui-collapsible > .ui-button:is(:hover, :focus-visible, [aria-expanded='true']) > .icon { opacity: 1; }
+.ui-provider .ui-tool-icon { display: inline-flex; flex-shrink: 0; align-self: flex-start; padding-top: 2px; }
+.ui-provider .ui-tool-title { min-width: 0; overflow-wrap: anywhere; }
+.ui-provider .ui-tool-state, .ui-provider .ui-tool-duration { flex-shrink: 0; font: var(--ui-font-meta); }
+.ui-provider .ui-tool-error .ui-tool-state, .ui-provider .ui-tool-error .ui-tool-icon { color: var(--ui-danger); }
+.ui-provider .ui-tool-running .ui-tool-state { color: var(--ui-info); }
+.ui-provider .ui-tool-paused .ui-tool-state { color: var(--ui-warning); }
+.ui-provider .ui-tool-card .ui-reveal > div { margin: var(--ui-space-1) 0 var(--ui-space-2); padding: var(--ui-space-3) 0; border-top: 1px solid var(--ui-border); color: var(--ui-secondary); }
+.ui-provider .ui-tool-card .ui-collapsible pre { white-space: pre-wrap; overflow-wrap: anywhere; font: var(--ui-type-meta)/1.6 var(--ui-mono); margin: 0; }
+.ui-provider .ui-tool-card.tool-card { color: inherit; }

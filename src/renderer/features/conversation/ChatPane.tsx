@@ -8,6 +8,7 @@ import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRe
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { emptyChatState, queueText, reduceChatEvent, widgetsAt } from './chat-state';
 import { missingAssistantRendererDiagnostics } from './missing-assistant-diagnostics';
+import { ToolExecutionCard } from './ToolExecutionCard';
 
 interface Props {
   session: SessionInfo;
@@ -149,9 +150,8 @@ const MessageView = memo(function MessageView({ message }: { message: ChatMessag
 });
 
 export function ToolCard({ tool }: { tool: ToolActivity }) {
-  const [open, setOpen] = useState(tool.status === 'error');
-  useEffect(() => { if (tool.status === 'error') setOpen(true); }, [tool.status]);
-  return <details className={`tool-card ${tool.status}`} open={open} onToggle={event => setOpen(event.currentTarget.open)}><summary title={toolSummary(tool)}><Icon name={tool.status === 'success' ? 'check' : tool.status === 'error' ? 'close' : 'code'} /><strong>{toolSummary(tool)}</strong><small>{tool.status === 'running' ? '运行中' : tool.status === 'success' ? '完成' : tool.status === 'error' ? '失败' : '等待'}</small><span className="disclosure"><Icon name="chevron" /></span></summary><div className="tool-detail"><div className="tool-detail-label">{tool.name} · 调用参数</div><pre>{JSON.stringify(tool.arguments, null, 2)}</pre>{tool.images?.map((image, index) => <img className="transcript-image" key={index} alt="工具结果图片" src={`data:${image.mimeType};base64,${image.data}`} />)}{tool.output && <><div className="tool-output-heading"><span>工具返回快照 · {tool.output.split('\n').length} 行输出</span><CopyButton text={tool.output} label="复制工具输出" /></div><p className="snapshot-note">该次执行返回的内容，不代表当前磁盘文件；行号为输出行号。</p><SourceView text={tool.output} label="工具返回快照" /></>}</div></details>;
+  const status = tool.status === 'pending' ? 'idle' : tool.status;
+  return <ToolExecutionCard nativeDetails status={status} className={tool.status} openOnError triggerTitle={toolSummary(tool)} title={toolSummary(tool)} icon={<Icon name={tool.status === 'success' ? 'check' : tool.status === 'error' ? 'close' : 'code'}/>} labels={{ statuses: { idle: '等待', running: '运行中', success: '完成', error: '失败' } }}><div className="tool-detail"><div className="tool-detail-label">{tool.name} · 调用参数</div><pre>{JSON.stringify(tool.arguments, null, 2)}</pre>{tool.images?.map((image, index) => <img className="transcript-image" key={index} alt="工具结果图片" src={`data:${image.mimeType};base64,${image.data}`} />)}{tool.output && <><div className="tool-output-heading"><span>工具返回快照 · {tool.output.split('\n').length} 行输出</span><CopyButton text={tool.output} label="复制工具输出" /></div><p className="snapshot-note">该次执行返回的内容，不代表当前磁盘文件；行号为输出行号。</p><SourceView text={tool.output} label="工具返回快照" /></>}</div></ToolExecutionCard>;
 }
 
 export function ExtensionDialog({ request, onAnswer }: { request: ExtensionUIRequest; onAnswer(value: ExtensionUIResponse): Promise<void> }) {

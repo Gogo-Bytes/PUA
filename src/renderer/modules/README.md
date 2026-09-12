@@ -32,13 +32,6 @@
 
 ProjectNav 与 SessionTabs 已迁入 `renderer/features/workspace` 并由生产 App 和隔离预览共同消费；ProjectNav 保留 cwd callback 身份、生产筛选与路径显示，并让预览继续只在重名时通过 Tooltip 显示完整路径。SessionTabs 保留生产关闭/overflow/键盘导航，同时仅在预览提供 `onRename` / `onAdd` 时启用 InlineRename；生产改名仍由原 Session Dialog owner 处理。
 
-InspectorHeader 与 FileRow 已迁入 `renderer/features/change-review` 并接入生产 GitPanel。Git 状态、scope、selected path、刷新 generation 和 diff 请求仍由 GitPanel 持有；两个展示组件只转发既有 callback，预览继续使用本地 callback。`modules/index.ts` 不再导出以上四个组件。
+InspectorHeader 与 FileRow 已迁入 `renderer/features/change-review` 并接入生产 GitPanel。Git 状态、scope、selected path、刷新 generation 和 diff 请求仍由 GitPanel 持有；两个展示组件只转发既有 callback，预览继续使用本地 callback。
 
-## 剩余模块
-
-| 模块 | 数据与行为 | 文案/slot |
-| --- | --- | --- |
-| ToolExecutionCard | title 摘要句、RunStatus、可选 duration / icon 装饰 slot；children 详情 | labels.details / statuses（按状态覆盖名称） |
-
-
-ToolExecutionCard 保留兼容名称，视觉为无外框、无底色的全宽块。摘要按钮覆盖完整阅读列宽度，整行均可点击；完成状态只保留可访问文字，运行、暂停、失败保留可见状态。可访问名称包含摘要、详情标签与当前状态。icon 只接受非交互装饰内容，工具名称必须由 title 表达。默认收起，复用 Collapsible 的 GSAP seam 与键盘按钮语义；展开时摘要与详情之间显示贯穿宽度的水平分隔线，正文与摘要左缘对齐，无侧边竖线或额外缩进。长摘要允许换行，不截掉错误；duration 可选且紧邻内容。
+ToolExecutionCard 已迁入 `renderer/features/conversation` 并接入生产 ToolCard。预览仍使用 Collapsible 的 GSAP seam 与统一可访问名称；生产通过 `nativeDetails` 保留原生 details/summary、成功默认收起、失败自动展开、展开状态跨运行更新保留，以及参数、图片、输出快照和复制行为。Tool activity 与消息 block owner 不变。`modules/index.ts` 不再导出以上五个组件。

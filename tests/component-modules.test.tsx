@@ -4,9 +4,9 @@ import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
 import { ProjectNav, SessionTabs } from '../src/renderer/features/workspace';
 import { FileRow, InspectorHeader } from '../src/renderer/features/change-review';
+import { ToolExecutionCard } from '../src/renderer/features/conversation';
 import { UIProvider } from '../src/renderer/ui';
-it('tool activity uses one disclosure and retains open details across status updates', async () => {
-  const { ToolExecutionCard } = await import('../src/renderer/modules');
+it('tool activity uses one disclosure and retains open details across status updates', () => {
   const action = vi.fn();
   const view = (status: 'running' | 'error') => <UIProvider motion="off"><ToolExecutionCard title="读取配置" status={status} labels={{ details: '详情', statuses: { running: '运行中', error: '读取失败' } }}><button onClick={action}>重试读取</button></ToolExecutionCard></UIProvider>;
   const { rerender } = render(view('running'));
@@ -74,8 +74,7 @@ it('ChatMessage treats HTML strings as text, exposes role/meta/streaming/failure
   expect(view.container.querySelector('img, script')).toBeNull(); expect(view.container.querySelector('[aria-busy="true"]')).toBeTruthy(); expect(screen.queryByRole('alert')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '重试回复' })); expect(action).toHaveBeenCalledOnce();
 });
-it('module labels localize navigation, rename, execution and inspection without changing identity callbacks', async () => {
-  const { ToolExecutionCard } = await import('../src/renderer/modules');
+it('module labels localize navigation, rename, execution and inspection without changing identity callbacks', () => {
   const open = vi.fn();
   render(<UIProvider><ProjectNav projects={[]} selectedCwd="" onSelect={vi.fn()} onAdd={vi.fn()} labels={{ title: '项目', add: '添加项目', empty: '暂无项目' }}/><SessionTabs sessions={[{ id: 'a', title: '方案' }]} activeId="a" onSelect={vi.fn()} onRename={vi.fn()} onAdd={vi.fn()} labels={{ title: '会话', add: '新会话', rename: { hint: '双击或 F2 重命名', input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空' } }}/><ToolExecutionCard title="检查" status="success" labels={{ details: '执行详情', statuses: { success: '已完成' } }}>详情</ToolExecutionCard><InspectorHeader title="检查器" count={1} onRefresh={vi.fn()} labels={{ refresh: '刷新检查' }}/><FileRow name="说明" detail="文件" onOpen={open} labels={{ open: '打开说明' }}/></UIProvider>);
   expect(screen.getByRole('navigation', { name: '项目' })).toBeTruthy(); expect(screen.getByText('暂无项目')).toBeTruthy(); expect(screen.getByRole('button', { name: '添加项目' })).toBeTruthy(); expect(screen.getByRole('button', { name: '新会话' })).toBeTruthy();

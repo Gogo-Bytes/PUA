@@ -21,7 +21,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const retiredRendererPresentation = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererUi = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererSessionPresentation = /^src\/renderer\/features\/session-launch\//.test(relative) || /^src\/renderer\/features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(relative);
-  const retiredRendererNavigation = /^src\/renderer\/(?:features\/workspace\/WorkspaceNavigation|modules\/(?:ProjectNav|SessionTabs|InspectorHeader|FileRow))(?:\.[cm]?[jt]sx?)?$/.test(relative);
+  const retiredRendererFeatureComponents = /^src\/renderer\/(?:features\/workspace\/WorkspaceNavigation|modules\/(?:ProjectNav|SessionTabs|InspectorHeader|FileRow|ToolExecutionCard))(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const workspaceRoot = 'src/renderer/features/workspace/';
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
   const workspaceGlobals = ['window', 'document', 'process', 'Buffer', 'NodeJS', '__dirname', '__filename', 'setImmediate', 'clearImmediate'];
@@ -56,7 +56,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   if (retiredRendererPresentation) report(source, 'top-level renderer domain presentation paths are retired; use the owning renderer feature');
   if (retiredRendererUi) report(source, 'top-level renderer UI seams are retired; use renderer/ui');
   if (retiredRendererSessionPresentation) report(source, 'retired Session presentation paths must use src/renderer/features/sessions');
-  if (retiredRendererNavigation) report(source, 'retired navigation paths must use src/renderer/features/workspace');
+  if (retiredRendererFeatureComponents) report(source, 'retired renderer feature components must use their owning feature');
   if (appWorkerDirectory && !appWorker) report(source, 'src/app/workers contains only the pi-rpc and pty process entry files; helpers belong in platform adapters');
   const checkImport = (node: ts.Node, name: string) => {
     const retiredSharedImport = /(^|\/)shared\/(contracts|chat|chat-validation|git|missing-assistant-diagnostics)(?:\.[cm]?[jt]s)?$/.test(slash(name));

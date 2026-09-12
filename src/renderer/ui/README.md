@@ -1,6 +1,6 @@
 # PUA 项目组件库
 
-状态：主题 foundation、Icon、Dialog、Workspace 导航、Session Tabs 与 Change Review 文件导航已接入生产 App；其余布局和领域组件仍按阶段迁移。组件预览继续隔离，视觉确认与生产接入是两步，不能把预览 fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
+状态：主题 foundation、Icon、Dialog、Workspace 导航、Session Tabs、Change Review 文件导航与 Conversation ToolExecutionCard 已接入生产 App；其余布局和领域组件仍按阶段迁移。组件预览继续隔离，视觉确认与生产接入是两步，不能把预览 fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
 
 导出边界：light contrast=40 / opaqueWindows=true，dark contrast=100 / opaqueWindows=false，codeThemeId 均为 catppuccin。未知的 contrast 派生算法和原生窗口透明效果未模拟。用户后续要求优先：Diff 与 highlight 使用低饱和配套色，覆盖原导出 Diff 值；浅色 link 使用实际 ClickUp 任务正文链接测得的 #0b68cb，深色 #79b8ff 与两种 hover 色为本库配套值，不是 ClickUp 实测值。链接下划线保持同色，不再降低透明度。其他基础色保持；字体栈按后续要求统一明暗。提示、引用、Diff 与动效样例均不使用左侧装饰线；Diff 以正负号、文字色和浅底区分。尺寸和行高未由导出提供，沿用现值。
 
@@ -27,7 +27,7 @@
 - `ui/index.ts`：UIProvider、Button/IconButton、TextField、Select/DropdownMenu、Tooltip、Tag/StatusBadge、Tabs、Dialog、Collapsible、InlineRename、ResizableWorkspace、Message、ToastHost、Breadcrumbs 与动效工具。
 - `tokens.css`、`theme.tsx`：语义颜色、明暗主题、排版、尺寸与外观上下文。生产样式入口已引入 tokens 与 primitive 样式；预览保持显式、隔离引入。
 - `motion.tsx`：统一结构动效参数；系统 reduced-motion 优先于 normal/slow，off 立即就位。
-- `modules/index.ts`：ToolExecutionCard、Composer、ChatMessage 的迁移来源；ProjectNav 与 SessionTabs 已迁入 `features/workspace`，InspectorHeader 与 FileRow 已迁入 `features/change-review`。真实接入前必读 [模块契约](../modules/README.md)，生产落点为所属 Feature 或 `ui`。
+- `modules/index.ts`：Composer、ChatMessage 的迁移来源；ProjectNav 与 SessionTabs 已迁入 `features/workspace`，InspectorHeader 与 FileRow 已迁入 `features/change-review`，ToolExecutionCard 已迁入 `features/conversation`。真实接入前必读 [模块契约](../modules/README.md)，生产落点为所属 Feature 或 `ui`。
 - `tests/component-preview/`：独立展示、内存 Adapter 与浏览器验证；不会进入生产入口。组合交互页是中文工作台场景，模块卡片展示安全正文与受控 Composer。
 
 ## 新通用接口
