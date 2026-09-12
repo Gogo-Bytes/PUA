@@ -6,6 +6,8 @@ import { referencePaths } from '../workspace';
 import { Icon } from '../../ui';
 import { CopyButton, MarkdownView, SourceView } from '../../ContentView';
 import { isConflictPatch, parseDiffLines } from './diff-lines';
+import { InspectorHeader } from './InspectorHeader';
+import { FileRow } from './FileRow';
 
 export function GitPanel({ sessionId, onClose, onReference }: { sessionId: string; onClose(): void; onReference(text: string): void }) {
   const [status, setStatus] = useState<GitStatus | null>(null);
@@ -55,14 +57,14 @@ export function GitPanel({ sessionId, onClose, onReference }: { sessionId: strin
   const removed = rows.filter(row => row.kind === 'deletion').length;
   const markdown = diff?.kind === 'untracked' && /\.(md|markdown)$/i.test(selected);
   return <aside className="git-panel" aria-label="文件与 Git 检查区">
-    <header><div><Icon name="file" /><h2>文件与 Git</h2><span className="count">{status?.files.length ?? '—'}</span></div><button className="icon-button" aria-label="关闭变更面板" onClick={onClose}><Icon name="close" /></button></header>
+    <InspectorHeader variant="panel" icon="file" title="文件与 Git" count={status?.files.length ?? '—'} onClose={onClose} labels={{ close: '关闭变更面板' }}/>
     <div className="git-summary"><span title={status?.root}><Icon name="folder" />{status?.branch || 'Git 工作区'}</span><button onClick={() => void refresh()} disabled={busy}>{busy ? '刷新中…' : '刷新'}</button></div>
     <p className="git-disclaimer">会话启动目录所属仓库的全部变更，包含你和其他工具的修改。只读快照，<strong>不代表 Pi 本轮改动</strong>。</p>
     <div className="git-scopes" role="group" aria-label="变更范围">{([['worktree', '工作区 · 未暂存'], ['index', '暂存区']] as const).map(([value, title]) => <button aria-pressed={scope === value} key={value} onClick={() => { setScope(value); setSelected(''); }}>{title}<span>{status ? filesForScope(status.files, value).length : '—'}</span></button>)}</div>
     <div className="inspector-scroll">
       {error && <div className="git-empty" role="alert"><h3>暂时无法读取 Git</h3><p>请确认启动目录位于 Git 仓库内，且系统 PATH 可找到 Git。不会自动初始化仓库或更改文件。</p><details><summary>诊断详情</summary><pre>{error}</pre></details></div>}
       {status && files.length === 0 && <div className="git-empty"><Icon name="check" /><h3>这个范围没有变更</h3><p>修改文件后点击刷新，或切换暂存范围。</p></div>}
-      {files.length > 0 && <div className="changed-files" aria-label="变更文件">{files.map(file => <button key={file.path} aria-pressed={file.path === selected} title={file.originalPath ? `${file.originalPath} → ${file.path}` : file.path} onClick={() => setSelected(file.path)}><Icon name="file" /><span>{file.path}</span><code className={`file-status ${file.index === '?' ? 'added' : ''}`}>{file.index === '?' ? '?' : scope === 'index' ? file.index : file.worktree}</code></button>)}</div>}
+      {files.length > 0 && <div className="changed-files" aria-label="变更文件">{files.map(file => <FileRow key={file.path} name={file.path} detail={file.index === '?' ? '?' : scope === 'index' ? file.index : file.worktree} detailElement="code" detailClassName={`file-status ${file.index === '?' ? 'added' : ''}`} selected={file.path === selected} title={file.originalPath ? `${file.originalPath} → ${file.path}` : file.path} onOpen={() => setSelected(file.path)}/>)}</div>}
       {!!selected && status && <><div className="diff-heading"><code title={selected}>{selected}</code><button title="引用路径到当前草稿，不自动发送" aria-label="引用文件到草稿" onClick={() => {
         const fullPath = `${status.root.replace(/[\\/]$/, '')}/${selected}`;
         onReference(`请检查这个文件的变更：${referencePaths([fullPath])}`);

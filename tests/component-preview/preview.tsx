@@ -1,14 +1,16 @@
 import { StrictMode, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { UIProvider, Button, IconButton, Icon, TextField, Select, DropdownMenu, Tooltip, Tag, StatusBadge, Tabs, Dialog, Collapsible, InlineRename, ResizableWorkspace, MotionSample, Breadcrumbs, type MotionMode, type RunStatus } from '../../src/renderer/ui';
-import { ToolExecutionCard, InspectorHeader, FileRow, ChatMessage } from '../../src/renderer/modules';
+import { ToolExecutionCard, ChatMessage } from '../../src/renderer/modules';
 import { ProjectNav, SessionTabs } from '../../src/renderer/features/workspace';
+import { InspectorHeader, FileRow } from '../../src/renderer/features/change-review';
 import { ComposerPreview, NotificationsPreview, DialogExamples, ChatExamples } from './CompletionExamples';
 import * as fixtures from './fixtures';
 import { DocumentExamples } from './DocumentExamples';
 import '../../src/renderer/ui/tokens.css';
 import '../../src/renderer/ui/ui.css';
 import '../../src/renderer/features/workspace/workspace-navigation.css';
+import '../../src/renderer/features/change-review/change-review.css';
 import './preview.css';
 const sections = [{ value: 'foundations', label: 'Foundations' }, { value: 'primitives', label: '通用组件' }, { value: 'modules', label: '模块组件' }, { value: 'composition', label: '组合交互' }];
 function Card({ title, note, children, wide = false }: { title: string; note?: string; children: ReactNode; wide?: boolean }) {
@@ -27,7 +29,7 @@ function Workbench() {
   const projectNav = <ProjectNav labels={{ title: '项目', add: '添加项目', empty: '暂无项目' }} projects={fixtures.projects} selectedCwd={project} onSelect={setProject} onAdd={() => setNotice('Add project callback · preview only')}/>;
   const sessionTabs = <SessionTabs labels={{ title: '会话', add: '新建会话', rename: { hint: '双击或 F2 重命名', input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空', failed: '重命名失败，请重试' } }} sessions={sessions} activeId={session} onSelect={setSession} onRename={(id, value) => rename(value, id)} onAdd={() => { const id = `demo-${sessions.length}`; setSessions([...sessions, { id, title: '未命名探索' }]); setSession(id); }}/>;
   const tool = <ToolExecutionCard labels={{ details: '执行详情', statuses: { idle: '空闲', running: '运行中', success: '已完成', error: '失败', paused: '暂停' } }} title="已读取文件运行了命令" icon={<Icon name="file"/>} status={status}><pre>3 modules inspected{'\n'}No production entry modified.{'\n'}Result: ready for visual review.</pre></ToolExecutionCard>;
-  const inspector = <><InspectorHeader title="检查器" labels={{ refresh: '刷新检查' }} count={3} onRefresh={() => setNotice('Refresh callback · preview only')}/><div className="preview-inspector-group"><span className="ui-meta">组件文件</span><FileRow labels={{ open: '查看 Button.tsx' }} name="Button.tsx" detail="UI" onOpen={() => setNotice('File callback · Button.tsx')}/><FileRow labels={{ open: '查看 motion.tsx' }} name="motion.tsx" detail="UI" onOpen={() => setNotice('File callback · motion.tsx')}/><FileRow labels={{ open: '查看 ProjectNav' }} name="ProjectNav" detail="Module" onOpen={() => setNotice('File callback · ProjectNav')}/></div><div className="preview-inspector-group"><span className="ui-meta">检查状态</span><p>等待进一步检查。</p><span className="ui-meta">仅本地预览 · 待视觉确认</span></div></>;
+  const inspector = <><InspectorHeader title="检查器" labels={{ refresh: '刷新检查' }} count={3} onRefresh={() => setNotice('Refresh callback · preview only')}/><div className="preview-inspector-group"><span className="ui-meta">组件文件</span><FileRow labels={{ open: '查看 Button.tsx' }} name="Button.tsx" detail="UI" onOpen={() => setNotice('File callback · Button.tsx')}/><FileRow labels={{ open: '查看 motion.tsx' }} name="motion.tsx" detail="UI" onOpen={() => setNotice('File callback · motion.tsx')}/><FileRow labels={{ open: '查看 ProjectNav' }} name="ProjectNav" detail="Feature" onOpen={() => setNotice('File callback · ProjectNav')}/></div><div className="preview-inspector-group"><span className="ui-meta">检查状态</span><p>等待进一步检查。</p><span className="ui-meta">仅本地预览 · 待视觉确认</span></div></>;
   return <UIProvider theme={theme} motion={motion}><div className="preview-shell">
     <header className="preview-header"><div className="preview-wordmark"><Icon name="pi"/><strong>PUA</strong><span>组件工作台</span><Tag>TEST ONLY</Tag></div><div className="preview-controls"><Select label="Theme" value={theme} options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} onChange={value => setTheme(value as 'light' | 'dark')}/><Select label="Motion" value={motion} options={[{ value: 'normal', label: 'Motion · normal' }, { value: 'slow', label: 'Motion · 3× slower' }, { value: 'off', label: 'Motion · off' }]} onChange={value => setMotion(value as MotionMode)}/></div></header>
     <div className="preview-nav"><Tabs label="Workbench sections" items={sections} value={section} onChange={setSection}/><span className="ui-meta">Fixture data only · no Pi / Git / disk · App unchanged</span></div>
