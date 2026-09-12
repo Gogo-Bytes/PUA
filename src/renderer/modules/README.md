@@ -39,3 +39,5 @@ ChatMessage 已迁入 Conversation Feature，并通过 `transcript` variant 接�
 Composer 已迁入 Conversation Feature，并通过 `transcript` variant 接入生产 ChatPane。该 variant 只提供原 `.composer` DOM seam；textarea ref、IME guard、draft revision、附件 token、send/steer/follow-up/stop 锁、清理 continuation、命令菜单和错误发布仍由 ChatPane 持有。隔离 Preview 继续使用受控 ComposerProps 与本地内存 Adapter。`modules/index.ts` 与 `modules.css` 已删除，不再存在 renderer modules 运行时聚合层。
 
 顶层 ContentView 已迁入 `renderer/features/content`。Conversation 与 Change Review 经 Feature index 共用 CopyButton、MarkdownView 与 SourceView；clipboard、external-link、Markdown 插件、流式修补、远程图片阻断和源码 DOM 仍由原实现负责，没有下沉到无 Desktop 依赖的通用 UI。
+
+顶层 `review.css` 与 `styles.css` 已退休。生产样式由 `app/production.css` 按原 cascade 顺序装配 app/Feature stylesheets；组件 Preview 继续显式加载隔离样式，Workspace Preview 复用生产入口。

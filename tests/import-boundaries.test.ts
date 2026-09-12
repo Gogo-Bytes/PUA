@@ -50,7 +50,9 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/App.tsx', 'export {}'],
     ['src/renderer/main.tsx', "import './App'"],
     ['src/renderer/review.css', ''],
+    ['src/renderer/styles.css', ''],
     ['src/renderer/app/production.css', "import '../review.css'"],
+    ['src/renderer/app/production.css', "import '../styles.css'"],
     ...['WorkspaceNavigation', 'ContentView', 'ChatPane', 'chat-state', 'missing-assistant-diagnostics', 'TerminalPane', 'terminal-keys', 'GitPanel', 'diff-lines'].flatMap(target => [
       [`src/renderer/${target}${/^[A-Z]/.test(target) ? '.tsx' : '.ts'}`, 'export {}'],
       ['src/renderer/app/App.tsx', `import '../${target}'`],

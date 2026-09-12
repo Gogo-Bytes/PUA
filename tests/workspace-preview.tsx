@@ -5,8 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from '../src/renderer/app/App';
 import type { DesktopAPI, Preferences, SessionInfo } from '../src/shared/ipc/desktop-api';
 import type { SessionEvent } from '../src/shared/ipc/conversation';
-import '../src/renderer/styles.css';
-import '../src/renderer/features/change-review/change-review-production.css';
+import '../src/renderer/app/production.css';
 
 const listeners = new Set<(event: SessionEvent) => void>();
 const sessions = new Map<string, SessionInfo>();

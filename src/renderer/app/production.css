@@ -3,7 +3,18 @@
 @import url('../features/workspace/workspace-navigation.css');
 @import url('../features/change-review/change-review.css');
 @import url('../features/conversation/conversation.css');
-@import url('../styles.css');
+@import url('../features/terminal/xterm.css');
+@import url('./base.css');
+@import url('../features/workspace/workspace-production.css');
+@import url('../features/terminal/terminal-production.css');
+@import url('../features/workspace/search-production.css');
+@import url('../features/conversation/transcript-production.css');
+@import url('../features/content/markdown-production.css');
+@import url('../features/conversation/tool-production.css');
+@import url('../features/content/source-production.css');
+@import url('../features/conversation/composer-production.css');
+@import url('./overlays.css');
+@import url('./responsive.css');
 @import url('../features/change-review/change-review-production.css');
 
 .ui-provider {
