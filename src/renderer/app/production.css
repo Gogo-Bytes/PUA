@@ -4,7 +4,7 @@
 @import url('../features/change-review/change-review.css');
 @import url('../features/conversation/conversation.css');
 @import url('../styles.css');
-@import url('../review.css');
+@import url('../features/change-review/change-review-production.css');
 
 .ui-provider {
   height: 100%;

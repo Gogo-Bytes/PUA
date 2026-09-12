@@ -49,6 +49,8 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace/reference-paths'"],
     ['src/renderer/App.tsx', 'export {}'],
     ['src/renderer/main.tsx', "import './App'"],
+    ['src/renderer/review.css', ''],
+    ['src/renderer/app/production.css', "import '../review.css'"],
     ...['WorkspaceNavigation', 'ContentView', 'ChatPane', 'chat-state', 'missing-assistant-diagnostics', 'TerminalPane', 'terminal-keys', 'GitPanel', 'diff-lines'].flatMap(target => [
       [`src/renderer/${target}${/^[A-Z]/.test(target) ? '.tsx' : '.ts'}`, 'export {}'],
       ['src/renderer/app/App.tsx', `import '../${target}'`],
