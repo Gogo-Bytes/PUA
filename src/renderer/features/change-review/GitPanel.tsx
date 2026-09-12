@@ -4,7 +4,7 @@ import type { DiffScope, FileDiff, GitStatus } from '../../../shared/ipc/change-
 import { filesForScope } from './scope';
 import { referencePaths } from '../workspace';
 import { Icon } from '../../ui';
-import { CopyButton, MarkdownView, SourceView } from '../../ContentView';
+import { CopyButton, MarkdownView, SourceView } from '../content';
 import { isConflictPatch, parseDiffLines } from './diff-lines';
 import { InspectorHeader } from './InspectorHeader';
 import { FileRow } from './FileRow';

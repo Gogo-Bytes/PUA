@@ -49,7 +49,7 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace/reference-paths'"],
     ['src/renderer/App.tsx', 'export {}'],
     ['src/renderer/main.tsx', "import './App'"],
-    ...['WorkspaceNavigation', 'ChatPane', 'chat-state', 'missing-assistant-diagnostics', 'TerminalPane', 'terminal-keys', 'GitPanel', 'diff-lines'].flatMap(target => [
+    ...['WorkspaceNavigation', 'ContentView', 'ChatPane', 'chat-state', 'missing-assistant-diagnostics', 'TerminalPane', 'terminal-keys', 'GitPanel', 'diff-lines'].flatMap(target => [
       [`src/renderer/${target}${/^[A-Z]/.test(target) ? '.tsx' : '.ts'}`, 'export {}'],
       ['src/renderer/app/App.tsx', `import '../${target}'`],
     ]),
@@ -277,10 +277,12 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/workspace/ProjectNav.tsx', "import { groupProjects } from './selection'; import { Icon } from '../../ui'"],
     ['src/renderer/features/workspace/SessionTabs.tsx', "import { InlineRename } from '../../ui'"],
     ['src/renderer/features/workspace/useSessionInput.ts', "import type { TerminalHandle } from '../terminal'; import { referencePaths } from './reference-paths'"],
-    ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace'; import { parseDiffLines } from './diff-lines'; import { InspectorHeader } from './InspectorHeader'; import { FileRow } from './FileRow'"],
+    ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace'; import { CopyButton } from '../content'; import { parseDiffLines } from './diff-lines'; import { InspectorHeader } from './InspectorHeader'; import { FileRow } from './FileRow'"],
     ['src/renderer/features/change-review/InspectorHeader.tsx', "import { IconButton } from '../../ui'"],
     ['src/renderer/features/change-review/FileRow.tsx', "import { Button } from '../../ui'"],
-    ['src/renderer/features/conversation/ChatPane.tsx', "import { reduceChatEvent } from './chat-state'; import { ToolExecutionCard } from './ToolExecutionCard'; import { ChatMessage } from './ChatMessage'; import { Composer } from './Composer'; import { MarkdownView } from '../../ContentView'"],
+    ['src/renderer/features/content/ContentView.tsx', "import { desktopClient } from '../../app/desktop-client'; import { Icon } from '../../ui'"],
+    ['src/renderer/features/content/index.ts', "export { MarkdownView } from './ContentView'"],
+    ['src/renderer/features/conversation/ChatPane.tsx', "import { reduceChatEvent } from './chat-state'; import { ToolExecutionCard } from './ToolExecutionCard'; import { ChatMessage } from './ChatMessage'; import { Composer } from './Composer'; import { MarkdownView } from '../content'"],
     ['src/renderer/features/conversation/ToolExecutionCard.tsx', "import { Collapsible } from '../../ui'"],
     ['src/renderer/features/conversation/ChatMessage.tsx', "import { Message } from '../../ui'"],
     ['src/renderer/features/conversation/Composer.tsx', "import { Button } from '../../ui'"],

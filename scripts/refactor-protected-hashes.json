@@ -1,10 +1,10 @@
 {
-  "src/renderer/modules/README.md": "918a6fabc38a1d7c6d9eb124b3bd7dd3baa091a2273b8ed8f1b53b41dff1f744",
+  "src/renderer/modules/README.md": "4ed9df399548c8e13c95e33bfe12b84be7b92e45c32e0cd028008d50af99cd7e",
   "src/renderer/ui/Breadcrumbs.tsx": "474f58d130919ef63193dfca9d33d6fba62563becf2216faa46deff3edcca6b4",
   "src/renderer/ui/Icon.tsx": "525aa27f543693a73803b097027c1f686fc7a1f38b40333e99ec694c0bbc8124",
   "src/renderer/ui/InlineRename.tsx": "eb2db76368e4cbbd17856dadfd9e99e22d27f56c764552a296173ea861aba1ce",
   "src/renderer/ui/Message.tsx": "0687eed5f073b4253e31b05f52f00e67631cb5929c05216f2a68931778fbf799",
-  "src/renderer/ui/README.md": "5cbaa1e4f7a17d151c8bc1e7865eff701b495874e6398c65e5dcc6ac1e84784f",
+  "src/renderer/ui/README.md": "15a3ee1123a5913824c5e712cab65dc7105b64127471c802afc6004083c2640a",
   "src/renderer/ui/ResizableWorkspace.tsx": "bab103a29e02a062900d94466139377970942dcbccf57669b551fec0de09b5a5",
   "src/renderer/ui/Toast.tsx": "1ecf515dcd108379a8786255f47761b14d80d77091209742bb15f418f3935821",
   "src/renderer/ui/index.ts": "751fb4c5003d29dc696b9c21e6008bdbd8a82ff7a126d6df3c9f9bc71af15316",

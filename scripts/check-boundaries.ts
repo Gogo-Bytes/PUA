@@ -18,7 +18,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const errors: string[] = [];
   const renderer = relative.startsWith('src/renderer/');
   const retiredRendererApp = relative === 'src/renderer/App.tsx';
-  const retiredRendererPresentation = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(relative);
+  const retiredRendererPresentation = /^src\/renderer\/(WorkspaceNavigation|ContentView|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererUi = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererSessionPresentation = /^src\/renderer\/features\/session-launch\//.test(relative) || /^src\/renderer\/features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererFeatureComponents = /^src\/renderer\/(?:features\/workspace\/WorkspaceNavigation|modules\/(?:ProjectNav|SessionTabs|InspectorHeader|FileRow|ToolExecutionCard|ChatMessage|Composer))(?:\.[cm]?[jt]sx?)?$/.test(relative);
@@ -72,7 +72,7 @@ export function checkSource(filename: string, text: string, root: string): strin
     if (relative.startsWith('src/') && sessionProcessAdapterTarget && !mainComposition) report(node, 'only app/main/composition.ts may import the concrete SessionProcessAdapter');
     const retiredRendererAppTarget = /^src\/renderer\/App(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererAppTarget) report(node, 'top-level renderer App import is retired; use renderer/app/App.tsx');
-    const retiredRendererTarget = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(target);
+    const retiredRendererTarget = /^src\/renderer\/(WorkspaceNavigation|ContentView|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererTarget) report(node, 'top-level renderer domain presentation import is retired; use the owning feature index');
     const retiredRendererUiTarget = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererUiTarget) report(node, 'top-level renderer UI import is retired; use renderer/ui');

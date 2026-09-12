@@ -1,10 +1,10 @@
-import { desktopClient } from './app/desktop-client';
+import { desktopClient } from '../../app/desktop-client';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import remend from 'remend';
-import { Icon } from './ui';
+import { Icon } from '../../ui';
 
 export function CopyButton({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false);

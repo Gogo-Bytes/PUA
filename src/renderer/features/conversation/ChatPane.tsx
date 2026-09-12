@@ -1,7 +1,7 @@
 import { desktopClient } from '../../app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
-import { MarkdownView, CopyButton, SourceView } from '../../ContentView';
-export { MarkdownView } from '../../ContentView';
+import { MarkdownView, CopyButton, SourceView } from '../content';
+export { MarkdownView } from '../content';
 import { Dialog, Icon } from '../../ui';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../../../shared/ipc/conversation';
