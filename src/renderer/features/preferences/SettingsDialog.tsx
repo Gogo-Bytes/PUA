@@ -1,11 +1,11 @@
-import { Modal } from '../../Modal';
+import { Dialog } from '../../ui';
 import { useSettingsDraft, type SettingsDraftOptions } from './useSettingsDraft';
 
 export type SettingsDialogProps = SettingsDraftOptions;
 
 export function SettingsDialog({ boot, onClose, onSave }: SettingsDialogProps) {
   const { value, setValue, args, setArgs, error, busy, pick, save } = useSettingsDraft({ boot, onClose, onSave });
-  return <Modal title="桌面设置" onClose={onClose}>
+  return <Dialog open title="桌面设置" closeLabel="关闭对话框" closeOnBackdrop={false} onClose={onClose}>
     <form onSubmit={event => { event.preventDefault(); save(); }}>
       <p className="muted">这里只管理桌面外壳。模型、凭据、工具和扩展继续由 Pi 配置。聊天模式的 mode/session/trust 参数由打开项目界面控制。</p>
       <label>外观</label>
@@ -31,5 +31,5 @@ export function SettingsDialog({ boot, onClose, onSave }: SettingsDialogProps) {
       {error && <p role="alert" className="form-error">{error}</p>}
       <div className="modal-actions"><button type="button" onClick={onClose}>取消</button><button className="primary" type="submit" disabled={busy}>{busy ? '保存中…' : '保存设置'}</button></div>
     </form>
-  </Modal>;
+  </Dialog>;
 }

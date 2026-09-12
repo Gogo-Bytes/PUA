@@ -7,8 +7,7 @@ import { ProjectNavigation, projectName, SessionTabs } from '../features/workspa
 import { NewSessionDialog, RenameDialog } from '../features/sessions';
 import { SettingsDialog } from '../features/preferences';
 import { CommandPalette } from '../features/command-palette';
-import { Icon } from '../Icon';
-import { UIProvider } from '../ui';
+import { Icon, UIProvider } from '../ui';
 
 export function App() {
   const [reviewOpen, setReviewOpen] = useState(() => window.innerWidth > 1100);

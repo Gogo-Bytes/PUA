@@ -159,7 +159,7 @@ export function Collapsible({ title, children, defaultOpen = false, label }: { t
   const [open, setOpen] = useState(defaultOpen); const id = useId();
   return <section className="ui-collapsible"><Button variant="ghost" aria-label={label} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}><Icon name={open ? 'down' : 'chevron'}/>{title}</Button><div id={id}><Reveal open={open}>{children}</Reveal></div></section>;
 }
-export function Dialog({ open, title, onClose, children, closeLabel = 'Close dialog' }: { open: boolean; title: string; onClose(): void; children: ReactNode; closeLabel?: string }) {
+export function Dialog({ open, title, onClose, children, closeLabel = 'Close dialog', closeDisabled = false, closeOnBackdrop = true }: { open: boolean; title: string; onClose(): void; children: ReactNode; closeLabel?: string; closeDisabled?: boolean; closeOnBackdrop?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null); const id = useId(); const scale = useMotionScale();
   useEffect(() => {
     const dialog = ref.current!; const previous = document.activeElement as HTMLElement | null;
@@ -177,5 +177,5 @@ export function Dialog({ open, title, onClose, children, closeLabel = 'Close dia
     if (!first) { event.preventDefault(); event.currentTarget.focus(); }
     else if (event.shiftKey && (document.activeElement === first || document.activeElement === event.currentTarget)) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-  }} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose(); } }}><div className="ui-dialog-header"><h2 id={id}>{title}</h2><IconButton label={closeLabel} icon="close" variant="ghost" onClick={onClose}/></div>{children}</dialog>;
+  }} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (closeOnBackdrop && event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose(); } }}><div className="ui-dialog-header"><h2 id={id}>{title}</h2><IconButton label={closeLabel} icon="close" variant="ghost" disabled={closeDisabled} onClick={onClose}/></div>{children}</dialog>;
 }

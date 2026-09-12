@@ -1,6 +1,6 @@
 # PUA 项目组件库
 
-状态：主题 foundation 已接入生产 App；Icon、Dialog、布局和领域组件仍按阶段迁移。组件预览继续隔离，视觉确认与生产接入是两步，不能把预览 fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
+状态：主题 foundation、Icon 与 Dialog 已接入生产 App；布局和领域组件仍按阶段迁移。组件预览继续隔离，视觉确认与生产接入是两步，不能把预览 fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
 
 导出边界：light contrast=40 / opaqueWindows=true，dark contrast=100 / opaqueWindows=false，codeThemeId 均为 catppuccin。未知的 contrast 派生算法和原生窗口透明效果未模拟。用户后续要求优先：Diff 与 highlight 使用低饱和配套色，覆盖原导出 Diff 值；浅色 link 使用实际 ClickUp 任务正文链接测得的 #0b68cb，深色 #79b8ff 与两种 hover 色为本库配套值，不是 ClickUp 实测值。链接下划线保持同色，不再降低透明度。其他基础色保持；字体栈按后续要求统一明暗。提示、引用、Diff 与动效样例均不使用左侧装饰线；Diff 以正负号、文字色和浅底区分。尺寸和行高未由导出提供，沿用现值。
 
@@ -25,7 +25,7 @@
 ## 入口与覆盖
 
 - `ui/index.ts`：UIProvider、Button/IconButton、TextField、Select/DropdownMenu、Tooltip、Tag/StatusBadge、Tabs、Dialog、Collapsible、InlineRename、ResizableWorkspace、Message、ToastHost、Breadcrumbs 与动效工具。
-- `tokens.css`、`theme.tsx`：语义颜色、明暗主题、排版、尺寸与外观上下文。生产样式入口当前只引入 tokens；预览显式引入完整 primitive 样式。
+- `tokens.css`、`theme.tsx`：语义颜色、明暗主题、排版、尺寸与外观上下文。生产样式入口已引入 tokens 与 primitive 样式；预览保持显式、隔离引入。
 - `motion.tsx`：统一结构动效参数；系统 reduced-motion 优先于 normal/slow，off 立即就位。
 - `modules/index.ts`：ProjectNav、SessionTabs、ToolExecutionCard、Composer、InspectorHeader、FileRow、ChatMessage 的迁移来源。真实接入前必读 [模块契约](../modules/README.md)，生产落点为所属 Feature 或 `ui`。
 - `tests/component-preview/`：独立展示、内存 Adapter 与浏览器验证；不会进入生产入口。组合交互页是中文工作台场景，模块卡片展示安全正文与受控 Composer。
@@ -62,12 +62,12 @@
 
 - Collapsible 的 title 支持非交互 ReactNode，label 可提供完整按钮可访问名称；原字符串调用保持兼容。ToolExecutionCard 用它将图标、摘要和状态合并为一个详情入口，复用现有展开/收起与 reduced-motion 行为。
 
-- `ui/Icon.tsx` 统一映射 lucide-react 按需导入图标：24px 网格、16px 显示、1.75 线宽。通知、状态和任务清单复用同一来源；不再手画路径。免费使用许可为 ISC，部分 Feather 来源图标为 MIT；许可证随 npm 包提供，发布时保留其通知，见 https://lucide.dev/license 。旧生产 `renderer/Icon.tsx` 保留，视觉批准并接入后再统一。
+- `ui/Icon.tsx` 统一映射 lucide-react 按需导入图标：24px 网格、16px 显示、1.75 线宽。通知、状态和任务清单复用同一来源；不再手画路径。免费使用许可为 ISC，部分 Feather 来源图标为 MIT；许可证随 npm 包提供，发布时保留其通知，见 https://lucide.dev/license 。生产与预览现统一使用该来源，旧 `renderer/Icon.tsx` 已删除。
 - 图标选型参考实际 ClickUp 页面的齿轮、折角文档与循环箭头；采用同一免费 Lucide 家族的 Settings、File、RotateCw，warning 使用 CircleAlert。它们是风格匹配，不是 ClickUp 专有 SVG 的逐路径复制。
 - 语义颜色：链接使用明显蓝色及 hover 色，成功/新增绿色、失败/删除红色、警告琥珀色、高亮淡紫色；代码关键字、字符串、数字各自使用 token。中性底色和主操作保持原层级。
 - Foundations 新增图标目录与完整文档样例，组合页复用同一静态样例；包含 mark、kbd、任务清单、代码着色、ins/del、状态表、术语、折叠内容、图注和脚注。代码着色为本地 React span，不是新增 Markdown 解析器。
 
-- Dialog 仍是同一原生 modal 实现，Tab 循环、Escape 请求关闭、恢复 opener；可配置 closeLabel。确认、危险操作、异步失败的状态由调用方控制，示例在 `CompletionExamples.tsx / DialogExamples`，没有另造一套 Dialog。
+- Dialog 是生产与预览唯一的原生 modal 实现，Tab 循环、Escape 请求关闭、恢复 opener；可配置 closeLabel。`closeOnBackdrop={false}` 供原本不响应 backdrop 的调用方保留关闭语义，`closeDisabled` 让异步提交期间的关闭按钮与业务锁一致。确认、危险操作、异步失败的状态由调用方控制，示例在 `CompletionExamples.tsx / DialogExamples`，没有另造一套 Dialog。
 - InlineRename 支持双击/F2，labels 可配置输入提示、保存/取消和失败文案；SessionTabs 按 id 恢复焦点，忙碌编辑器可作为焦点目标。未增加改名菜单入口。
 - ResizableWorkspace 窄窗先隐藏右侧再隐藏左侧，保存宽度恢复；separator 即将移除前把焦点移到永久 toggle。原有 GSAP 有界 context 与中途反转策略保持。
 

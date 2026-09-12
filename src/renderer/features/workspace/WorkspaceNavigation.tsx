@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
-import { Icon } from '../../Icon';
+import { Icon } from '../../ui';
 import { groupProjects } from './selection';
 
 export function ProjectNavigation({ sessions, recentProjects, project, onSelect }: { sessions: SessionInfo[]; recentProjects: string[]; project?: string; onSelect(cwd: string): void }) {

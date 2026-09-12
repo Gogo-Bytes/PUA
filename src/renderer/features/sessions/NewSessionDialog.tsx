@@ -1,4 +1,4 @@
-import { Modal } from '../../Modal';
+import { Dialog } from '../../ui';
 import { useNewSessionLaunch, type SessionLaunchOptions } from './useNewSessionLaunch';
 
 export interface NewSessionDialogProps extends SessionLaunchOptions {
@@ -9,7 +9,7 @@ export interface NewSessionDialogProps extends SessionLaunchOptions {
 
 export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }: NewSessionDialogProps) {
   const { cwd, setCwd, kind, setKind, mode, setMode, trust, setTrust, resources, inspecting, inspection, busy, error, submit, chooseDirectory } = useNewSessionLaunch(options);
-  return <Modal title="打开项目" onClose={onClose}>
+  return <Dialog open title="打开项目" closeLabel="关闭对话框" closeOnBackdrop={false} onClose={onClose}>
     <form onSubmit={event => { event.preventDefault(); submit(); }}>
       <label>项目文件夹</label>
       <div className="input-row">
@@ -46,5 +46,5 @@ export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }
         {!hasRuntime ? <button type="button" className="primary" onClick={onSettings}>先配置 Pi</button> : <button type="submit" className="primary" disabled={busy || !cwd.trim() || (kind === 'chat' && (inspecting || !!inspection?.error))}>{busy ? '正在打开…' : kind === 'chat' ? '开始对话 ↗' : '打开兼容终端 ↗'}</button>}
       </div>
     </form>
-  </Modal>;
+  </Dialog>;
 }

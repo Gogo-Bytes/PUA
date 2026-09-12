@@ -13,12 +13,12 @@
   "src/renderer/ui/Icon.tsx": "525aa27f543693a73803b097027c1f686fc7a1f38b40333e99ec694c0bbc8124",
   "src/renderer/ui/InlineRename.tsx": "eb2db76368e4cbbd17856dadfd9e99e22d27f56c764552a296173ea861aba1ce",
   "src/renderer/ui/Message.tsx": "0687eed5f073b4253e31b05f52f00e67631cb5929c05216f2a68931778fbf799",
-  "src/renderer/ui/README.md": "68f95578c3d579d7ccd7e4cf1f6e0b305738519992bbb0560a4c896241266ca9",
+  "src/renderer/ui/README.md": "4895c410964f597260af8b9fe6aee2b071346ac10ea53a98a74f23faf47306f8",
   "src/renderer/ui/ResizableWorkspace.tsx": "bab103a29e02a062900d94466139377970942dcbccf57669b551fec0de09b5a5",
   "src/renderer/ui/Toast.tsx": "1ecf515dcd108379a8786255f47761b14d80d77091209742bb15f418f3935821",
   "src/renderer/ui/index.ts": "751fb4c5003d29dc696b9c21e6008bdbd8a82ff7a126d6df3c9f9bc71af15316",
   "src/renderer/ui/motion.tsx": "5e4cb9195b18707bf61961793e292e2024af421ea80ddd068e2904e3fe50f463",
-  "src/renderer/ui/primitives.tsx": "1c7d92304353b8a4c1ee4d4b3d2a5a2e160e61ddc078556d8530311f341cdcb2",
+  "src/renderer/ui/primitives.tsx": "29bf911feb821f150341aa1af5aca3bc838ea69842bd77f86773058b9411a80b",
   "src/renderer/ui/theme.tsx": "0c51843d2119c5731a311750c71c7c5ed843ef0cc3aa5aa78d942a8e1f081835",
   "src/renderer/ui/tokens.css": "b1e24018472872e595a211a15e79d7464060cedd825ee4b0c7a5de05dbc24c7b",
   "src/renderer/ui/typography-and-hierarchy.md": "5ace06c763d3410fef31631a97de107f2ad7a1a42bb21cf3e28910d390112412",
@@ -41,6 +41,6 @@
   "tests/component-preview/tsconfig.json": "2520598ef4aab9edb6503d87027998a0e3832c2dca58a375c0157aa35523e51b",
   "tests/component-preview/typography-check.mjs": "f1ed53c8d025109a4f9a9dba9a169032b1ec6e77f33ff3dc4354b31b8e64cd05",
   "tests/component-preview/vite.config.ts": "76b08474cdf8361751afb96e9cd7fa9ae5d0791dff726fe13c0624f50d7a2a96",
-  "tests/component-primitives.test.tsx": "946ad7fef5973bb0a544ea2811962adf5b841e97d3b81b8e7657f6cabef3d2cc",
+  "tests/component-primitives.test.tsx": "ad6420d065ab2b16dd821f4fff07e690d4b1f6e93d89d812a49301dcd6ba3499",
   "tests/component-resizable-workspace.test.tsx": "bc56dc898d2f113d03d6b6bb2c0251bac3d11dc5201d42815d2fcd8c34fa8505"
 }

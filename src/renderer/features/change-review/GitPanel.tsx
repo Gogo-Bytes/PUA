@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { DiffScope, FileDiff, GitStatus } from '../../../shared/ipc/change-review';
 import { filesForScope } from './scope';
 import { referencePaths } from '../workspace';
-import { Icon } from '../../Icon';
+import { Icon } from '../../ui';
 import { CopyButton, MarkdownView, SourceView } from '../../ContentView';
 import { isConflictPatch, parseDiffLines } from './diff-lines';
 

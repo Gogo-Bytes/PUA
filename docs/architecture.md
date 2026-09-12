@@ -18,7 +18,7 @@ PTY/xterm 不再是主界面，但仍是一个真实 adapter：RPC 明确无法�
 
 `SessionProcessAdapter` 有意保留为单个物理资源 registry 对多个窄 Port 的实现：只有 `app/main/composition.ts` 构造具体类，create 与 attachment 用例只依赖各自 Port。拆出多个 class 会触及 pending、cleanup、附件、activity 与进程生命周期，或引入共享 registry/浅代理，因此不属于本 checkpoint 的安全结构迁移。`app/main/{create-session,chat-attachments}.ts` 同样保留为跨 Session、Conversation 与资源边界的 composition-edge 编排；不为目录对称增加空 Workspace backend、Terminal 转发 application class 或单实现空层。
 
-该 checkpoint 只基于源码 read/search/diff 静态审查。迁移后的 TypeScript 模块解析、构建产物路径、Electron/Pi/PTY 生命周期和真实桌面行为均未执行验证。生产 UI 第一阶段随后接入 `UIProvider`、semantic tokens 与单一主题解析，并建立显式 production stylesheet；Icon、Dialog、布局、Feature 组件、`ContentView` 和旧样式仍待后续分阶段收敛。该 UI 阶段同样只做静态审查，未运行 typecheck、自动测试、build、smoke、浏览器或应用，不能作为视觉或行为验收。其余范围包括 `renderer/modules` 按职责迁入 Feature/UI、formatter、完整 lint 和跨平台 release matrix；因此这不是全量目标架构完成、行为验收或发布完成。
+该 checkpoint 只基于源码 read/search/diff 静态审查。迁移后的 TypeScript 模块解析、构建产物路径、Electron/Pi/PTY 生命周期和真实桌面行为均未执行验证。生产 UI 第一阶段接入 `UIProvider`、semantic tokens 与单一主题解析，并建立显式 production stylesheet；第二阶段将生产 Icon 与 Dialog 收敛到 `renderer/ui`，删除旧顶层 `Icon.tsx` / `Modal.tsx`，Extension UI 也复用同一 Dialog。布局、Feature 组件、`ContentView` 和旧样式仍待后续分阶段收敛。第一阶段提交 `35c7589` 后按用户指令执行了 `npm run dev`：其内含 production build 并成功启动 Electron，只证明该提交可构建、可启动；未执行测试、独立 typecheck、smoke、浏览器检查或视觉/行为验收。第二阶段仍只做静态审查，未运行上述命令或重启应用。其余范围包括 `renderer/modules` 按职责迁入 Feature/UI、formatter、完整 lint 和跨平台 release matrix；因此这不是全量目标架构完成、行为验收或发布完成。
 
 ## 进程与依赖方向
 
@@ -103,7 +103,7 @@ IPC smoke 使用临时 userData 和显式本地 fixture runtime，仅解析 runt
 
 Workspace、Conversation、Terminal 与 Change Review 的生产展示入口现分别位于 `renderer/features/{workspace,conversation,terminal,change-review}/index.ts`。原顶层 `WorkspaceNavigation.tsx`、`ChatPane.tsx`、`chat-state.ts`、renderer diagnostics、`TerminalPane.tsx`、`terminal-keys.ts`、`GitPanel.tsx` 与 `diff-lines.ts` 已删除，不留转发；App 与跨 Feature 调用均经对应 index。原 `terminal-keys.ts` 仅按职责拆为 Terminal 的 modified Enter 协议适配和 Workspace 的 reference path 文本格式化，函数行为不变。
 
-本批只移动路径、调整 import/export、静态边界门禁和既有测试引用。Chat reducer/revision/附件、xterm 生命周期、Git 检查区局部状态、Workspace 草稿/handle registry、`session.id` 常驻 key、DOM/CSS 与 Desktop Client 均不变。顶层 `ContentView.tsx` 仍是 Conversation 与 Change Review 共用的临时 presentation seam；`Icon.tsx`、`Modal.tsx` 和旧 Feature 样式仍保持原位，待后续正式 UI 系统收敛，不把它们误归某个 Feature。生产主题解析与 tokens 已在 UI 第一阶段归入 `renderer/ui`，旧顶层 `theme.ts` 已删除；Terminal 的静态 xterm palette 位于 Terminal Feature，只投影 resolved theme，不取得主题偏好所有权。
+本批只移动路径、调整 import/export、静态边界门禁和既有测试引用。Chat reducer/revision/附件、xterm 生命周期、Git 检查区局部状态、Workspace 草稿/handle registry、`session.id` 常驻 key、DOM/CSS 与 Desktop Client 均不变。顶层 `ContentView.tsx` 仍是 Conversation 与 Change Review 共用的临时 presentation seam；旧 Feature 样式保持原位，待后续正式 UI 系统收敛，不把它们误归某个 Feature。生产主题解析、tokens、Icon 与 Dialog 已归入 `renderer/ui`，旧顶层 `theme.ts`、`Icon.tsx` 和 `Modal.tsx` 已删除；Terminal 的静态 xterm palette 位于 Terminal Feature，只投影 resolved theme，不取得主题偏好所有权。生产 Dialog 调用方显式关闭 backdrop dismissal，以保留旧关闭语义；Extension UI 的 pending/answer owner 仍在 Conversation Feature。
 
 按用户要求未运行自动测试、build、typecheck、smoke、Electron、Pi、浏览器或产物；只做源码 read/search、diff 与 `git diff --check`。因此相对 import、barrel export、真实桌面交互和视觉仍未执行验证，本批不是阶段 4 或全量架构完成。
 

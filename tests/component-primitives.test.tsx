@@ -66,3 +66,11 @@ it('Dialog loops Tab at either end and Escape requests closure', async () => {
   fireEvent.keyDown(first, { key: 'Tab', shiftKey: true }); expect(document.activeElement).toBe(last);
   fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true })); expect(close).toHaveBeenCalledOnce();
 });
+it('Dialog can preserve callers that do not close from backdrop clicks', async () => {
+  const { Dialog } = await import('../src/renderer/ui'); const close = vi.fn();
+  render(<UIProvider motion="off"><Dialog open title="Review" closeDisabled closeOnBackdrop={false} onClose={close}>Content</Dialog></UIProvider>);
+  expect((screen.getByRole('button', { name: 'Close dialog' }) as HTMLButtonElement).disabled).toBe(true);
+  const dialog = screen.getByRole('dialog');
+  vi.spyOn(dialog, 'getBoundingClientRect').mockReturnValue({ left: 10, right: 100, top: 10, bottom: 100 } as DOMRect);
+  fireEvent.click(dialog, { clientX: 0, clientY: 0 }); expect(close).not.toHaveBeenCalled();
+});

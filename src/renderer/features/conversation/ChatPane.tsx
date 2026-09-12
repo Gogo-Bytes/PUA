@@ -2,7 +2,7 @@ import { desktopClient } from '../../app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
 import { MarkdownView, CopyButton, SourceView } from '../../ContentView';
 export { MarkdownView } from '../../ContentView';
-import { Icon } from '../../Icon';
+import { Dialog, Icon } from '../../ui';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../../../shared/ipc/conversation';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
@@ -155,12 +155,10 @@ export function ToolCard({ tool }: { tool: ToolActivity }) {
 }
 
 export function ExtensionDialog({ request, onAnswer }: { request: ExtensionUIRequest; onAnswer(value: ExtensionUIResponse): Promise<void> }) {
-  const ref = useRef<HTMLDialogElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const submit = async (response: ExtensionUIResponse) => { if (submitting) return; setSubmitting(true); try { await onAnswer(response); } finally { setSubmitting(false); } };
-  useEffect(() => { const previous = document.activeElement as HTMLElement | null; ref.current?.showModal(); return () => { ref.current?.close(); previous?.focus(); }; }, []);
   const [value, setValue] = useState(request.method === 'editor' ? request.prefill ?? '' : '');
-  return <dialog ref={ref} className="extension-dialog" onCancel={event => { event.preventDefault(); void submit({ id: request.id, cancelled: true }); }} aria-modal="true" aria-labelledby={`extension-${request.id}`}><fieldset disabled={submitting}><header><h2 id={`extension-${request.id}`}>{request.title}</h2><button aria-label="取消" onClick={() => void submit({ id: request.id, cancelled: true })}>×</button></header>{request.method === 'confirm' && <p>{request.message}</p>}{request.method === 'select' ? <div className="extension-options">{request.options.map(option => <button key={option} onClick={() => void submit({ id: request.id, value: option })}>{option}</button>)}</div> : request.method === 'confirm' ? <div className="extension-actions"><button onClick={() => void submit({ id: request.id, confirmed: false })}>取消</button><button className="primary" onClick={() => void submit({ id: request.id, confirmed: true })}>确认</button></div> : <form onSubmit={event => { event.preventDefault(); void submit({ id: request.id, value }); }}><textarea autoFocus aria-label={request.title} placeholder={request.method === 'input' ? request.placeholder : undefined} value={value} onChange={event => setValue(event.target.value)} /><div className="extension-actions"><button type="button" onClick={() => void submit({ id: request.id, cancelled: true })}>取消</button><button className="primary" type="submit">提交</button></div></form>}</fieldset></dialog>;
+  return <Dialog open title={request.title} closeLabel="取消" closeDisabled={submitting} closeOnBackdrop={false} onClose={() => void submit({ id: request.id, cancelled: true })}><fieldset disabled={submitting}>{request.method === 'confirm' && <p>{request.message}</p>}{request.method === 'select' ? <div className="extension-options">{request.options.map(option => <button key={option} onClick={() => void submit({ id: request.id, value: option })}>{option}</button>)}</div> : request.method === 'confirm' ? <div className="extension-actions"><button onClick={() => void submit({ id: request.id, confirmed: false })}>取消</button><button className="primary" onClick={() => void submit({ id: request.id, confirmed: true })}>确认</button></div> : <form onSubmit={event => { event.preventDefault(); void submit({ id: request.id, value }); }}><textarea autoFocus aria-label={request.title} placeholder={request.method === 'input' ? request.placeholder : undefined} value={value} onChange={event => setValue(event.target.value)} /><div className="extension-actions"><button type="button" onClick={() => void submit({ id: request.id, cancelled: true })}>取消</button><button className="primary" type="submit">提交</button></div></form>}</fieldset></Dialog>;
 }
 
 function formatBytes(bytes: number): string { return bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KiB` : `${(bytes / 1024 / 1024).toFixed(1)} MiB`; }

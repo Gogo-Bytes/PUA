@@ -4,7 +4,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import remend from 'remend';
-import { Icon } from './Icon';
+import { Icon } from './ui';
 
 export function CopyButton({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false);

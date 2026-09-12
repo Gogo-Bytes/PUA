@@ -34,7 +34,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 describe('SettingsDialog public view characterization (Fake Desktop)', () => {
   it('preserves initial JSON formatting, default theme, DOM semantics and range Number conversion', async () => {
     const view = render(<SettingsDialog {...props} />);
-    expect(screen.getByRole('dialog').className).toBe('modal');
+    expect(screen.getByRole('dialog').className).toBe('ui-dialog');
     expect(input('Pi 路径').value).toBe('/pi'); expect(input('Node.js 路径').value).toBe('/node');
     expect(input('Pi CLI 参数').value).toBe(JSON.stringify(boot.preferences.args));
     expect(screen.getByRole('button', { name: '跟随系统' }).getAttribute('aria-pressed')).toBe('true');

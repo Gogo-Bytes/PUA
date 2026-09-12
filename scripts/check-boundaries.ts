@@ -19,6 +19,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const renderer = relative.startsWith('src/renderer/');
   const retiredRendererApp = relative === 'src/renderer/App.tsx';
   const retiredRendererPresentation = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(relative);
+  const retiredRendererUi = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererSessionPresentation = /^src\/renderer\/features\/session-launch\//.test(relative) || /^src\/renderer\/features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const workspaceRoot = 'src/renderer/features/workspace/';
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
@@ -52,6 +53,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   if (retiredSharedContracts) report(source, 'src/shared/contracts.ts is retired; desktop DTOs belong in src/shared/ipc/desktop-api.ts');
   if (retiredRendererApp) report(source, 'src/renderer/App.tsx is retired; the renderer composition root belongs in src/renderer/app/App.tsx');
   if (retiredRendererPresentation) report(source, 'top-level renderer domain presentation paths are retired; use the owning renderer feature');
+  if (retiredRendererUi) report(source, 'top-level renderer UI seams are retired; use renderer/ui');
   if (retiredRendererSessionPresentation) report(source, 'retired Session presentation paths must use src/renderer/features/sessions');
   if (appWorkerDirectory && !appWorker) report(source, 'src/app/workers contains only the pi-rpc and pty process entry files; helpers belong in platform adapters');
   const checkImport = (node: ts.Node, name: string) => {
@@ -70,6 +72,8 @@ export function checkSource(filename: string, text: string, root: string): strin
     if (relative.startsWith('src/') && retiredRendererAppTarget) report(node, 'top-level renderer App import is retired; use renderer/app/App.tsx');
     const retiredRendererTarget = /^src\/renderer\/(WorkspaceNavigation|ChatPane|chat-state|missing-assistant-diagnostics|TerminalPane|terminal-keys|GitPanel|diff-lines)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererTarget) report(node, 'top-level renderer domain presentation import is retired; use the owning feature index');
+    const retiredRendererUiTarget = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(target);
+    if (relative.startsWith('src/') && retiredRendererUiTarget) report(node, 'top-level renderer UI import is retired; use renderer/ui');
     const retiredSessionSpecifier = /(^|\/)features\/session-launch(?:\/|$)/.test(slash(name)) || /(^|\/)features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(slash(name));
     const retiredSessionTarget = /^src\/renderer\/features\/session-launch\//.test(target) || /^src\/renderer\/features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && (retiredSessionSpecifier || retiredSessionTarget)) report(node, 'retired Session presentation import must use features/sessions/index.ts');

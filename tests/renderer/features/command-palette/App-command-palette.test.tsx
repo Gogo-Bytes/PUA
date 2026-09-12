@@ -108,7 +108,7 @@ describe('App command palette before/after characterization with real panes', ()
     expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
   it('preserves filter fields, distinct zero results, exact DOM and list navigation including index -1/zero', async () => {
-    await mount(); open(); expect(screen.getByRole('dialog', { name: 'Pi 命令' }).className).toBe('modal');
+    await mount(); open(); expect(screen.getByRole('dialog', { name: 'Pi 命令' }).className).toBe('ui-dialog');
     expect(query().className).toBe('full-input'); expect(query().placeholder).toBe('搜索扩展、提示模板或技能…'); expect(document.activeElement).toBe(query());
     snapshot('s1', commandsA); expect(items()).toHaveLength(3);
     filter('FIRST'); expect(items()).toHaveLength(1); filter('/ALPHA'); expect(items()).toHaveLength(1); filter('GAMMA'); expect(items()).toHaveLength(1);
