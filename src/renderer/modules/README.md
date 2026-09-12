@@ -1,6 +1,6 @@
 # 工作台模块接口
 
-状态：现有隔离预览与生产迁移来源；不作为长期生产聚合层。接入生产时，领域组合移入对应 `renderer/features/*`，真正跨场景的交互能力下沉 `renderer/ui`，完成替换后删除这里的旧来源。
+状态：现有隔离预览与 Composer 生产迁移来源；不作为长期生产聚合层。接入生产时，领域组合移入对应 `renderer/features/*`，真正跨场景的交互能力下沉 `renderer/ui`，完成替换后删除这里的旧来源。
 
 入口 `index.ts` 按模块 re-export，样式由 UIProvider 限定。所有模块只接受数据、React slot 与 callbacks，不访问 Pi、Git、IPC 或磁盘。通用封装原则见 [ui README](../ui/README.md)。
 
@@ -22,7 +22,7 @@
 
 ## ChatMessage：对话展示，不是通知
 
-`ChatMessageProps`（`ChatMessage.tsx`）：`role` 为 user / assistant / system，`author` 必传，`metadata`、`children` 正文、`actions` 均为 ReactNode。字符串始终作为文本；调用方可通过正文 slot 提供已审核的受控渲染器。`streaming` 展示状态并将正文标记 aria-busy，不对每个 token 创建 live region；`error` 保留正文并复用静态 Message。角色、流式和失败标签可通过 `labels` 配置。作者与角色默认视觉隐藏但保留可访问文字，metadata 独立展示；actions 始终可见（键盘、触屏无需 hover）。用户正文右对齐浅底，助手使用裸正文。字符串保留换行，React slot 按正常块排版；段落、章节、列表、代码、引用、表格与链接样式仅作用于正文。排版规则见 [注意力层级](../ui/typography-and-hierarchy.md)。
+`ChatMessageProps`（现位于 `renderer/features/conversation/ChatMessage.tsx`）：`role` 为 user / assistant / system / custom / summary，`author` 必传，`metadata`、`children` 正文、`actions` 均为 ReactNode。字符串始终作为文本；调用方可通过正文 slot 提供已审核的受控渲染器。`streaming` 展示状态并将正文标记 aria-busy，不对每个 token 创建 live region；`error` 保留正文并复用静态 Message。角色、流式和失败标签可通过 `labels` 配置。作者与角色默认视觉隐藏但保留可访问文字，metadata 独立展示；actions 始终可见（键盘、触屏无需 hover）。用户正文右对齐浅底，助手使用裸正文。字符串保留换行，React slot 按正常块排版；段落、章节、列表、代码、引用、表格与链接样式仅作用于正文。排版规则见 [注意力层级](../ui/typography-and-hierarchy.md)。
 
 本库不直接复用旧 `ContentView.MarkdownView`：其链接和复制按钮依赖 `window.desktop`，不适用于隔离预览。未改动旧实现，也未新增不受控 HTML 渲染或桥接后门。
 
@@ -34,4 +34,6 @@ ProjectNav 与 SessionTabs 已迁入 `renderer/features/workspace` 并由生产 
 
 InspectorHeader 与 FileRow 已迁入 `renderer/features/change-review` 并接入生产 GitPanel。Git 状态、scope、selected path、刷新 generation 和 diff 请求仍由 GitPanel 持有；两个展示组件只转发既有 callback，预览继续使用本地 callback。
 
-ToolExecutionCard 已迁入 `renderer/features/conversation` 并接入生产 ToolCard。预览仍使用 Collapsible 的 GSAP seam 与统一可访问名称；生产通过 `nativeDetails` 保留原生 details/summary、成功默认收起、失败自动展开、展开状态跨运行更新保留，以及参数、图片、输出快照和复制行为。Tool activity 与消息 block owner 不变。`modules/index.ts` 不再导出以上五个组件。
+ToolExecutionCard 已迁入 `renderer/features/conversation` 并接入生产 ToolCard。预览仍使用 Collapsible 的 GSAP seam 与统一可访问名称；生产通过 `nativeDetails` 保留原生 details/summary、成功默认收起、失败自动展开、展开状态跨运行更新保留，以及参数、图片、输出快照和复制行为。Tool activity 与消息 block owner 不变。
+
+ChatMessage 已迁入 Conversation Feature，并通过 `transcript` variant 接入生产 MessageView。生产仍保留原 `chat-message` / `message-body` DOM seam、作者 header、CopyButton、MarkdownView、thinking、图片、工具 block 与错误位置；组件本身不取得 clipboard、链接、stream reducer 或消息 owner。`modules/index.ts` 不再导出以上六个组件。

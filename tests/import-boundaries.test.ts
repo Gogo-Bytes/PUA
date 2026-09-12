@@ -42,7 +42,8 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/modules/InspectorHeader.tsx', 'export {}'],
     ['src/renderer/modules/FileRow.tsx', 'export {}'],
     ['src/renderer/modules/ToolExecutionCard.tsx', 'export {}'],
-    ...['workspace/ProjectNav', 'workspace/SessionTabs', 'conversation/ChatPane', 'conversation/ToolExecutionCard', 'conversation/chat-state', 'terminal/TerminalPane', 'terminal/terminal-keys', 'change-review/GitPanel', 'change-review/InspectorHeader', 'change-review/FileRow', 'change-review/diff-lines'].map(target =>
+    ['src/renderer/modules/ChatMessage.tsx', 'export {}'],
+    ...['workspace/ProjectNav', 'workspace/SessionTabs', 'conversation/ChatPane', 'conversation/ToolExecutionCard', 'conversation/ChatMessage', 'conversation/chat-state', 'terminal/TerminalPane', 'terminal/terminal-keys', 'change-review/GitPanel', 'change-review/InspectorHeader', 'change-review/FileRow', 'change-review/diff-lines'].map(target =>
       ['src/renderer/app/App.tsx', `import '../features/${target}'`]),
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace/reference-paths'"],
     ['src/renderer/App.tsx', 'export {}'],
@@ -278,8 +279,9 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace'; import { parseDiffLines } from './diff-lines'; import { InspectorHeader } from './InspectorHeader'; import { FileRow } from './FileRow'"],
     ['src/renderer/features/change-review/InspectorHeader.tsx', "import { IconButton } from '../../ui'"],
     ['src/renderer/features/change-review/FileRow.tsx', "import { Button } from '../../ui'"],
-    ['src/renderer/features/conversation/ChatPane.tsx', "import { reduceChatEvent } from './chat-state'; import { ToolExecutionCard } from './ToolExecutionCard'; import { MarkdownView } from '../../ContentView'"],
+    ['src/renderer/features/conversation/ChatPane.tsx', "import { reduceChatEvent } from './chat-state'; import { ToolExecutionCard } from './ToolExecutionCard'; import { ChatMessage } from './ChatMessage'; import { MarkdownView } from '../../ContentView'"],
     ['src/renderer/features/conversation/ToolExecutionCard.tsx', "import { Collapsible } from '../../ui'"],
+    ['src/renderer/features/conversation/ChatMessage.tsx', "import { Message } from '../../ui'"],
   ])('allows %s: %s without grep false positives', (file, source) => {
     expect(checkSource(path.join(root, file), source, root)).toEqual([]);
   });

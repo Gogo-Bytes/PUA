@@ -9,6 +9,7 @@ import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { emptyChatState, queueText, reduceChatEvent, widgetsAt } from './chat-state';
 import { missingAssistantRendererDiagnostics } from './missing-assistant-diagnostics';
 import { ToolExecutionCard } from './ToolExecutionCard';
+import { ChatMessage as ConversationMessage } from './ChatMessage';
 
 interface Props {
   session: SessionInfo;
@@ -143,10 +144,10 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
 
 const MessageView = memo(function MessageView({ message }: { message: ChatMessage }) {
   const text = message.blocks.filter((block): block is Extract<ChatBlock, { type: 'text' }> => block.type === 'text').map(block => block.text).join('\n');
-  return <article className={`chat-message ${message.role}`}>
-    <header>{message.role === 'assistant' && <Icon name="pi" />}<span>{message.role === 'user' ? '你' : message.role === 'assistant' ? 'Pi' : message.label || '事件'}</span>{message.role === 'assistant' && text && <CopyButton text={text} label="复制回复" />}</header>
-    <div className="message-body">{message.blocks.map((block, index) => block.type === 'text' ? message.role === 'user' ? <div className="user-text" key={index}>{block.text}</div> : <MarkdownView key={index} text={block.text} streaming={!!message.streaming} /> : block.type === 'thinking' ? <details className="thinking" key={index}><summary>思考过程</summary><MarkdownView text={block.text} streaming={!!message.streaming} /></details> : block.type === 'image' ? <img className="transcript-image" key={index} alt="消息图片" src={`data:${block.mimeType};base64,${block.data}`} /> : <ToolCard key={block.tool.id} tool={block.tool} />)}{message.error && <div className="message-error">{message.error}</div>}</div>
-  </article>;
+  const author = message.role === 'user' ? '你' : message.role === 'assistant' ? 'Pi' : message.label || '事件';
+  return <ConversationMessage variant="transcript" role={message.role} author={author} error={message.error} header={<>{message.role === 'assistant' && <Icon name="pi" />}<span>{author}</span>{message.role === 'assistant' && text && <CopyButton text={text} label="复制回复" />}</>}>
+    {message.blocks.map((block, index) => block.type === 'text' ? message.role === 'user' ? <div className="user-text" key={index}>{block.text}</div> : <MarkdownView key={index} text={block.text} streaming={!!message.streaming} /> : block.type === 'thinking' ? <details className="thinking" key={index}><summary>思考过程</summary><MarkdownView text={block.text} streaming={!!message.streaming} /></details> : block.type === 'image' ? <img className="transcript-image" key={index} alt="消息图片" src={`data:${block.mimeType};base64,${block.data}`} /> : <ToolCard key={block.tool.id} tool={block.tool} />)}
+  </ConversationMessage>;
 });
 
 export function ToolCard({ tool }: { tool: ToolActivity }) {

@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
 import { ProjectNav, SessionTabs } from '../src/renderer/features/workspace';
 import { FileRow, InspectorHeader } from '../src/renderer/features/change-review';
-import { ToolExecutionCard } from '../src/renderer/features/conversation';
+import { ChatMessage, ToolExecutionCard } from '../src/renderer/features/conversation';
 import { UIProvider } from '../src/renderer/ui';
 it('tool activity uses one disclosure and retains open details across status updates', () => {
   const action = vi.fn();
@@ -66,8 +66,7 @@ it('SessionTabs can focus a pending editor by session id without enabling its bu
   expect(document.activeElement).toBe(screen.getByRole('textbox').closest('.ui-rename-editor'));
   expect((screen.getByRole('textbox') as HTMLInputElement).disabled).toBe(true);
 });
-it('ChatMessage treats HTML strings as text, exposes role/meta/streaming/failure/actions without desktop effects', async () => {
-  const { ChatMessage } = await import('../src/renderer/modules');
+it('ChatMessage treats HTML strings as text, exposes role/meta/streaming/failure/actions without desktop effects', () => {
   const action = vi.fn(); const unsafe = '<img src=x onerror="alert(1)"><script>alert(1)</script>';
   const view = render(<UIProvider><ChatMessage role="assistant" author="小派" metadata="刚刚" streaming error="稍后重试" labels={{ assistant: '助手', streaming: '正在回复', failed: '回复失败' }} actions={<button onClick={action}>重试回复</button>}>{unsafe}</ChatMessage></UIProvider>);
   expect(screen.getByRole('article', { name: '助手' })).toBeTruthy(); expect(screen.getByText('刚刚')).toBeTruthy(); expect(screen.getByText('正在回复')).toBeTruthy(); expect(screen.getByText(unsafe)).toBeTruthy();
@@ -81,8 +80,7 @@ it('module labels localize navigation, rename, execution and inspection without 
   fireEvent.keyDown(screen.getByRole('tab', { name: '方案' }), { key: 'F2' }); expect(screen.getByRole('textbox', { name: '重命名 方案' })).toBeTruthy(); expect(screen.getByRole('button', { name: '保存' })).toBeTruthy(); expect(screen.getByRole('button', { name: '取消' })).toBeTruthy();
   expect(screen.getByText('已完成')).toBeTruthy(); expect(screen.getByRole('button', { name: '检查 · 执行详情 · 已完成' })).toBeTruthy(); expect(screen.getByRole('button', { name: '刷新检查' })).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: '打开说明' })); expect(open).toHaveBeenCalledOnce();
 });
-it('ChatMessage keeps author semantics without repeated visual headings, and scopes string line breaks separately from React prose', async () => {
-  const { ChatMessage } = await import('../src/renderer/modules');
+it('ChatMessage keeps author semantics without repeated visual headings, and scopes string line breaks separately from React prose', () => {
   const view = render(<UIProvider><ChatMessage role="user" author="中文作者">{'第一行\nEnglish 2026'}</ChatMessage><ChatMessage role="assistant" author="小派" metadata="0.8s"><h1>回答章节</h1><p>普通正文</p><pre><code>{'const value = 1;\nreturn value;'}</code></pre></ChatMessage></UIProvider>);
   expect(screen.getByText('中文作者').closest('header')?.className).toBe('ui-visually-hidden');
   expect(screen.getByText('小派').closest('header')?.getAttribute('aria-hidden')).toBeNull();

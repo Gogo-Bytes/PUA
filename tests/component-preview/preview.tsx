@@ -1,8 +1,7 @@
 import { StrictMode, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { UIProvider, Button, IconButton, Icon, TextField, Select, DropdownMenu, Tooltip, Tag, StatusBadge, Tabs, Dialog, Collapsible, InlineRename, ResizableWorkspace, MotionSample, Breadcrumbs, type MotionMode, type RunStatus } from '../../src/renderer/ui';
-import { ChatMessage } from '../../src/renderer/modules';
-import { ToolExecutionCard } from '../../src/renderer/features/conversation';
+import { ToolExecutionCard, ChatMessage } from '../../src/renderer/features/conversation';
 import { ProjectNav, SessionTabs } from '../../src/renderer/features/workspace';
 import { InspectorHeader, FileRow } from '../../src/renderer/features/change-review';
 import { ComposerPreview, NotificationsPreview, DialogExamples, ChatExamples } from './CompletionExamples';
