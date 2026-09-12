@@ -37,4 +37,4 @@
 
 App composition-only/必要 continuation 收口、Preferences 可变引用 alias 修正、剩余 bounds 政策、formatter/完整 lint、生产 UI 统一、完整产品/跨平台发布 gate 均后置。原 Session/Conversation/Preferences/ChangeReview owner 与业务规则、诊断默认关/editMenu、普通模式基本手验事实保持。
 
-设计与维护按 `AGENTS.md` → [目标架构](target-architecture.md) 与 [现行架构](architecture.md)；UI 变更仍须单独读 [ui 指南](../src/renderer/ui/README.md) 与 [模块契约](../src/renderer/modules/README.md) 并取得授权。此次读取的技能是三个独立文件：`/Users/gan/.agents/skills/codebase-design/SKILL.md`、`/Users/gan/.agents/skills/domain-modeling/SKILL.md`、`/Users/gan/.agents/skills/writing-for-agents/SKILL.md`；后两者不是 codebase-design 子路径。
+设计与维护按 `AGENTS.md` → [目标架构](target-architecture.md) 与 [现行架构](architecture.md)；UI 变更仍须单独读 [ui 指南](../src/renderer/ui/README.md) 与 [生产接入契约](../src/renderer/ui/production-integration.md) 并取得授权。此次读取的技能是三个独立文件：`/Users/gan/.agents/skills/codebase-design/SKILL.md`、`/Users/gan/.agents/skills/domain-modeling/SKILL.md`、`/Users/gan/.agents/skills/writing-for-agents/SKILL.md`；后两者不是 codebase-design 子路径。

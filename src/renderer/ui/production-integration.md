@@ -1,6 +1,6 @@
-# 工作台模块迁移契约
+# 生产接入与迁移契约
 
-状态：`renderer/modules` 运行时代码与聚合入口已退休；本文件暂时保留迁移契约和历史审计说明。生产领域组合位于对应 `renderer/features/*`，真正跨场景的交互能力位于 `renderer/ui`。通用封装原则见 [ui README](../ui/README.md)。
+状态：`renderer/modules` 已完全退休；本文件保留生产接入契约和历史审计说明。生产领域组合位于对应 `renderer/features/*`，真正跨场景的交互能力位于 `renderer/ui`。通用封装原则见 [UI README](README.md)。
 
 ## Composer：调用方契约
 
@@ -20,7 +20,7 @@
 
 ## ChatMessage：对话展示，不是通知
 
-`ChatMessageProps`（现位于 `renderer/features/conversation/ChatMessage.tsx`）：`role` 为 user / assistant / system / custom / summary，`author` 必传，`metadata`、`children` 正文、`actions` 均为 ReactNode。字符串始终作为文本；调用方可通过正文 slot 提供已审核的受控渲染器。`streaming` 展示状态并将正文标记 aria-busy，不对每个 token 创建 live region；`error` 保留正文并复用静态 Message。角色、流式和失败标签可通过 `labels` 配置。作者与角色默认视觉隐藏但保留可访问文字，metadata 独立展示；actions 始终可见（键盘、触屏无需 hover）。用户正文右对齐浅底，助手使用裸正文。字符串保留换行，React slot 按正常块排版；段落、章节、列表、代码、引用、表格与链接样式仅作用于正文。排版规则见 [注意力层级](../ui/typography-and-hierarchy.md)。
+`ChatMessageProps`（现位于 `renderer/features/conversation/ChatMessage.tsx`）：`role` 为 user / assistant / system / custom / summary，`author` 必传，`metadata`、`children` 正文、`actions` 均为 ReactNode。字符串始终作为文本；调用方可通过正文 slot 提供已审核的受控渲染器。`streaming` 展示状态并将正文标记 aria-busy，不对每个 token 创建 live region；`error` 保留正文并复用静态 Message。角色、流式和失败标签可通过 `labels` 配置。作者与角色默认视觉隐藏但保留可访问文字，metadata 独立展示；actions 始终可见（键盘、触屏无需 hover）。用户正文右对齐浅底，助手使用裸正文。字符串保留换行，React slot 按正常块排版；段落、章节、列表、代码、引用、表格与链接样式仅作用于正文。排版规则见 [注意力层级](typography-and-hierarchy.md)。
 
 隔离预览不直接复用生产 `features/content/MarkdownView`；生产 transcript variant 只接受调用方传入的已审核正文。ContentView 迁移未改变渲染实现，也未新增不受控 HTML 渲染或桥接后门。
 

@@ -1,13 +1,13 @@
 # PUA 项目组件库
 
-状态：主题 foundation、Icon、Dialog、Workspace 导航、Session Tabs、Change Review 文件导航、Conversation ToolExecutionCard 与 ChatMessage 已接入生产 App；其余布局和领域组件仍按阶段迁移。组件预览继续隔离，视觉确认与生产接入是两步，不能把预览 fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
+状态：主题 foundation、统一 Icon/Dialog、Workspace/Change Review/Conversation 展示、Desktop-aware Content 与生产样式均已接入生产 App，旧顶层 seam 和 `renderer/modules` 已退休。组件预览继续隔离，静态迁移不代表视觉或运行验收，不能把 preview fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
 
 导出边界：light contrast=40 / opaqueWindows=true，dark contrast=100 / opaqueWindows=false，codeThemeId 均为 catppuccin。未知的 contrast 派生算法和原生窗口透明效果未模拟。用户后续要求优先：Diff 与 highlight 使用低饱和配套色，覆盖原导出 Diff 值；浅色 link 使用实际 ClickUp 任务正文链接测得的 #0b68cb，深色 #79b8ff 与两种 hover 色为本库配套值，不是 ClickUp 实测值。链接下划线保持同色，不再降低透明度。其他基础色保持；字体栈按后续要求统一明暗。提示、引用、Diff 与动效样例均不使用左侧装饰线；Diff 以正负号、文字色和浅底区分。尺寸和行高未由导出提供，沿用现值。
 
 ## 分层与封装流程（原则单一事实源）
 
-1. 修改界面前先查 `ui/index.ts`、所属 `renderer/features/*/index.ts` 与本轮仍保留的 [迁移契约](../modules/README.md)。先复用或扩展已有接口，确有新职责时再新增；完成必要接口、独立预览与行为测试后，再请求用户确认生产接入。
-2. **封装触发**：跨场景复用，或具有统一交互、可访问性、动效状态的控件进入 `ui`；生产工作台领域组合进入对应 `renderer/features/*`。`renderer/modules` 的运行时代码与聚合入口已经退休；一次性业务分支留在调用方，不为封装制造纯透传、万能组件或预设全部业务的 props。
+1. 修改界面前先查 `ui/index.ts`、所属 `renderer/features/*/index.ts` 与 [生产接入与迁移契约](production-integration.md)。先复用或扩展已有接口，确有新职责时再新增；完成必要接口、独立预览与行为测试后，再请求用户确认生产接入。
+2. **封装触发**：跨场景复用，或具有统一交互、可访问性、动效状态的控件进入 `ui`；生产工作台领域组合进入对应 `renderer/features/*`。`renderer/modules` 已完全退休；一次性业务分支留在调用方，不为封装制造纯透传、万能组件或预设全部业务的 props。
 3. 每个模块按职责拆文件，入口只 re-export；接口类型和行为约定放在实现附近。配色、尺寸、层级和动效通过统一 token，样式始终限定于 UIProvider。
 4. 新组件、新状态或接口变动必须同步预览、文档和接口测试。按适用性覆盖 default、hover、focus、disabled、busy、error、键盘、IME、明暗主题、窄窗与 reduced-motion。
 5. 结构动效使用 `motion.tsx` 的 GSAP seam；上下文持有量必须有界、可中断、卸载可清理。拖拽实时尺寸不创建逐帧 Tween；不能仅凭活跃 Tween 数宣称无泄漏，长时间操作还需检查 context 历史对象。菜单、改名、拖拽要验证焦点恢复与快速中断。
@@ -27,7 +27,7 @@
 - `ui/index.ts`：UIProvider、Button/IconButton、TextField、Select/DropdownMenu、Tooltip、Tag/StatusBadge、Tabs、Dialog、Collapsible、InlineRename、ResizableWorkspace、Message、ToastHost、Breadcrumbs 与动效工具。
 - `tokens.css`、`theme.tsx`：语义颜色、明暗主题、排版、尺寸与外观上下文。`app/production.css` 是唯一生产样式入口，按 cascade 顺序装配 app 与 Feature stylesheets；组件预览保持显式、隔离引入，Workspace Preview 复用生产入口。
 - `motion.tsx`：统一结构动效参数；系统 reduced-motion 优先于 normal/slow，off 立即就位。
-- `features/*/index.ts`：生产领域展示组件入口。ProjectNav 与 SessionTabs 位于 `features/workspace`，InspectorHeader、FileRow 与 production-only 的 change-review stylesheet 位于 `features/change-review`，ToolExecutionCard、ChatMessage 与 Composer 位于 `features/conversation`；Desktop-aware 的 CopyButton、MarkdownView 与 SourceView 位于 `features/content`。历史迁移约束暂见 [模块契约](../modules/README.md)。
+- `features/*/index.ts`：生产领域展示组件入口。ProjectNav 与 SessionTabs 位于 `features/workspace`，InspectorHeader、FileRow 与 production-only 的 change-review stylesheet 位于 `features/change-review`，ToolExecutionCard、ChatMessage 与 Composer 位于 `features/conversation`；Desktop-aware 的 CopyButton、MarkdownView 与 SourceView 位于 `features/content`。生产与历史迁移约束见 [接入契约](production-integration.md)。
 - `tests/component-preview/`：独立展示、内存 Adapter 与浏览器验证；不会进入生产入口。组合交互页是中文工作台场景，模块卡片展示安全正文与受控 Composer。
 
 ## 新通用接口

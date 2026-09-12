@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const foundationCommit = 'a4fb717fb387f5931bf69bf661e1b55aeadcaf12';
-const protectedDirectories = ['src/renderer/ui', 'src/renderer/modules', 'tests/component-preview'];
+const protectedDirectories = ['src/renderer/ui', 'tests/component-preview'];
 
 /** This slice's explicit UI freeze: compare both file membership and bytes. */
 export function checkProtectedFiles(root: string, manifest: Record<string, string>): string[] {

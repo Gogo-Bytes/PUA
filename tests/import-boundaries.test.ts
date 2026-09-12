@@ -44,6 +44,7 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/modules/ToolExecutionCard.tsx', 'export {}'],
     ['src/renderer/modules/ChatMessage.tsx', 'export {}'],
     ['src/renderer/modules/Composer.tsx', 'export {}'],
+    ['src/renderer/app/App.tsx', "import '../modules/NewPanel'"],
     ...['workspace/ProjectNav', 'workspace/SessionTabs', 'conversation/ChatPane', 'conversation/ToolExecutionCard', 'conversation/ChatMessage', 'conversation/Composer', 'conversation/chat-state', 'terminal/TerminalPane', 'terminal/terminal-keys', 'change-review/GitPanel', 'change-review/InspectorHeader', 'change-review/FileRow', 'change-review/diff-lines'].map(target =>
       ['src/renderer/app/App.tsx', `import '../features/${target}'`]),
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace/reference-paths'"],

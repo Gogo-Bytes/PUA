@@ -22,7 +22,7 @@ export function checkSource(filename: string, text: string, root: string): strin
   const retiredRendererUi = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(relative);
   const retiredRendererStyles = /^src\/renderer\/(?:styles|review)\.css$/.test(relative);
   const retiredRendererSessionPresentation = /^src\/renderer\/features\/session-launch\//.test(relative) || /^src\/renderer\/features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(relative);
-  const retiredRendererFeatureComponents = /^src\/renderer\/(?:features\/workspace\/WorkspaceNavigation|modules\/(?:ProjectNav|SessionTabs|InspectorHeader|FileRow|ToolExecutionCard|ChatMessage|Composer))(?:\.[cm]?[jt]sx?)?$/.test(relative);
+  const retiredRendererFeatureComponents = /^src\/renderer\/(?:features\/workspace\/WorkspaceNavigation(?:\.[cm]?[jt]sx?)?|modules\/.*)$/.test(relative);
   const workspaceRoot = 'src/renderer/features/workspace/';
   const workspaceSelection = relative === `${workspaceRoot}selection.ts`;
   const workspaceGlobals = ['window', 'document', 'process', 'Buffer', 'NodeJS', '__dirname', '__filename', 'setImmediate', 'clearImmediate'];
@@ -79,6 +79,7 @@ export function checkSource(filename: string, text: string, root: string): strin
     const retiredRendererUiTarget = /^src\/renderer\/(Icon|Modal|theme)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && retiredRendererUiTarget) report(node, 'top-level renderer UI import is retired; use renderer/ui');
     if (relative.startsWith('src/') && /^src\/renderer\/(?:styles|review)\.css$/.test(target)) report(node, 'top-level renderer style import is retired; use app/production.css');
+    if (relative.startsWith('src/') && target.startsWith('src/renderer/modules/')) report(node, 'renderer/modules is retired; use the owning renderer feature or renderer/ui');
     const retiredSessionSpecifier = /(^|\/)features\/session-launch(?:\/|$)/.test(slash(name)) || /(^|\/)features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(slash(name));
     const retiredSessionTarget = /^src\/renderer\/features\/session-launch\//.test(target) || /^src\/renderer\/features\/workspace\/(RenameDialog|useSessionPresentation)(?:\.[cm]?[jt]sx?)?$/.test(target);
     if (relative.startsWith('src/') && (retiredSessionSpecifier || retiredSessionTarget)) report(node, 'retired Session presentation import must use features/sessions/index.ts');
