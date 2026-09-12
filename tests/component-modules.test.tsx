@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
-import { ProjectNav, SessionTabs } from '../src/renderer/modules';
+import { ProjectNav, SessionTabs } from '../src/renderer/features/workspace';
 import { UIProvider } from '../src/renderer/ui';
 it('tool activity uses one disclosure and retains open details across status updates', async () => {
   const { ToolExecutionCard } = await import('../src/renderer/modules');
@@ -28,19 +28,19 @@ it('ProjectNav keeps cwd as callback identity and only reveals duplicate paths o
 });
 it('SessionTabs separates selection from rename and passes the session id through its callback', () => {
   const select = vi.fn(), rename = vi.fn();
-  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} selectedId="a" onSelect={select} onRename={rename} onAdd={() => {}}/></UIProvider>);
+  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} activeId="a" onSelect={select} onRename={rename} onAdd={() => {}}/></UIProvider>);
   fireEvent.click(screen.getByRole('tab', { name: 'Two' })); expect(select).toHaveBeenCalledWith('b'); expect(rename).not.toHaveBeenCalled();
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Two' }), { key: 'F2' }); fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } }); fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' }); expect(rename).not.toHaveBeenCalled();
 });
 it.each(['Home', 'ArrowLeft', 'ArrowRight'])('SessionTabs %s finds the first session editor by identity while retaining its draft', key => {
   const select = vi.fn();
   const props = { sessions: [{ id: 'a"odd', title: 'One' }, { id: 'b', title: 'Two' }], onSelect: select, onRename: vi.fn(), onAdd: vi.fn() };
-  const view = render(<UIProvider><SessionTabs {...props} selectedId={'a"odd'}/></UIProvider>);
+  const view = render(<UIProvider><SessionTabs {...props} activeId={'a"odd'}/></UIProvider>);
   fireEvent.keyDown(screen.getByRole('tab', { name: 'One' }), { key: 'F2' });
   const editor = screen.getByRole('textbox') as HTMLInputElement;
   fireEvent.change(editor, { target: { value: 'Retained draft' } });
   const second = screen.getByRole('tab', { name: 'Two' }); second.focus(); fireEvent.click(second);
-  view.rerender(<UIProvider><SessionTabs {...props} selectedId="b"/></UIProvider>);
+  view.rerender(<UIProvider><SessionTabs {...props} activeId="b"/></UIProvider>);
   fireEvent.keyDown(second, { key });
   expect(select).toHaveBeenLastCalledWith('a"odd'); expect(document.activeElement).toBe(editor); expect(editor.value).toBe('Retained draft');
   // End also resolves by identity, not the shortened set of remaining tabs.
@@ -49,7 +49,7 @@ it.each(['Home', 'ArrowLeft', 'ArrowRight'])('SessionTabs %s finds the first ses
 });
 it.each(['Save', 'Cancel'])('SessionTabs isolates all navigation keys on editor %s', label => {
   const select = vi.fn();
-  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} selectedId="a" onSelect={select} onRename={vi.fn()} onAdd={vi.fn()}/></UIProvider>);
+  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} activeId="a" onSelect={select} onRename={vi.fn()} onAdd={vi.fn()}/></UIProvider>);
   fireEvent.keyDown(screen.getByRole('tab', { name: 'One' }), { key: 'F2' });
   const button = screen.getByRole('button', { name: label }); button.focus();
   for (const key of ['Home', 'End', 'ArrowLeft', 'ArrowRight']) fireEvent.keyDown(button, { key });
@@ -57,7 +57,7 @@ it.each(['Save', 'Cancel'])('SessionTabs isolates all navigation keys on editor 
 });
 it('SessionTabs can focus a pending editor by session id without enabling its busy controls', () => {
   const select = vi.fn();
-  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} selectedId="b" onSelect={select} onRename={() => new Promise<void>(() => {})} onAdd={vi.fn()}/></UIProvider>);
+  render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} activeId="b" onSelect={select} onRename={() => new Promise<void>(() => {})} onAdd={vi.fn()}/></UIProvider>);
   fireEvent.keyDown(screen.getByRole('tab', { name: 'One' }), { key: 'F2' });
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const second = screen.getByRole('tab', { name: 'Two' }); second.focus(); fireEvent.keyDown(second, { key: 'Home' });
@@ -76,7 +76,7 @@ it('ChatMessage treats HTML strings as text, exposes role/meta/streaming/failure
 it('module labels localize navigation, rename, execution and inspection without changing identity callbacks', async () => {
   const { ToolExecutionCard, InspectorHeader, FileRow } = await import('../src/renderer/modules');
   const open = vi.fn();
-  render(<UIProvider><ProjectNav projects={[]} selectedCwd="" onSelect={vi.fn()} onAdd={vi.fn()} labels={{ title: '项目', add: '添加项目', empty: '暂无项目' }}/><SessionTabs sessions={[{ id: 'a', title: '方案' }]} selectedId="a" onSelect={vi.fn()} onRename={vi.fn()} onAdd={vi.fn()} labels={{ title: '会话', add: '新会话', rename: { hint: '双击或 F2 重命名', input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空' } }}/><ToolExecutionCard title="检查" status="success" labels={{ details: '执行详情', statuses: { success: '已完成' } }}>详情</ToolExecutionCard><InspectorHeader title="检查器" count={1} onRefresh={vi.fn()} labels={{ refresh: '刷新检查' }}/><FileRow name="说明" detail="文件" onOpen={open} labels={{ open: '打开说明' }}/></UIProvider>);
+  render(<UIProvider><ProjectNav projects={[]} selectedCwd="" onSelect={vi.fn()} onAdd={vi.fn()} labels={{ title: '项目', add: '添加项目', empty: '暂无项目' }}/><SessionTabs sessions={[{ id: 'a', title: '方案' }]} activeId="a" onSelect={vi.fn()} onRename={vi.fn()} onAdd={vi.fn()} labels={{ title: '会话', add: '新会话', rename: { hint: '双击或 F2 重命名', input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空' } }}/><ToolExecutionCard title="检查" status="success" labels={{ details: '执行详情', statuses: { success: '已完成' } }}>详情</ToolExecutionCard><InspectorHeader title="检查器" count={1} onRefresh={vi.fn()} labels={{ refresh: '刷新检查' }}/><FileRow name="说明" detail="文件" onOpen={open} labels={{ open: '打开说明' }}/></UIProvider>);
   expect(screen.getByRole('navigation', { name: '项目' })).toBeTruthy(); expect(screen.getByText('暂无项目')).toBeTruthy(); expect(screen.getByRole('button', { name: '添加项目' })).toBeTruthy(); expect(screen.getByRole('button', { name: '新会话' })).toBeTruthy();
   fireEvent.keyDown(screen.getByRole('tab', { name: '方案' }), { key: 'F2' }); expect(screen.getByRole('textbox', { name: '重命名 方案' })).toBeTruthy(); expect(screen.getByRole('button', { name: '保存' })).toBeTruthy(); expect(screen.getByRole('button', { name: '取消' })).toBeTruthy();
   expect(screen.getByText('已完成')).toBeTruthy(); expect(screen.getByRole('button', { name: '检查 · 执行详情 · 已完成' })).toBeTruthy(); expect(screen.getByRole('button', { name: '刷新检查' })).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: '打开说明' })); expect(open).toHaveBeenCalledOnce();

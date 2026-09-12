@@ -1,6 +1,4 @@
 import './modules.css';
-export * from './ProjectNav';
-export * from './SessionTabs';
 export * from './ToolExecutionCard';
 export * from './Composer';
 export * from './InspectorHeader';

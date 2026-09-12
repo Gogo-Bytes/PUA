@@ -28,16 +28,17 @@
 
 正文支持受控 React 内容中的 mark 高亮、kbd 快捷键、ins/del 变更行、dl 术语、details 折叠、figure/figcaption 与脚注锚点。`ui-code-keyword/string/number/comment` 为调用方已审核语法片段的配色类；不自动解析或执行代码。静态任务清单以图标加明确文字表达完成/待检查，不伪装成可操作的复选框。完整样例位于预览 `DocumentExamples.tsx`，不从模块入口导出。
 
-## 导航与检查模块
+## 已迁出的导航模块
+
+ProjectNav 与 SessionTabs 已迁入 `renderer/features/workspace` 并由生产 App 和隔离预览共同消费；`modules/index.ts` 不再导出它们。ProjectNav 保留 cwd callback 身份、生产筛选与路径显示，并让预览继续只在重名时通过 Tooltip 显示完整路径。SessionTabs 保留生产关闭/overflow/键盘导航，同时仅在预览提供 `onRename` / `onAdd` 时启用 InlineRename；生产改名仍由原 Session Dialog owner 处理。
+
+## 检查模块
 
 | 模块 | 数据与行为 | 文案/slot |
 | --- | --- | --- |
-| ProjectNav | `Project { cwd, name, sessions }[]`；selectedCwd；onSelect(cwd)、onAdd | labels.title / add / empty；默认显示名称，重名的完整路径仅 hover/focus 显示 |
-| SessionTabs | `Session { id, title }[]`；selectedId；onSelect(id)、onRename(id,title)、onAdd | labels.title / add / rename；rename 为 InlineRenameLabels 的部分配置 |
 | ToolExecutionCard | title 摘要句、RunStatus、可选 duration / icon 装饰 slot；children 详情 | labels.details / statuses（按状态覆盖名称） |
 | InspectorHeader | title、count、onRefresh | labels.refresh |
 | FileRow | name、detail、onOpen | labels.open 可覆盖完整可访问名称；可见名称和详情由数据控制 |
 
-SessionTabs 仍支持双击/F2 改名、Enter 提交、Escape 取消、IME 安全、失败保留草稿。焦点按 session id 定位，而非按剩余 tab 的 DOM 下标；编辑器内部导航键不触发会话切换。调用方需维护稳定 id，并对自己的异步重命名回写做会话身份校验。
 
 ToolExecutionCard 保留兼容名称，视觉为无外框、无底色的全宽块。摘要按钮覆盖完整阅读列宽度，整行均可点击；完成状态只保留可访问文字，运行、暂停、失败保留可见状态。可访问名称包含摘要、详情标签与当前状态。icon 只接受非交互装饰内容，工具名称必须由 title 表达。默认收起，复用 Collapsible 的 GSAP seam 与键盘按钮语义；展开时摘要与详情之间显示贯穿宽度的水平分隔线，正文与摘要左缘对齐，无侧边竖线或额外缩进。长摘要允许换行，不截掉错误；duration 可选且紧邻内容。

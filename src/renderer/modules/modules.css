@@ -1,14 +1,9 @@
 .ui-provider .ui-module-heading { display: flex; align-items: center; gap: var(--ui-space-2); padding: 0 var(--ui-space-tight) var(--ui-space-1); font-weight: var(--ui-weight-medium); color: var(--ui-secondary); }
 .ui-provider .ui-module-heading strong { font-weight: inherit; }
 .ui-provider .ui-module-heading .ui-icon-button { margin-left: auto; }
-.ui-provider .ui-project-row, .ui-provider .ui-file-row { display: flex; width: 100%; justify-content: flex-start; text-align: left; margin: 2px 0; }
-.ui-provider .ui-project-row > span, .ui-provider .ui-file-row > span { overflow: hidden; text-overflow: ellipsis; }
-.ui-provider .ui-project-row small, .ui-provider .ui-file-row small { margin-left: auto; font: var(--ui-font-meta); color: var(--ui-tertiary); }
-.ui-provider .ui-project-row[aria-current='page'] { background: var(--ui-selected); color: var(--ui-text); font-weight: var(--ui-weight-medium); }
-.ui-provider .ui-project-nav .ui-tooltip-anchor, .ui-provider .ui-project-nav .ui-tooltip-anchor > span:first-child { display: block; }
-.ui-provider .ui-session-strip { display: flex; align-items: center; gap: var(--ui-space-1); padding: var(--ui-space-1) var(--ui-space-2); border-bottom: 1px solid var(--ui-border); }
-.ui-provider .ui-session-tabs { display: flex; gap: var(--ui-space-1); min-width: 0; overflow-x: auto; flex: 1; padding: var(--ui-space-1); }
-.ui-provider .ui-session-tabs .ui-rename { flex-shrink: 0; max-width: 360px; }
+.ui-provider .ui-file-row { display: flex; width: 100%; justify-content: flex-start; text-align: left; margin: 2px 0; }
+.ui-provider .ui-file-row > span { overflow: hidden; text-overflow: ellipsis; }
+.ui-provider .ui-file-row small { margin-left: auto; font: var(--ui-font-meta); color: var(--ui-tertiary); }
 .ui-provider .ui-tool-card { display: block; width: 100%; min-width: 0; color: var(--ui-tertiary); }
 .ui-provider .ui-tool-card .ui-collapsible > .ui-button { display: flex; width: 100%; max-width: 100%; justify-content: flex-start; padding: var(--ui-space-1) 0; border: 0; border-radius: 0; gap: var(--ui-space-2); color: inherit; background: transparent; white-space: normal; text-align: left; font-weight: var(--ui-weight-normal); }
 .ui-provider .ui-tool-card .ui-collapsible > .ui-button:hover { color: var(--ui-text); }

@@ -36,7 +36,10 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/session-launch/index.ts', 'export {}'],
     ['src/renderer/features/workspace/RenameDialog.tsx', 'export {}'],
     ['src/renderer/features/workspace/useSessionPresentation.ts', 'export {}'],
-    ...['workspace/WorkspaceNavigation', 'conversation/ChatPane', 'conversation/chat-state', 'terminal/TerminalPane', 'terminal/terminal-keys', 'change-review/GitPanel', 'change-review/diff-lines'].map(target =>
+    ['src/renderer/features/workspace/WorkspaceNavigation.tsx', 'export {}'],
+    ['src/renderer/modules/ProjectNav.tsx', 'export {}'],
+    ['src/renderer/modules/SessionTabs.tsx', 'export {}'],
+    ...['workspace/ProjectNav', 'workspace/SessionTabs', 'conversation/ChatPane', 'conversation/chat-state', 'terminal/TerminalPane', 'terminal/terminal-keys', 'change-review/GitPanel', 'change-review/diff-lines'].map(target =>
       ['src/renderer/app/App.tsx', `import '../features/${target}'`]),
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace/reference-paths'"],
     ['src/renderer/App.tsx', 'export {}'],
@@ -266,7 +269,8 @@ describe('TypeScript import/channel gate', () => {
     ['src/renderer/features/sessions/NewSessionDialog.tsx', "import { useWorkspace } from '../workspace'"],
     ['src/renderer/features/workspace/useWorkspace.ts', "import { useNewSessionLaunch } from '../sessions'"],
     ['src/renderer/app/App.tsx', "import { ProjectNavigation } from '../features/workspace'; import { ChatPane } from '../features/conversation'; import { TerminalPane } from '../features/terminal'; import { GitPanel } from '../features/change-review'"],
-    ['src/renderer/features/workspace/WorkspaceNavigation.tsx', "import { groupProjects } from './selection'; import { Icon } from '../../ui'"],
+    ['src/renderer/features/workspace/ProjectNav.tsx', "import { groupProjects } from './selection'; import { Icon } from '../../ui'"],
+    ['src/renderer/features/workspace/SessionTabs.tsx', "import { InlineRename } from '../../ui'"],
     ['src/renderer/features/workspace/useSessionInput.ts', "import type { TerminalHandle } from '../terminal'; import { referencePaths } from './reference-paths'"],
     ['src/renderer/features/change-review/GitPanel.tsx', "import { referencePaths } from '../workspace'; import { parseDiffLines } from './diff-lines'"],
     ['src/renderer/features/conversation/ChatPane.tsx', "import { reduceChatEvent } from './chat-state'; import { MarkdownView } from '../../ContentView'"],
