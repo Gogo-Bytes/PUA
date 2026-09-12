@@ -1,4 +1,4 @@
-export { UIProvider, useMotionScale, type MotionMode } from './theme';
+export { UIProvider, resolveTheme, useTheme, useMotionScale, type MotionMode, type ResolvedTheme, type ThemePreference } from './theme';
 export { motionTokens, MotionSample } from './motion';
 export * from './primitives';
 export { InlineRename } from './InlineRename';

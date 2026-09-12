@@ -5,6 +5,8 @@ import { ProjectNav, SessionTabs, ToolExecutionCard, InspectorHeader, FileRow, C
 import { ComposerPreview, NotificationsPreview, DialogExamples, ChatExamples } from './CompletionExamples';
 import * as fixtures from './fixtures';
 import { DocumentExamples } from './DocumentExamples';
+import '../../src/renderer/ui/tokens.css';
+import '../../src/renderer/ui/ui.css';
 import './preview.css';
 const sections = [{ value: 'foundations', label: 'Foundations' }, { value: 'primitives', label: '通用组件' }, { value: 'modules', label: '模块组件' }, { value: 'composition', label: '组合交互' }];
 function Card({ title, note, children, wide = false }: { title: string; note?: string; children: ReactNode; wide?: boolean }) {

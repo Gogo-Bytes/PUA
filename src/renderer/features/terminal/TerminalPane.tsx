@@ -8,7 +8,7 @@ import { ImageAddon } from '@xterm/addon-image';
 import '@xterm/xterm/css/xterm.css';
 import { modifiedEnter } from './terminal-keys';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
-import { terminalThemes, type ResolvedTheme } from '../../theme';
+import { terminalThemes, type ResolvedTheme } from './terminal-theme';
 
 export interface TerminalHandle {
   focus(): void;

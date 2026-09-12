@@ -2,7 +2,7 @@
 
 状态：**目标设计；用户授权的非 UI 源码结构迁移已形成 checkpoint，全量重构与运行验收未完成**。进程入口、平台 Adapter、shared/ipc、领域 Module、main composition 与 renderer app/Feature 路径已归位；当前已实现行为仍以代码、测试、[现行架构](architecture.md) 和 [原生对话设计](native-chat-design.md) 为准。
 
-首批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。后续结构批次又退休旧 `src/main` 与 shared 顶层契约，归位 app/preload/workers/platform/modules/renderer features，并将 main create/attachment 用例从具体 process Adapter 去耦。`SessionProcessAdapter` 作为单 registry、多窄 Port 的物理资源 owner 有意保留，只有 composition root 构造；不为目录对称拆出共享 registry 或浅代理。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 仍未完成；阶段 3 已落地 send/attachment、runtime stop/activity/waiting 与 stream/tool/history，但未获本轮运行验证。原 `ui`、`modules`、44 项组件/demo 保护集合及视觉参考依赖闭包保留，正式 UI 未替换。具体结构 checkpoint 与验证限制见 [现行架构](architecture.md#非-ui-结构迁移-checkpoint)。
+首批已集中 Desktop IPC channel/DTO/schema、统一 main sender → parser seam、打包 sandbox preload，并建立包含 tests/fixtures 的 TS/TSX 类型检查及隔离 IPC/生命周期 smoke 的 `verify`（`.mjs` fixture 未被 TypeScript 检查）。后续结构批次又退休旧 `src/main` 与 shared 顶层契约，归位 app/preload/workers/platform/modules/renderer features，并将 main create/attachment 用例从具体 process Adapter 去耦。`SessionProcessAdapter` 作为单 registry、多窄 Port 的物理资源 owner 有意保留，只有 composition root 构造；不为目录对称拆出共享 registry 或浅代理。阶段 0 的 formatter/完整 lint、完整产品 smoke、preview export 清理、阶段 2 完整桌面验收与完整阶段 3–5 仍未完成；阶段 3 已落地 send/attachment、runtime stop/activity/waiting 与 stream/tool/history，但未获本轮运行验证。生产 UI 第一阶段已接入 `UIProvider`、semantic tokens、单一主题解析和显式样式入口；Icon、Dialog、布局、Feature 组件、`ContentView`、旧样式及 `renderer/modules` 仍待分阶段收敛。组件/demo 保护集合继续保留并按授权改动更新精确 hash。具体结构 checkpoint 与验证限制见 [现行架构](architecture.md#非-ui-结构迁移-checkpoint)。
 
 Strict Pi response checkpoint `e709f4d` 完成 pending command 关联、严格 boolean/error、clear 两条 string[] 和既有 handshake 外层契约；DesktopResult/client vertical `e7b5fa8` 完成结构化结果与统一 renderer seam；App continuation checkpoint `1d9c491` 完成窗口工作流归位。后续纯迁移批次完成进程与 platform 路径、shared/ipc、renderer 领域 presentation、Session presentation 与 use case Port 去具体化，未改产品功能。按用户要求，这些后续批次未运行自动测试、构建、typecheck、smoke 或应用，不能将静态 checkpoint 当作行为证明。Preferences 可变引用 alias 行为、bounds、生产 UI、真实验收与发布目标均未完成。
 
@@ -498,13 +498,13 @@ Electron smoke
 
 create 的 add → close/reset → hide search → fire-and-forget refresh、rename 提交时旧 identity、await-close 最新选择及同 continuation 草稿删除、附件旧目标/当前 registry、snapshot append、palette 正常插入才 reset、search 保留与 focus/media/IME/keyboard 注册顺序均保留。ChatPane revision/附件/消息、TerminalPane xterm lifetime、GitPanel 局部状态与 session.id panes 常驻语义不变；这些领域 presentation 及 reducer/helper 已在后续纯路径批次迁入 `features/{conversation,terminal,change-review,workspace}`，旧顶层路径删除且跨 Feature 调用经 index。backend Session/Conversation/Preferences 权威不迁 renderer。真实调用图、callback 稳定性与保留的异步局限见 [App composition 当前状态](architecture.md#app-composition窗口工作流归位有限代码收尾)。
 
-用户条件解冻只授权生产架构职责归位，不是视觉整合：原 ui/modules、44 项保护集合、27 节点视觉 demo 原字节及边闭包保留；辅助 workspace-preview 的 fixture/config/行为不改，composition-root 归位时仅更新 App import 路径。后续领域路径归位批次同样不修改这些范围，并按用户要求不运行自动测试、build、typecheck、smoke 或应用，只做静态检查。顶层 `ContentView.tsx` 暂作 Conversation/Change Review 共享 presentation seam；生产 UI/Theme/Icon/Dialog 收敛、真实桌面/原生对话与跨平台验收仍未完成。
+此前条件解冻只授权生产架构职责归位；后续获批的生产 UI 第一阶段仅接入 `UIProvider`、semantic tokens、主题解析和显式 production stylesheet，并保持 preview fixture 隔离。旧顶层 `theme.ts` 已删除，Terminal 静态 palette 归入 Terminal Feature；Icon、Dialog、布局、领域组件、顶层 `ContentView.tsx`、旧样式和 `renderer/modules` 仍待后续逐项收敛。该阶段按用户要求未运行自动测试、build、typecheck、smoke、浏览器或应用，仅做静态检查；真实桌面/原生对话与跨平台验收仍未完成。
 
 完成条件：
 
 - `App.tsx` 只承担组合，不拥有各 Feature 工作流；
 - Workspace、Session、Conversation、Terminal、Change Review、Preferences UI 各自可定位；
-- 旧/new Theme、Icon、Dialog 和布局体系完成收敛；
+- Theme 已收敛；Icon、Dialog 和布局体系完成收敛；
 - 草稿、附件、后台事件、滚动和焦点无回归。
 
 ### 阶段 5：Change Review、Preferences 与发布治理

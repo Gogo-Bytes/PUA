@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Bootstrap } from '../../shared/ipc/desktop-api';
-import { useTheme } from '../theme';
+import { useTheme } from '../ui';
 import { desktopClient, isDesktopAvailable } from './desktop-client';
 
 /** Window snapshot only: Preferences current/recents and persistence remain in main. */

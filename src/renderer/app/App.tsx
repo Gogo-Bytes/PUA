@@ -8,6 +8,7 @@ import { NewSessionDialog, RenameDialog } from '../features/sessions';
 import { SettingsDialog } from '../features/preferences';
 import { CommandPalette } from '../features/command-palette';
 import { Icon } from '../Icon';
+import { UIProvider } from '../ui';
 
 export function App() {
   const [reviewOpen, setReviewOpen] = useState(() => window.innerWidth > 1100);
@@ -40,7 +41,7 @@ export function App() {
     return () => media?.removeEventListener('change', change);
   }, []);
 
-  return <div className="workspace">
+  return <UIProvider theme={theme}><div className="workspace">
     <aside className="sidebar" aria-label="项目导航"><div className="brand"><span className="brand-icon"><Icon name="pi" /></span><strong>PUA</strong><small>工作台</small></div>
       <button className="search-launch" onClick={palette.openFromSidebar} disabled={!active}><Icon name="search" />搜索与命令<kbd>⌘ K</kbd></button>
       <button className="new-button" onClick={() => launch.open()} disabled={!boot}><Icon name="plus" />打开项目</button>
@@ -59,5 +60,5 @@ export function App() {
     {sessionActions.renaming && active && <RenameDialog title={active.title} persistent={active.kind === 'chat'} onClose={sessionActions.closeRename} onSave={sessionActions.saveRename} />}
     {desktopPresentation.settingsOpen && boot && <SettingsDialog boot={boot} onClose={desktopPresentation.closeSettings} onSave={desktopPresentation.publish} />}
     <CommandPalette palette={palette} onInsert={input.insertCommand} />
-  </div>;
+  </div></UIProvider>;
 }

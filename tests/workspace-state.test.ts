@@ -6,7 +6,7 @@ import { isConflictPatch, parseDiffLines } from '../src/renderer/features/change
 import combinedConflict from './fixtures/combined-conflict.patch?raw';
 import { defaults, JsonPreferencesStorage } from '../src/platform/filesystem/preferences-storage';
 import { validatePreferences } from '../src/shared/ipc/schemas';
-import { resolveTheme } from '../src/renderer/theme';
+import { resolveTheme } from '../src/renderer/ui/theme';
 
 describe('desktop theme compatibility', () => {
   it('defaults old preferences to system and rejects invalid theme at host boundary', () => {

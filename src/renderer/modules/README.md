@@ -1,5 +1,7 @@
 # 工作台模块接口
 
+状态：现有隔离预览与生产迁移来源；不作为长期生产聚合层。接入生产时，领域组合移入对应 `renderer/features/*`，真正跨场景的交互能力下沉 `renderer/ui`，完成替换后删除这里的旧来源。
+
 入口 `index.ts` 按模块 re-export，样式由 UIProvider 限定。所有模块只接受数据、React slot 与 callbacks，不访问 Pi、Git、IPC 或磁盘。通用封装原则见 [ui README](../ui/README.md)。
 
 ## Composer：真实接入前的调用方契约
