@@ -11,6 +11,7 @@ const errors = [];
 try {
   const page = await browser.newPage();
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   for (const width of [1280, 1440, 500]) for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4182/');

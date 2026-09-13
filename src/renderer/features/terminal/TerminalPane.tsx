@@ -5,7 +5,6 @@ import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { ImageAddon } from '@xterm/addon-image';
-import '@xterm/xterm/css/xterm.css';
 import { modifiedEnter } from './terminal-keys';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { terminalThemes, type ResolvedTheme } from './terminal-theme';

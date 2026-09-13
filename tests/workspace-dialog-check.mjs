@@ -10,6 +10,7 @@ try {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('http://127.0.0.1:4181/workspace-preview.html');
   await page.getByRole('textbox', { name: '筛选项目' }).waitFor();
   await page.getByRole('navigation', { name: '项目' }).getByTitle('/test/workspace/PUA', { exact: true }).click();

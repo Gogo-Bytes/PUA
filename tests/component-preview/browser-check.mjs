@@ -5,8 +5,14 @@ import { mkdir } from 'node:fs/promises';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const errors = []; page.on('pageerror', error => errors.push(error.message));
+page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 const output = '/tmp/pua-component-completion-evidence'; await mkdir(output, { recursive: true });
 const select = async (label, option) => { await page.getByRole('button', { name: label, exact: true }).click(); await page.getByRole('option', { name: option, exact: true }).click(); };
+// Focus and prior editor interactions may scroll tall separators partly out of view.
+const dragPoint = async locator => {
+  await locator.scrollIntoViewIfNeeded();
+  return locator.evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: (Math.max(0, r.top) + Math.min(innerHeight, r.bottom)) / 2 }; });
+};
 const size = async side => Number(await page.getByRole('separator', { name: `Resize ${side} panel` }).getAttribute('aria-valuenow'));
 const noOverflow = async () => assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no document horizontal overflow');
 // Instrument only the served test response, before React mounts. No production debug exports.
@@ -179,29 +185,30 @@ try {
   await sessionEditor.focus(); await sessionEditor.press('Escape');
   await firstSession.waitFor();
   // Pointer capture is real: move outside the separator and verify live widths and clamps.
-  const left = page.getByRole('separator', { name: 'Resize left panel' }); const rect = await left.boundingBox();
+  const left = page.getByRole('separator', { name: 'Resize left panel' }); const rect = await dragPoint(left);
   evidence.contextDataEntries.beforeDrag = await retained();
-  await page.mouse.move(rect.x + rect.width / 2, rect.y + 160); await page.mouse.down();
-  for (let i = 0; i < 160; i++) await page.mouse.move(rect.x + 1 + i % 100, rect.y + 160);
+  await page.mouse.move(rect.x, rect.y); await page.mouse.down();
+  for (let i = 0; i < 160; i++) await page.mouse.move(rect.x + 1 + i % 100, rect.y);
   await page.mouse.up();
   evidence.contextDataEntries.after160DragMoves = await retained();
   assert(evidence.contextDataEntries.after160DragMoves <= evidence.contextDataEntries.beforeDrag, 'drag must not retain GSAP history');
   // Return to the saved initial width before the existing clamp checks.
   await left.focus(); await page.keyboard.press('Home');
   for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
-  await page.mouse.move(rect.x + rect.width / 2, rect.y + 160); await page.mouse.down(); await page.mouse.move(rect.x + 70, rect.y + 180, { steps: 4 });
+  const currentRect = await dragPoint(left); // Keyboard resizing moved the separator.
+  await page.mouse.move(currentRect.x, currentRect.y); await page.mouse.down(); await page.mouse.move(currentRect.x + 70, currentRect.y, { steps: 4 });
   assert((await size('left')) > 280); assert.equal(await page.evaluate(() => document.body.style.cursor), 'col-resize');
-  await page.mouse.move(1100, rect.y + 180); assert.equal(await size('left'), 360);
+  await page.mouse.move(1100, rect.y); assert.equal(await size('left'), 360);
   await page.mouse.up(); assert.equal(await page.evaluate(() => document.body.style.cursor), '');
   await left.focus(); await page.keyboard.press('Home'); assert.equal(await size('left'), 180); await page.keyboard.press('ArrowRight'); assert.equal(await size('left'), 196);
-  const right = page.getByRole('separator', { name: 'Resize right panel' }); const rrect = await right.boundingBox();
-  await page.mouse.move(rrect.x + 4, rrect.y + 100); await page.mouse.down(); await page.mouse.move(rrect.x - 40, rrect.y + 100); await page.mouse.up();
+  const right = page.getByRole('separator', { name: 'Resize right panel' }); const rrect = await dragPoint(right);
+  await page.mouse.move(rrect.x, rrect.y); await page.mouse.down(); await page.mouse.move(rrect.x - 40, rrect.y); await page.mouse.up();
   assert((await size('right')) > 290); const savedRight = await size('right');
   await page.getByRole('button', { name: 'Hide left panel' }).click();
   await page.waitForTimeout(100);
   const closing = await page.locator('.ui-workspace-grid').evaluate(node => parseFloat(getComputedStyle(node).gridTemplateColumns));
   assert(closing > 0 && closing < 196, `GSAP grid collapse intermediate ${closing}`);
-  await page.getByRole('button', { name: 'Hide right panel' }).click(); await page.waitForTimeout(800); assert.equal(await page.getByRole('separator').count(), 0);
+  await page.getByRole('button', { name: 'Hide right panel' }).click(); await page.waitForTimeout(800); assert.equal(await page.getByRole('separator', { name: /^Resize (left|right) panel$/ }).count(), 0);
   assert(await page.locator('.ui-workspace-side').evaluateAll(nodes => nodes.every(node => node.inert && getComputedStyle(node).visibility === 'hidden')));
   await page.getByRole('button', { name: 'Show left panel' }).click(); await page.getByRole('button', { name: 'Show right panel' }).click(); await page.waitForTimeout(800);
   assert.equal(await size('left'), 196); assert.equal(await size('right'), savedRight);
@@ -232,11 +239,11 @@ try {
   await page.getByRole('button', { name: 'Show left panel' }).click();
   await page.setViewportSize({ width: 900, height: 800 }); await page.waitForTimeout(100); assert((await page.locator('.ui-workspace-main').boundingBox()).width >= 360, 'center minimum excludes container borders');
   await right.focus();
-  await page.setViewportSize({ width: 700, height: 800 }); await page.waitForTimeout(100); await noOverflow(); assert.equal(await page.getByRole('separator').count(), 1);
+  await page.setViewportSize({ width: 700, height: 800 }); await page.waitForTimeout(100); await noOverflow(); assert.equal(await page.getByRole('separator', { name: /^Resize (left|right) panel$/ }).count(), 1);
   assert(await page.getByRole('button', { name: 'Show right panel' }).evaluate(node => node === document.activeElement && node.getAttribute('aria-disabled') === 'true'));
   evidence.responsiveFocus.push('right separator → permanent Show right panel at 700px');
   await left.focus();
-  await page.setViewportSize({ width: 500, height: 800 }); await page.waitForTimeout(100); await noOverflow(); assert.equal(await page.getByRole('separator').count(), 0);
+  await page.setViewportSize({ width: 500, height: 800 }); await page.waitForTimeout(100); await noOverflow(); assert.equal(await page.getByRole('separator', { name: /^Resize (left|right) panel$/ }).count(), 0);
   assert(await page.getByRole('button', { name: 'Show left panel' }).evaluate(node => node === document.activeElement && node.getAttribute('aria-disabled') === 'true'));
   evidence.responsiveFocus.push('left separator → permanent Show left panel at 500px');
   await page.screenshot({ path: `${output}/composition-500-compact.png`, fullPage: true });

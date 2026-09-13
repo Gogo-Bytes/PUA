@@ -9,9 +9,10 @@
   --ui-diff-added-bg: #e5ede7; --ui-diff-removed-bg: #f1e7ea;
   --ui-success: #237047; --ui-success-bg: #eaf5ee; --ui-info: #266393; --ui-info-bg: #eaf2fa;
   --ui-danger: #b52f45; --ui-danger-bg: #fcecef; --ui-warning: #895b0b; --ui-warning-bg: #fff3d9;
-  --ui-link: #0b68cb; --ui-link-hover: #084f9c;
+  --ui-link: #0b62bf; --ui-link-hover: #084f9c;
   --ui-highlight: #55516f; --ui-highlight-bg: #e5e1ef;
-  --ui-code-keyword: var(--ui-accent); --ui-code-string: #237047; --ui-code-number: #a34b13;
+  /* Text variants retain ≥4.5:1 on companion muted/selected surfaces. */
+  --ui-code-keyword: #8032e3; --ui-code-string: #237047; --ui-code-number: #a34b13;
   --ui-code-inline: #82502a;
   --ui-space-half: 2px; --ui-space-1: 4px; --ui-space-tight: 6px; --ui-space-2: 8px; --ui-space-3: 12px; --ui-space-4: 16px; --ui-space-5: 24px; --ui-space-6: 32px;
   --ui-radius-small: 4px; --ui-radius-control: 8px; --ui-radius-overlay: 12px; --ui-radius-composer: 20px;

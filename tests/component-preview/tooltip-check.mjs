@@ -10,6 +10,7 @@ const title = '检查会话重命名后的通知导航与键盘完整标题。'.
 try {
   const page = await browser.newPage();
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   for (const width of [1280, 500]) for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4182/');
@@ -30,7 +31,8 @@ try {
     await page.waitForTimeout(100);
     const geometry = await tooltip.evaluate(el => {
       const r = el.getBoundingClientRect(), main = document.querySelector('.ui-workspace-main').getBoundingClientRect();
-      const points = [[r.left + 3, r.top + 3], [r.right - 3, r.top + 3], [r.left + 3, r.bottom - 3], [r.right - 3, r.bottom - 3]];
+      // Probe inside the painted 12px rounded corners, not their transparent cutouts.
+      const points = [[r.left + 6, r.top + 6], [r.right - 6, r.top + 6], [r.left + 6, r.bottom - 6], [r.right - 6, r.bottom - 6]];
       return { tooltip: r.toJSON(), main: main.toJSON(), topLayer: el.matches(':popover-open'), radius: getComputedStyle(el).borderRadius, background: getComputedStyle(el).backgroundColor, cornersVisible: points.map(([x,y]) => el.contains(document.elementFromPoint(x,y))), fitsViewport: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, clippedAboveMain: r.top < main.top };
     });
     evidence.push({ width, theme, titleLength: title.length, ...geometry });
@@ -50,7 +52,7 @@ try {
       await page.waitForTimeout(100);
       assert(await tooltip.evaluate(el => {
         const r = el.getBoundingClientRect();
-        return r.top >= 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && [[r.left+3,r.top+3],[r.right-3,r.top+3],[r.left+3,r.bottom-3],[r.right-3,r.bottom-3]].every(([x,y]) => el.contains(document.elementFromPoint(x,y)));
+        return r.top >= 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && [[r.left+6,r.top+6],[r.right-6,r.top+6],[r.left+6,r.bottom-6],[r.right-6,r.bottom-6]].every(([x,y]) => el.contains(document.elementFromPoint(x,y)));
       }), 'all four edges remain painted through horizontal/vertical ancestor scroll');
       const scrolled = await tooltip.boundingBox();
       assert(Math.abs(scrolled.x - geometry.tooltip.x) > 1 || Math.abs(scrolled.y - geometry.tooltip.y) > 1, 'scroll repositions tooltip');
@@ -96,7 +98,7 @@ try {
     await back.focus(); await page.waitForTimeout(100);
     assert(await dialog.getByRole('tooltip').evaluate(el => {
       const r=el.getBoundingClientRect();
-      return el.matches(':popover-open') && el.contains(document.elementFromPoint(r.left+3,r.top+3)) && getComputedStyle(el).backgroundColor === 'rgb(32, 32, 39)';
+      return el.matches(':popover-open') && el.contains(document.elementFromPoint(r.left+6,r.top+6)) && getComputedStyle(el).backgroundColor === 'rgb(36, 36, 54)';
     }));
     await page.screenshot({ path: `${output}/dialog-tooltip-360-dark.png` });
     await page.keyboard.press('Escape'); assert.equal(await tooltip.count(), 0); assert(await dialog.isVisible());

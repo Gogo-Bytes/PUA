@@ -9,6 +9,7 @@ const measurements = [], errors = [];
 try {
   const page = await browser.newPage();
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   for (const width of [1440, 1280, 500]) for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4182/');
@@ -35,7 +36,7 @@ try {
       const contrast = (a, b) => { const values = [luminance(a), luminance(b)].sort((x,y) => x-y); return (values[1]+.05)/(values[0]+.05); };
       const tokenColor = name => { const probe = document.createElement('span'); probe.style.color = `var(--ui-${name})`; provider.append(probe); const value = getComputedStyle(probe).color; probe.remove(); return value; };
       const ratios = [];
-      for (const fg of ['text', 'secondary', 'tertiary', 'link', 'accent']) for (const bg of ['surface', 'canvas', 'muted', 'selected']) ratios.push({ fg, bg, ratio: contrast(tokenColor(fg), tokenColor(bg)) });
+      for (const fg of ['text', 'secondary', 'tertiary', 'link', 'code-keyword', 'accent']) for (const bg of ['surface', 'canvas', 'muted', 'selected']) ratios.push({ fg, bg, ratio: contrast(tokenColor(fg), tokenColor(bg)) });
       for (const tone of ['success', 'info', 'danger', 'warning']) ratios.push({ fg: tone, bg: `${tone}-bg`, ratio: contrast(tokenColor(tone), tokenColor(`${tone}-bg`)) });
       ratios.push({ fg: 'on-accent', bg: 'accent', ratio: contrast(tokenColor('on-accent'), tokenColor('accent')) });
       const reading = css('.ui-chat-message-assistant .ui-chat-body');
@@ -48,7 +49,7 @@ try {
       const composer = document.querySelector('.ui-composer');
       const bubble = document.querySelector('.ui-chat-message-user .ui-chat-body');
       const paragraphs = [...document.querySelectorAll('.ui-chat-message-assistant .ui-chat-body > p')];
-      return { reading, meta, nav, selected, selectedCount: css('.ui-project-row[aria-current] small'), paragraph: css('.ui-chat-message-assistant .ui-chat-body p'), heading: css('.ui-chat-body h2'), ratios,
+      return { reading, meta, nav, selected, selectedCount: css('.ui-project-row[aria-current] .ui-project-count'), paragraph: css('.ui-chat-message-assistant .ui-chat-body p'), heading: css('.ui-chat-body h2'), ratios,
         roleFonts: Object.fromEntries(['control', 'reading', 'meta', 'heading'].map(role => [role, style.getPropertyValue(`--ui-font-${role}`).trim()])),
         column: rect(column), scroll: { ...rect(scroll), clientHeight: scroll.clientHeight, scrollHeight: scroll.scrollHeight }, dock: rect(dock), composer: rect(composer), bubble: rect(bubble),
         leftEdges: paragraphs.map(p => p.getBoundingClientRect().left),
@@ -63,7 +64,8 @@ try {
     for (const role of ['reading', 'paragraph', 'meta', 'nav', 'selected', 'selectedCount']) assert(metrics[role].contrast >= 4.5, `${role} on its actual ancestor background`);
     assert(Math.abs(parseFloat(metrics.heading.size) - 16) < .1); assert.equal(metrics.heading.weight, '600'); assert(metrics.maxWeight <= 600, '600 is the weight ceiling');
     assert.equal(new Set([metrics.reading.color, metrics.nav.color, metrics.meta.color]).size, 3, 'reading/navigation/metadata are distinct roles');
-    for (const ratio of metrics.ratios) assert(ratio.ratio >= 4.5, `${theme}: ${ratio.fg}/${ratio.bg} = ${ratio.ratio}`);
+    // Accent is the exported focus/icon color (3:1); text variants still require 4.5:1.
+    for (const ratio of metrics.ratios) assert(ratio.ratio >= (ratio.fg === 'accent' ? 3 : 4.5), `${theme}: ${ratio.fg}/${ratio.bg} = ${ratio.ratio}`);
     assert(metrics.column.width <= 720 && metrics.column.width >= Math.min(360, width - 52));
     if (width === 1440) assert.equal(metrics.column.width, 720, 'wide center bounds long reading lines');
     assert(metrics.leftEdges.every(left => Math.abs(left - metrics.column.x) <= 1), 'assistant paragraphs share one left edge');
@@ -89,8 +91,8 @@ try {
     await page.getByRole('textbox', { name: '消息草稿', exact: true }).fill('中文 / English / 0123456789');
     assert.equal(await transcript.evaluate(el => el.scrollTop), scrollBefore, 'editing does not hijack reading position');
     await page.getByRole('textbox', { name: '消息草稿', exact: true }).fill('');
-    await page.locator('.ui-chat-body pre').scrollIntoViewIfNeeded();
-    assert.equal(await page.locator('.ui-chat-body pre').evaluate(el => getComputedStyle(el).whiteSpace), 'pre');
+    await page.getByLabel('回写示例代码', { exact: true }).scrollIntoViewIfNeeded();
+    assert.equal(await page.getByLabel('回写示例代码', { exact: true }).evaluate(el => getComputedStyle(el).whiteSpace), 'pre');
     assert.equal(await page.locator('.ui-chat-message-assistant .ui-chat-body').first().evaluate(el => getComputedStyle(el).whiteSpace), 'normal');
     if (width === 500) {
       const code = page.getByLabel('回写示例代码', { exact: true });
