@@ -327,7 +327,7 @@ describe('Session launch through real App, dialog and controller with Fake Deskt
     });
     await act(async () => creating.resolve({ id: 'chosen', title: 'Chosen session', cwd: '/chosen', kind: 'chat', processStatus: 'running', activity: 'idle' }));
     selected('Chosen session'); expect(screen.queryByRole('dialog')).toBeNull(); expect(desktop.bootstrap).toHaveBeenCalledTimes(2);
-    expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy(); expect(document.activeElement).toBe(document.body); // Original autoFocus runs before Modal captures previous focus.
+    expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy(); expect(document.activeElement).toBe(opener);
     await act(async () => refresh.reject(new Error('refresh failed')));
     expect(screen.getByRole('alert').textContent).toContain('Error: refresh failed'); selected('Chosen session');
     fireEvent.click(screen.getByRole('button', { name: '兼容终端' }));

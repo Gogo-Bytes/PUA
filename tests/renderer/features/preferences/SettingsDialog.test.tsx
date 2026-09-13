@@ -41,7 +41,7 @@ describe('SettingsDialog public view characterization (Fake Desktop)', () => {
     expect(screen.getByText('detected source').tagName).toBe('CODE');
     expect(screen.getByText('路径与参数修改仅影响新会话。')).toBeTruthy();
     for (const button of within(screen.getByRole('dialog')).getAllByRole('button')) {
-      expect(button.getAttribute('type')).toBe(button === saveButton() ? 'submit' : button.getAttribute('aria-label') === '关闭对话框' ? null : 'button');
+      expect(button.getAttribute('type')).toBe(button === saveButton() ? 'submit' : 'button');
     }
     const range = screen.getByRole('slider', { name: '终端字号' }) as HTMLInputElement;
     expect([range.min, range.max, range.className]).toEqual(['10', '28', 'range']);

@@ -1,10 +1,12 @@
+import { useRef } from 'react';
 import { Dialog } from '../../ui';
 import type { useCommandPalette } from './useCommandPalette';
 
 export function CommandPalette({ palette, onInsert }: { palette: ReturnType<typeof useCommandPalette>; onInsert(text: string): void }) {
+  const initialFocus = useRef<HTMLInputElement>(null);
   if (!palette.isOpen || !palette.kind) return null;
-  return <Dialog open title={palette.kind === 'chat' ? 'Pi 命令' : '终端命令'} closeLabel="关闭对话框" closeOnBackdrop={false} onClose={palette.close}>
-    <input autoFocus className="full-input" aria-label="搜索命令" placeholder="搜索扩展、提示模板或技能…" value={palette.query} onChange={event => palette.setQuery(event.target.value)} />
+  return <Dialog initialFocusRef={initialFocus} open title={palette.kind === 'chat' ? 'Pi 命令' : '终端命令'} closeLabel="关闭对话框" closeOnBackdrop={false} onClose={palette.close}>
+    <input ref={initialFocus} className="full-input" aria-label="搜索命令" placeholder="搜索扩展、提示模板或技能…" value={palette.query} onChange={event => palette.setQuery(event.target.value)} />
     <p className="muted">{palette.kind === 'chat' ? '仅显示 Pi RPC 可调用的扩展命令、提示模板和技能；设置、登录与历史选择请使用兼容终端。' : '选择后只插入到 Pi TUI，不自动执行。'}</p>
     <div className="command-list" onKeyDown={event => {
       if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {

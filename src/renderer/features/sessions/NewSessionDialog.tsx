@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Dialog } from '../../ui';
 import { useNewSessionLaunch, type SessionLaunchOptions } from './useNewSessionLaunch';
 
@@ -8,12 +9,13 @@ export interface NewSessionDialogProps extends SessionLaunchOptions {
 }
 
 export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }: NewSessionDialogProps) {
+  const initialFocus = useRef<HTMLInputElement>(null);
   const { cwd, setCwd, kind, setKind, mode, setMode, trust, setTrust, resources, inspecting, inspection, busy, error, submit, chooseDirectory } = useNewSessionLaunch(options);
-  return <Dialog open title="打开项目" closeLabel="关闭对话框" closeOnBackdrop={false} onClose={onClose}>
+  return <Dialog initialFocusRef={initialFocus} open title="打开项目" closeLabel="关闭对话框" closeOnBackdrop={false} onClose={onClose}>
     <form onSubmit={event => { event.preventDefault(); submit(); }}>
       <label>项目文件夹</label>
       <div className="input-row">
-        <input aria-label="项目文件夹" autoFocus value={cwd} onChange={event => setCwd(event.target.value)} required />
+        <input aria-label="项目文件夹" ref={initialFocus} value={cwd} onChange={event => setCwd(event.target.value)} required />
         <button type="button" onClick={chooseDirectory}>浏览…</button>
       </div>
       <label>界面</label>

@@ -1,9 +1,33 @@
 /** @vitest-environment jsdom */
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useRef, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
-import { Button, Select, DropdownMenu, Tooltip, UIProvider } from '../src/renderer/ui';
+import { Button, Dialog, Select, DropdownMenu, Tooltip, UIProvider } from '../src/renderer/ui';
+it('Dialog focuses the requested field after opening and restores the opener on cancel and reopen', () => {
+  function Example() {
+    const [open, setOpen] = useState(false), input = useRef<HTMLInputElement>(null);
+    return <UIProvider motion="off"><Button onClick={() => setOpen(true)}>Open</Button><Dialog open={open} title="Edit" initialFocusRef={input} onClose={() => setOpen(false)}><input ref={input} aria-label="Name"/></Dialog></UIProvider>;
+  }
+  render(<Example/>);
+  const opener = screen.getByRole('button', { name: 'Open' });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    opener.focus(); fireEvent.click(opener);
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Name' }));
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }));
+    expect(document.activeElement).toBe(opener);
+  }
+});
+it.each([true, false])('Dialog loops through radio group tab stops while submission is disabled (checked=%s)', checked => {
+  render(<UIProvider motion="off"><Dialog open title="Pending" onClose={() => {}}>
+    <input type="radio" name="mode" aria-label="New" defaultChecked={checked}/><input type="radio" name="mode" aria-label="Continue"/>
+    <Button disabled>Submit</Button><Button tabIndex={-1}>Excluded</Button><div style={{ display: 'none' }}><Button>Hidden</Button></div><fieldset disabled><Button>Busy</Button></fieldset>
+  </Dialog></UIProvider>);
+  const first = screen.getByRole('button', { name: 'Close dialog' }), last = screen.getByRole('radio', { name: 'New' });
+  last.focus(); fireEvent.keyDown(last, { key: 'Tab' }); expect(document.activeElement).toBe(first);
+  fireEvent.keyDown(first, { key: 'Tab', shiftKey: true }); expect(document.activeElement).toBe(last);
+});
 it('Select focuses selection, skips disabled, navigates Home/End/arrows and restores focus on Escape/commit', async () => {
   const change = vi.fn(), user = userEvent.setup();
   render(<UIProvider motion="off"><Select label="Choice" value="b" options={[{ value: 'a', label: 'Alpha' }, { value: 'b', label: 'Beta' }, { value: 'c', label: 'Disabled', disabled: true }, { value: 'd', label: 'Delta' }]} onChange={change}/></UIProvider>);

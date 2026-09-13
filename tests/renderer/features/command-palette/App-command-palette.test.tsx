@@ -108,7 +108,7 @@ describe('App command palette before/after characterization with real panes', ()
     expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
   it('preserves filter fields, distinct zero results, exact DOM and list navigation including index -1/zero', async () => {
-    await mount(); open(); expect(screen.getByRole('dialog', { name: 'Pi 命令' }).className).toBe('ui-dialog');
+    await mount(); const opener = screen.getByRole('button', { name: /搜索与命令/ }); opener.focus(); open(); expect(screen.getByRole('dialog', { name: 'Pi 命令' }).className).toBe('ui-dialog');
     expect(query().className).toBe('full-input'); expect(query().placeholder).toBe('搜索扩展、提示模板或技能…'); expect(document.activeElement).toBe(query());
     snapshot('s1', commandsA); expect(items()).toHaveLength(3);
     filter('FIRST'); expect(items()).toHaveLength(1); filter('/ALPHA'); expect(items()).toHaveLength(1); filter('GAMMA'); expect(items()).toHaveLength(1);
@@ -122,7 +122,7 @@ describe('App command palette before/after characterization with real panes', ()
     fireEvent.keyDown(buttons[0], { key: 'End' }); expect(document.activeElement).toBe(buttons[2]);
     fireEvent.keyDown(buttons[2], { key: 'Home' }); expect(document.activeElement).toBe(buttons[0]);
     const event = shortcut({ key: 'ArrowDown', metaKey: false }, query()); expect(event.defaultPrevented).toBe(false); // input never owned list navigation
-    close(); expect(document.activeElement).toBe(document.body); // existing Modal captures autoFocused input, not opener
+    close(); expect(document.activeElement).toBe(opener);
   });
   it.each(['darwin', 'linux', 'win32'])('preserves %s shortcut platform/IME/modifier/capture semantics and live boot platform changes', async platform => {
     boot.platform = platform; await mount();
