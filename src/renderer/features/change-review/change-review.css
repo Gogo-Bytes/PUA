@@ -4,4 +4,3 @@
 .ui-provider .ui-file-row { display: flex; width: 100%; justify-content: flex-start; text-align: left; margin: 2px 0; }
 .ui-provider .ui-file-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ui-provider .ui-file-row small { margin-left: auto; font: var(--ui-font-meta); color: var(--ui-tertiary); }
-.ui-provider .ui-inspector-header-panel .ui-icon-button { width: var(--ui-target-small); min-height: var(--ui-target-small); padding: var(--ui-space-1); }

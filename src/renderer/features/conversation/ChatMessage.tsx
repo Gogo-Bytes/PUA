@@ -13,14 +13,11 @@ export interface ChatMessageProps {
   error?: ReactNode;
   actions?: ReactNode;
   labels?: Partial<ChatMessageLabels>;
-  variant?: 'module' | 'transcript';
-  header?: ReactNode;
 }
 
 /** Conversation presentation only. Desktop clipboard/link effects remain explicit caller slots. */
-export function ChatMessage({ role, author, metadata, children, streaming = false, error, actions, labels, variant = 'module', header }: ChatMessageProps) {
+export function ChatMessage({ role, author, metadata, children, streaming = false, error, actions, labels }: ChatMessageProps) {
   const text = { user: 'User', assistant: 'Assistant', system: 'System', custom: 'Event', summary: 'Summary', streaming: 'Responding…', failed: 'Response failed', ...labels };
-  if (variant === 'transcript') return <article className={`chat-message ${role}`}><header>{header ?? <span>{author}</span>}</header><div className="message-body">{children}{error && <div className="message-error">{error}</div>}</div></article>;
   return <article className={`ui-chat-message ui-chat-message-${role}`} aria-label={text[role]}>
     <header className="ui-visually-hidden"><span>{author}</span><span> · {text[role]}</span></header>
     {metadata && <div className="ui-meta">{metadata}</div>}

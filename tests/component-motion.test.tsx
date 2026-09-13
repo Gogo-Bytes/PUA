@@ -26,7 +26,7 @@ it('off and live system reduced-motion settle immediately with no displacement',
 });
 it('ResizableWorkspace rapid visibility changes overwrite owned tweens and unmount cleans both panel and grid', async () => {
   const { ResizableWorkspace } = await import('../src/renderer/ui');
-  const view = render(<UIProvider><ResizableWorkspace left={<button>Left</button>} right={<button>Right</button>}>Center</ResizableWorkspace></UIProvider>);
+  const view = render(<UIProvider><ResizableWorkspace motionControls left={<button>Left</button>} right={<button>Right</button>}>Center</ResizableWorkspace></UIProvider>);
   const panel = screen.getByText('Left').closest('aside')!, grid = view.container.querySelector('.ui-workspace-grid')!;
   for (let i = 0; i < 8; i++) fireEvent.click(screen.getByRole('button', { name: `${i % 2 ? 'Show' : 'Hide'} left panel` }));
   expect(panel.hasAttribute('inert')).toBe(false); expect(gsap.getTweensOf(panel).length).toBeLessThanOrEqual(1); expect(gsap.getTweensOf(grid).length).toBeLessThanOrEqual(1);
@@ -40,7 +40,7 @@ it('GSAP contexts retain bounded objects through 160 drag updates and 80 structu
     const context = original(...args); contexts.add(context); return context;
   });
   const retained = () => [...contexts].reduce((total, context) => total + context.data.length, 0);
-  const tree = (replay: number) => <UIProvider><ResizableWorkspace left={<button>Left</button>} right={<button>Right</button>}><Collapsible title="Bounded"><button>Inside bounded</button></Collapsible><MotionSample replay={replay}/></ResizableWorkspace></UIProvider>;
+  const tree = (replay: number) => <UIProvider><ResizableWorkspace motionControls left={<button>Left</button>} right={<button>Right</button>}><Collapsible title="Bounded"><button>Inside bounded</button></Collapsible><MotionSample replay={replay}/></ResizableWorkspace></UIProvider>;
   const view = render(tree(0));
   const initial = retained();
   const separator = screen.getByRole('separator', { name: 'Resize left panel' });

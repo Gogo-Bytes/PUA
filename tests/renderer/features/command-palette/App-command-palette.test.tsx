@@ -109,7 +109,7 @@ describe('App command palette before/after characterization with real panes', ()
   });
   it('preserves filter fields, distinct zero results, exact DOM and list navigation including index -1/zero', async () => {
     await mount(); const opener = screen.getByRole('button', { name: /搜索与命令/ }); opener.focus(); open(); expect(screen.getByRole('dialog', { name: 'Pi 命令' }).className).toBe('ui-dialog');
-    expect(query().className).toBe('full-input'); expect(query().placeholder).toBe('搜索扩展、提示模板或技能…'); expect(document.activeElement).toBe(query());
+    expect(query().classList.contains('ui-input')).toBe(true); expect(query().placeholder).toBe('搜索扩展、提示模板或技能…'); expect(document.activeElement).toBe(query());
     snapshot('s1', commandsA); expect(items()).toHaveLength(3);
     filter('FIRST'); expect(items()).toHaveLength(1); filter('/ALPHA'); expect(items()).toHaveLength(1); filter('GAMMA'); expect(items()).toHaveLength(1);
     filter('not found'); expect(items()).toHaveLength(0); expect(within(list()).queryByText(/当前 Pi 没有提供/)).toBeNull();

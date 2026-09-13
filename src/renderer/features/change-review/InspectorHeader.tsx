@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Icon, IconButton, Tag } from '../../ui';
+import { IconButton, Tag } from '../../ui';
 
 export interface InspectorHeaderLabels { refresh?: string; close?: string }
 export interface InspectorHeaderProps {
@@ -8,11 +8,9 @@ export interface InspectorHeaderProps {
   onRefresh?(): void;
   onClose?(): void;
   labels?: InspectorHeaderLabels;
-  icon?: Parameters<typeof Icon>[0]['name'];
-  variant?: 'module' | 'panel';
+  refreshing?: boolean;
 }
 
-export function InspectorHeader({ title, count, onRefresh, onClose, labels, icon, variant = 'module' }: InspectorHeaderProps) {
-  if (variant === 'panel') return <header className="ui-inspector-header ui-inspector-header-panel"><div>{icon && <Icon name={icon}/>}<h2>{title}</h2><span className="count">{count}</span></div>{onClose && <IconButton label={labels?.close ?? 'Close inspector'} icon="close" variant="ghost" onClick={onClose}/>}</header>;
-  return <div className="ui-module-heading ui-inspector-header"><strong>{title}</strong><Tag>{count}</Tag>{onRefresh && <IconButton label={labels?.refresh ?? 'Refresh inspection'} icon="refresh" variant="ghost" onClick={onRefresh}/>}</div>;
+export function InspectorHeader({ title, count, onRefresh, onClose, labels, refreshing = false }: InspectorHeaderProps) {
+  return <div className="ui-module-heading ui-inspector-header"><strong>{title}</strong><Tag>{count}</Tag>{onRefresh && <IconButton label={labels?.refresh ?? 'Refresh inspection'} icon={refreshing ? 'running' : 'refresh'} disabled={refreshing} aria-busy={refreshing || undefined} variant="ghost" onClick={onRefresh}/>}{onClose && <IconButton label={labels?.close ?? 'Close inspector'} icon="close" variant="ghost" onClick={onClose}/>}</div>;
 }

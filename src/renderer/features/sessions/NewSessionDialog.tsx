@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Dialog } from '../../ui';
+import { Button, Dialog } from '../../ui';
 import { useNewSessionLaunch, type SessionLaunchOptions } from './useNewSessionLaunch';
 
 export interface NewSessionDialogProps extends SessionLaunchOptions {
@@ -11,12 +11,12 @@ export interface NewSessionDialogProps extends SessionLaunchOptions {
 export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }: NewSessionDialogProps) {
   const initialFocus = useRef<HTMLInputElement>(null);
   const { cwd, setCwd, kind, setKind, mode, setMode, trust, setTrust, resources, inspecting, inspection, busy, error, submit, chooseDirectory } = useNewSessionLaunch(options);
-  return <Dialog initialFocusRef={initialFocus} open title="打开项目" closeLabel="关闭对话框" closeOnBackdrop={false} onClose={onClose}>
+  return <Dialog initialFocusRef={initialFocus} open title="打开项目" closeLabel="关闭对话框" onClose={onClose}>
     <form onSubmit={event => { event.preventDefault(); submit(); }}>
       <label>项目文件夹</label>
       <div className="input-row">
-        <input aria-label="项目文件夹" ref={initialFocus} value={cwd} onChange={event => setCwd(event.target.value)} required />
-        <button type="button" onClick={chooseDirectory}>浏览…</button>
+        <input className="ui-input" aria-label="项目文件夹" ref={initialFocus} value={cwd} onChange={event => setCwd(event.target.value)} required />
+        <Button type="button" onClick={chooseDirectory}>浏览…</Button>
       </div>
       <label>界面</label>
       <div className="mode-options">
@@ -45,7 +45,7 @@ export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }
       {kind === 'chat' && inspecting && <p>正在检查项目资源…</p>}
       {(error || inspection?.error) && <p role="alert" className="form-error">{error || inspection?.error}</p>}
       <div className="modal-actions">
-        {!hasRuntime ? <button type="button" className="primary" onClick={onSettings}>先配置 Pi</button> : <button type="submit" className="primary" disabled={busy || !cwd.trim() || (kind === 'chat' && (inspecting || !!inspection?.error))}>{busy ? '正在打开…' : kind === 'chat' ? '开始对话 ↗' : '打开兼容终端 ↗'}</button>}
+        {!hasRuntime ? <Button type="button" variant="primary" onClick={onSettings}>先配置 Pi</Button> : <Button type="submit" variant="primary" disabled={busy || !cwd.trim() || (kind === 'chat' && (inspecting || !!inspection?.error))}>{busy ? '正在打开…' : kind === 'chat' ? '开始对话 ↗' : '打开兼容终端 ↗'}</Button>}
       </div>
     </form>
   </Dialog>;

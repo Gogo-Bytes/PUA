@@ -100,8 +100,8 @@ describe('production workspace navigation', () => {
   it('does not consume closed-inspector Escape or editable/IME/local-menu Escape while open', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
-    const draft = screen.getByRole('textbox', { name: '发送消息' }); const toggle = screen.getByRole('button', { name: '显示或收起检查区' });
-    draft.focus(); fireEvent.keyDown(draft, { key: 'Escape' });
+    const draft = screen.getByRole('textbox', { name: '发送消息' }); const toggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
+    fireEvent.click(toggle); draft.focus(); fireEvent.keyDown(draft, { key: 'Escape' });
     expect(document.activeElement).toBe(draft); expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle); await screen.findByText('这个范围没有变更');
     draft.focus(); fireEvent.keyDown(draft, { key: 'Escape' });
@@ -122,7 +122,7 @@ describe('production workspace navigation', () => {
     // Mounted background panes must not let their hidden suggestions block Escape.
     fireEvent.change(draft, { target: { value: '/rev' } }); await createSession();
     fireEvent.click(toggle); await screen.findByText('这个范围没有变更');
-    fireEvent.keyDown(screen.getByRole('button', { name: '关闭变更面板' }), { key: 'Escape' });
+    fireEvent.keyDown(await screen.findByRole('button', { name: '关闭变更面板' }), { key: 'Escape' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false'); expect(document.activeElement).toBe(toggle);
   });
   it('uses default system changes and saved themes without recreating sessions or losing draft', async () => {
@@ -140,7 +140,7 @@ describe('production workspace navigation', () => {
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(draft); expect((draft as HTMLTextAreaElement).value).toBe('theme draft'); expect(desktop.startSession).toHaveBeenCalledTimes(1);
     fireEvent.click(settings); fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true })); expect(screen.queryByRole('dialog')).toBeNull(); expect(document.activeElement).toBe(settings);
   });
-  it('keeps composition Enter safe, stops the real runtime and reports rename errors inside the dialog', async () => {
+  it('keeps composition Enter safe, stops the real runtime and reports rename errors beside the inline editor', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: '中文输入' } });
     fireEvent.compositionStart(draft); fireEvent.keyDown(draft, { key: 'Enter' }); fireEvent.compositionEnd(draft);
@@ -148,16 +148,16 @@ describe('production workspace navigation', () => {
     emit({ id: 's1', type: 'chat-state', state: { activity: 'responding' } }); fireEvent.click(screen.getByRole('button', { name: '停止运行' }));
     await waitFor(() => expect(desktop.stopChat).toHaveBeenCalledWith('s1'));
     vi.mocked(desktop.renameChatSession).mockRejectedValueOnce(new Error('rename refused'));
-    fireEvent.click(screen.getByRole('button', { name: '重命名' })); fireEvent.change(screen.getByRole('textbox', { name: '会话显示名' }), { target: { value: 'New name' } });
-    fireEvent.click(screen.getByRole('button', { name: '保存名称' }));
-    expect((await within(screen.getByRole('dialog')).findByRole('alert')).textContent).toContain('rename refused');
+    fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /会话/ }), { key: 'F2' }); fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'New name' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('rename refused');
   });
   it('routes only Pi-provided commands into draft, and closes the narrow inspector with focus return', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension', description: 'Real extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
     const commands = screen.getByRole('button', { name: /搜索与命令/ }); commands.focus(); fireEvent.click(commands);
     fireEvent.click(screen.getByRole('button', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
-    const toggle = screen.getByRole('button', { name: '显示或收起检查区' }); fireEvent.click(toggle);
+    const toggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
     await screen.findByText('这个范围没有变更'); expect(desktop.gitStatus).toHaveBeenCalledWith('s1');
     fireEvent.click(screen.getByRole('button', { name: '关闭变更面板' })); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull(); expect(document.activeElement).toBe(toggle);
     fireEvent.click(toggle);
@@ -197,7 +197,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     selectProject(scenario === 'empty' ? '/empty' : '/two/app');
     await act(async () => pending.resolve(true));
     expect(container.querySelector('[data-session-id="s3"]')).toBeNull();
-    if (scenario === 'empty') { expect(screen.queryByRole('tab')).toBeNull(); expect(within(screen.getByRole('navigation', { name: '项目' })).getByTitle('/empty').getAttribute('aria-pressed')).toBe('true'); }
+    if (scenario === 'empty') { expect(screen.queryByRole('tab')).toBeNull(); expect(within(screen.getByRole('navigation', { name: '项目' })).getByTitle('/empty').getAttribute('aria-current')).toBe('page'); }
     else selected('会话 4');
     selectProject('/one/app'); selected(scenario === 'remembered' ? '会话 1' : '会话 2');
     expect(desktop.startSession).toHaveBeenCalledTimes(4); expect(listeners.size).toBe(4);
@@ -243,7 +243,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     emit({ id: 'first', type: 'session-info', title: 'too early' });
     await act(async () => second.resolve(session('second'))); selected('second'); expect(screen.queryByRole('dialog')).toBeNull();
     await act(async () => first.resolve(session('first'))); selected('first');
-    expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual(['second', 'first']);
+    expect(within(screen.getByRole('tablist', { name: '项目会话' })).getAllByRole('tab').map(tab => tab.textContent)).toEqual(['second', 'first']);
     expect(desktop.bootstrap).toHaveBeenCalledTimes(3); expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
   it('keeps both real drafts/attachments and background events; send completion owns only its submission', async () => {
@@ -283,10 +283,10 @@ describe('Workspace edge ownership with actual App', () => {
   it('keeps rename bound to the request session after selection changes', async () => {
     await seedProjects(); const pending = deferred<void>();
     vi.mocked(desktop.renameChatSession).mockReturnValueOnce(pending.promise);
-    fireEvent.click(screen.getByRole('button', { name: '重命名' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '会话显示名' }), { target: { value: 'late A name' } });
-    fireEvent.click(screen.getByRole('button', { name: '保存名称' }));
-    // jsdom can synthesize this while the modal is open; not a native modal interaction claim.
+    fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /会话/ }), { key: 'F2' });
+    fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'late A name' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    // Inline editing permits switching projects while the original request is pending.
     selectProject('/two/app'); await act(async () => pending.resolve()); selected('会话 4');
     expect(desktop.renameChatSession).toHaveBeenCalledWith('s3', 'late A name');
     selectProject('/one/app'); selected('late A name');

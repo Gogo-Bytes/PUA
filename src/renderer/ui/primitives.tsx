@@ -155,8 +155,10 @@ export function Tabs({ label, items, value, onChange }: { label: string; items: 
     event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')[next]?.focus();
   }}>{items.map(item => <Button role="tab" key={item.value} variant="ghost" aria-selected={value === item.value} tabIndex={value === item.value ? 0 : -1} disabled={item.disabled} onClick={() => onChange(item.value)}>{item.label}</Button>)}</div>;
 }
-export function Collapsible({ title, children, defaultOpen = false, label }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; label?: string }) {
-  const [open, setOpen] = useState(defaultOpen); const id = useId();
+export function Collapsible({ title, children, defaultOpen = false, label, open: controlledOpen, onOpenChange }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; label?: string; open?: boolean; onOpenChange?(open: boolean): void }) {
+  const [localOpen, setLocalOpen] = useState(defaultOpen); const id = useId();
+  const open = controlledOpen ?? localOpen;
+  const setOpen = (value: boolean) => { setLocalOpen(value); onOpenChange?.(value); };
   return <section className="ui-collapsible"><Button variant="ghost" aria-label={label} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}><Icon name={open ? 'down' : 'chevron'}/>{title}</Button><div id={id}><Reveal open={open}>{children}</Reveal></div></section>;
 }
 export function Dialog({ open, title, onClose, children, initialFocusRef, closeLabel = 'Close dialog', closeDisabled = false, closeOnBackdrop = true }: { open: boolean; title: string; onClose(): void; children: ReactNode; initialFocusRef?: RefObject<HTMLElement | null>; closeLabel?: string; closeDisabled?: boolean; closeOnBackdrop?: boolean }) {

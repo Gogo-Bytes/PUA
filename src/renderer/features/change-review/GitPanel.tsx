@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { DiffScope, FileDiff, GitStatus } from '../../../shared/ipc/change-review';
 import { filesForScope } from './scope';
 import { referencePaths } from '../workspace';
-import { Icon } from '../../ui';
+import { Button, Icon, Tabs } from '../../ui';
 import { CopyButton, MarkdownView, SourceView } from '../content';
 import { isConflictPatch, parseDiffLines } from './diff-lines';
 import { InspectorHeader } from './InspectorHeader';
@@ -57,23 +57,24 @@ export function GitPanel({ sessionId, onClose, onReference }: { sessionId: strin
   const removed = rows.filter(row => row.kind === 'deletion').length;
   const markdown = diff?.kind === 'untracked' && /\.(md|markdown)$/i.test(selected);
   return <aside className="git-panel" aria-label="文件与 Git 检查区">
-    <InspectorHeader variant="panel" icon="file" title="文件与 Git" count={status?.files.length ?? '—'} onClose={onClose} labels={{ close: '关闭变更面板' }}/>
-    <div className="git-summary"><span title={status?.root}><Icon name="folder" />{status?.branch || 'Git 工作区'}</span><button onClick={() => void refresh()} disabled={busy}>{busy ? '刷新中…' : '刷新'}</button></div>
+    <InspectorHeader refreshing={busy} title="检查器" count={status?.files.length ?? '—'} onRefresh={() => { if (!busy) void refresh(); }} onClose={onClose} labels={{ refresh: busy ? '刷新中…' : '刷新', close: '关闭变更面板' }}/>
+    <div className="git-summary"><span title={status?.root}><Icon name="folder" />{status?.branch || 'Git 工作区'}</span></div>
     <p className="git-disclaimer">会话启动目录所属仓库的全部变更，包含你和其他工具的修改。只读快照，<strong>不代表 Pi 本轮改动</strong>。</p>
-    <div className="git-scopes" role="group" aria-label="变更范围">{([['worktree', '工作区 · 未暂存'], ['index', '暂存区']] as const).map(([value, title]) => <button aria-pressed={scope === value} key={value} onClick={() => { setScope(value); setSelected(''); }}>{title}<span>{status ? filesForScope(status.files, value).length : '—'}</span></button>)}</div>
+    <Tabs label="变更范围" value={scope} onChange={value => { setScope(value as DiffScope); setSelected(''); }} items={([{ value: 'worktree', label: '工作区' }, { value: 'index', label: '暂存区' }] as const).map(item => ({ ...item, label: `${item.label} · ${status ? filesForScope(status.files, item.value).length : '—'}` }))}/>
+
     <div className="inspector-scroll">
       {error && <div className="git-empty" role="alert"><h3>暂时无法读取 Git</h3><p>请确认启动目录位于 Git 仓库内，且系统 PATH 可找到 Git。不会自动初始化仓库或更改文件。</p><details><summary>诊断详情</summary><pre>{error}</pre></details></div>}
       {status && files.length === 0 && <div className="git-empty"><Icon name="check" /><h3>这个范围没有变更</h3><p>修改文件后点击刷新，或切换暂存范围。</p></div>}
       {files.length > 0 && <div className="changed-files" aria-label="变更文件">{files.map(file => <FileRow key={file.path} name={file.path} detail={file.index === '?' ? '?' : scope === 'index' ? file.index : file.worktree} detailElement="code" detailClassName={`file-status ${file.index === '?' ? 'added' : ''}`} selected={file.path === selected} title={file.originalPath ? `${file.originalPath} → ${file.path}` : file.path} onOpen={() => setSelected(file.path)}/>)}</div>}
-      {!!selected && status && <><div className="diff-heading"><code title={selected}>{selected}</code><button title="引用路径到当前草稿，不自动发送" aria-label="引用文件到草稿" onClick={() => {
+      {!!selected && status && <><div className="diff-heading"><code title={selected}>{selected}</code><Button title="引用路径到当前草稿，不自动发送" aria-label="引用文件到草稿" onClick={() => {
         const fullPath = `${status.root.replace(/[\\/]$/, '')}/${selected}`;
         onReference(`请检查这个文件的变更：${referencePaths([fullPath])}`);
-      }}><Icon name="link" />引用</button></div>{loadingDiff && <p className="diff-note">读取差异…</p>}{diffError && <p className="form-error diff-note" role="alert">{diffError}</p>}{diff && <>
+      }}><Icon name="link" />引用</Button></div>{loadingDiff && <p className="diff-note">读取差异…</p>}{diffError && <p className="form-error diff-note" role="alert">{diffError}</p>}{diff && <>
         <div className="diff-toolbar"><span>{rawConflict ? '冲突 · 原始 patch' : diff.kind === 'diff' ? <><span className="addition-text">+{added}</span> <span className="deletion-text">−{removed}</span>{diff.truncated ? ' · 已显示部分' : ' · 差异'}</> : diff.kind === 'untracked' ? '未跟踪 · 文件内容' : diff.kind === 'binary' ? '二进制 · 无文本预览' : '符号链接 · 不读取目标'}</span><CopyButton text={diff.text} label={diff.kind === 'untracked' ? '复制文件快照' : '复制差异输出'} /></div>
         <p className="diff-note">{rawConflict ? '未合并 / 多父差异原始输出，不提供双边统计或文件行号' : scope === 'index' ? 'HEAD → 暂存区' : diff.kind === 'untracked' ? '工作区未跟踪文本快照' : '暂存区 → 工作区'} · 响应于 {receivedAt}。文件列表与内容分别读取，非原子快照。</p>
         {diff.truncated && <p className="diff-note">内容已截断（约前 200KB）；{rawConflict ? '仅保留已返回的原始 patch。' : '计数仅涵盖已显示差异，不代表完整文件。'}</p>}
-        {markdown && <div className="reader-views" role="group" aria-label="文件视图"><button aria-pressed={view === 'source'} onClick={() => setView('source')}>源码</button><button aria-pressed={view === 'preview'} onClick={() => setView('preview')}>预览</button></div>}
-        {rawConflict ? <pre className="diff-content" aria-label="原始冲突 patch">{diff.text}</pre> : diff.kind === 'diff' ? <div className="diff-content" aria-label="文件差异（左侧原行号，右侧新行号）">{rows.map((row, index) => <div key={index} className={`diff-line ${row.kind}`}><span className="line-number" aria-hidden="true">{row.old}</span><span className="line-number" aria-hidden="true">{row.next}</span><span className="diff-sign">{row.kind === 'addition' ? '+' : row.kind === 'deletion' ? '−' : ' '}</span><code>{row.text || ' '}</code></div>)}</div> : diff.kind === 'untracked' ? markdown && view === 'preview' ? <div className="document message-body"><MarkdownView text={diff.text} /></div> : <SourceView text={diff.text} label="未跟踪文件源码快照" /> : <p className="diff-note">{diff.text}</p>}
+        {markdown && <Tabs label="文件视图" value={view} onChange={value => setView(value as 'source' | 'preview')} items={[{ value: 'source', label: '源码' }, { value: 'preview', label: '预览' }]}/>}
+        {rawConflict ? <pre className="diff-content" aria-label="原始冲突 patch">{diff.text}</pre> : diff.kind === 'diff' ? <div className="diff-content" aria-label="文件差异（左侧原行号，右侧新行号）">{rows.map((row, index) => <div key={index} className={`diff-line ${row.kind}`}><span className="line-number" aria-hidden="true">{row.old}</span><span className="line-number" aria-hidden="true">{row.next}</span><span className="diff-sign">{row.kind === 'addition' ? '+' : row.kind === 'deletion' ? '−' : ' '}</span><code>{row.text || ' '}</code></div>)}</div> : diff.kind === 'untracked' ? markdown && view === 'preview' ? <div className="document ui-chat-body"><MarkdownView text={diff.text} /></div> : <SourceView text={diff.text} label="未跟踪文件源码快照" /> : <p className="diff-note">{diff.text}</p>}
       </>}</>}
       {!selected && files.length > 0 && <div className="git-empty"><h3>选择文件，查看真实差异</h3><p>已跟踪文件只提供 Git patch；不将差异伪装成完整源码。未跟踪文本可查看源码，Markdown 可预览。</p></div>}
     </div>

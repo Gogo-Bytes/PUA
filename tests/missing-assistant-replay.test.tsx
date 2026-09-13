@@ -157,8 +157,8 @@ it.each([false, true])('source-contract replay (diagnostics=%s): send -> final -
   expect(forwarded.some(event => event.type === 'chat-message-end' && event.message.role === 'assistant'), 'main forwarded assistant').toBe(true);
   expect(projection.messages.filter(message => message.role === 'assistant')[0]?.blocks, 'reducer assistant body after idle').toEqual([{ type: 'text', text: 'PUA_ACCEPTANCE_OK' }]);
   expect(view.container.querySelector('.chat-meta')?.textContent).toContain('Pi 已就绪');
-  expect(view.container.querySelector('[data-session-id="acceptance-session"] .chat-message.user .message-body')?.textContent).toBe('acceptance request');
-  expect(view.container.querySelector('[data-session-id="acceptance-session"] .chat-message.assistant .message-body')?.textContent, 'assistant body remains visible after final -> idle').toBe('PUA_ACCEPTANCE_OK');
+  expect(view.container.querySelector('[data-session-id="acceptance-session"] .ui-chat-message-user .ui-chat-body')?.textContent).toBe('acceptance request');
+  expect(view.container.querySelector('[data-session-id="acceptance-session"] .ui-chat-message-assistant .ui-chat-body')?.textContent, 'assistant body remains visible after final -> idle').toBe('PUA_ACCEPTANCE_OK');
   expect(worker.exits).toEqual([]);
   expect(worker.timers.size).toBe(0);
   // Duplicate normalized final is idempotent, while a forged cross-session
@@ -172,7 +172,7 @@ it.each([false, true])('source-contract replay (diagnostics=%s): send -> final -
   });
   expect(forwarded).toHaveLength(beforeCross);
   await act(async () => { worker.host.emit('message', duplicate); await turns(); });
-  expect(view.container.querySelectorAll('.chat-message.assistant')).toHaveLength(1);
+  expect(view.container.querySelectorAll('.ui-chat-message-assistant')).toHaveLength(1);
   expect(view.container.textContent).not.toContain('WRONG_SESSION');
   if (enabled) {
     const entries = logs.mock.calls.map(([line]) => JSON.parse(String(line).slice(diagnosticModule.missingAssistantDiagnosticPrefix.length)));
@@ -190,7 +190,7 @@ it.each([false, true])('source-contract replay (diagnostics=%s): send -> final -
     expect(forwarded).toHaveLength(beforeLate);
     worker.host.emit('exit', 0); await closing; await turns();
   });
-  expect(view.container.querySelector('.chat-message.assistant .message-body')?.textContent).toBe('PUA_ACCEPTANCE_OK');
+  expect(view.container.querySelector('.ui-chat-message-assistant .ui-chat-body')?.textContent).toBe('PUA_ACCEPTANCE_OK');
 });
 
 

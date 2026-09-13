@@ -2,7 +2,7 @@ import { desktopClient } from '../../app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
 import { MarkdownView, CopyButton, SourceView } from '../content';
 export { MarkdownView } from '../content';
-import { Dialog, Icon } from '../../ui';
+import { Button, Collapsible, Dialog, Icon } from '../../ui';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../../../shared/ipc/conversation';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
@@ -25,7 +25,6 @@ interface Props {
 export function ChatPane({ session, active, draft, onDraftChange, onError, onCommands, onTerminalRecovery }: Props) {
   const [state, dispatch] = useReducer(reduceChatEvent, undefined, emptyChatState);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
-  const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const stoppingRef = useRef(false);
   const recoveredRequests = useRef(new Set<string>());
@@ -42,7 +41,6 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const scrollFrame = useRef<number | undefined>(undefined);
   useEffect(() => () => cancelAnimationFrame(scrollFrame.current ?? 0), []);
   const textarea = useRef<HTMLTextAreaElement>(null);
-  const composing = useRef(false);
   const [slashDismissed, setSlashDismissed] = useState(false);
 
   useEffect(() => {
@@ -69,10 +67,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     });
   }, [state, session.id]);
   useEffect(() => onCommands(state.commands), [state.commands]);
-  useEffect(() => {
-    const node = textarea.current; if (!node) return;
-    node.style.height = '0'; node.style.height = `${Math.min(160, Math.max(45, node.scrollHeight))}px`;
-  }, [draft]);
+
 
   const busy = state.activity !== 'idle';
   const unavailable = state.exited || session.processStatus !== 'running';
@@ -82,13 +77,13 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     const submittedIds = attachments.map(item => item.id);
     const value = submitted.text.trim(); if (!value && !attachments.length) return;
     const mode = delivery ?? (busy ? 'steer' : 'prompt');
-    sendingRef.current = true; setSending(true);
+    sendingRef.current = true;
     try {
       await desktopClient.sendChatMessage(session.id, { text: submitted.text, attachmentIds: submittedIds, delivery: mode });
       if (draftRef.current.revision === submitted.revision) changeDraft('');
       setAttachments(current => current.filter(item => !submittedIds.includes(item.id)));
     } catch (error) { onError(String(error)); }
-    finally { sendingRef.current = false; setSending(false); }
+    finally { sendingRef.current = false; }
   };
   const chooseAttachments = async () => {
     try { const selected = await desktopClient.chooseChatAttachments(session.id); setAttachments(current => [...current, ...selected]); }
@@ -109,7 +104,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const slash = !slashDismissed && draft.startsWith('/') ? state.commands.filter(command => `/${command.name} ${command.description ?? ''}`.toLowerCase().includes(draft.toLowerCase())).slice(0, 8) : [];
   return <section className={`chat-pane ${active ? 'active' : ''}`} aria-hidden={!active} data-session-id={session.id}>
     <div className="chat-exit-slot">
-      {unavailable && session.processStatus === 'exited' && <div className="chat-exit-banner" role="alert">Pi 对话进程已退出。<button onClick={onTerminalRecovery}>改用兼容终端</button></div>}
+      {unavailable && session.processStatus === 'exited' && <div className="chat-exit-banner" role="alert">Pi 对话进程已退出。<Button onClick={onTerminalRecovery}>改用兼容终端</Button></div>}
     </div>
     <div className="chat-transcript" onWheelCapture={event => { if (event.deltaY < 0) { followOutput.current = false; resumeAtBottom.current = false; } else resumeAtBottom.current = true; }} onTouchMoveCapture={() => { followOutput.current = false; resumeAtBottom.current = true; }} onKeyDownCapture={event => { if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) { followOutput.current = false; resumeAtBottom.current = false; } else if (['ArrowDown', 'PageDown', 'End'].includes(event.key)) resumeAtBottom.current = true; }} onPointerDownCapture={event => { if ((event.target as HTMLElement).dataset.virtuosoScroller) { followOutput.current = false; resumeAtBottom.current = true; } }}>
       {!state.ready && !state.exited && session.processStatus !== 'exited' && <div className="chat-loading"><span className="spinner" /> 正在连接本机 Pi RPC…</div>}
@@ -118,22 +113,24 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
         cancelAnimationFrame(scrollFrame.current ?? 0);
         scrollFrame.current = requestAnimationFrame(() => { if (active && followOutput.current && state.messages.length) list.current?.scrollToIndex({ index: state.messages.length - 1, align: 'end', behavior: 'auto' }); });
       }} increaseViewportBy={500} itemContent={(_, message) => <MessageView message={message} />} />
-      {!atBottom && <button className="jump-latest" onClick={() => { followOutput.current = true; list.current?.scrollToIndex({ index: Math.max(0, state.messages.length - 1), align: 'end', behavior: 'auto' }); }}>回到最新 ↓</button>}
+      {!atBottom && <Button className="jump-latest" onClick={() => { followOutput.current = true; list.current?.scrollToIndex({ index: Math.max(0, state.messages.length - 1), align: 'end', behavior: 'auto' }); }}>回到最新 ↓</Button>}
     </div>
     <div className="composer-area">
       {state.notices.slice(-3).map(notice => <div key={notice.id} className={`chat-notice ${notice.level}`}>{notice.message}</div>)}
       {widgetsAt(state.widgets, 'aboveEditor').map(widget => <div className="chat-widget" key={widget.key}>{widget.lines.map((line, index) => <div key={index}>{line}</div>)}</div>)}
       {!!queueText(state.queue).length && <div className="queue-strip"><strong>已排队</strong>{state.queue.steering.map((text, index) => <span key={`s${index}`}>引导 · {text}</span>)}{state.queue.followUp.map((text, index) => <span key={`f${index}`}>后续 · {text}</span>)}</div>}
-      {!!slash.length && <div className="slash-menu" aria-label="Pi 命令建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSlashDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {slash.map(command => <button key={command.name} onClick={() => { changeDraft(`/${command.name} `); setSlashDismissed(true); textarea.current?.focus(); }}><code>/{command.name}</code><span>{command.description || command.source}</span></button>)}</div>}
-      <Composer variant="transcript" attachmentList={!!attachments.length && <div className="attachment-list">{attachments.map(item => <div className="attachment-chip" key={item.id}>{item.previewUrl ? <img src={item.previewUrl} alt="" /> : <Icon name="file" />}<div>{item.name}<small>{formatBytes(item.size)}</small></div><button aria-label={`移除 ${item.name}`} onClick={() => void desktopClient.removeChatAttachment(session.id, item.id).then(() => setAttachments(current => current.filter(value => value.id !== item.id))).catch(error => onError(String(error)))}><Icon name="close" /></button></div>)}</div>}
-        disabled={unavailable} editorRef={textarea} editorLabel="发送消息" placeholder={busy ? '输入可在当前工具完成后引导 Pi…' : '描述任务、粘贴内容或添加文件…'} value={draft}
-        onCompositionChange={value => { composing.current = value; }} onValueChange={value => { changeDraft(value); setSlashDismissed(false); }} onEditorKeyDown={event => {
-          if (event.nativeEvent.isComposing || composing.current || event.keyCode === 229) return;
+      {!!slash.length && <div className="slash-menu" aria-label="Pi 命令建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSlashDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {slash.map(command => <Button key={command.name} onClick={() => { changeDraft(`/${command.name} `); setSlashDismissed(true); textarea.current?.focus(); }}><code>/{command.name}</code><span>{command.description || command.source}</span></Button>)}</div>}
+      <Composer conversationKey={session.id} editorRef={textarea} disabled={unavailable} value={draft}
+        attachments={attachments.map(item => ({ id: item.id, name: item.name, detail: <>{item.previewUrl && <img className="attachment-preview" src={item.previewUrl} alt=""/>}{formatBytes(item.size)}</> }))}
+        onAddAttachments={() => void chooseAttachments()}
+        onRemoveAttachment={id => void desktopClient.removeChatAttachment(session.id, id).then(() => setAttachments(current => current.filter(item => item.id !== id))).catch(error => onError(String(error)))}
+        onValueChange={value => { changeDraft(value); setSlashDismissed(false); }}
+        busy={busy} onSend={() => send()} onQueue={() => send('steer')} onFollowUp={() => send('followUp')} onStop={stop}
+        labels={{ message: '发送消息', placeholder: busy ? '输入可在当前工具完成后引导 Pi…' : '描述任务、粘贴内容或添加文件…', hint: busy ? 'Enter 引导 · ⌥Enter 后续 · ⇧Enter 换行' : 'Enter 发送 · ⇧Enter 换行', send: '发送消息', queue: '引导 Pi', stop: '停止运行', addAttachments: '添加附件', attachments: '附件', removeAttachment: name => `移除 ${name}`, failed: '操作失败', error: '操作失败' }}
+        onEditorKeyDown={event => {
           if (event.key === 'Escape') { setSlashDismissed(true); return; }
-          if (event.key === 'ArrowDown' && slash.length) { event.preventDefault(); event.currentTarget.closest('.composer-area')?.querySelector<HTMLButtonElement>('.slash-menu button')?.focus(); return; }
-          if (event.key !== 'Enter' || event.shiftKey || event.metaKey || event.ctrlKey) return;
-          event.preventDefault(); void send(event.altKey && busy ? 'followUp' : undefined);
-        }} actions={<><div><button disabled={unavailable} aria-label="添加附件" title="添加文件或图片" onClick={() => void chooseAttachments()}><Icon name="plus" /></button><span>{busy ? 'Enter 引导 · ⌥Enter 后续 · ⇧Enter 换行' : 'Enter 发送 · ⇧Enter 换行'}</span></div>{busy ? <button className="stop-button icon-button" aria-label="停止运行" title="停止运行" onClick={() => void stop()}><Icon name="stop" /></button> : <button className="send-button icon-button" aria-label="发送消息" title="发送消息" onClick={() => void send()} disabled={unavailable || sending || (!draft.trim() && !attachments.length)}><Icon name="up" /></button>}</>} />
+          if (event.key === 'ArrowDown' && slash.length) { event.preventDefault(); event.currentTarget.closest('.composer-area')?.querySelector<HTMLButtonElement>('.slash-menu button')?.focus(); }
+        }} />
       {widgetsAt(state.widgets, 'belowEditor').map(widget => <div className="chat-widget" key={widget.key}>{widget.lines.map((line, index) => <div key={index}>{line}</div>)}</div>)}
       <div className="chat-meta"><span>{state.exited || session.processStatus === 'exited' ? 'Pi 已退出' : session.processStatus === 'starting' || !state.ready ? '正在连接 Pi…' : activityLabel(state.activity)}</span><span>{state.model ? `${state.model.provider}/${state.model.id}` : '未选择模型'}{state.thinkingLevel ? ` · ${state.thinkingLevel}` : ''}</span>{Object.entries(state.statuses).map(([key, value]) => <span key={key}>{value}</span>)}</div>
     </div>
@@ -144,14 +141,14 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
 const MessageView = memo(function MessageView({ message }: { message: ChatMessage }) {
   const text = message.blocks.filter((block): block is Extract<ChatBlock, { type: 'text' }> => block.type === 'text').map(block => block.text).join('\n');
   const author = message.role === 'user' ? '你' : message.role === 'assistant' ? 'Pi' : message.label || '事件';
-  return <ConversationMessage variant="transcript" role={message.role} author={author} error={message.error} header={<>{message.role === 'assistant' && <Icon name="pi" />}<span>{author}</span>{message.role === 'assistant' && text && <CopyButton text={text} label="复制回复" />}</>}>
-    {message.blocks.map((block, index) => block.type === 'text' ? message.role === 'user' ? <div className="user-text" key={index}>{block.text}</div> : <MarkdownView key={index} text={block.text} streaming={!!message.streaming} /> : block.type === 'thinking' ? <details className="thinking" key={index}><summary>思考过程</summary><MarkdownView text={block.text} streaming={!!message.streaming} /></details> : block.type === 'image' ? <img className="transcript-image" key={index} alt="消息图片" src={`data:${block.mimeType};base64,${block.data}`} /> : <ToolCard key={block.tool.id} tool={block.tool} />)}
+  return <ConversationMessage role={message.role} author={author} error={message.error} streaming={!!message.streaming} labels={{ user: '你', assistant: 'Pi', streaming: '正在回复…', failed: '回复失败' }} actions={message.role === 'assistant' && text ? <CopyButton text={text} label="复制回复" /> : undefined}>
+    {message.blocks.map((block, index) => block.type === 'text' ? message.role === 'user' ? <div className="user-text" key={index}>{block.text}</div> : <MarkdownView key={index} text={block.text} streaming={!!message.streaming} /> : block.type === 'thinking' ? <Collapsible title="思考过程" key={index}><MarkdownView text={block.text} streaming={!!message.streaming} /></Collapsible> : block.type === 'image' ? <img className="transcript-image" key={index} alt="消息图片" src={`data:${block.mimeType};base64,${block.data}`} /> : <ToolCard key={block.tool.id} tool={block.tool} />)}
   </ConversationMessage>;
 });
 
 export function ToolCard({ tool }: { tool: ToolActivity }) {
   const status = tool.status === 'pending' ? 'idle' : tool.status;
-  return <ToolExecutionCard nativeDetails status={status} className={tool.status} openOnError triggerTitle={toolSummary(tool)} title={toolSummary(tool)} icon={<Icon name={tool.status === 'success' ? 'check' : tool.status === 'error' ? 'close' : 'code'}/>} labels={{ statuses: { idle: '等待', running: '运行中', success: '完成', error: '失败' } }}><div className="tool-detail"><div className="tool-detail-label">{tool.name} · 调用参数</div><pre>{JSON.stringify(tool.arguments, null, 2)}</pre>{tool.images?.map((image, index) => <img className="transcript-image" key={index} alt="工具结果图片" src={`data:${image.mimeType};base64,${image.data}`} />)}{tool.output && <><div className="tool-output-heading"><span>工具返回快照 · {tool.output.split('\n').length} 行输出</span><CopyButton text={tool.output} label="复制工具输出" /></div><p className="snapshot-note">该次执行返回的内容，不代表当前磁盘文件；行号为输出行号。</p><SourceView text={tool.output} label="工具返回快照" /></>}</div></ToolExecutionCard>;
+  return <ToolExecutionCard status={status} className={tool.status} openOnError title={toolSummary(tool)} icon={<Icon name={tool.status === 'success' ? 'check' : tool.status === 'error' ? 'close' : 'code'}/>} labels={{ statuses: { idle: '等待', running: '运行中', success: '完成', error: '失败' } }}><div className="tool-detail"><div className="tool-detail-label">{tool.name} · 调用参数</div><pre>{JSON.stringify(tool.arguments, null, 2)}</pre>{tool.images?.map((image, index) => <img className="transcript-image" key={index} alt="工具结果图片" src={`data:${image.mimeType};base64,${image.data}`} />)}{tool.output && <><div className="tool-output-heading"><span>工具返回快照 · {tool.output.split('\n').length} 行输出</span><CopyButton text={tool.output} label="复制工具输出" /></div><p className="snapshot-note">该次执行返回的内容，不代表当前磁盘文件；行号为输出行号。</p><SourceView text={tool.output} label="工具返回快照" /></>}</div></ToolExecutionCard>;
 }
 
 export function ExtensionDialog({ request, onAnswer }: { request: ExtensionUIRequest; onAnswer(value: ExtensionUIResponse): Promise<void> }) {
@@ -159,7 +156,7 @@ export function ExtensionDialog({ request, onAnswer }: { request: ExtensionUIReq
   const [submitting, setSubmitting] = useState(false);
   const submit = async (response: ExtensionUIResponse) => { if (submitting) return; setSubmitting(true); try { await onAnswer(response); } finally { setSubmitting(false); } };
   const [value, setValue] = useState(request.method === 'editor' ? request.prefill ?? '' : '');
-  return <Dialog initialFocusRef={initialFocus} open title={request.title} closeLabel="取消" closeDisabled={submitting} closeOnBackdrop={false} onClose={() => void submit({ id: request.id, cancelled: true })}><fieldset disabled={submitting}>{request.method === 'confirm' && <p>{request.message}</p>}{request.method === 'select' ? <div className="extension-options">{request.options.map(option => <button key={option} onClick={() => void submit({ id: request.id, value: option })}>{option}</button>)}</div> : request.method === 'confirm' ? <div className="extension-actions"><button onClick={() => void submit({ id: request.id, confirmed: false })}>取消</button><button className="primary" onClick={() => void submit({ id: request.id, confirmed: true })}>确认</button></div> : <form onSubmit={event => { event.preventDefault(); void submit({ id: request.id, value }); }}><textarea ref={initialFocus} aria-label={request.title} placeholder={request.method === 'input' ? request.placeholder : undefined} value={value} onChange={event => setValue(event.target.value)} /><div className="extension-actions"><button type="button" onClick={() => void submit({ id: request.id, cancelled: true })}>取消</button><button className="primary" type="submit">提交</button></div></form>}</fieldset></Dialog>;
+  return <Dialog initialFocusRef={initialFocus} open title={request.title} closeLabel="取消" closeDisabled={submitting} closeOnBackdrop={false} onClose={() => void submit({ id: request.id, cancelled: true })}><fieldset disabled={submitting}>{request.method === 'confirm' && <p>{request.message}</p>}{request.method === 'select' ? <div className="extension-options">{request.options.map(option => <Button key={option} onClick={() => void submit({ id: request.id, value: option })}>{option}</Button>)}</div> : request.method === 'confirm' ? <div className="extension-actions"><Button onClick={() => void submit({ id: request.id, confirmed: false })}>取消</Button><Button variant="primary" onClick={() => void submit({ id: request.id, confirmed: true })}>确认</Button></div> : <form onSubmit={event => { event.preventDefault(); void submit({ id: request.id, value }); }}><textarea className="ui-input" ref={initialFocus} aria-label={request.title} placeholder={request.method === 'input' ? request.placeholder : undefined} value={value} onChange={event => setValue(event.target.value)} /><div className="extension-actions"><Button type="button" onClick={() => void submit({ id: request.id, cancelled: true })}>取消</Button><Button variant="primary" type="submit">提交</Button></div></form>}</fieldset></Dialog>;
 }
 
 function formatBytes(bytes: number): string { return bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KiB` : `${(bytes / 1024 / 1024).toFixed(1)} MiB`; }

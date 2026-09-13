@@ -57,9 +57,9 @@ describe('native composer', () => {
 describe('tool card', () => {
   it('collapses successful output and expands failures', () => {
     const { rerender, container } = render(<ToolCard tool={{ id: '1', name: 'read', arguments: { path: 'a.ts' }, status: 'success', output: 'ok' }} />);
-    expect(container.querySelector('details')?.open).toBe(false);
+    expect(container.querySelector('.ui-collapsible > button')?.getAttribute('aria-expanded')).toBe('false');
     rerender(<ToolCard tool={{ id: '1', name: 'read', arguments: { path: 'a.ts' }, status: 'error', output: 'failed' }} />);
-    expect(container.querySelector('details')?.open).toBe(true);
+    expect(container.querySelector('.ui-collapsible > button')?.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByText('failed')).toBeTruthy();
   });
 });

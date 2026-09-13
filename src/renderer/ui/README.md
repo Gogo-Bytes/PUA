@@ -1,12 +1,12 @@
 # PUA 项目组件库
 
-状态：主题 foundation、统一 Icon/Dialog、Workspace/Change Review/Conversation 展示、Desktop-aware Content 与生产样式均已接入生产 App，旧顶层 seam 和 `renderer/modules` 已退休。组件预览继续隔离，静态迁移不代表视觉或运行验收，不能把 preview fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前视觉尚待确认。
+状态：主题 foundation、统一 Icon/Dialog、Workspace/Change Review/Conversation 展示、Desktop-aware Content 与生产样式均已接入生产 App，旧顶层 seam 和 `renderer/modules` 已退休。组件预览继续隔离，静态迁移不代表视觉或运行验收，不能把 preview fixture 当生产数据。2026-09-08 已按用户导出的 codex-theme-v1 配置应用明暗背景、正文、强调色、Diff 与 Skill 色。按用户后续要求，明暗统一使用 Geist / Inter 和 Geist Mono 字体栈，未打包字体时使用相同的本机回退。当前 demo 已获用户指定为生产设计基准，生产与后续交互统一消费同一组件；详见接入契约。
 
-导出边界：light contrast=40 / opaqueWindows=true，dark contrast=100 / opaqueWindows=false，codeThemeId 均为 catppuccin。未知的 contrast 派生算法和原生窗口透明效果未模拟。用户后续要求优先：Diff 与 highlight 使用低饱和配套色，覆盖原导出 Diff 值；浅色 link 使用实际 ClickUp 任务正文链接测得的 #0b68cb，深色 #79b8ff 与两种 hover 色为本库配套值，不是 ClickUp 实测值。链接下划线保持同色，不再降低透明度。其他基础色保持；字体栈按后续要求统一明暗。提示、引用、Diff 与动效样例均不使用左侧装饰线；Diff 以正负号、文字色和浅底区分。尺寸和行高未由导出提供，沿用现值。
+导出边界：light contrast=40 / opaqueWindows=true，dark contrast=100 / opaqueWindows=false，codeThemeId 均为 catppuccin。未知的 contrast 派生算法和原生窗口透明效果未模拟。用户后续要求优先：Diff 与 highlight 使用低饱和配套色，覆盖原导出 Diff 值；浅色 link 由 ClickUp 任务正文链接参考色加深为 #0b62bf，以保证 muted 背景对比度，深色 #79b8ff 与两种 hover 色为本库配套值，不是 ClickUp 实测值。链接下划线保持同色，不再降低透明度。其他基础色保持；字体栈按后续要求统一明暗。提示、引用、Diff 与动效样例均不使用左侧装饰线；Diff 以正负号、文字色和浅底区分。尺寸和行高未由导出提供，沿用现值。
 
 ## 分层与封装流程（原则单一事实源）
 
-1. 修改界面前先查 `ui/index.ts`、所属 `renderer/features/*/index.ts` 与 [生产接入与迁移契约](production-integration.md)。先复用或扩展已有接口，确有新职责时再新增；完成必要接口、独立预览与行为测试后，再请求用户确认生产接入。
+1. 修改界面前先查 `ui/index.ts`、所属 `renderer/features/*/index.ts` 与 [生产接入与迁移契约](production-integration.md)。先复用或扩展已有接口，确有新职责时再新增；完成必要接口、独立预览与行为测试后接入；本次 demo 统一替换已获得用户明确授权，不重复请求确认。新的未获授权设计范围再单独确认。
 2. **封装触发**：跨场景复用，或具有统一交互、可访问性、动效状态的控件进入 `ui`；生产工作台领域组合进入对应 `renderer/features/*`。`renderer/modules` 已完全退休；一次性业务分支留在调用方，不为封装制造纯透传、万能组件或预设全部业务的 props。
 3. 每个模块按职责拆文件，入口只 re-export；接口类型和行为约定放在实现附近。配色、尺寸、层级和动效通过统一 token，样式始终限定于 UIProvider。
 4. 新组件、新状态或接口变动必须同步预览、文档和接口测试。按适用性覆盖 default、hover、focus、disabled、busy、error、键盘、IME、明暗主题、窄窗与 reduced-motion。
@@ -20,7 +20,7 @@
 - **先用 token**：尺寸集中在 `tokens.css`；控件 13px、辅助 12px、常规控件 28px，控件圆角 8px、浮层 12px、Composer 20px，邻接间距优先 4/6/8/12px。组件实际消费这些 token，而非在预览给新组件另加缩小特例。长篇 Chat 与 Composer 正文使用 reading token（15px / 1.65），不靠全局小字压缩信息。
 - **行 / 浮层 / 容器**：导航、通知与会话优先使用紧凑行及轻分隔；聊天采用稳定阅读列、用户浅底与助手裸正文；状态色用于图标、标签或局部强调，主正文保持中性。Toast、Tooltip、菜单与 Dialog 才使用有限宽度、适度阴影的浮层。容器只为独立内容分组，不给每条消息套大圆角卡片，不无理由将产品控件扩成营销卡片。
 - **空间跟随内容**：短通知一行，不强制标题另起一行，操作紧邻正文；显式标题或长错误可展开完整正文。Dialog 按内容自适应，Composer 保留紧凑工具区与可滚动附件条。缩小留白不能裁掉错误、隐藏可操作链接或抹掉焦点环；常规目标至少 24px，必要时通过间距保证可操作性。
-- **预览与视觉验收**：小 section、合理列宽和真实项目/会话标签为默认；长标题、多层与长错误放在可展开压力案例。实际查看包含新旧组件的同屏截图（通用页、模块与工作台组合），对比同视口的明暗主题和窄窗，测量 CSS px 高度/圆角并验证键盘详情、焦点及溢出。测试全绿不等于视觉一致；用户视觉确认后才允许生产替换。
+- **预览与视觉验收**：小 section、合理列宽和真实项目/会话标签为默认；长标题、多层与长错误放在可展开压力案例。实际查看包含新旧组件的同屏截图（通用页、模块与工作台组合），对比同视口的明暗主题和窄窗，测量 CSS px 高度/圆角并验证键盘详情、焦点及溢出。测试全绿不等于视觉一致；本次依据用户指定的 demo 基准执行生产替换并提供同视口截图。
 
 ## 入口与覆盖
 
@@ -60,7 +60,7 @@
 
 ## 既有行为保持
 
-- Collapsible 的 title 支持非交互 ReactNode，label 可提供完整按钮可访问名称；原字符串调用保持兼容。ToolExecutionCard 用它将图标、摘要和状态合并为一个详情入口，复用现有展开/收起与 reduced-motion 行为。
+- Collapsible 可通过 open/onOpenChange 受控（如工具失败自动展开），未传入时保留 defaultOpen 内部状态。title 支持非交互 ReactNode，label 可提供完整按钮可访问名称；原字符串调用保持兼容。ToolExecutionCard 用它将图标、摘要和状态合并为一个详情入口，复用现有展开/收起与 reduced-motion 行为。
 
 - `ui/Icon.tsx` 统一映射 lucide-react 按需导入图标：24px 网格、16px 显示、1.75 线宽。通知、状态和任务清单复用同一来源；不再手画路径。免费使用许可为 ISC，部分 Feather 来源图标为 MIT；许可证随 npm 包提供，发布时保留其通知，见 https://lucide.dev/license 。生产与预览现统一使用该来源，旧 `renderer/Icon.tsx` 已删除。
 - 图标选型参考实际 ClickUp 页面的齿轮、折角文档与循环箭头；采用同一免费 Lucide 家族的 Settings、File、RotateCw，warning 使用 CircleAlert。它们是风格匹配，不是 ClickUp 专有 SVG 的逐路径复制。
@@ -69,7 +69,7 @@
 
 - Dialog 是生产与预览唯一的原生 modal 实现，Tab 循环、Escape 请求关闭、恢复 opener；可配置 closeLabel。需要输入初始焦点的调用方传入 `initialFocusRef`（不用 React `autoFocus`），Dialog 在 `showModal()` 后聚焦；Tab 循环排除隐藏、禁用和负 tabindex 控件，每个具名 radio 组只保留已选项（无选项时取首项）。生产 Fake Desktop 回归运行 `node tests/workspace-dialog-check.mjs`（需 4181 Workspace Preview）。`closeOnBackdrop={false}` 供原本不响应 backdrop 的调用方保留关闭语义，`closeDisabled` 让异步提交期间的关闭按钮与业务锁一致。确认、危险操作、异步失败的状态由调用方控制，示例在 `CompletionExamples.tsx / DialogExamples`，没有另造一套 Dialog。
 - InlineRename 支持双击/F2，labels 可配置输入提示、保存/取消和失败文案；SessionTabs 按 id 恢复焦点，忙碌编辑器可作为焦点目标。未增加改名菜单入口。
-- ResizableWorkspace 窄窗先隐藏右侧再隐藏左侧，保存宽度恢复；separator 即将移除前把焦点移到永久 toggle。原有 GSAP 有界 context 与中途反转策略保持。
+- ResizableWorkspace 支持 rightOpen/onRightOpenChange、rightToggleRef、labels 和 toolbarActions；motionControls 默认为 false，仅预览显式开启重播测试控制。窄窗先隐藏右侧再隐藏左侧，保存宽度恢复；separator 即将移除前把焦点移到永久 toggle。原有 GSAP 有界 context 与中途反转策略保持。
 
 ## 验证
 

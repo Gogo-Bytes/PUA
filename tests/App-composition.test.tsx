@@ -75,7 +75,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (reason: unknown) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 
 describe('App composition before/after: real owners and panes, only in-memory host/native terminal Fakes', () => {
-  it('registers capture before inspector bubble; only platform/kind changes rebind capture and all listeners clean up', async () => {
+  it('scopes inspector keys to the workspace; only platform/kind changes rebind capture and all listeners clean up', async () => {
     const trace: string[] = [];
     const add = window.addEventListener.bind(window), remove = window.removeEventListener.bind(window);
     const captures = new Set<EventListenerOrEventListenerObject>();
@@ -83,12 +83,12 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     vi.spyOn(window, 'removeEventListener').mockImplementation((type, listener, options) => { if (type === 'keydown' && options === true) { trace.push('remove:capture'); captures.delete(listener); } remove(type, listener, options); });
     const view = await mount(); const initial = trace.filter(x => x.endsWith('capture')).length;
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'draft' } });
-    open(); filter('query'); close(); fireEvent.click(screen.getByRole('button', { name: '重命名' })); close();
+    open(); filter('query'); close(); fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /Session/ }), { key: 'F2' }); fireEvent.keyDown(screen.getByRole('textbox', { name: /^重命名 / }), { key: 'Escape' });
     await create(); fireEvent.click(screen.getByRole('tab', { name: 'Session 1' }));
     fireEvent.click(screen.getByRole('button', { name: '桌面设置' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush();
     expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial);
-    fireEvent.click(screen.getByRole('button', { name: '显示或收起检查区' })); await screen.findByRole('button', { name: 'a.ts M' });
-    expect(trace.lastIndexOf('add:bubble')).toBeGreaterThan(trace.lastIndexOf('add:capture'));
+    await screen.findByRole('button', { name: 'a.ts M' });
+    expect(trace.filter(x => x === 'add:bubble')).toHaveLength(0); // Inspector Escape is scoped to ResizableWorkspace, not a window listener.
     await create('terminal'); expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial + 2);
     boot = { ...boot, platform: 'linux' }; fireEvent.click(screen.getByRole('button', { name: '桌面设置' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush();
     expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial + 4); expect(captures.size).toBe(1);
@@ -105,12 +105,12 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await act(async () => second.resolve({ ...boot, preferences: { ...boot.preferences, theme: 'dark', recentProjects: ['/second'] } })); expect(document.documentElement.dataset.theme).toBe('dark');
     await act(async () => first.resolve({ ...boot, preferences: { ...boot.preferences, theme: 'light', recentProjects: ['/first'] } })); expect(document.documentElement.dataset.theme).toBe('light'); expect(screen.getByTitle('/first')).toBeTruthy();
   });
-  it('rename captures submission rather than opening identity, and terminal rename never calls the host', async () => {
-    await mount(); await create(); fireEvent.click(screen.getByRole('button', { name: '重命名' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '会话显示名' }), { target: { value: 'Submitted' } }); fireEvent.click(screen.getByRole('tab', { name: 'Session 1' }));
-    fireEvent.click(screen.getByRole('button', { name: '保存名称' })); await flush(); expect(desktop.renameChatSession).toHaveBeenCalledExactlyOnceWith('s1', 'Submitted');
-    expect(screen.getByRole('tab', { name: 'Session 2' })).toBeTruthy(); await create('terminal'); fireEvent.click(screen.getByRole('button', { name: '重命名' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '会话显示名' }), { target: { value: 'Terminal local' } }); fireEvent.click(screen.getByRole('button', { name: '保存名称' })); await flush();
+  it('rename keeps the edited tab identity when selection changes, and terminal rename never calls the host', async () => {
+    await mount(); await create(); fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /Session/ }), { key: 'F2' });
+    fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Submitted' } }); fireEvent.click(screen.getByRole('tab', { name: 'Session 1' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存' })); await flush(); expect(desktop.renameChatSession).toHaveBeenCalledExactlyOnceWith('s2', 'Submitted');
+    expect(screen.getByRole('tab', { name: 'Submitted' })).toBeTruthy(); await create('terminal'); fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /Session/ }), { key: 'F2' });
+    fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Terminal local' } }); fireEvent.click(screen.getByRole('button', { name: '保存' })); await flush();
     expect(screen.getByRole('tab', { name: 'Terminal local' })).toBeTruthy(); expect(desktop.renameChatSession).toHaveBeenCalledTimes(1);
   });
   it('late attachment queries the old ID in the live registry, never a disposed handle or newest active terminal', async () => {
@@ -132,9 +132,9 @@ describe('App composition before/after: real owners and panes, only in-memory ho
   it.each(['chat', 'terminal'] as const)('Git %s reference preserves palette split, newline and narrow textarea focus without toggle focus', async kind => {
     await mount(kind); const draft = kind === 'chat' ? screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement : undefined;
     if (draft) fireEvent.change(draft, { target: { value: 'existing' } });
-    const toggle = screen.getByRole('button', { name: '显示或收起检查区' }); fireEvent.click(toggle); fireEvent.click(await screen.findByRole('button', { name: 'a.ts M' })); await screen.findByRole('button', { name: '引用文件到草稿' });
+    const toggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ }); fireEvent.click(await screen.findByRole('button', { name: 'a.ts M' })); await screen.findByRole('button', { name: '引用文件到草稿' });
     open(); filter('model'); const focus = vi.spyOn(toggle, 'focus'); fireEvent.click(screen.getByRole('button', { name: '引用文件到草稿' }));
-    expect(toggle.getAttribute('aria-expanded')).toBe('false'); expect(focus).not.toHaveBeenCalled();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true'); expect(focus).not.toHaveBeenCalled();
     const text = '请检查这个文件的变更：@"/one/a.ts" ';
     if (draft) { expect(draft.value).toBe(`existing\n${text}`); expect(document.activeElement).toBe(draft); expect(query().value).toBe('model'); }
     else { expect(terminal.pastes).toEqual([text]); expect(screen.queryByRole('dialog')).toBeNull(); }

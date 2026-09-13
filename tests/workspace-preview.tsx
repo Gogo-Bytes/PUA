@@ -11,6 +11,7 @@ const listeners = new Set<(event: SessionEvent) => void>();
 const sessions = new Map<string, SessionInfo>();
 let preferences: Preferences = { piPath: 'TEST ONLY / no executable', nodePath: '', args: [], fontSize: 14, recentProjects: ['/test/workspace/PUA', '/test/other/PUA', '/test/empty'] };
 let sequence = 0;
+let clipboard = ''; // Fake Desktop never reaches the system clipboard.
 const emit = (event: SessionEvent) => listeners.forEach(listener => listener(event));
 const source = '# 测试文档\n\n这份内容来自测试 IPC，不是磁盘文件。\n\n## 阅读边界\n\n- 工具输出是执行快照。\n- Git patch 不是完整文件。\n- 引用只回填草稿。';
 const unsupported = async (): Promise<never> => { throw new Error('TEST ONLY：浏览器预览不提供此 Electron 能力'); };
@@ -44,8 +45,8 @@ installDesktopFake({
   removeChatAttachment: async () => {},
   gitStatus: async id => ({ root: sessions.get(id)?.cwd || '/test', branch: 'test-only', capturedAt: new Date().toISOString(), files: [{ path: 'src/source.ts', index: 'M', worktree: 'M' }, { path: 'docs/context.md', index: '?', worktree: '?' }] }),
   fileDiff: async (_id, filename, scope) => filename.endsWith('.md') ? { kind: 'untracked', text: source, truncated: false } : { kind: 'diff', truncated: false, text: `diff --git a/src/source.ts b/src/source.ts\n--- a/src/source.ts\n+++ b/src/source.ts\n@@ -1,2 +1,3 @@\n-const source = "file";\n+const source = "${scope === 'index' ? 'staged snapshot' : 'tool snapshot'}";\n+const currentFile = false;\n export { source };` },
-  writeClipboard: async text => navigator.clipboard.writeText(text),
-  readClipboard: unsupported, openExternal: unsupported, openProject: unsupported, chooseDirectory: unsupported, chooseFile: unsupported, chooseAttachments: unsupported,
+  writeClipboard: async text => { clipboard = text; },
+  readClipboard: async () => ({ text: clipboard, image: false }), openExternal: unsupported, openProject: unsupported, chooseDirectory: unsupported, chooseFile: unsupported, chooseAttachments: unsupported,
   respondToExtensionUI: unsupported, write: () => {}, resize: () => {}, acknowledge: () => {},
 });
 createRoot(document.getElementById('root')!).render(<App />);

@@ -11,7 +11,6 @@
 .ui-provider .ui-tool-paused .ui-tool-state { color: var(--ui-warning); }
 .ui-provider .ui-tool-card .ui-reveal > div { margin: var(--ui-space-1) 0 var(--ui-space-2); padding: var(--ui-space-3) 0; border-top: 1px solid var(--ui-border); color: var(--ui-secondary); }
 .ui-provider .ui-tool-card .ui-collapsible pre { white-space: pre-wrap; overflow-wrap: anywhere; font: var(--ui-type-meta)/1.6 var(--ui-mono); margin: 0; }
-.ui-provider .ui-tool-card.tool-card { color: inherit; }
 /* Conversation prose is scoped here, never inherited by generic UI headings. */
 .ui-provider .ui-chat-message { min-width: 0; display: grid; gap: var(--ui-space-2); padding: var(--ui-space-3) 0; overflow-wrap: anywhere; color: var(--ui-text); }
 .ui-provider .ui-chat-message-user { justify-items: end; }
@@ -62,9 +61,9 @@
 .ui-provider .ui-chat-body table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1em 0; font-size: .93em; }
 .ui-provider .ui-chat-body :is(th, td) { padding: .5em .75em; border-bottom: 1px solid var(--ui-border); text-align: left; }
 .ui-provider .ui-chat-body th { font-weight: var(--ui-weight-medium); }
-/* Controlled preview composer; production transcript styles live in composer-production.css. */
+/* One controlled editor for preview and production. */
 .ui-provider .ui-composer { border: 1px solid var(--ui-border); border-radius: var(--ui-radius-composer); padding: var(--ui-space-3); background: var(--ui-surface); box-shadow: var(--ui-shadow); }
-.ui-provider .ui-composer textarea { display: block; min-height: var(--ui-composer-height); resize: vertical; font: var(--ui-font-reading); border-color: transparent; }
+.ui-provider .ui-composer textarea { display: block; min-height: var(--ui-composer-height); resize: none; max-height: 160px; overflow-y: auto; font: var(--ui-font-reading); border-color: transparent; }
 .ui-provider .ui-composer:has(textarea:focus-visible) { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
 .ui-provider .ui-composer textarea:focus-visible { outline: none; }
 .ui-provider .ui-composer-footer { display: flex; gap: var(--ui-space-2); align-items: center; justify-content: space-between; margin-top: var(--ui-space-2); }

@@ -23,12 +23,13 @@ export interface SessionTabsProps {
   onClose?(id: string): void;
   onRename?(id: string, title: string): void | Promise<void>;
   onAdd?(): void;
+  addDisabled?: boolean;
   showOverflow?: boolean;
   groupKey?: string;
   labels?: Partial<SessionTabsLabels>;
 }
 
-export function SessionTabs({ sessions, activeId, onSelect, onClose, onRename, onAdd, showOverflow = false, groupKey, labels }: SessionTabsProps) {
+export function SessionTabs({ sessions, activeId, onSelect, onClose, onRename, onAdd, addDisabled, showOverflow = false, groupKey, labels }: SessionTabsProps) {
   const text = { title: 'Sessions', add: 'Add session', all: 'All sessions', menu: 'All sessions', close: (title: string) => `Close ${title}`, rename: {}, ...labels };
   const [menu, setMenu] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -57,10 +58,10 @@ export function SessionTabs({ sessions, activeId, onSelect, onClose, onRename, o
       const target = targets.current.get(sessions[next].id);
       (target?.querySelector<HTMLElement>('[role="tab"], input:not(:disabled)') ?? target?.querySelector<HTMLElement>('.ui-rename-editor'))?.focus();
     }}>{sessions.map(session => <div className="ui-session-tab" key={session.id} ref={node => { if (node) targets.current.set(session.id, node); else targets.current.delete(session.id); }}>
-      {onRename ? <InlineRename labels={text.rename} value={session.title} selected={activeId === session.id} onSelect={() => onSelect(session.id)} onRename={title => onRename(session.id, title)}/> : <Button role="tab" variant="ghost" aria-selected={session.id === activeId} tabIndex={session.id === activeId ? 0 : -1} title={sessionDescription(session)} onClick={() => onSelect(session.id)}><Icon name="chat"/><span>{session.title}</span>{session.activity && session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity"/>}</Button>}
-      {onClose && <IconButton className="ui-session-close" label={text.close(session.title)} icon="close" variant="ghost" onClick={() => onClose(session.id)}/>}
+      {onRename ? <InlineRename labels={{ ...text.rename, hint: `${sessionDescription(session)} · ${text.rename.hint ?? 'Double-click or F2 to rename'}` }} value={session.title} selected={activeId === session.id} onSelect={() => onSelect(session.id)} onRename={title => onRename(session.id, title)}/> : <Button role="tab" variant="ghost" aria-selected={session.id === activeId} tabIndex={session.id === activeId ? 0 : -1} title={sessionDescription(session)} onClick={() => onSelect(session.id)}><Icon name="chat"/><span>{session.title}</span>{session.activity && session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity"/>}</Button>}
+      {onRename && session.activity && session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity" aria-hidden="true"/>}{onClose && <IconButton className="ui-session-close" label={text.close(session.title)} icon="close" variant="ghost" onClick={() => onClose(session.id)}/>}
     </div>)}</div>
-    {onAdd && <IconButton icon="plus" label={text.add} variant="ghost" onClick={onAdd}/>}
+    {onAdd && <IconButton icon="plus" label={text.add} disabled={addDisabled} variant="ghost" onClick={onAdd}/>}
     {showOverflow && <div className="ui-session-overflow"><IconButton ref={trigger} icon="down" label={text.all} variant="ghost" disabled={!sessions.length} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(value => !value)}/>{menu && <div className="ui-popup ui-session-menu" ref={popup} role="menu" aria-label={text.menu} onKeyDown={event => {
       if (event.key === 'Escape' || event.key === 'Tab') { if (event.key === 'Escape') event.preventDefault(); closeMenu(); }
       if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {

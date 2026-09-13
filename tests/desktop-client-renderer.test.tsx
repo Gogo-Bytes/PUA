@@ -53,8 +53,8 @@ it('real registrar -> source preload -> client -> App/ChatPane retains submitted
   expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('submitted draft'); expect(screen.getByText('submitted.txt')).toBeTruthy();
   expect(h.capabilities.session.start).toHaveBeenCalledTimes(2);
   // Real Virtuoso stays bounded rather than replacing virtualization with a test-only full map.
-  await waitFor(() => expect(firstPane!.querySelectorAll('.chat-message').length).toBeGreaterThan(0));
-  expect(firstPane!.querySelectorAll('.chat-message').length).toBeLessThan(100);
+  await waitFor(() => expect(firstPane!.querySelectorAll('.ui-chat-message').length).toBeGreaterThan(0));
+  expect(firstPane!.querySelectorAll('.ui-chat-message').length).toBeLessThan(100);
   fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
   await waitFor(() => expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe(''));
   expect(screen.queryByText('submitted.txt')).toBeNull();

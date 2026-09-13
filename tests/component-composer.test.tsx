@@ -65,3 +65,38 @@ it('Composer explicit disabled blocks controls; pending unmount does no UI work'
   const view = render(tree({ disabled: true, onSend: send })); fireEvent.keyDown(editor(), { key: 'Enter' }); expect(send).not.toHaveBeenCalled(); expect(editor().disabled).toBe(true);
   view.rerender(tree({ onSend: send })); fireEvent.keyDown(editor(), { key: 'Enter' }); view.unmount(); await act(async () => reject(new Error('late'))); expect(screen.queryByRole('alert')).toBeNull();
 });
+
+it('follow-up shares the send/queue lock while stop remains independent, and sends the original snapshot', async () => {
+  let complete!: () => void;
+  const followUp = vi.fn(() => new Promise<void>(resolve => { complete = resolve; }));
+  const queue = vi.fn(), stop = vi.fn();
+  render(tree({ busy: true, onFollowUp: followUp, onQueue: queue, onStop: stop }));
+  fireEvent.keyDown(editor(), { key: 'Enter', altKey: true });
+  fireEvent.keyDown(editor(), { key: 'Enter' });
+  fireEvent.keyDown(editor(), { key: 'Enter', altKey: true });
+  expect(followUp).toHaveBeenCalledExactlyOnceWith({ conversationKey: 'a', value: 'original', attachments: files });
+  expect(queue).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+  await waitFor(() => expect(stop).toHaveBeenCalledOnce());
+  await act(async () => complete());
+  fireEvent.keyDown(editor(), { key: 'Enter' });
+  await waitFor(() => expect(queue).toHaveBeenCalledOnce());
+  expect(editor().value).toBe('original');
+});
+
+it('IME runs before caller shortcuts; a consumed shortcut and Ctrl/Meta+Enter never submit', async () => {
+  const send = vi.fn();
+  const shortcut = vi.fn<NonNullable<ComposerProps['onEditorKeyDown']>>(event => { if (event.key === 'Enter') event.preventDefault(); });
+  render(tree({ onSend: send, onEditorKeyDown: shortcut }));
+  fireEvent.compositionStart(editor()); fireEvent.keyDown(editor(), { key: 'Enter' }); fireEvent.compositionEnd(editor());
+  fireEvent.keyDown(editor(), { key: 'Enter', isComposing: true });
+  fireEvent.keyDown(editor(), { key: 'Enter', keyCode: 229 });
+  expect(shortcut).not.toHaveBeenCalled();
+  fireEvent.keyDown(editor(), { key: 'Enter' });
+  expect(shortcut).toHaveBeenCalledOnce(); expect(send).not.toHaveBeenCalled();
+  shortcut.mockImplementation(() => {});
+  fireEvent.keyDown(editor(), { key: 'Enter', ctrlKey: true }); fireEvent.keyDown(editor(), { key: 'Enter', metaKey: true });
+  expect(send).not.toHaveBeenCalled();
+  fireEvent.keyDown(editor(), { key: 'Enter' });
+  await waitFor(() => expect(send).toHaveBeenCalledOnce());
+});

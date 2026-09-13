@@ -12,7 +12,6 @@
 .ui-provider .ui-project-count { margin-left: auto; color: var(--ui-tertiary); font: var(--ui-font-meta); }
 .ui-provider .ui-project-nav .ui-tooltip-anchor, .ui-provider .ui-project-nav .ui-tooltip-anchor > span:first-child { display: block; }
 .ui-provider .ui-session-strip { display: flex; align-items: center; gap: var(--ui-space-1); min-width: 0; padding: var(--ui-space-1) var(--ui-space-2); border-bottom: 1px solid var(--ui-border); }
-.ui-provider .topbar .ui-session-strip { flex: 1; padding: 0; border-bottom: 0; }
 .ui-provider .ui-session-tabs { display: flex; gap: var(--ui-space-1); min-width: 0; overflow-x: auto; flex: 1; padding: var(--ui-space-1); }
 .ui-provider .ui-session-tab { display: flex; align-items: center; flex-shrink: 0; min-width: 0; max-width: 360px; }
 .ui-provider .ui-session-tab > .ui-button[role='tab'] { min-width: 0; max-width: 240px; }

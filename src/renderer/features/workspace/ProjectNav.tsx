@@ -34,13 +34,13 @@ export function ProjectNav({ projects, selectedCwd, onSelect, onAdd, labels, pat
     <div className="ui-project-list">{visible.length ? visible.map(project => {
       const duplicate = projects.some(other => other.cwd !== project.cwd && other.name === project.name);
       const showPath = pathVisibility === 'always';
-      const row = <Button variant="ghost" className="ui-project-row" aria-current={selectionMode === 'current' && selectedCwd === project.cwd ? 'page' : undefined} aria-pressed={selectionMode === 'pressed' ? selectedCwd === project.cwd : undefined} title={showPath ? project.cwd : undefined} onClick={() => onSelect(project.cwd)}><Icon name="folder"/><span className="ui-project-copy"><span>{project.name}</span>{showPath && <small>{project.cwd}</small>}</span><span className="ui-project-count">{project.sessions}</span></Button>;
+      const row = <Button variant="ghost" className="ui-project-row" aria-current={selectionMode === 'current' && selectedCwd === project.cwd ? 'page' : undefined} aria-pressed={selectionMode === 'pressed' ? selectedCwd === project.cwd : undefined} title={project.cwd} onClick={() => onSelect(project.cwd)}><Icon name="folder"/><span className="ui-project-copy"><span>{project.name}</span>{showPath && <small>{project.cwd}</small>}</span><span className="ui-project-count">{project.sessions}</span></Button>;
       return <div key={project.cwd}>{!showPath && duplicate ? <Tooltip content={project.cwd}>{row}</Tooltip> : row}</div>;
     }) : <p className="ui-meta">{text.empty}</p>}</div>
   </nav>;
 }
 
-export function ProjectNavigation({ sessions, recentProjects, project, onSelect }: { sessions: SessionInfo[]; recentProjects: string[]; project?: string; onSelect(cwd: string): void }) {
+export function ProjectNavigation({ sessions, recentProjects, project, onSelect, onAdd }: { sessions: SessionInfo[]; recentProjects: string[]; project?: string; onSelect(cwd: string): void; onAdd?(): void }) {
   const projects = groupProjects(sessions, recentProjects).map(item => ({ cwd: item.cwd, name: item.name, sessions: item.sessions.length }));
-  return <ProjectNav projects={projects} selectedCwd={project} onSelect={onSelect} pathVisibility="always" filterable showCount selectionMode="pressed" labels={{ title: '项目', empty: '暂无项目', filter: '筛选项目', filterPlaceholder: '查找项目…' }}/>;
+  return <ProjectNav projects={projects} selectedCwd={project} onSelect={onSelect} onAdd={onAdd} filterable labels={{ title: '项目', add: '打开项目', empty: '暂无项目', filter: '筛选项目', filterPlaceholder: '查找项目…' }}/>;
 }
