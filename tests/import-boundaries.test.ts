@@ -227,6 +227,8 @@ describe('TypeScript import/channel gate', () => {
     expect(checkSource(file, source, root).length).toBeGreaterThan(0);
   });
   it.each([
+    ...['node:child_process', 'child_process', 'node:crypto', 'crypto'].flatMap(target =>
+      [`import '${target}'`, `export * from '${target}'`, `import type { Value } from '${target}'`, `type Value = import('${target}').Value`, `require('${target}')`, `import('${target}')`].map(source => ['src/app/workers/pi-rpc.worker.ts', source])),
     ['src/platform/pi/runtime/discovery.ts', "import { accessSync } from 'node:fs'; import { expandHome } from '../../filesystem/expand-home.js'"],
     ['src/platform/pi/process/environment.ts', "import { searchDirectories, type ResolvedRuntime } from '../runtime/discovery.js'; import path from 'node:path'"],
     ['src/platform/filesystem/expand-home.ts', "import os from 'node:os'; import path from 'node:path'"],

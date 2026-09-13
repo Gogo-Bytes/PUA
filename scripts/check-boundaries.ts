@@ -66,7 +66,10 @@ export function checkSource(filename: string, text: string, root: string): strin
     if ((shared || renderer) && platformModule(name)) report(node, `platform import ${name} is forbidden`);
     if (shared && reactModule(name)) report(node, `React import ${name} is forbidden in shared`);
     const resolved = ts.resolveModuleName(name, file, { moduleResolution: ts.ModuleResolutionKind.Bundler, allowJs: true }, ts.sys).resolvedModule?.resolvedFileName;
-    const target = slash(path.relative(root, resolved ?? path.resolve(path.dirname(file), name)));
+    // Unresolved package/builtin names are not sibling paths (e.g. node:crypto).
+    // Keep lexical fallback for retired or not-yet-created relative source paths.
+    const localPath = resolved ?? (name.startsWith('.') || path.isAbsolute(name) ? path.resolve(path.dirname(file), name) : undefined);
+    const target = localPath ? slash(path.relative(root, localPath)) : '';
     const retiredSharedTarget = /^src\/shared\/(contracts|chat|chat-validation|git|missing-assistant-diagnostics)(?:\.[cm]?[jt]s)?$/.test(target);
     if (relative.startsWith('src/') && (retiredSharedImport || retiredSharedTarget)) report(node, 'top-level shared contract import is retired; import the canonical shared/ipc module directly');
     const sessionProcessAdapterTarget = target === 'src/platform/electron/utility/session-process-adapter.ts';
@@ -95,9 +98,9 @@ export function checkSource(filename: string, text: string, root: string): strin
     }
     if (platformAdapter && (reactModule(name) || /^src\/renderer\//.test(target))) report(node, `platform adapter import ${name} is forbidden`);
     if (relative.startsWith('src/platform/git/') && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|shared|renderer)\//.test(target) || target.startsWith('src/platform/electron/'))) report(node, `Git adapter import ${name} is forbidden`);
-    if (relative === 'src/platform/filesystem/preferences-storage.ts' && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|renderer)\//.test(target) || target.startsWith('src/platform/electron/'))) report(node, `Preferences storage import ${name} is forbidden`);
-    if (piRuntime && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || name === 'node-pty' || name.startsWith('node-pty/') || /^(node:)?(child_process|worker_threads|cluster)(\/|$)/.test(name) || /^src\/(app|main|shared|renderer|modules)\//.test(target) || target.startsWith('src/platform/electron/'))) report(node, `Pi runtime/environment import ${name} is forbidden`);
-    if (filesystemHome && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|shared|renderer|modules)\//.test(target) || /^src\/platform\/(pi|electron)\//.test(target))) report(node, `Filesystem home import ${name} is forbidden`);
+    if (relative === 'src/platform/filesystem/preferences-storage.ts' && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|renderer)\//.test(target) || /^src\/platform\/(pi|electron)\//.test(target))) report(node, `Preferences storage import ${name} is forbidden`);
+    if (piRuntime && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || name === 'node-pty' || name.startsWith('node-pty/') || /^(node:)?(child_process|worker_threads|cluster)(\/|$)/.test(name) || /^src\/(app|main|shared|renderer|modules)\//.test(target) || target.startsWith('src/platform/electron/') || target.startsWith('src/platform/filesystem/') && target !== 'src/platform/filesystem/expand-home.ts')) report(node, `Pi runtime/environment import ${name} is forbidden`);
+    if (filesystemHome && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|shared|renderer|modules)\//.test(target) || target.startsWith('src/platform/'))) report(node, `Filesystem home import ${name} is forbidden`);
     if (filesystemProject && (reactModule(name) || name === 'electron' || name.startsWith('electron/') || /^src\/(app|main|renderer|modules)\//.test(target) || /^src\/platform\/(pi|electron)\//.test(target) || (relative.endsWith('/session-preparation.ts') && target.startsWith('src/shared/')))) report(node, `Filesystem project adapter import ${name} is forbidden`);
     if (main && target.startsWith('src/renderer/')) report(node, `main composition renderer import ${target} is forbidden`);
     if (businessCore) {
