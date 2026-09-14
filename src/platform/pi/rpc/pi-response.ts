@@ -2,7 +2,13 @@ import { isRecord } from './chat-normalize.js';
 
 // Pi-only spellings and consumed payloads; never part of the utility/Desktop wire.
 export type PiCommand =
-  | { type: 'get_state' | 'get_messages' | 'get_commands' | 'clear_queue' | 'abort' }
+  | { type: 'get_state' | 'get_messages' | 'get_commands' | 'get_tree' | 'get_fork_messages' | 'get_session_stats' | 'clear_queue' | 'abort' }
+  | { type: 'fork'; entryId: string }
+  | { type: 'switch_session'; sessionPath: string }
+  | { type: 'set_model'; provider: string; modelId: string }
+  | { type: 'set_thinking_level'; level: string }
+  | { type: 'compact'; customInstructions?: string }
+  | { type: 'export_html'; outputPath: string }
   | { type: 'set_session_name'; name: string }
   | { type: 'prompt'; message: string; images: Array<{ type: 'image'; data: string; mimeType: string }>; streamingBehavior: 'steer' | 'followUp' };
 
@@ -10,11 +16,15 @@ export interface PiResponseData {
   get_state: Record<string, unknown>;
   get_messages: { messages: unknown[] };
   get_commands: { commands: unknown[] };
+  get_tree: Record<string, unknown>;
+  get_fork_messages: Record<string, unknown>;
+  get_session_stats: Record<string, unknown>;
   clear_queue: { steering: string[]; followUp: string[] };
   // These commands consume only the ACK; extra data is deliberately not constrained.
   prompt: unknown;
   abort: unknown;
   set_session_name: unknown;
+  fork: unknown; switch_session: unknown; set_model: unknown; set_thinking_level: unknown; compact: unknown; export_html: unknown;
 }
 
 function stringArray(value: unknown): value is string[] {
@@ -26,8 +36,9 @@ function validData<C extends PiCommand['type']>(command: C, data: unknown): data
     case 'get_state': return isRecord(data);
     case 'get_messages': return isRecord(data) && Array.isArray(data.messages);
     case 'get_commands': return isRecord(data) && Array.isArray(data.commands);
+    case 'get_tree': case 'get_fork_messages': case 'get_session_stats': return isRecord(data);
     case 'clear_queue': return isRecord(data) && stringArray(data.steering) && stringArray(data.followUp);
-    case 'prompt': case 'abort': case 'set_session_name': return true;
+    case 'prompt': case 'abort': case 'set_session_name': case 'fork': case 'switch_session': case 'set_model': case 'set_thinking_level': case 'compact': case 'export_html': return true;
   }
 }
 
