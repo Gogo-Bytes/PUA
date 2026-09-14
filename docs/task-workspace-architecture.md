@@ -37,6 +37,8 @@ Task
 
 ## 分阶段实施
 
+前置依赖：[Pi 能力盘点与差异决策](codex-interaction-parity.md#pi-能力盘点与差异决策记录)。先核对实际 Pi 版本及 RPC/CLI/SDK/扩展能力，识别 Pi 特有交互并与用户讨论。当前 Task 结构为待校正草案；不得仅以 Codex 截图或 PUA 当前 IPC 推断 Pi 的能力上限。
+
 1. 建立 Task DTO、持久化存储端口、IPC snapshot/event 和 reducer；保留现有 Session 运行协议。
 2. 用 GlobalNav、ProjectTree、TaskList 替换 ProjectNav/SessionTabs 的生产组合。
 3. 接入任务生命周期与重启恢复，再接入任务栏操作和通知。
