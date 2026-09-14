@@ -1,0 +1,32 @@
+# Pi 能力审计登记表
+
+基线：仓库记录的 Pi 0.85.1 RPC 接入（见 `docs/native-chat-design.md`）。本表不是对 Pi 未公开能力的推断；升级 Pi 后重新核验。
+
+状态含义：已接入（PUA 已有完整路径）；待接入（Pi 证据明确，PUA 尚未提供入口）；待验证（代码有迹象但需要运行验证）；待讨论（能力或交互会改变产品决策）。
+
+| ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
+|---|---|---|---|---|
+| PI-RPC-01 | prompt 与流式 delta | worker stream mapper、`ChatMessage` | 已接入 | 消息流、切换任务后恢复 |
+| PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper | 已接入 | 任务栏运行信息与设置入口 |
+| PI-RPC-03 | tool start/update/end 与最终结果 | stream core、ToolExecutionCard | 已接入 | 工具过程折叠、失败展开、重试 |
+| PI-RPC-04 | agent settled / compacting / retrying | runtime activity | 已接入 | 后台任务状态和通知 |
+| PI-RPC-05 | steer / followUp / clear queue | conversation queue、worker protocol | 已接入 | Composer 队列可视化与任务级恢复 |
+| PI-RPC-06 | history snapshot / continue | chat snapshot、create `continue` | 已接入 | 最近任务恢复；重启恢复需验证 |
+| PI-RPC-07 | session name | rename command、session-info | 已接入 | 任务标题编辑与自动更新 |
+| PI-RPC-08 | extension UI select/confirm/input/editor | Extension UI schema、Dialog | 已接入 | 任务上下文内等待态、焦点恢复 |
+| PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
+| PI-RPC-10 | `--resume` 历史选择器 | native-chat-design 记录 | 待接入 | 兼容终端入口；原生任务恢复流程 |
+| PI-RPC-11 | fork / session tree / 分支历史 | 未在当前接入协议确认 | 待验证 | 先核对实际 Pi 文档与运行命令 |
+| PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi 配置/扩展边界未在 PUA 接入 | 待验证 | 调查后决定是否做项目级入口 |
+| PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
+| PI-RPC-14 | token / usage 统计 | 当前 DTO 未暴露 | 待验证 | 若 Pi 提供，增加任务级用量摘要 |
+| PI-RPC-15 | 导出/复制历史 | 当前 PUA 仅 clipboard | 待讨论 | 本地 Markdown/JSON 导出是否纳入产品 |
+| PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
+
+## 每项能力的完成条件
+
+待验证项必须提供版本、来源、命令/事件名、输入输出样例和失败语义；待接入项必须补齐 shared DTO、运行时 schema、main Adapter、renderer 入口和行为测试；待讨论项必须记录用户决定后才能进入实现排期。任何能力在证据不足时保持原 Pi 兼容入口，不删除已有终端能力。
+
+## 本轮核验结果
+
+当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名和继续会话路径存在；不能仅凭 TypeScript 类型证明 fork、历史树、usage、导出或 skill 管理的实际版本支持。下一轮优先核验 PI-RPC-10 至 PI-RPC-14。
