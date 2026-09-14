@@ -8,11 +8,24 @@ export interface WorkerLaunch {
   env: Record<string, string>;
 }
 export interface WorkerImage { data: string; mimeType: string }
+/** Pi 0.85.1 operations reserved for the explicit capability adapters. */
+export type RpcCapabilityOperation =
+  | { type: 'get-tree' }
+  | { type: 'get-fork-messages' }
+  | { type: 'fork'; entryId: string }
+  | { type: 'switch-session'; sessionPath: string }
+  | { type: 'get-state' }
+  | { type: 'get-session-stats' }
+  | { type: 'set-model'; provider: string; modelId: string }
+  | { type: 'set-thinking-level'; level: string }
+  | { type: 'compact'; customInstructions?: string }
+  | { type: 'export-html'; outputPath: string };
 export type RpcOperation =
   | { type: 'send'; text: string; filePaths: string[]; images: WorkerImage[]; queuePreference: 'steer' | 'followUp' }
   | { type: 'stop' }
   | { type: 'extension-response'; response: ExtensionUIResponse }
-  | { type: 'rename'; name: string };
+  | { type: 'rename'; name: string }
+  | RpcCapabilityOperation;
 export type RpcRequest = RpcOperation & { requestId: string };
 export type RpcWorkerInput =
   | ({ type: 'start'; id: string } & WorkerLaunch)
