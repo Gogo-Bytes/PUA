@@ -36,3 +36,7 @@
 从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
 
 当前 PUA worker protocol 只覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename 和终端写入；以下是明确协议缺口：`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、模型/思考级别查询与切换、自动 compact/retry 设置、`compact`、`export_html`、`clone`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
+
+### 已提取的参数契约（Pi 0.85.1）
+
+`new_session(parentSession?)`、`set_model(provider, modelId)`、`set_thinking_level(level)`、`compact(customInstructions?)`、`export_html(outputPath)`、`switch_session(sessionPath)`、`fork(entryId)`、`get_entries(since?)`、`prompt/steer/follow_up(message, images)`；无参数查询包括 `get_state`、`get_messages`、`get_commands`、`get_tree`、`get_fork_messages`、`get_session_stats`、`get_available_models`、`get_available_thinking_levels`、`clone`。`bash(command)` 与 `abort_bash` 也存在，但 PUA 必须维持本地安全策略，不能因 Codex 对照而新增无审查 shell 入口。
