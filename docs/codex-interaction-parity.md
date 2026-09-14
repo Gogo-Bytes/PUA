@@ -28,7 +28,7 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 
 ## Pi 能力盘点与差异决策记录
 
-这张表是实施前置条件。新增 Codex 交互时必须先更新“决策”列，不能默认 Pi 已支持。
+这张表是实施前置条件。新增 Codex 交互时必须先更新“决策”列，不能默认 Pi 已支持。当前已核对仓库中的 Pi 0.85.1 RPC 接入记录与 `docs/native-chat-design.md`；版本升级后必须重新核对。
 
 | Pi 当前可确认能力 | PUA 可直接编排的交互 | Codex 可能有但 Pi 未确认的能力 | 决策 |
 |---|---|---|---|
@@ -40,6 +40,8 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 | session history / terminal PTY | 历史恢复、兼容终端 | 跨设备历史 | 仅本机 |
 | Pi trust、model、skills、extensions | 在会话中展示/响应 | Codex 账户权限与用量 | 交由 Pi；账户能力不实现 |
 | Git status / diff（PUA Adapter） | 检查器、文件 diff、引用反馈 | Codex 自动 patch review | 只做可验证的本地 Git 闭环 |
+
+已确认的 Pi RPC 事件/语义还包括：delta streaming、thinking、tool 生命周期、agent settled、compacting/retry、steer/followUp 队列、clear queue、history snapshot、session name、extension UI（select/confirm/input/editor/notify/status/widget/title/editor text）。这些能力应优先做 PUA 的完整可发现交互，而不是等待 Codex 对照；TUI custom renderer/header/footer/theme 与 custom editor 没有原生 RPC 等价，继续保留兼容终端入口。
 
 ### 必须另行讨论的产品差异
 
