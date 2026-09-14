@@ -16,11 +16,11 @@
 | PI-RPC-08 | extension UI select/confirm/input/editor | Extension UI schema、Dialog | 已接入 | 任务上下文内等待态、焦点恢复 |
 | PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
 | PI-RPC-10 | `--resume` 历史选择器 | native-chat-design 记录 | 待接入 | 兼容终端入口；原生任务恢复流程 |
-| PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 `AgentSessionEvent` 导出含 `SessionBeforeFork/Tree` | 待验证 | 核对 RPC 命令与事件样例后接入 |
+| PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 待接入 | 增加 RPC 命令白名单、树视图和分支切换验收 |
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 待接入 | 项目级资源入口与状态展示 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
-| PI-RPC-14 | token / usage 统计 | 当前 DTO 未暴露 | 待验证 | 若 Pi 提供，增加任务级用量摘要 |
-| PI-RPC-15 | 导出/复制历史 | Pi 0.85.1 包含 HTML export template 与 share viewer helper | 待讨论 | 本地导出可先做；分享是否纳入产品需决策 |
+| PI-RPC-14 | token / usage 统计 | Pi `FooterDataProvider` 暴露 context usage、session entries、model 信息；RPC DTO 尚未核对 | 待验证 | 核对 RPC usage 事件后增加任务级用量摘要 |
+| PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 待讨论 | 本地 HTML 导出可实现；分享是否纳入产品需决策 |
 | PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
 
 ## 每项能力的完成条件
