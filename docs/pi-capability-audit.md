@@ -12,6 +12,8 @@
 - Skills / Prompt Templates：采用 Codex 式 `@` 触发；输入时显示 tooltip 候选，用户可点击选择并插入引用。
 - Pi 特有能力：保留，完成能力说明后分别设计 PUA 入口。
 
+补充决策：fork 入口放在每条对话消息的操作区，点击后提供“在此工作空间中创建分支”和“在新工作树中创建分支”两个选项；前者沿用当前 Project/Task 上下文，后者创建新的工作树上下文。Pi 特有能力全部保留；只有交互形态无法从 Codex 或 Pi 证据确定时才暂停讨论。
+
 | ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
 |---|---|---|---|---|
 | PI-RPC-01 | prompt 与流式 delta | worker stream mapper、`ChatMessage` | 已接入 | 消息流、切换任务后恢复 |
