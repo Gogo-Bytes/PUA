@@ -40,6 +40,10 @@ describe('worker-protocol input capability parsers', () => {
     { type: 'extension-response', requestId: 'r', response: { id: 'd', cancelled: true } },
     { type: 'get-tree', requestId: 'r' }, { type: 'get-fork-messages', requestId: 'r' },
     { type: 'get-state', requestId: 'r' }, { type: 'get-session-stats', requestId: 'r' },
+    { type: 'fork', requestId: 'r', entryId: 'e' }, { type: 'switch-session', requestId: 'r', sessionPath: '/tmp/s' },
+    { type: 'set-model', requestId: 'r', provider: 'openai', modelId: 'gpt' }, { type: 'set-thinking-level', requestId: 'r', level: 'high' },
+    { type: 'compact', requestId: 'r' }, { type: 'compact', requestId: 'r', customInstructions: 'keep tests' },
+    { type: 'export-html', requestId: 'r', outputPath: '/tmp/out.html' },
   ])('accepts and rebuilds RPC $type', message => {
     expect(parseRpcWorkerInput(message)).toEqual({ ok: true, message });
   });
