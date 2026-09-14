@@ -49,6 +49,10 @@ export function parseRpcWorkerInput(value: unknown): WorkerParse<RpcWorkerInput>
     case 'extension-response':
       try { return { ok: true, message: { type: 'extension-response', requestId, response: extensionResponse(value.response) } }; }
       catch (error) { return invalid(String(error)); }
+    case 'get-tree': case 'get-fork-messages': case 'get-state': case 'get-session-stats':
+      return { ok: true, message: { type: value.type, requestId } };
+    case 'fork': case 'switch-session': case 'set-model': case 'set-thinking-level': case 'compact': case 'export-html':
+      return invalid('该 Pi 能力已登记，RPC Adapter 尚未接入');
     default: return invalid();
   }
 }

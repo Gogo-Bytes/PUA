@@ -278,5 +278,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
     void send(command)
       .then(() => { if (!closing) post({ type: 'response', requestId: data.requestId, success: true }); })
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
+    return;
   }
+  if ('requestId' in data) post({ type: 'response', requestId: data.requestId, success: false, error: '该 Pi 能力尚未接入 RPC Adapter' });
 });
