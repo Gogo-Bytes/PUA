@@ -4,6 +4,14 @@
 
 状态含义：已接入（PUA 已有完整路径）；待接入（Pi 证据明确，PUA 尚未提供入口）；待验证（代码有迹象但需要运行验证）；待讨论（能力或交互会改变产品决策）。
 
+## 已确认产品决策（2026-09-14）
+
+- Session Tree / Fork：纳入一级任务能力。
+- HTML 导出：不纳入产品。
+- 模型与 Thinking Level：提供 PUA 任务级切换入口。
+- Skills / Prompt Templates：采用 Codex 式 `@` 触发；输入时显示 tooltip 候选，用户可点击选择并插入引用。
+- Pi 特有能力：保留，完成能力说明后分别设计 PUA 入口。
+
 | ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
 |---|---|---|---|---|
 | PI-RPC-01 | prompt 与流式 delta | worker stream mapper、`ChatMessage` | 已接入 | 消息流、切换任务后恢复 |
@@ -20,7 +28,7 @@
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 待接入 | 项目级资源入口与状态展示 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
 | PI-RPC-14 | token / usage 统计 | Pi `FooterDataProvider` 暴露 context usage、session entries、model 信息；RPC DTO 尚未核对 | 待验证 | 核对 RPC usage 事件后增加任务级用量摘要 |
-| PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 待讨论 | 本地 HTML 导出可实现；分享是否纳入产品需决策 |
+| PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 明确不做 | 不提供 HTML 导出入口；保留复制消息 |
 | PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
 
 ## 每项能力的完成条件
@@ -40,3 +48,12 @@
 ### 已提取的参数契约（Pi 0.85.1）
 
 `new_session(parentSession?)`、`set_model(provider, modelId)`、`set_thinking_level(level)`、`compact(customInstructions?)`、`export_html(outputPath)`、`switch_session(sessionPath)`、`fork(entryId)`、`get_entries(since?)`、`prompt/steer/follow_up(message, images)`；无参数查询包括 `get_state`、`get_messages`、`get_commands`、`get_tree`、`get_fork_messages`、`get_session_stats`、`get_available_models`、`get_available_thinking_levels`、`clone`。`bash(command)` 与 `abort_bash` 也存在，但 PUA 必须维持本地安全策略，不能因 Codex 对照而新增无审查 shell 入口。
+
+## Pi 特有能力说明
+
+- **Session Tree / Fork**：会话是带 `id/parentId` 的 JSONL 树，可从历史节点创建独立分支；PUA 应将分支显示为任务内结构。
+- **Compaction**：Pi 生成 compaction summary 并沿当前叶子路径重建上下文；PUA 展示状态和失败反馈，不自行截断消息。
+- **Extension UI**：扩展可请求 select、confirm、input、editor、notify、status、widget；custom renderer/editor 等 TUI 能力继续由兼容终端承载。
+- **Skills / Prompt Templates**：Pi 从资源目录加载并通过命令目录暴露；PUA 的 `@` 是输入筛选器，执行逻辑仍由 Pi 持有。
+- **Model / Thinking Level**：Pi 支持按会话查询和切换，PUA 不接管凭据或配置文件。
+- **TUI custom 能力**：自定义主题、header/footer、renderer、editor 依赖终端绘制生命周期，RPC 没有等价 UI。
