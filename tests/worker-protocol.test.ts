@@ -38,6 +38,8 @@ describe('worker-protocol input capability parsers', () => {
     { type: 'extension-response', requestId: 'r', response: { id: 'd', value: '' } },
     { type: 'extension-response', requestId: 'r', response: { id: 'd', confirmed: false } },
     { type: 'extension-response', requestId: 'r', response: { id: 'd', cancelled: true } },
+    { type: 'get-tree', requestId: 'r' }, { type: 'get-fork-messages', requestId: 'r' },
+    { type: 'get-state', requestId: 'r' }, { type: 'get-session-stats', requestId: 'r' },
   ])('accepts and rebuilds RPC $type', message => {
     expect(parseRpcWorkerInput(message)).toEqual({ ok: true, message });
   });
