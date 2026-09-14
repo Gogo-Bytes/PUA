@@ -51,8 +51,12 @@ export function parseRpcWorkerInput(value: unknown): WorkerParse<RpcWorkerInput>
       catch (error) { return invalid(String(error)); }
     case 'get-tree': case 'get-fork-messages': case 'get-state': case 'get-session-stats':
       return { ok: true, message: { type: value.type, requestId } };
-    case 'fork': case 'switch-session': case 'set-model': case 'set-thinking-level': case 'compact': case 'export-html':
-      return invalid('该 Pi 能力已登记，RPC Adapter 尚未接入');
+    case 'fork': return text(value.entryId) ? { ok: true, message: { type: 'fork', requestId, entryId: value.entryId } } : invalid();
+    case 'switch-session': return text(value.sessionPath) ? { ok: true, message: { type: 'switch-session', requestId, sessionPath: value.sessionPath } } : invalid();
+    case 'set-model': return text(value.provider) && text(value.modelId) ? { ok: true, message: { type: 'set-model', requestId, provider: value.provider, modelId: value.modelId } } : invalid();
+    case 'set-thinking-level': return text(value.level) ? { ok: true, message: { type: 'set-thinking-level', requestId, level: value.level } } : invalid();
+    case 'compact': return (value.customInstructions === undefined || text(value.customInstructions)) ? { ok: true, message: { type: 'compact', requestId, ...(value.customInstructions === undefined ? {} : { customInstructions: value.customInstructions }) } } : invalid();
+    case 'export-html': return text(value.outputPath) ? { ok: true, message: { type: 'export-html', requestId, outputPath: value.outputPath } } : invalid();
     default: return invalid();
   }
 }
