@@ -78,14 +78,18 @@ try {
     await page.getByRole('button', { name: '保存设置' }).click();
     await page.getByRole('dialog').waitFor({ state: 'detached' });
     let rightHasHidden = false;
-    for (const width of [1440, 1101, 1100, 1099, 1051, 1050, 1049, 1024, 761, 760, 759, 740]) {
+    for (const width of [1440, 1101, 1100, 1099, 1051, 1050, 1049, 1024, 761, 760, 759, 740, 360]) {
       await page.setViewportSize({ width, height: width === 1440 ? 900 : 800 });
       await page.waitForTimeout(300);
       const layout = await page.evaluate(() => {
         const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { width: r.width, height: r.height, bottom: r.bottom }; };
-        return { width: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth, composer: rect('.chat-pane.active .ui-composer'), transcript: rect('.chat-pane.active .chat-transcript'), rightHidden: document.querySelector('.ui-workspace-right').inert };
+        const latest = document.querySelector('.chat-pane.active .jump-latest');
+        const latestRect = latest?.getBoundingClientRect();
+        const listRect = document.querySelector('.chat-pane.active .message-list')?.getBoundingClientRect();
+        return { width: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth, composer: rect('.chat-pane.active .ui-composer'), transcript: rect('.chat-pane.active .chat-transcript'), rightHidden: document.querySelector('.ui-workspace-right').inert, jumpLatestClear: !latestRect || !listRect || latestRect.top >= listRect.bottom };
       });
       assert(!layout.overflow);
+      assert(layout.jumpLatestClear, '回到最新按钮不能遮挡消息正文');
       if (rightHasHidden) assert(layout.rightHidden, 'A narrower viewport must not make the inspector reappear');
       rightHasHidden ||= layout.rightHidden;
       assert(layout.composer.height > 0);
@@ -94,6 +98,8 @@ try {
       results.layouts.push({ theme, ...layout });
       if ([1440, 1024, 740].includes(width)) await page.screenshot({ path: `${output}/${width}-${theme}.png` });
     }
+    await page.setViewportSize({ width: 740, height: 800 });
+    await page.waitForTimeout(300);
     assert.equal(await page.getByRole('button', { name: '显示 检查器', exact: true }).getAttribute('aria-disabled'), 'true');
     await page.getByRole('button', { name: '收起 项目', exact: true }).click();
     await page.getByRole('button', { name: '关闭变更面板' }).waitFor();
