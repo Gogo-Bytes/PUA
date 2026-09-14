@@ -47,7 +47,7 @@ export function SessionTabs({ sessions, activeId, onSelect, onClose, onRename, o
     return () => document.removeEventListener('pointerdown', outside);
   }, [menu]);
   useEffect(() => setMenu(false), [groupKey]);
-  return <div className="ui-session-strip">
+  return <section className="ui-session-strip" aria-label={text.title} data-workspace-task-list="true">
     <div ref={tablist} role="tablist" aria-label={text.title} className="ui-session-tabs" onKeyDown={event => {
       const source = event.target as HTMLElement;
       if (source.getAttribute('role') !== 'tab') return;
@@ -69,7 +69,7 @@ export function SessionTabs({ sessions, activeId, onSelect, onClose, onRename, o
         items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
       }
     }}>{sessions.map(session => <Button variant="ghost" key={session.id} role="menuitemradio" aria-checked={session.id === activeId} onClick={() => { if (session.id === activeId) revealActiveTab(); onSelect(session.id); closeMenu(); }}><Icon name="chat"/><span>{session.title}</span>{session.id === activeId && <Icon name="check"/>}</Button>)}</div>}</div>}
-  </div>;
+  </section>;
 }
 
 function sessionDescription(session: WorkspaceSessionTab): string {
