@@ -30,3 +30,9 @@
 ## 本轮核验结果
 
 当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名和继续会话路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree 事件、skills、prompt templates 与 HTML export 相关能力，但仍需核对 RPC 暴露方式和运行样例。usage 仍未找到可靠 DTO。下一轮优先核验 PI-RPC-10 至 PI-RPC-14。
+
+## Pi 0.85.1 RPC 命令映射（静态核验）
+
+从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
+
+当前 PUA worker protocol 只覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename 和终端写入；以下是明确协议缺口：`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、模型/思考级别查询与切换、自动 compact/retry 设置、`compact`、`export_html`、`clone`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
