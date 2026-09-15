@@ -34,7 +34,7 @@ export function ProjectSidebar({
         <IconButton icon="settings" label="桌面设置" variant="ghost" onClick={onSettings}/>
       </span>
     </div>
-    <Button className="workspace-new-conversation" variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(activeProject)}>
+    <Button className="workspace-new-conversation" variant="ghost" aria-label="新建会话" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(activeProject)}>
       <Icon name="edit"/><span>{creatingProject && creatingProject === activeProject ? '正在创建…' : '新对话'}</span><span aria-hidden="true">＋</span>
     </Button>
     <label className="workspace-project-filter">
