@@ -14,6 +14,7 @@ const oneOf = (value: unknown, choices: readonly string[]) => text(value) && cho
 const activity = (value: unknown) => oneOf(value, ['idle', 'responding', 'compacting', 'retrying', 'waiting-input']);
 const optional = (value: unknown, check: (value: unknown) => boolean) => value === undefined || check(value);
 const queue = (value: unknown) => record(value) && strings(value.steering) && strings(value.followUp);
+const tree = (value: unknown, depth = 0): boolean => depth < 64 && Array.isArray(value) && value.every(item => record(item) && text(item.entryId) && optional(item.label, text) && tree(item.children, depth + 1));
 
 export type WorkerParse<T> = { ok: true; message: T } | { ok: false; requestId?: string; error: string };
 /** Correlation is usable even when a request/response body is malformed. Never creates pending work. */
@@ -102,7 +103,7 @@ function mappedEvent(value: unknown, sessionId: string): RpcWorkerEvent | undefi
   switch (value.type) {
     case 'session-info': valid = optional(value.title, text) && optional(value.activity, activity) && optional(value.processStatus, x => oneOf(x, ['starting', 'running', 'exited'])); break;
     case 'chat-state': valid = record(value.state) && optional(value.state.activity, activity) && optional(value.state.queue, queue) && optional(value.state.statuses, dictionary) && optional(value.state.widgets, Array.isArray); break;
-    case 'chat-snapshot': valid = record(value.snapshot) && activity(value.snapshot.activity) && queue(value.snapshot.queue) && dictionary(value.snapshot.statuses) && Array.isArray(value.snapshot.widgets) && Array.isArray(value.snapshot.messages) && Array.isArray(value.snapshot.commands); break;
+    case 'chat-snapshot': valid = record(value.snapshot) && activity(value.snapshot.activity) && queue(value.snapshot.queue) && dictionary(value.snapshot.statuses) && Array.isArray(value.snapshot.widgets) && Array.isArray(value.snapshot.messages) && Array.isArray(value.snapshot.commands) && optional(value.snapshot.sessionTree, tree); break;
     case 'chat-message-start': case 'chat-message-end': valid = record(value.message) && text(value.message.id) && Array.isArray(value.message.blocks); break;
     case 'chat-tool': valid = record(value.tool) && text(value.tool.id) && optional(value.messageId, text) && optional(value.blockIndex, validBlockIndex); break;
     case 'chat-message-delta': valid = text(value.messageId) && validBlockIndex(value.blockIndex) && (value.blockType === 'text' || value.blockType === 'thinking') && text(value.delta); break;

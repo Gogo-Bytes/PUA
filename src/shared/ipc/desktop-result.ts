@@ -30,6 +30,7 @@ const attachment = (v: unknown) => record(v) && text(v.id) && text(v.name) && te
 const arrayOf = (v: unknown, guard: (v: unknown) => boolean) => Array.isArray(v) && Array.from(v).every(guard);
 const empty = (v: unknown) => v === null;
 const picker = (v: unknown) => v === null || text(v);
+const chatTree = (v: unknown, depth = 0): boolean => depth < 64 && arrayOf(v, node => record(node) && text(node.entryId) && optional(node.label, text) && chatTree(node.children, depth + 1));
 
 /** Exhaustive method-specific outer DTO checks; no cloning or recursive transcript schema. */
 export const desktopValueGuards = {
@@ -104,7 +105,7 @@ export function isDesktopSessionEvent(v: unknown): v is import('./conversation.j
       case 'terminal-data': return text(v.data);
       case 'session-info': return optional(v.title, text) && optional(v.processStatus, processStatus) && optional(v.activity, activity);
       case 'chat-state': return state(v.state);
-      case 'chat-snapshot': return record(v.snapshot) && state(v.snapshot) && activity(v.snapshot.activity) && queue(v.snapshot.queue) && dictionary(v.snapshot.statuses) && Array.isArray(v.snapshot.widgets) && Array.isArray(v.snapshot.messages) && Array.isArray(v.snapshot.commands);
+      case 'chat-snapshot': return record(v.snapshot) && state(v.snapshot) && activity(v.snapshot.activity) && queue(v.snapshot.queue) && dictionary(v.snapshot.statuses) && Array.isArray(v.snapshot.widgets) && Array.isArray(v.snapshot.messages) && Array.isArray(v.snapshot.commands) && optional(v.snapshot.sessionTree, chatTree);
       case 'chat-message-start': case 'chat-message-end': return message(v.message);
       case 'chat-message-delta': return text(v.messageId) && blockIndex(v.blockIndex) && oneOf(v.blockType, ['text', 'thinking']) && text(v.delta);
       case 'chat-tool': return record(v.tool) && text(v.tool.id) && text(v.tool.name) && record(v.tool.arguments) && oneOf(v.tool.status, ['pending', 'running', 'success', 'error']) && text(v.tool.output) && optional(v.tool.images, Array.isArray) && optional(v.messageId, text) && optional(v.blockIndex, blockIndex);
