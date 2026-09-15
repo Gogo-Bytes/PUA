@@ -51,7 +51,7 @@ describe('production workspace navigation', () => {
     const firstDraft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(firstDraft, { target: { value: 'unfinished first' } });
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
     await createSession(); fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: 'second draft' } });
-    selectProject('/two/app'); expect(screen.getByText(/此项目还没有打开的会话/)).toBeTruthy(); await createSession();
+    selectProject('/two/app'); expect(screen.queryByText(/此项目还没有打开的会话/)).toBeNull(); await createSession();
     emit({ id: 's1', type: 'chat-message-start', message: { id: 'm1', role: 'assistant', blocks: [{ type: 'text', text: 'background reply' }], timestamp: 1 } });
     selectProject('/one/app'); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
     fireEvent.click(screen.getByRole('tab', { name: '会话 1' }));
@@ -64,7 +64,7 @@ describe('production workspace navigation', () => {
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
     fireEvent.click(screen.getByRole('button', { name: '关闭 会话 1' })); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
-    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 2' })); await screen.findByText(/此项目还没有打开的会话/);
+    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 2' })); await waitFor(() => expect(screen.queryByText(/此项目还没有打开的会话/)).toBeNull());
     expect(screen.queryByRole('tab')).toBeNull(); expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
     expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
