@@ -42,6 +42,8 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   useEffect(() => () => cancelAnimationFrame(scrollFrame.current ?? 0), []);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [slashDismissed, setSlashDismissed] = useState(false);
+  const [skillDismissed, setSkillDismissed] = useState(false);
+  const forkingRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = desktopClient.onSessionEvent(event => {
@@ -100,8 +102,17 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     try { await desktopClient.respondToExtensionUI(session.id, response); dispatch({ type: 'extension-ui-closed', id: session.id, requestId: response.id }); }
     catch (error) { onError(String(error)); }
   };
+  const fork = async (entryId: string) => {
+    if (forkingRef.current || unavailable) return;
+    forkingRef.current = true;
+    try { await desktopClient.forkChatSession(session.id, entryId); }
+    catch (error) { onError(String(error)); }
+    finally { forkingRef.current = false; }
+  };
 
   const slash = !slashDismissed && draft.startsWith('/') ? state.commands.filter(command => `/${command.name} ${command.description ?? ''}`.toLowerCase().includes(draft.toLowerCase())).slice(0, 8) : [];
+  const skillMatch = !skillDismissed ? draft.match(/(?:^|\s)@([^\s]*)$/) : null;
+  const skills = skillMatch ? state.commands.filter(command => command.source === 'skill' && command.name.toLowerCase().includes(skillMatch[1].toLowerCase())).slice(0, 8) : [];
   return <section className={`chat-pane ${active ? 'active' : ''}`} aria-hidden={!active} data-session-id={session.id}>
     <div className="chat-exit-slot">
       {unavailable && session.processStatus === 'exited' && <div className="chat-exit-banner" role="alert">Pi 对话进程已退出。<Button onClick={onTerminalRecovery}>改用兼容终端</Button></div>}
@@ -112,7 +123,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       <Virtuoso ref={list} className="message-list" data={state.messages} followOutput={false} atBottomStateChange={value => { setAtBottom(value); if (value && resumeAtBottom.current) followOutput.current = true; }} totalListHeightChanged={() => {
         cancelAnimationFrame(scrollFrame.current ?? 0);
         scrollFrame.current = requestAnimationFrame(() => { if (active && followOutput.current && state.messages.length) list.current?.scrollToIndex({ index: state.messages.length - 1, align: 'end', behavior: 'auto' }); });
-      }} increaseViewportBy={500} itemContent={(_, message) => <MessageView message={message} />} />
+      }} increaseViewportBy={500} itemContent={(_, message) => <MessageView message={message} onFork={fork} />} />
       {!atBottom && <Button className="jump-latest" onClick={() => { followOutput.current = true; list.current?.scrollToIndex({ index: Math.max(0, state.messages.length - 1), align: 'end', behavior: 'auto' }); }}>回到最新 ↓</Button>}
     </div>
     <div className="composer-area">
@@ -120,16 +131,18 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       {widgetsAt(state.widgets, 'aboveEditor').map(widget => <div className="chat-widget" key={widget.key}>{widget.lines.map((line, index) => <div key={index}>{line}</div>)}</div>)}
       {!!queueText(state.queue).length && <div className="queue-strip"><strong>已排队</strong>{state.queue.steering.map((text, index) => <span key={`s${index}`}>引导 · {text}</span>)}{state.queue.followUp.map((text, index) => <span key={`f${index}`}>后续 · {text}</span>)}</div>}
       {!!slash.length && <div className="slash-menu" aria-label="Pi 命令建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSlashDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {slash.map(command => <Button key={command.name} onClick={() => { changeDraft(`/${command.name} `); setSlashDismissed(true); textarea.current?.focus(); }}><code>/{command.name}</code><span>{command.description || command.source}</span></Button>)}</div>}
+      {!!skills.length && <div className="skill-menu" role="listbox" aria-label="技能建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSkillDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role=option]')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {skills.map(command => <Button key={command.name} role="option" aria-selected="false" onClick={() => { const before = draft.slice(0, draft.length - (skillMatch?.[1].length ?? 0)); changeDraft(`${before}${command.name} `); setSkillDismissed(true); textarea.current?.focus(); }}><code>@{command.name}</code><span>{command.description || '@ Pi 技能'}</span></Button>)}</div>}
       <Composer conversationKey={session.id} editorRef={textarea} disabled={unavailable} value={draft}
         attachments={attachments.map(item => ({ id: item.id, name: item.name, detail: <>{item.previewUrl && <img className="attachment-preview" src={item.previewUrl} alt=""/>}{formatBytes(item.size)}</> }))}
         onAddAttachments={() => void chooseAttachments()}
         onRemoveAttachment={id => void desktopClient.removeChatAttachment(session.id, id).then(() => setAttachments(current => current.filter(item => item.id !== id))).catch(error => onError(String(error)))}
-        onValueChange={value => { changeDraft(value); setSlashDismissed(false); }}
+        onValueChange={value => { changeDraft(value); setSlashDismissed(false); setSkillDismissed(false); }}
         busy={busy} onSend={() => send()} onQueue={() => send('steer')} onFollowUp={() => send('followUp')} onStop={stop}
         labels={{ message: '发送消息', placeholder: busy ? '输入可在当前工具完成后引导 Pi…' : '描述任务、粘贴内容或添加文件…', hint: busy ? 'Enter 引导 · ⌥Enter 后续 · ⇧Enter 换行' : 'Enter 发送 · ⇧Enter 换行', send: '发送消息', queue: '引导 Pi', stop: '停止运行', addAttachments: '添加附件', attachments: '附件', removeAttachment: name => `移除 ${name}`, failed: '操作失败', error: '操作失败' }}
         onEditorKeyDown={event => {
-          if (event.key === 'Escape') { setSlashDismissed(true); return; }
+          if (event.key === 'Escape') { setSlashDismissed(true); setSkillDismissed(true); return; }
           if (event.key === 'ArrowDown' && slash.length) { event.preventDefault(); event.currentTarget.closest('.composer-area')?.querySelector<HTMLButtonElement>('.slash-menu button')?.focus(); }
+          if (event.key === 'ArrowDown' && skills.length) { event.preventDefault(); event.currentTarget.closest('.composer-area')?.querySelector<HTMLButtonElement>('.skill-menu [role=option]')?.focus(); }
         }} />
       {widgetsAt(state.widgets, 'belowEditor').map(widget => <div className="chat-widget" key={widget.key}>{widget.lines.map((line, index) => <div key={index}>{line}</div>)}</div>)}
       <div className="chat-meta"><span>{state.exited || session.processStatus === 'exited' ? 'Pi 已退出' : session.processStatus === 'starting' || !state.ready ? '正在连接 Pi…' : activityLabel(state.activity)}</span><span>{state.model ? `${state.model.provider}/${state.model.id}` : '未选择模型'}{state.thinkingLevel ? ` · ${state.thinkingLevel}` : ''}</span>{Object.entries(state.statuses).map(([key, value]) => <span key={key}>{value}</span>)}</div>
@@ -138,10 +151,11 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   </section>;
 }
 
-const MessageView = memo(function MessageView({ message }: { message: ChatMessage }) {
+const MessageView = memo(function MessageView({ message, onFork }: { message: ChatMessage; onFork(entryId: string): void }) {
   const text = message.blocks.filter((block): block is Extract<ChatBlock, { type: 'text' }> => block.type === 'text').map(block => block.text).join('\n');
   const author = message.role === 'user' ? '你' : message.role === 'assistant' ? 'Pi' : message.label || '事件';
-  return <ConversationMessage role={message.role} author={author} error={message.error} streaming={!!message.streaming} labels={{ user: '你', assistant: 'Pi', streaming: '正在回复…', failed: '回复失败' }} actions={message.role === 'assistant' && text ? <CopyButton text={text} label="复制回复" /> : undefined}>
+  const actions = (message.role === 'assistant' && text) || message.forkEntryId ? <>{message.role === 'assistant' && text ? <CopyButton text={text} label="复制回复" /> : null}{message.forkEntryId ? <Button variant="ghost" onClick={() => onFork(message.forkEntryId!)} aria-label="从此消息创建分支" title="从此消息创建分支"><Icon name="fork"/>分支</Button> : null}</> : undefined;
+  return <ConversationMessage role={message.role} author={author} error={message.error} streaming={!!message.streaming} labels={{ user: '你', assistant: 'Pi', streaming: '正在回复…', failed: '回复失败' }} actions={actions}>
     {message.blocks.map((block, index) => block.type === 'text' ? message.role === 'user' ? <div className="user-text" key={index}>{block.text}</div> : <MarkdownView key={index} text={block.text} streaming={!!message.streaming} /> : block.type === 'thinking' ? <Collapsible title="思考过程" key={index}><MarkdownView text={block.text} streaming={!!message.streaming} /></Collapsible> : block.type === 'image' ? <img className="transcript-image" key={index} alt="消息图片" src={`data:${block.mimeType};base64,${block.data}`} /> : <ToolCard key={block.tool.id} tool={block.tool} />)}
   </ConversationMessage>;
 });

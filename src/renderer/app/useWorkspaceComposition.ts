@@ -19,6 +19,7 @@ export function useWorkspaceComposition(afterReference: () => void) {
     onCreated: workspace.addCreatedSession,
     afterCreated: () => { input.hideSearch(); desktopPresentation.refresh(); },
     onSettings: desktopPresentation.showSettings,
+    onError: desktopPresentation.reportError,
   });
   const sessionActions = useSessionPresentation(workspace.active, workspace.setSessionTitle, desktopPresentation.reportError);
   const navigation = {

@@ -1,6 +1,6 @@
 import { parseRpcWorkerInput } from '../../shared/ipc/worker-schemas.js';
 import type { RpcWorkerInput, RpcWorkerOutput, RpcWorkerEvent } from '../../shared/ipc/worker-protocol.js';
-import { ConversationRuntimeApplication, ConversationStreamApplication } from '../../modules/conversation/index.js';
+import { ConversationRuntimeApplication, ConversationStreamApplication, type ConversationMessage } from '../../modules/conversation/index.js';
 import { dialogDTO, normalizeDialog, normalizeQueue, normalizeRuntimeSeed, queueDTO, runtimeChangeDTO, runtimeError, runtimeViewDTO } from '../../platform/pi/rpc/conversation-runtime-mapper.js';
 import { RpcWriter } from '../../platform/pi/rpc/writer.js';
 import { terminateProcessTree } from '../../platform/process/process-tree.js';
@@ -52,6 +52,25 @@ const fail = (error: unknown) => {
 };
 
 const streamMapper = new ConversationStreamMapper();
+function commandsDTO(value: unknown): ChatCommand[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(item => isRecord(item) && typeof item.name === 'string' && (item.source === 'extension' || item.source === 'prompt' || item.source === 'skill')
+    ? [{ name: item.name, description: typeof item.description === 'string' ? item.description : undefined, source: item.source }] : []);
+}
+function withForkEntries(messages: readonly ConversationMessage[], value: unknown): ConversationMessage[] {
+  const entries = Array.isArray(value) ? value.flatMap(item => isRecord(item) && typeof item.entryId === 'string' && typeof item.text === 'string' ? [{ entryId: item.entryId, text: item.text }] : []) : [];
+  let cursor = 0;
+  let currentEntryId: string | undefined;
+  return messages.map(message => {
+    if (message.role !== 'user') return message.role === 'assistant' && currentEntryId ? { ...message, forkEntryId: currentEntryId } : message;
+    const text = message.blocks.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n');
+    const index = entries.findIndex((entry, index) => index >= cursor && entry.text === text);
+    if (index < 0) { currentEntryId = undefined; return message; }
+    cursor = index + 1;
+    currentEntryId = entries[index].entryId;
+    return { ...message, forkEntryId: currentEntryId };
+  });
+}
 const stream = new ConversationStreamApplication({
   after: (delayMs, callback) => {
     const timer = setTimeout(() => {
@@ -232,11 +251,12 @@ async function start(message: StartMessage): Promise<void> {
   });
   await new Promise<void>((resolve, reject) => { child!.once('spawn', resolve); child!.once('error', reject); });
   if (closing) return;
-  const [stateValue, messagesValue, commandsValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000)]);
+  const [stateValue, messagesValue, commandsValue, forkValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000)]);
   if (closing) return;
   const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
-  const messages = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages)).map(messageDTO);
-  const commands: ChatCommand[] = commandsValue.commands.flatMap(item => isRecord(item) && typeof item.name === 'string' && (item.source === 'extension' || item.source === 'prompt' || item.source === 'skill') ? [{ name: item.name, description: typeof item.description === 'string' ? item.description : undefined, source: item.source }] : []);
+  const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
+  const messages = withForkEntries(history, forkValue.messages).map(messageDTO);
+  const commands = commandsDTO(commandsValue.commands);
   event({ type: 'chat-snapshot', snapshot: { ...state, messages, commands } });
   if (closing) return;
   event({ type: 'session-info', processStatus: 'running', activity: state.activity });
@@ -277,6 +297,23 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       : { type: 'prompt', message: `${data.text}${references}`, images: data.images.map(image => ({ type: 'image', ...image })), streamingBehavior: data.queuePreference };
     void send(command)
       .then(() => { if (!closing) post({ type: 'response', requestId: data.requestId, success: true }); })
+      .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
+    return;
+  }
+  if (data.type === 'fork') {
+    void send({ type: 'fork', entryId: data.entryId })
+      .then(async result => {
+        if (!result.cancelled && !closing) {
+          const [stateValue, messagesValue, commandsValue, forkValue] = await Promise.all([
+            send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000),
+          ]);
+          const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
+          const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
+          const mapped = withForkEntries(history, forkValue.messages).map(messageDTO);
+          event({ type: 'chat-snapshot', snapshot: { ...state, messages: mapped, commands: commandsDTO(commandsValue.commands) } });
+        }
+        if (!closing) post({ type: 'response', requestId: data.requestId, success: true, data: result });
+      })
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }

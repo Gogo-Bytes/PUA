@@ -67,6 +67,7 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
     catch (error) { conversationError(error); }
   });
   handle('renameChatSession', (id, name) => requireCurrent().capabilities.conversation.rename(id, name));
+  handle('forkChatSession', (id, entryId) => requireCurrent().capabilities.conversation.fork(id, entryId));
   listen('write', (id, data) => requireCurrent().capabilities.terminal.write(id, data));
   listen('resize', (id, cols, rows) => requireCurrent().capabilities.terminal.resize(id, cols, rows));
   listen('acknowledge', (id, size) => requireCurrent().capabilities.terminal.acknowledge(id, size));

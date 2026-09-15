@@ -126,7 +126,7 @@ export function parseRpcWorkerOutput(value: unknown, sessionId: string): RpcWork
     return event ? { type: 'event', event } : undefined;
   }
   if (value.type === 'response' && id(value.requestId)) {
-    if (value.success === true && !Object.hasOwn(value, 'data') && !Object.hasOwn(value, 'error')) return { type: 'response', requestId: value.requestId, success: true };
+    if (value.success === true && !Object.hasOwn(value, 'error') && (!Object.hasOwn(value, 'data') || record(value.data))) return { type: 'response', requestId: value.requestId, success: true, ...(Object.hasOwn(value, 'data') ? { data: value.data } : {}) };
     if (value.success === false && text(value.error) && !Object.hasOwn(value, 'data')) return { type: 'response', requestId: value.requestId, success: false, error: value.error };
   }
 }

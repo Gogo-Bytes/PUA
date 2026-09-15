@@ -46,6 +46,7 @@ export function fakeCapabilities() {
       stop: vi.fn<WindowContext['capabilities']['conversation']['stop']>().mockResolvedValue(undefined),
       respond: vi.fn<WindowContext['capabilities']['conversation']['respond']>().mockResolvedValue(undefined),
       rename: vi.fn<WindowContext['capabilities']['conversation']['rename']>().mockResolvedValue(undefined),
+      fork: vi.fn<WindowContext['capabilities']['conversation']['fork']>().mockResolvedValue({ text: 'forked', cancelled: false }),
       removeAttachment: vi.fn<WindowContext['capabilities']['conversation']['removeAttachment']>(),
     },
     terminal: { write: vi.fn(), resize: vi.fn(), acknowledge: vi.fn() },

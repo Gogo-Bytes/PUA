@@ -3,7 +3,7 @@ import { Button } from './primitives';
 export interface InlineRenameLabels { hint: string; input(value: string): string; save: string; cancel: string; empty: string; failed: string }
 const defaults: InlineRenameLabels = { hint: 'Double-click or F2 to rename', input: value => `Rename ${value}`, save: 'Save', cancel: 'Cancel', empty: 'Name cannot be empty.', failed: 'Rename failed. Try again.' };
 /** Blur keeps the draft. Async failures remain editable; only a successful commit exits editing. */
-export function InlineRename({ value, onRename, onSelect, selected, ref, labels }: { ref?: Ref<HTMLDivElement>; value: string; onRename(value: string): void | Promise<void>; onSelect?(): void; selected?: boolean; labels?: Partial<InlineRenameLabels> }) {
+export function InlineRename({ value, onRename, onSelect, selected, selectionRole = 'tab', current = false, ref, labels }: { ref?: Ref<HTMLDivElement>; value: string; onRename(value: string): void | Promise<void>; onSelect?(): void; selected?: boolean; selectionRole?: 'tab' | 'button'; current?: boolean; labels?: Partial<InlineRenameLabels> }) {
   const text = { ...defaults, ...labels };
   const [editing, setEditing] = useState(false), [draft, setDraft] = useState(value), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const display = useRef<HTMLSpanElement>(null), input = useRef<HTMLInputElement>(null), composing = useRef(false), mounted = useRef(true), pending = useRef(false);
@@ -22,7 +22,7 @@ export function InlineRename({ value, onRename, onSelect, selected, ref, labels 
     finally { pending.current = false; if (mounted.current) setBusy(false); }
   }
   return <div ref={ref} className="ui-rename" onDoubleClick={event => event.stopPropagation()}>
-    {!editing ? <span ref={display} role={onSelect ? 'tab' : 'button'} aria-selected={onSelect ? selected : undefined} tabIndex={onSelect ? selected ? 0 : -1 : 0} className="ui-rename-display" title={text.hint} onClick={onSelect} onDoubleClick={start} onKeyDown={event => {
+    {!editing ? <span ref={display} role={onSelect ? selectionRole : 'button'} aria-selected={onSelect && selectionRole === 'tab' ? selected : undefined} aria-current={current ? 'page' : undefined} tabIndex={onSelect && selectionRole === 'tab' ? selected ? 0 : -1 : 0} className="ui-rename-display" title={text.hint} onClick={onSelect} onDoubleClick={start} onKeyDown={event => {
       if (event.key === 'F2') { event.preventDefault(); start(); }
       else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect?.(); }
     }}>{value}</span> : <div className="ui-rename-editor" tabIndex={-1} aria-busy={busy} onKeyDown={event => event.stopPropagation()}>

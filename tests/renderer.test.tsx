@@ -15,6 +15,7 @@ beforeEach(() => {
   desktop = installDesktopFake({
     openExternal: vi.fn().mockResolvedValue(undefined), writeClipboard: vi.fn().mockResolvedValue(undefined), startSession: vi.fn().mockResolvedValue(undefined),
     onSessionEvent: vi.fn(callback => { emit = callback; return () => {}; }), sendChatMessage: vi.fn().mockResolvedValue(undefined), stopChat: vi.fn().mockResolvedValue(undefined), chooseChatAttachments: vi.fn().mockResolvedValue([]), respondToExtensionUI: vi.fn().mockResolvedValue(undefined),
+    forkChatSession: vi.fn().mockResolvedValue({ text: 'forked', cancelled: false }),
   } as unknown as DesktopAPI);
 });
 
@@ -51,6 +52,35 @@ describe('native composer', () => {
     act(() => emit?.({ type: 'chat-state', id: 's', state: { activity: 'responding' } }));
     await screen.findByRole('button', { name: /停止/ });
     fireEvent.keyDown(textbox, { key: 'Enter', altKey: true }); await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenLastCalledWith('s', expect.objectContaining({ delivery: 'followUp' })));
+  });
+  it('filters clickable @ skill suggestions and routes message-level fork by stable entry id', async () => {
+    function Harness() { const [draft, setDraft] = useState(''); return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft={draft} onDraftChange={setDraft} onError={() => {}} onCommands={() => {}} />; }
+    render(<Harness />);
+    act(() => emit?.({
+      id: 's',
+      type: 'chat-snapshot',
+      snapshot: {
+        activity: 'idle',
+        queue: { steering: [], followUp: [] },
+        statuses: {},
+        widgets: [],
+        commands: [
+          { name: 'review-code', source: 'skill', description: '审查代码' },
+          { name: 'release', source: 'prompt' },
+        ],
+        messages: [{ id: 'u', role: 'user', timestamp: 1, forkEntryId: 'entry-1', blocks: [{ type: 'text', text: '请审查' }] }],
+      },
+    }));
+    const textbox = screen.getByRole('textbox', { name: '发送消息' });
+    fireEvent.change(textbox, { target: { value: '@review' } });
+    const menu = screen.getByRole('listbox', { name: '技能建议' });
+    expect(screen.getByRole('option', { name: /@review-code/ })).toBeTruthy();
+    expect(screen.queryByText('@release')).toBeNull();
+    fireEvent.click(screen.getByRole('option', { name: /@review-code/ }));
+    expect((textbox as HTMLTextAreaElement).value).toBe('@review-code ');
+    fireEvent.click(screen.getByRole('button', { name: '从此消息创建分支' }));
+    await waitFor(() => expect(desktop.forkChatSession).toHaveBeenCalledExactlyOnceWith('s', 'entry-1'));
+    expect(menu.isConnected).toBe(false);
   });
 });
 

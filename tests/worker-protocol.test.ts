@@ -22,7 +22,6 @@ function negativeCallers(rpc: WorkerInputPort<RpcWorkerInput>, pty: WorkerInputP
   const output = (value: RpcWorkerOutput | PtyWorkerOutput) => value;
   // @ts-expect-error failed responses require an error
   output({ type: 'response', requestId: 'r', success: false });
-  // @ts-expect-error no raw Pi acknowledgement payload
   output({ type: 'response', requestId: 'r', success: true, data: {} });
   // @ts-expect-error event cannot carry terminal data
   output({ type: 'event', event: { type: 'terminal-data', id: 's', data: 'x' } });
@@ -127,6 +126,7 @@ describe('worker-protocol extension-ui request parser', () => {
 describe('worker-protocol output envelope parsers', () => {
   it.each<RpcWorkerOutput>([
     { type: 'child-pid', pid: 7 }, { type: 'response', requestId: 'r', success: true },
+    { type: 'response', requestId: 'r', success: true, data: { text: 'forked', cancelled: false } },
     { type: 'response', requestId: 'r', success: false, error: '' },
     { type: 'event', event: { type: 'session-info', id: 's', processStatus: 'running', activity: 'idle', title: '' } },
     { type: 'event', event: { type: 'chat-state', id: 's', state: { activity: 'waiting-input' } } },
@@ -138,7 +138,7 @@ describe('worker-protocol output envelope parsers', () => {
   it.each([
     null, [], { type: 'child-pid', pid: -1 }, { type: 'child-pid', pid: 1.5 },
     { type: 'response', success: true }, { type: 'response', requestId: 'r', success: 1 },
-    { type: 'response', requestId: 'r', success: false }, { type: 'response', requestId: 'r', success: true, data: {} },
+    { type: 'response', requestId: 'r', success: false }, { type: 'response', requestId: 'r', success: true, data: [] },
     { type: 'event', event: { type: 'session-info', id: 'other', processStatus: 'running' } },
     { type: 'event', event: { type: 'terminal-data', id: 's', data: 'not RPC' } },
     { type: 'event', event: { type: 'chat-state', id: 's', state: null } },

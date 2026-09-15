@@ -21,6 +21,8 @@ export interface ConversationRuntimePort {
   stop(id: string): Promise<void>;
   respond(id: string, response: ExtensionResponse): Promise<void>;
   rename(id: string, name: string): Promise<void>;
+  /** Fork from a stable Pi user-entry identity; the worker rebinds the active runtime. */
+  fork(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }>;
 }
 
 /** Source IDs and tokens must be fresh across replacement contexts: late disposal cannot touch new resources. */

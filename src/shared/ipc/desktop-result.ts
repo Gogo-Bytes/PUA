@@ -40,7 +40,7 @@ export const desktopValueGuards = {
   createSession: (v: unknown) => record(v) && text(v.id) && text(v.cwd) && text(v.title) && oneOf(v.kind, ['chat', 'terminal']) && processStatus(v.processStatus) && activity(v.activity) && optional(v.exitCode, Number.isSafeInteger),
   closeSession: bool,
   startSession: empty, removeChatAttachment: empty, sendChatMessage: empty, stopChat: empty,
-  respondToExtensionUI: empty, renameChatSession: empty, openExternal: empty, openProject: empty, writeClipboard: empty,
+  respondToExtensionUI: empty, renameChatSession: empty, forkChatSession: v => record(v) && text(v.text) && bool(v.cancelled), openExternal: empty, openProject: empty, writeClipboard: empty,
   gitStatus: (v: unknown) => record(v) && text(v.root) && text(v.branch) && text(v.capturedAt) && arrayOf(v.files, f => record(f) && text(f.path) && text(f.index) && text(f.worktree) && optional(f.originalPath, text)),
   fileDiff: (v: unknown) => record(v) && text(v.text) && oneOf(v.kind, ['diff', 'untracked', 'binary', 'symlink']) && bool(v.truncated),
   readClipboard: (v: unknown) => record(v) && text(v.text) && bool(v.image),
@@ -81,7 +81,7 @@ const dictionary = (v: unknown) => record(v) && Object.values(v).every(text);
 const queue = (v: unknown) => record(v) && strings(v.steering) && strings(v.followUp);
 const model = (v: unknown) => record(v) && text(v.provider) && text(v.id);
 const state = (v: unknown) => record(v) && optional(v.activity, activity) && optional(v.model, model) && optional(v.thinkingLevel, text) && optional(v.queue, queue) && optional(v.statuses, dictionary) && optional(v.widgets, Array.isArray);
-const message = (v: unknown) => record(v) && text(v.id) && oneOf(v.role, ['user', 'assistant', 'custom', 'summary']) && Array.isArray(v.blocks) && finite(v.timestamp) && optional(v.streaming, bool) && optional(v.error, text) && optional(v.label, text);
+const message = (v: unknown) => record(v) && text(v.id) && oneOf(v.role, ['user', 'assistant', 'custom', 'summary']) && Array.isArray(v.blocks) && finite(v.timestamp) && optional(v.streaming, bool) && optional(v.error, text) && optional(v.label, text) && optional(v.forkEntryId, text);
 const blockIndex = (v: unknown) => Number.isSafeInteger(v) && Number(v) >= 0 && Number(v) <= 4095;
 function extension(v: unknown): boolean {
   if (!record(v) || !text(v.id) || !text(v.title) || !optional(v.expiresAt, finite)) return false;

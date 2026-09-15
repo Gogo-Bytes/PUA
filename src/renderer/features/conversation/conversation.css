@@ -17,6 +17,8 @@
 .ui-provider .ui-chat-message-user .ui-chat-body { max-width: min(85%, 36em); padding: var(--ui-space-3) var(--ui-space-4); border-radius: var(--ui-radius-overlay); background: var(--ui-muted); }
 .ui-provider .ui-chat-message-system { color: var(--ui-secondary); }
 .ui-provider .ui-chat-message footer { display: flex; gap: var(--ui-space-2); flex-wrap: wrap; align-items: center; }
+.ui-provider .ui-chat-message footer .ui-button { color: var(--ui-tertiary); }
+.ui-provider .ui-chat-message footer .ui-button:hover { color: var(--ui-text); }
 .ui-provider .ui-chat-body { min-width: 0; max-width: 100%; font: var(--ui-font-reading); white-space: normal; }
 .ui-provider .ui-chat-body-text { white-space: pre-wrap; }
 .ui-provider .ui-chat-body > :first-child { margin-top: 0; }
@@ -77,3 +79,6 @@
 .ui-provider .ui-composer-attachments small { display: block; color: var(--ui-secondary); }
 .ui-provider .ui-composer-attachments :focus-visible { outline-offset: -2px; }
 .ui-provider .ui-composer > .ui-message { margin-top: var(--ui-space-2); }
+.ui-provider .skill-menu,.ui-provider .slash-menu { display:grid; gap:2px; max-height:240px; overflow:auto; margin:0 0 var(--ui-space-2); padding:var(--ui-space-1); border:1px solid var(--ui-border); border-radius:var(--ui-radius-overlay); background:var(--ui-surface); box-shadow:var(--ui-shadow); }
+.ui-provider .skill-menu .ui-button,.ui-provider .slash-menu .ui-button { justify-content:flex-start; gap:var(--ui-space-2); min-width:0; text-align:left; }
+.ui-provider .skill-menu .ui-button span,.ui-provider .slash-menu .ui-button span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ui-secondary); }

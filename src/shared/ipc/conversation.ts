@@ -27,6 +27,8 @@ export interface ChatMessage {
   streaming?: boolean;
   error?: string;
   label?: string;
+  /** Pi JSONL entry identity used by the message-level fork action. */
+  forkEntryId?: string;
 }
 
 export interface ChatCommand {

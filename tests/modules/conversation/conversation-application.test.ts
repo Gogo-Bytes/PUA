@@ -47,6 +47,7 @@ function setup() {
     stop: vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined),
     respond: vi.fn<(id: string, response: ExtensionResponse) => Promise<void>>().mockResolvedValue(undefined),
     rename: vi.fn<(id: string, name: string) => Promise<void>>().mockResolvedValue(undefined),
+    fork: vi.fn<(id: string, entryId: string) => Promise<{ text: string; cancelled: boolean }>>().mockResolvedValue({ text: 'forked', cancelled: false }),
   } satisfies ConversationRuntimePort;
   const core = new ConversationApplication(runtime, resources);
   core.open('a'); core.open('b');
@@ -64,12 +65,18 @@ describe('ConversationApplication send and attachment Interface', () => {
   });
 
   it('has a closed typed runtime surface rather than an arbitrary command bag', () => {
-    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename'>();
+    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename' | 'fork'>();
     expectTypeOf<keyof RuntimeSend>().toEqualTypeOf<'text' | 'attachmentIds' | 'queuePreference'>();
     expectTypeOf<ReturnType<ConversationRuntimePort['stop']>>().toEqualTypeOf<Promise<void>>();
     expectTypeOf<{ id: string; command: string }>().not.toExtend<ExtensionResponse>();
     expectTypeOf<{ text: string; attachmentIds: string[]; queuePreference: 'abort' }>().not.toExtend<RuntimeSend>();
     expectTypeOf<keyof Attachment>().toEqualTypeOf<'id' | 'name' | 'size' | 'kind' | 'mimeType'>();
+  });
+
+  it('routes a stable Pi entry identity through the explicit fork capability', async () => {
+    const { core, runtime } = setup();
+    await expect(core.fork('a', 'entry-1')).resolves.toEqual({ text: 'forked', cancelled: false });
+    expect(runtime.fork).toHaveBeenCalledExactlyOnceWith('a', 'entry-1');
   });
 
   it('rejects invalid delivery, empty content, duplicate IDs and oversized lists before runtime', async () => {

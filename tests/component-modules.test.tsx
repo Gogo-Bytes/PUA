@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
-import { ProjectNav, SessionTabs } from '../src/renderer/features/workspace';
+import { ProjectNav, ProjectSidebar, SessionTabs } from '../src/renderer/features/workspace';
 import { FileRow, InspectorHeader } from '../src/renderer/features/change-review';
 import { ChatMessage, ToolExecutionCard } from '../src/renderer/features/conversation';
 import { UIProvider } from '../src/renderer/ui';
@@ -26,6 +26,14 @@ it('ProjectNav keeps cwd as callback identity and only reveals duplicate paths o
   render(<UIProvider><ProjectNav projects={[{ name: 'Atlas', cwd: '/one/atlas', sessions: 2 }, { name: 'Atlas', cwd: '/two/atlas', sessions: 1 }, { name: 'Orbit', cwd: '/one/orbit', sessions: 0 }]} selectedCwd="/one/atlas" onSelect={select} onAdd={() => {}}/></UIProvider>);
   expect(screen.queryByText('/one/atlas')).toBeNull(); expect(screen.queryByText('/one/orbit')).toBeNull();
   const rows = screen.getAllByRole('button', { name: /Atlas/ }); fireEvent.focus(rows[1]); expect(screen.getByRole('tooltip').textContent).toBe('/two/atlas'); fireEvent.click(rows[1]); expect(select).toHaveBeenCalledWith('/two/atlas');
+});
+it('production sidebar nests sessions below their project without tab semantics', () => {
+  const create = vi.fn(), select = vi.fn();
+  render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle' }]} recentProjects={['/one/app', '/two/empty']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={create} onSelectSession={select} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
+  expect(screen.queryByRole('tablist')).toBeNull(); expect(screen.queryByRole('tab')).toBeNull();
+  expect(screen.getByRole('list', { name: 'app 的会话' }).contains(screen.getByRole('button', { name: '调查交互' }))).toBe(true);
+  fireEvent.click(screen.getAllByTitle('/two/empty')[0]); expect(create).toHaveBeenCalledWith('/two/empty');
+  fireEvent.click(screen.getByRole('button', { name: '调查交互' })); expect(select).toHaveBeenCalledWith('s1');
 });
 it('SessionTabs separates selection from rename and passes the session id through its callback', () => {
   const select = vi.fn(), rename = vi.fn();

@@ -68,6 +68,7 @@ export interface DesktopAPI {
   stopChat(id: string): Promise<void>;
   respondToExtensionUI(id: string, response: ExtensionUIResponse): Promise<void>;
   renameChatSession(id: string, name: string): Promise<void>;
+  forkChatSession(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }>;
   write(id: string, data: string): void;
   resize(id: string, cols: number, rows: number): void;
   acknowledge(id: string, size: number): void;

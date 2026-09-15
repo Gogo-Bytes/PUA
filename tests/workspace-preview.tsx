@@ -39,6 +39,7 @@ installDesktopFake({
   } }),
   closeSession: async id => { sessions.delete(id); return true; },
   renameChatSession: async (id, title) => { const session = sessions.get(id); if (session) session.title = title; },
+  forkChatSession: async () => ({ text: 'TEST ONLY', cancelled: false }),
   sendChatMessage: async (id, input) => emit({ id, type: 'chat-message-end', message: { id: `input-${++sequence}`, timestamp: Date.now(), role: 'user', blocks: [{ type: 'text', text: `[TEST ONLY · 未调用模型]\n${input.text}` }] } }),
   stopChat: async () => {},
   chooseChatAttachments: async id => [{ id: `${id}-attachment`, kind: 'file', name: 'test-context.txt', path: '/test/test-context.txt', size: 12 }],

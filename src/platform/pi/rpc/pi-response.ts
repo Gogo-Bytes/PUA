@@ -24,7 +24,7 @@ export interface PiResponseData {
   prompt: unknown;
   abort: unknown;
   set_session_name: unknown;
-  fork: unknown; switch_session: unknown; set_model: unknown; set_thinking_level: unknown; compact: unknown; export_html: unknown;
+  fork: { text: string; cancelled: boolean }; switch_session: { cancelled: boolean }; set_model: unknown; set_thinking_level: unknown; compact: unknown; export_html: { path: string };
 }
 
 function stringArray(value: unknown): value is string[] {
@@ -38,7 +38,10 @@ function validData<C extends PiCommand['type']>(command: C, data: unknown): data
     case 'get_commands': return isRecord(data) && Array.isArray(data.commands);
     case 'get_tree': case 'get_fork_messages': case 'get_session_stats': return isRecord(data);
     case 'clear_queue': return isRecord(data) && stringArray(data.steering) && stringArray(data.followUp);
-    case 'prompt': case 'abort': case 'set_session_name': case 'fork': case 'switch_session': case 'set_model': case 'set_thinking_level': case 'compact': case 'export_html': return true;
+    case 'fork': return isRecord(data) && typeof data.text === 'string' && typeof data.cancelled === 'boolean';
+    case 'switch_session': return isRecord(data) && typeof data.cancelled === 'boolean';
+    case 'export_html': return isRecord(data) && typeof data.path === 'string';
+    case 'prompt': case 'abort': case 'set_session_name': case 'set_model': case 'set_thinking_level': case 'compact': return true;
   }
 }
 

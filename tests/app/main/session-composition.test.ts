@@ -23,6 +23,7 @@ function harness(emit = vi.fn(), overrides: Omit<CompositionDependencies, 'creat
     start: vi.fn(), close: vi.fn(async (id: string) => { context.invalidateConversation(id); return { exitCode: 0 }; }),
     send: vi.fn<ProcessAdapter['send']>().mockResolvedValue(undefined), stop: vi.fn<ProcessAdapter['stop']>().mockResolvedValue(undefined),
     respond: vi.fn<ProcessAdapter['respond']>().mockResolvedValue(undefined), rename: vi.fn<ProcessAdapter['rename']>().mockResolvedValue(undefined),
+    fork: vi.fn<ProcessAdapter['fork']>().mockResolvedValue({ text: 'forked', cancelled: false }),
     write: vi.fn<ProcessAdapter['write']>(), resize: vi.fn<ProcessAdapter['resize']>(), acknowledge: vi.fn<ProcessAdapter['acknowledge']>(), assertAvailable: vi.fn<ProcessAdapter['assertAvailable']>(),
     read: vi.fn<ProcessAdapter['read']>().mockResolvedValue({ id: 'token', name: 'fake.txt', kind: 'file', size: 4 }),
     release: vi.fn<ProcessAdapter['release']>(), discardSources: vi.fn<ProcessAdapter['discardSources']>(), stageSources: vi.fn(() => ['source' as AttachmentSourceId]),

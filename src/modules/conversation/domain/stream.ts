@@ -20,6 +20,7 @@ export interface ConversationMessage {
   readonly blocks: readonly ConversationBlock[];
   readonly timestamp: number;
   readonly label?: string;
+  readonly forkEntryId?: string;
   readonly error?: string;
   readonly streaming?: boolean;
 }

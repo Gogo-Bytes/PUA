@@ -22,6 +22,7 @@ export const invokeChannels = {
   stopChat: 'desktop:chat-stop',
   respondToExtensionUI: 'desktop:extension-response',
   renameChatSession: 'desktop:chat-rename',
+  forkChatSession: 'desktop:chat-fork',
   openExternal: 'desktop:external',
   openProject: 'desktop:project',
   gitStatus: 'desktop:git-status',

@@ -32,7 +32,7 @@ interface ProcessResource {
   closed?: Promise<{ exitCode: number }>;
   treeCleanup?: Promise<void>;
   activity: SessionActivity;
-  pending: Map<string, { resolve(): void; reject(error: Error): void }>;
+  pending: Map<string, { resolve(value?: unknown): void; reject(error: Error): void }>;
   payloads: Map<AttachmentToken, AttachmentPayload>;
   sources: Map<AttachmentSourceId, string>;
 }
@@ -131,7 +131,7 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
       }
       if (chat && message.type === 'response' && message.requestId) {
         const request = resource.pending.get(message.requestId);
-        if (message.success) request?.resolve(); else request?.reject(new Error(message.error || 'RPC host command failed'));
+        if (message.success) request?.resolve(message.data); else request?.reject(new Error(message.error || 'RPC host command failed'));
       }
       if (!chat && message.type === 'data' && typeof message.data === 'string') this.emit({ type: 'terminal-data', id, data: message.data });
       if (!chat && message.type === 'error') this.emit({ type: 'terminal-data', id, data: `\r\nPi 启动失败：${message.message}\r\n` });
@@ -197,17 +197,17 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
     await this.cleanupTree(resource);
     return { exitCode: resource.exitCode };
   }
-  private request(resource: ProcessResource, message: RpcOperation): Promise<void> {
+  private request<T = void>(resource: ProcessResource, message: RpcOperation): Promise<T> {
     if (this.snapshot(resource).kind !== 'chat') return Promise.reject(new Error('这不是原生对话会话'));
     const phase = this.snapshot(resource).lifecycle.phase;
     if (!resource.host || !this.accepts(resource) || (phase !== 'running' && !(phase === 'starting' && message.type === 'extension-response'))) return Promise.reject(new Error('Pi 对话进程尚未运行'));
     if (resource.pending.size >= 32) return Promise.reject(new Error('Pi 请求过多，请等待当前操作完成'));
     const requestId = randomUUID();
     return new Promise((resolve, reject) => {
-      const settle = (error?: Error) => {
+      const settle = (error?: Error, value?: unknown) => {
         if (!resource.pending.delete(requestId)) return;
         clearInterval(timer);
-        if (error) reject(error); else resolve();
+        if (error) reject(error); else resolve(value as T);
       };
       const timer = setInterval(() => {
         if (resource.activity === 'waiting-input') return;
@@ -215,7 +215,7 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
         void this.context.close(resource.id).catch(error => this.notice(resource.id, error));
       }, 360_000);
       timer.unref();
-      resource.pending.set(requestId, { resolve: () => settle(), reject: error => settle(error) });
+      resource.pending.set(requestId, { resolve: value => settle(undefined, value), reject: error => settle(error) });
       try { resource.host!.postMessage({ ...message, requestId } satisfies RpcWorkerInput); }
       catch (error) { settle(error instanceof Error ? error : new Error(String(error))); }
     });
@@ -320,6 +320,11 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
     const resource = this.resource(id);
     await this.request(resource, { type: 'rename', name });
     if (this.accepts(resource)) this.lifecycle({ type: 'title-changed', id, title: name });
+  }
+  async fork(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }> {
+    const result = await this.request<{ text: string; cancelled: boolean }>(this.resource(id), { type: 'fork', entryId });
+    if (!result.cancelled && this.accepts(this.resource(id))) this.emit({ type: 'chat-notice', id, level: 'info', message: '已从此消息创建对话分支' });
+    return result;
   }
 
   write(id: string, data: string): void {

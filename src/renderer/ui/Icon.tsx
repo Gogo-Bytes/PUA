@@ -3,7 +3,7 @@ import {
   Pi, Folder, Plus, X, Search, Settings, MessageSquare,
   ChevronDown, ChevronRight, PanelLeft, ArrowUp, Square, Check,
   File, CodeXml, Copy, Link, RotateCw, Clock, LoaderCircle,
-  Pause, Info, CircleAlert, CircleX, CircleCheck, Terminal,
+  Pause, Info, CircleAlert, CircleX, CircleCheck, Terminal, PencilLine, GitFork,
 } from 'lucide-react';
 
 // One icon family for the preview library; production keeps its existing seam.
@@ -14,7 +14,7 @@ const icons = {
   check: Check, file: File, code: CodeXml, copy: Copy, link: Link,
   refresh: RotateCw, clock: Clock, running: LoaderCircle, pause: Pause,
   info: Info, warning: CircleAlert, error: CircleX, success: CircleCheck,
-  terminal: Terminal,
+  terminal: Terminal, edit: PencilLine, fork: GitFork,
 } as const;
 
 export type IconName = keyof typeof icons;

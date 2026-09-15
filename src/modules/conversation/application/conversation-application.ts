@@ -105,4 +105,5 @@ export class ConversationApplication {
   stop(id: string): Promise<void> { return this.runtime.stop(id); }
   respond(id: string, response: ExtensionResponse): Promise<void> { return this.runtime.respond(id, response); }
   rename(id: string, name: string): Promise<void> { return this.runtime.rename(id, name); }
+  fork(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }> { return this.runtime.fork(id, entryId); }
 }
