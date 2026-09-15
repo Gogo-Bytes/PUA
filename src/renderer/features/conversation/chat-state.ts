@@ -1,5 +1,5 @@
 import { validBlockIndex } from '../../../shared/ipc/conversation-validation';
-import type { ChatCommand, ChatMessage, ChatQueue, ChatRuntimeState, ChatWidget, ExtensionUIRequest, SessionEvent, ToolActivity } from '../../../shared/ipc/conversation';
+import type { ChatCommand, ChatMessage, ChatQueue, ChatRuntimeState, ChatTreeNode, ChatWidget, ExtensionUIRequest, SessionEvent, ToolActivity } from '../../../shared/ipc/conversation';
 
 export interface ChatNotice { id: string; level: 'info' | 'warning' | 'error'; message: string }
 export interface ChatViewState extends ChatRuntimeState {
@@ -10,6 +10,7 @@ export interface ChatViewState extends ChatRuntimeState {
   dialog?: ExtensionUIRequest;
   dialogs: ExtensionUIRequest[];
   exited: boolean;
+  sessionTree?: ChatTreeNode[];
 }
 
 export const emptyChatState = (): ChatViewState => ({ ready: false, exited: false, dialogs: [], activity: 'idle', messages: [], commands: [], queue: { steering: [], followUp: [] }, statuses: {}, widgets: [], notices: [] });
