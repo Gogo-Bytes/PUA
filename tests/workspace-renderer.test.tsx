@@ -39,9 +39,6 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); delete (HTMLElement.prototype
 
 async function createSession() {
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-  const submit = await screen.findByRole('button', { name: '开始对话 ↗' });
-  await waitFor(() => expect((submit as HTMLButtonElement).disabled).toBe(false));
-  fireEvent.click(submit);
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 }
 const selectProject = (path: string) => fireEvent.click(within(screen.getByRole('navigation', { name: '项目' })).getByTitle(path));
@@ -183,9 +180,6 @@ async function seedProjects() {
 }
 async function submitPendingCreate() {
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-  const submit = await screen.findByRole('button', { name: '开始对话 ↗' });
-  await waitFor(() => expect((submit as HTMLButtonElement).disabled).toBe(false));
-  fireEvent.click(submit);
 }
 
 describe('Workspace real App with in-memory Desktop deferred completions (not Electron/Pi)', () => {
