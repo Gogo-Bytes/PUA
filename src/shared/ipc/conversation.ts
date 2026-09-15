@@ -50,7 +50,9 @@ export interface ChatRuntimeState {
 export interface ChatSnapshot extends ChatRuntimeState {
   messages: ChatMessage[];
   commands: ChatCommand[];
+  sessionTree?: ChatTreeNode[];
 }
+export interface ChatTreeNode { entryId: string; label?: string; children: ChatTreeNode[] }
 
 export type ExtensionUIRequest = ({ expiresAt?: number } & (
   | { id: string; method: 'select'; title: string; options: string[] }

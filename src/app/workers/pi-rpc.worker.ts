@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { JsonlDecoder, TailBuffer } from '../../platform/pi/rpc/jsonl.js';
 import { decodeArguments, isRecord, normalizeHistoryItems } from '../../platform/pi/rpc/chat-normalize.js';
 import { ConversationStreamMapper, messageDTO, streamNotificationDTO } from '../../platform/pi/rpc/conversation-stream-mapper.js';
-import type { ChatCommand } from '../../shared/ipc/conversation.js';
+import type { ChatCommand, ChatTreeNode } from '../../shared/ipc/conversation.js';
 import { createMissingAssistantDiagnostics } from '../../shared/ipc/missing-assistant-diagnostics.js';
 
 import { parsePiResponse, type PiCommand, type PiResponseData } from '../../platform/pi/rpc/pi-response.js';
@@ -56,6 +56,13 @@ function commandsDTO(value: unknown): ChatCommand[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap(item => isRecord(item) && typeof item.name === 'string' && (item.source === 'extension' || item.source === 'prompt' || item.source === 'skill')
     ? [{ name: item.name, description: typeof item.description === 'string' ? item.description : undefined, source: item.source }] : []);
+}
+function treeDTO(value: unknown): ChatTreeNode[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(item => {
+    if (!isRecord(item) || !isRecord(item.entry) || typeof item.entry.id !== 'string') return [];
+    return [{ entryId: item.entry.id, label: typeof item.label === 'string' ? item.label : undefined, children: treeDTO(item.children) }];
+  });
 }
 function withForkEntries(messages: readonly ConversationMessage[], value: unknown): ConversationMessage[] {
   const entries = Array.isArray(value) ? value.flatMap(item => isRecord(item) && typeof item.entryId === 'string' && typeof item.text === 'string' ? [{ entryId: item.entryId, text: item.text }] : []) : [];
