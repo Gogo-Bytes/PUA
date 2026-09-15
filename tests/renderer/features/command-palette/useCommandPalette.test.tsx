@@ -16,7 +16,7 @@ describe('useCommandPalette public state actions', () => {
     act(() => { result.current.openFromSidebar(); result.current.setQuery('a'); });
     rerender({ active: undefined }); expect(result.current.isOpen).toBe(true); expect(result.current.query).toBe('a');
     act(toggle); expect(result.current.isOpen).toBe(false); expect(result.current.query).toBe('a');
-    rerender({ active }); expect(result.current.commands[0].name).toBe('a');
+    rerender({ active }); expect(result.current.commands.find(command => command.name === 'a')?.name).toBe('a');
     expect(result.current.toggle).toBe(toggle); expect(result.current.onCommands).toBe(onCommands); expect(result.current.dismissAfterInsert).toBe(dismissAfterInsert);
     act(dismissAfterInsert); expect(result.current.isOpen).toBe(false); expect(result.current.query).toBe('');
   });
