@@ -17,7 +17,7 @@
 | ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
 |---|---|---|---|---|
 | PI-RPC-01 | prompt 与流式 delta | worker stream mapper、`ChatMessage` | 已接入 | 消息流、切换任务后恢复 |
-| PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper | 已接入 | 任务栏运行信息与设置入口 |
+| PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper、Pi command palette | 部分接入 | 聊天命令面板提供 `/model` 与 `/thinking` 受控入口；运行态选择结果和原生列表仍待接入 |
 | PI-RPC-03 | tool start/update/end 与最终结果 | stream core、ToolExecutionCard | 已接入 | 工具过程折叠、失败展开、重试 |
 | PI-RPC-04 | agent settled / compacting / retrying | runtime activity | 已接入 | 后台任务状态和通知 |
 | PI-RPC-05 | steer / followUp / clear queue | conversation queue、worker protocol | 已接入 | Composer 队列可视化与任务级恢复 |
@@ -27,7 +27,7 @@
 | PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
 | PI-RPC-10 | `--resume` 历史选择器 | native-chat-design 记录 | 待接入 | 兼容终端入口；原生任务恢复流程 |
 | PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 部分接入 | 消息级 Fork 已贯通白名单、响应校验、侧栏入口与实时元数据刷新；`get_tree` 分支树视图仍待接入 |
-| PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 待接入 | 项目级资源入口与状态展示 |
+| PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip 与命令面板已接入；项目级资源入口与状态展示仍待接入 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
 | PI-RPC-14 | token / usage 统计 | Pi `FooterDataProvider` 暴露 context usage、session entries、model 信息；RPC DTO 尚未核对 | 待验证 | 核对 RPC usage 事件后增加任务级用量摘要 |
 | PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 明确不做 | 不提供 HTML 导出入口；保留复制消息 |
