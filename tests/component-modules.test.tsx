@@ -41,6 +41,13 @@ it('production sidebar collapses and restores a project session list', () => {
   fireEvent.click(collapse); expect(screen.queryByRole('button', { name: '调查交互' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '展开 app' })); expect(screen.getByRole('button', { name: '调查交互' })).toBeTruthy();
 });
+it('production sidebar renders nested history and forks the selected entry', () => {
+  const fork = vi.fn();
+  render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle', sessionTree: [{ entryId: 'root', label: '根消息', children: [{ entryId: 'branch', label: '分支消息', children: [] }] }] }]} recentProjects={['/one/app']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={vi.fn()} onSelectSession={vi.fn()} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onForkSession={fork} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /根消息/ })); expect(fork).toHaveBeenCalledWith('s1', 'root');
+  fireEvent.click(screen.getByRole('button', { name: /分支消息/ })); expect(fork).toHaveBeenCalledWith('s1', 'branch');
+  fireEvent.click(screen.getByRole('button', { name: '折叠分支' })); expect(screen.queryByRole('button', { name: /分支消息/ })).toBeNull();
+});
 it('SessionTabs separates selection from rename and passes the session id through its callback', () => {
   const select = vi.fn(), rename = vi.fn();
   render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} activeId="a" onSelect={select} onRename={rename} onAdd={() => {}}/></UIProvider>);
