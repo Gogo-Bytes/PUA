@@ -264,11 +264,11 @@ async function start(message: StartMessage): Promise<void> {
   });
   await new Promise<void>((resolve, reject) => { child!.once('spawn', resolve); child!.once('error', reject); });
   if (closing) return;
-  const [stateValue, messagesValue, commandsValue, forkValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000)]);
+  const [stateValue, messagesValue, commandsValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000)]);
   if (closing) return;
   const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
   const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
-  const messages = withForkEntries(history, forkValue.messages).map(messageDTO);
+  const messages = history.map(messageDTO);
   const commands = commandsDTO(commandsValue.commands);
   event({ type: 'chat-snapshot', snapshot: { ...state, messages, commands } });
   if (closing) return;
