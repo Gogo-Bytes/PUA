@@ -61,3 +61,8 @@
 - **Skills / Prompt Templates**：Pi 从资源目录加载并通过命令目录暴露；PUA 的 `@` 是输入筛选器，执行逻辑仍由 Pi 持有。
 - **Model / Thinking Level**：Pi 支持按会话查询和切换，PUA 不接管凭据或配置文件。
 - **TUI custom 能力**：自定义主题、header/footer、renderer、editor 依赖终端绘制生命周期，RPC 没有等价 UI。
+
+## Fork 交互保留项
+
+- 每条消息都保留 Fork 入口。
+- Fork 菜单必须保留“当前工作空间创建分支”和“新工作树创建分支”两个目标；当前仅完成消息级 RPC，目标选择器与树形投影仍待实现。
