@@ -77,7 +77,7 @@ describe('native composer', () => {
     expect(screen.getByRole('option', { name: /@review-code/ })).toBeTruthy();
     expect(screen.queryByText('@release')).toBeNull();
     fireEvent.click(screen.getByRole('option', { name: /@review-code/ }));
-    expect((textbox as HTMLTextAreaElement).value).toBe('@review-code ');
+    expect((textbox as HTMLTextAreaElement).value).toBe('/skill:review-code ');
     fireEvent.click(screen.getByRole('button', { name: '从此消息创建分支' }));
     await waitFor(() => expect(desktop.forkChatSession).toHaveBeenCalledExactlyOnceWith('s', 'entry-1'));
     expect(menu.isConnected).toBe(false);

@@ -5,6 +5,12 @@ import { useCommandPalette } from '../../../../src/renderer/features/command-pal
 import type { ChatCommand } from '../../../../src/shared/ipc/conversation';
 afterEach(cleanup);
 describe('useCommandPalette public state actions', () => {
+  it('does not advertise TUI built-ins as RPC prompt commands', () => {
+    const { result } = renderHook(() => useCommandPalette({ id: 'a', kind: 'chat' }));
+    expect(result.current.commands).toEqual([]);
+    act(() => result.current.onCommands('a', [{ name: 'model', source: 'extension' }]));
+    expect(result.current.commands.map(command => command.name)).toEqual(['model']);
+  });
   it('keeps shortcut and registration actions stable, same-array no-op and per-session cache at App lifetime', () => {
     const active = { id: 'a', kind: 'chat' as const };
     const { result, rerender } = renderHook(({ active }) => useCommandPalette(active), { initialProps: { active: active as typeof active | undefined } });

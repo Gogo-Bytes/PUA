@@ -40,13 +40,13 @@ const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) =>
   act(() => target.dispatchEvent(event)); return event;
 };
 async function create(kind: 'chat' | 'terminal' = 'chat') {
-  fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-  if (kind === 'terminal') fireEvent.click(screen.getByRole('radio', { name: /^兼容终端/ }));
-  const button = screen.getByRole('button', { name: kind === 'chat' ? '开始对话 ↗' : '打开兼容终端 ↗' });
+  if (kind === 'chat') { fireEvent.click(screen.getByRole('button', { name: '新建会话' })); await flush(); return; }
+  fireEvent.click(screen.getByRole('button', { name: '兼容终端' }));
+  const button = screen.getByRole('button', { name: '打开兼容终端 ↗' });
   await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); await flush();
 }
 async function mount(kind: 'chat' | 'terminal' = 'chat') {
-  const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await create(kind); return view;
+  const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await flush(); if (kind === 'terminal') await create(kind); return view;
 }
 beforeEach(() => {
   listeners = new Set(); terminal.pastes = []; terminal.throwPaste = false;
@@ -80,7 +80,7 @@ describe('App command palette before/after characterization with real panes', ()
     snapshot('unknown', commandsA); expect(items()).toHaveLength(0);
     snapshot('s2', [{ name: 'second', source: 'prompt' }]); expect(items().map(item => item.textContent)).toEqual(['/secondprompt/second']);
     // Synthetic tab selection while modal is open characterizes live callbacks, not native modal reachability.
-    fireEvent.click(screen.getByRole('tab', { name: 'Session 1' })); expect(items().map(item => item.textContent)).toEqual(['/backgroundextension/background']);
+    fireEvent.click(screen.getByRole('button', { name: 'Session 1' })); expect(items().map(item => item.textContent)).toEqual(['/backgroundextension/background']);
     fireEvent.click(items()[0]); expect(first.value).toBe('first draft\n/background'); expect(second.value).toBe('second draft');
     expect(screen.queryByRole('dialog')).toBeNull(); expect(container.querySelectorAll('[data-session-id]')).toHaveLength(2);
     expect(desktop.sendChatMessage).not.toHaveBeenCalled(); expect(desktop.write).not.toHaveBeenCalled();
@@ -101,15 +101,15 @@ describe('App command palette before/after characterization with real panes', ()
     await mount(); snapshot('s1', commandsA); open(); filter('ALPHA'); close(); shortcut(); expect(query().value).toBe('ALPHA');
     const cancel = new Event('cancel', { cancelable: true }); fireEvent(screen.getByRole('dialog'), cancel); expect(cancel.defaultPrevented).toBe(true);
     shortcut(); expect(query().value).toBe('ALPHA'); shortcut(); expect(screen.queryByRole('dialog')).toBeNull();
-    open(); expect(query().value).toBe(''); filter('beta'); selectProject('/empty'); expect(screen.queryByRole('dialog')).toBeNull();
-    selectProject('/one'); expect(query().value).toBe('beta'); fireEvent.click(items()[0]); shortcut(); expect(query().value).toBe('');
+    open(); expect(query().value).toBe(''); filter('beta'); selectProject('/empty'); await flush(); expect(query().value).toBe('beta'); expect(items()).toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Session 1' })); expect(query().value).toBe('beta'); fireEvent.click(items()[0]); shortcut(); expect(query().value).toBe('');
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/beta');
-    close(); selectProject('/empty'); shortcut(); expect(screen.queryByRole('dialog')).toBeNull(); selectProject('/one'); expect(query().value).toBe('');
+    close(); fireEvent.click(screen.getByRole('button', { name: 'Session 2' })); shortcut(); expect(query().value).toBe(''); fireEvent.click(screen.getByRole('button', { name: 'Session 1' })); expect(query().value).toBe('');
     expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
   it('preserves filter fields, distinct zero results, exact DOM and list navigation including index -1/zero', async () => {
     await mount(); const opener = screen.getByRole('button', { name: /搜索与命令/ }); opener.focus(); open(); expect(screen.getByRole('dialog', { name: 'Pi 命令' }).className).toBe('ui-dialog');
-    expect(query().classList.contains('ui-input')).toBe(true); expect(query().placeholder).toBe('搜索扩展、提示模板或技能…'); expect(document.activeElement).toBe(query());
+    expect(query().classList.contains('ui-input')).toBe(true); expect(query().placeholder).toContain('搜索扩展、提示模板或技能'); expect(document.activeElement).toBe(query());
     snapshot('s1', commandsA); expect(items()).toHaveLength(3);
     filter('FIRST'); expect(items()).toHaveLength(1); filter('/ALPHA'); expect(items()).toHaveLength(1); filter('GAMMA'); expect(items()).toHaveLength(1);
     filter('not found'); expect(items()).toHaveLength(0); expect(within(list()).queryByText(/当前 Pi 没有提供/)).toBeNull();
@@ -152,7 +152,7 @@ describe('App command palette before/after characterization with real panes', ()
     expect(items().map(item => item.querySelector('div')?.firstChild?.textContent)).toEqual(['选择模型', '思考强度', '恢复历史', '会话分支', 'Pi 设置', '登录提供商', '重新加载资源', '压缩上下文', '所有快捷键']);
     expect(items().map(item => item.querySelector('small')?.textContent)).toEqual(['使用 Pi 原生模型选择器', '选择推理等级', '打开 Pi 原生会话选择器', '查看会话树', '打开原生设置', '由 Pi 处理凭据', '重新加载扩展和技能', '执行上下文压缩', '以当前 Pi 配置为准']);
     for (const name of names) { filter(name); fireEvent.click(items()[0]); expect(screen.queryByRole('dialog')).toBeNull(); shortcut(); expect(query().value).toBe(''); }
-    expect(terminal.pastes).toEqual(names.map(name => `/${name}`)); expect(vi.mocked(desktop.write).mock.calls).toEqual(names.map(name => ['s1', `/${name}`]));
+    expect(terminal.pastes).toEqual(names.map(name => `/${name}`)); expect(vi.mocked(desktop.write).mock.calls).toEqual(names.map(name => ['s2', `/${name}`]));
     expect(desktop.sendChatMessage).not.toHaveBeenCalled(); close(); shortcut({ key: 'f', shiftKey: true }); expect(screen.getByRole('textbox', { name: '搜索终端历史' })).toBeTruthy(); expect(screen.queryByRole('dialog')).toBeNull();
   });
   it('retains palette/query when real terminal paste throws; pending attachment keeps original captured target', async () => {

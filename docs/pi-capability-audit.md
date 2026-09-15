@@ -17,7 +17,7 @@
 | ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
 |---|---|---|---|---|
 | PI-RPC-01 | prompt 与流式 delta | worker stream mapper、`ChatMessage` | 已接入 | 消息流、切换任务后恢复 |
-| PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper、Pi command palette | 部分接入 | 聊天命令面板提供 `/model` 与 `/thinking` 受控入口；运行态选择结果和原生列表仍待接入 |
+| PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper、Pi RPC `set_model` / `set_thinking_level` | 部分接入 | 当前信息可展示；原生列表和切换仍待实现。RPC prompt 不处理 TUI 内置 `/model` 与 `/thinking`，不得用插入命令冒充切换入口 |
 | PI-RPC-03 | tool start/update/end 与最终结果 | stream core、ToolExecutionCard | 已接入 | 工具过程折叠、失败展开、重试 |
 | PI-RPC-04 | agent settled / compacting / retrying | runtime activity | 已接入 | 后台任务状态和通知 |
 | PI-RPC-05 | steer / followUp / clear queue | conversation queue、worker protocol | 已接入 | Composer 队列可视化与任务级恢复 |
