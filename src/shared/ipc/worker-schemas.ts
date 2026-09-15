@@ -49,7 +49,7 @@ export function parseRpcWorkerInput(value: unknown): WorkerParse<RpcWorkerInput>
     case 'extension-response':
       try { return { ok: true, message: { type: 'extension-response', requestId, response: extensionResponse(value.response) } }; }
       catch (error) { return invalid(String(error)); }
-    case 'get-available-models': case 'get-tree': case 'get-fork-messages': case 'get-state': case 'get-session-stats':
+    case 'get-available-models': case 'get-available-thinking-levels': case 'get-tree': case 'get-fork-messages': case 'get-state': case 'get-session-stats':
       return { ok: true, message: { type: value.type, requestId } };
     case 'fork': return text(value.entryId) ? { ok: true, message: { type: 'fork', requestId, entryId: value.entryId } } : invalid();
     case 'switch-session': return text(value.sessionPath) ? { ok: true, message: { type: 'switch-session', requestId, sessionPath: value.sessionPath } } : invalid();

@@ -2,7 +2,7 @@ import { isRecord } from './chat-normalize.js';
 
 // Pi-only spellings and consumed payloads; never part of the utility/Desktop wire.
 export type PiCommand =
-  | { type: 'get_state' | 'get_messages' | 'get_commands' | 'get_tree' | 'get_fork_messages' | 'get_session_stats' | 'get_available_models' | 'clear_queue' | 'abort' }
+  | { type: 'get_state' | 'get_messages' | 'get_commands' | 'get_tree' | 'get_fork_messages' | 'get_session_stats' | 'get_available_models' | 'get_available_thinking_levels' | 'clear_queue' | 'abort' }
   | { type: 'fork'; entryId: string }
   | { type: 'switch_session'; sessionPath: string }
   | { type: 'set_model'; provider: string; modelId: string }
@@ -13,6 +13,7 @@ export type PiCommand =
   | { type: 'prompt'; message: string; images: Array<{ type: 'image'; data: string; mimeType: string }>; streamingBehavior: 'steer' | 'followUp' };
 
 export interface PiResponseData {
+  get_available_thinking_levels: { levels: string[] };
   get_state: Record<string, unknown>;
   get_available_models: { models: PiModel[] };
   get_messages: { messages: unknown[] };
@@ -38,6 +39,7 @@ function models(value: unknown): value is PiModel[] {
 
 function validData<C extends PiCommand['type']>(command: C, data: unknown): data is PiResponseData[C] {
   switch (command) {
+    case 'get_available_thinking_levels': return isRecord(data) && Array.isArray(data.levels) && data.levels.every(value => typeof value === 'string');
     case 'get_state': return isRecord(data);
     case 'get_available_models': return isRecord(data) && models(data.models);
     case 'get_messages': return isRecord(data) && Array.isArray(data.messages);
