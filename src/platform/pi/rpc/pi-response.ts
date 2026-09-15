@@ -2,7 +2,7 @@ import { isRecord } from './chat-normalize.js';
 
 // Pi-only spellings and consumed payloads; never part of the utility/Desktop wire.
 export type PiCommand =
-  | { type: 'get_state' | 'get_messages' | 'get_commands' | 'get_tree' | 'get_fork_messages' | 'get_session_stats' | 'clear_queue' | 'abort' }
+  | { type: 'get_state' | 'get_messages' | 'get_commands' | 'get_tree' | 'get_fork_messages' | 'get_session_stats' | 'get_available_models' | 'clear_queue' | 'abort' }
   | { type: 'fork'; entryId: string }
   | { type: 'switch_session'; sessionPath: string }
   | { type: 'set_model'; provider: string; modelId: string }
@@ -14,6 +14,7 @@ export type PiCommand =
 
 export interface PiResponseData {
   get_state: Record<string, unknown>;
+  get_available_models: { models: PiModel[] };
   get_messages: { messages: unknown[] };
   get_commands: { commands: unknown[] };
   get_tree: Record<string, unknown>;
@@ -26,14 +27,19 @@ export interface PiResponseData {
   set_session_name: unknown;
   fork: { text: string; cancelled: boolean }; switch_session: { cancelled: boolean }; set_model: unknown; set_thinking_level: unknown; compact: unknown; export_html: { path: string };
 }
+export interface PiModel { provider: string; id: string; name?: string; reasoning?: boolean }
 
 function stringArray(value: unknown): value is string[] {
   return Array.isArray(value) && Array.from(value).every(item => typeof item === 'string');
+}
+function models(value: unknown): value is PiModel[] {
+  return Array.isArray(value) && value.every(item => isRecord(item) && typeof item.provider === 'string' && item.provider.length > 0 && typeof item.id === 'string' && item.id.length > 0 && (item.name === undefined || typeof item.name === 'string') && (item.reasoning === undefined || typeof item.reasoning === 'boolean'));
 }
 
 function validData<C extends PiCommand['type']>(command: C, data: unknown): data is PiResponseData[C] {
   switch (command) {
     case 'get_state': return isRecord(data);
+    case 'get_available_models': return isRecord(data) && models(data.models);
     case 'get_messages': return isRecord(data) && Array.isArray(data.messages);
     case 'get_commands': return isRecord(data) && Array.isArray(data.commands);
     case 'get_tree': case 'get_fork_messages': case 'get_session_stats': return isRecord(data);

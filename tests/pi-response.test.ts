@@ -5,6 +5,10 @@ describe('Pi capability response validation', () => {
   it.each(['get_tree', 'get_fork_messages', 'get_session_stats'] as const)('accepts structured %s data', command => {
     expect(parsePiResponse(command, { type: 'response', command, success: true, data: {} })).toEqual({});
   });
+  it('validates available model identities before exposing them', () => {
+    expect(parsePiResponse('get_available_models', { type: 'response', command: 'get_available_models', success: true, data: { models: [{ provider: 'openai', id: 'gpt', name: 'GPT' }] } })).toEqual({ models: [{ provider: 'openai', id: 'gpt', name: 'GPT' }] });
+    expect(() => parsePiResponse('get_available_models', { type: 'response', command: 'get_available_models', success: true, data: { models: [{ provider: 'openai' }] } })).toThrow(/protocol error/);
+  });
 
   it('accepts the documented structured fork and export results', () => {
     expect(parsePiResponse('fork', { type: 'response', command: 'fork', success: true, data: { text: 'prompt', cancelled: false } })).toEqual({ text: 'prompt', cancelled: false });
