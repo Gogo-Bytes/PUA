@@ -212,11 +212,11 @@ function handleExtensionUI(value: Record<string, unknown>): boolean {
 async function refreshForkMetadata(): Promise<void> {
   if (closing) return;
   try {
-    const [stateValue, messagesValue, commandsValue, forkValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000)]);
+    const [stateValue, messagesValue, commandsValue, forkValue, treeValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000), send({ type: 'get_tree' }, 15_000)]);
     const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
     stream.reset();
     const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
-    event({ type: 'chat-snapshot', snapshot: { ...state, commands: commandsDTO(commandsValue.commands), messages: withForkEntries(history, forkValue.messages).map(messageDTO) } });
+    event({ type: 'chat-snapshot', snapshot: { ...state, commands: commandsDTO(commandsValue.commands), messages: withForkEntries(history, forkValue.messages).map(messageDTO), sessionTree: treeDTO(treeValue.tree) } });
   } catch (error) {
     diagnostics.append(`Fork metadata refresh failed: ${String(error)}\n`);
   }
