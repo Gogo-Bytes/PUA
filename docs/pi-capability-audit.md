@@ -59,7 +59,7 @@
 - **Compaction**：Pi 生成 compaction summary 并沿当前叶子路径重建上下文；PUA 展示状态和失败反馈，不自行截断消息。
 - **Extension UI**：扩展可请求 select、confirm、input、editor、notify、status、widget；custom renderer/editor 等 TUI 能力继续由兼容终端承载。
 - **Skills / Prompt Templates**：Pi 从资源目录加载并通过命令目录暴露；PUA 的 `@` 是输入筛选器，执行逻辑仍由 Pi 持有。
-- **Model / Thinking Level**：Pi 支持按会话查询和切换，PUA 不接管凭据或配置文件。
+- **Model / Thinking Level**：Pi 支持按会话查询和切换，PUA 不接管凭据或配置文件；模型与 Thinking Level 已通过真实 RPC 查询/切换，UI 菜单按需加载 Pi 返回的列表。
 - **TUI custom 能力**：自定义主题、header/footer、renderer、editor 依赖终端绘制生命周期，RPC 没有等价 UI。
 
 ## Fork 交互保留项
