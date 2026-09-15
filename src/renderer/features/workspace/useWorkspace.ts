@@ -1,19 +1,29 @@
 import { useEffect, useState } from 'react';
 import type { DesktopAPI, SessionInfo } from '../../../shared/ipc/desktop-api';
+import type { ChatTreeNode } from '../../../shared/ipc/conversation';
 import { addSession, removeSession, selectProject, selectSession, type SessionWorkspace } from './selection';
+
+/** History nodes belong to one managed session; they are not independently running sessions. */
+export interface WorkspaceSessionInfo extends SessionInfo {
+  sessionTree?: ChatTreeNode[];
+}
 
 /** Window-local projection and selection owner; the host still owns Session lifecycle. */
 export function useWorkspace(
   desktop: Pick<DesktopAPI, 'onSessionEvent' | 'closeSession'> | undefined,
   { onClosed, onError }: { onClosed(id: string): void; onError(message: string): void },
 ) {
-  const [state, setState] = useState<SessionWorkspace<SessionInfo>>({ sessions: [], activeId: null });
-  const updateSessions = (update: (sessions: SessionInfo[]) => SessionInfo[]) =>
+  const [state, setState] = useState<SessionWorkspace<WorkspaceSessionInfo>>({ sessions: [], activeId: null });
+  const updateSessions = (update: (sessions: WorkspaceSessionInfo[]) => WorkspaceSessionInfo[]) =>
     setState(current => ({ ...current, sessions: update(current.sessions) }));
   const markSessionExited = (id: string, exitCode: number) => updateSessions(sessions => sessions.map(session =>
     session.id === id ? { ...session, processStatus: 'exited', activity: 'idle', exitCode } : session));
 
   useEffect(() => desktop?.onSessionEvent(event => {
+    if (event.type === 'chat-snapshot') updateSessions(sessions => sessions.map(session =>
+      session.id === event.id && session.kind === 'chat'
+        ? { ...session, activity: event.snapshot.activity, sessionTree: event.snapshot.sessionTree ?? session.sessionTree }
+        : session));
     if (event.type === 'session-info') updateSessions(sessions => sessions.map(session => session.id === event.id
       ? { ...session, title: event.title ?? session.title, processStatus: event.processStatus ?? session.processStatus, activity: event.activity ?? session.activity } : session));
     if (event.type === 'chat-state' && event.state.activity) updateSessions(sessions => sessions.map(session =>
