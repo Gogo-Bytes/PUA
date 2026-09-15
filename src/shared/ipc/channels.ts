@@ -24,6 +24,8 @@ export const invokeChannels = {
   renameChatSession: 'desktop:chat-rename',
   forkChatSession: 'desktop:chat-fork',
   getChatAvailableModels: 'desktop:chat-models',
+  setChatModel: 'desktop:chat-model-set',
+  setChatThinkingLevel: 'desktop:chat-thinking-set',
   openExternal: 'desktop:external',
   openProject: 'desktop:project',
   gitStatus: 'desktop:git-status',

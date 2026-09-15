@@ -77,6 +77,8 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   renameChatSession: tuple<'renameChatSession'>(2, (id, name) => [text(id), boundedText(name, 200, '会话名称')]),
   forkChatSession: tuple<'forkChatSession'>(2, (id, entryId) => [text(id), boundedText(entryId, 256, '分支消息 id')]),
   getChatAvailableModels: idArgs,
+  setChatModel: tuple<'setChatModel'>(3, (id, provider, modelId) => [text(id), text(provider), text(modelId)]),
+  setChatThinkingLevel: tuple<'setChatThinkingLevel'>(2, (id, level) => [text(id), text(level)]),
   respondToExtensionUI: tuple<'respondToExtensionUI'>(2, (id, response) => [text(id), extensionResponse(response)]),
   sendChatMessage: tuple<'sendChatMessage'>(2, (id, input) => {
     const value = input && typeof input === 'object' ? input as Record<string, unknown> : {};

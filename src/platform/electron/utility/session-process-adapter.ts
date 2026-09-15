@@ -321,6 +321,8 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
     const result = await this.request<{ models: ChatModel[] }>(this.resource(id), { type: 'get-available-models' });
     return result.models;
   }
+  async setModel(id: string, provider: string, modelId: string): Promise<void> { await this.request(this.resource(id), { type: 'set-model', provider, modelId }); }
+  async setThinkingLevel(id: string, level: string): Promise<void> { await this.request(this.resource(id), { type: 'set-thinking-level', level }); }
 
   async stop(id: string): Promise<void> { await this.request(this.resource(id), { type: 'stop' }); }
   async respond(id: string, response: ExtensionResponse): Promise<void> { await this.request(this.resource(id), { type: 'extension-response', response }); }

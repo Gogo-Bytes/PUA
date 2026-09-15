@@ -70,6 +70,8 @@ export interface DesktopAPI {
   renameChatSession(id: string, name: string): Promise<void>;
   forkChatSession(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }>;
   getChatAvailableModels(id: string): Promise<import('./conversation.js').ChatModel[]>;
+  setChatModel(id: string, provider: string, modelId: string): Promise<void>;
+  setChatThinkingLevel(id: string, level: string): Promise<void>;
   write(id: string, data: string): void;
   resize(id: string, cols: number, rows: number): void;
   acknowledge(id: string, size: number): void;
