@@ -31,6 +31,20 @@ export class ConversationStreamApplication {
     this.deltaBuffer.clear();
   }
 
+  /** Drop correlation state when Pi replaces the active session history (for example after fork). */
+  reset(): void {
+    if (!this.active) return;
+    this.activeMessageId = undefined;
+    this.activeUserMessageId = undefined;
+    this.tools.clear();
+    this.finalTools.clear();
+    this.retiredTools.clear();
+    this.toolLocations.clear();
+    this.deltaBuffer.clear();
+    this.scheduled?.cancel();
+    this.scheduled = undefined;
+  }
+
   initializeHistory(items: readonly ConversationHistoryItem[]): readonly ConversationMessage[] {
     if (!this.active) return [];
     const messages: ConversationMessage[] = [];

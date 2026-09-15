@@ -202,12 +202,25 @@ function handleExtensionUI(value: Record<string, unknown>): boolean {
   return true;
 }
 
+async function refreshForkMetadata(): Promise<void> {
+  if (closing) return;
+  try {
+    const [stateValue, messagesValue, commandsValue, forkValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000)]);
+    const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
+    stream.reset();
+    const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
+    event({ type: 'chat-snapshot', snapshot: { ...state, commands: commandsDTO(commandsValue.commands), messages: withForkEntries(history, forkValue.messages).map(messageDTO) } });
+  } catch (error) {
+    diagnostics.append(`Fork metadata refresh failed: ${String(error)}\n`);
+  }
+}
+
 function handleEvent(value: Record<string, unknown>): void {
   diagnosticsOutput.record('worker-received', sessionId, value);
   if (closing || handleResponse(value) || handleExtensionUI(value)) return;
   switch (value.type) {
     case 'agent_start': runtime.accept({ type: 'activity', activity: 'responding' }); break;
-    case 'agent_settled': runtime.accept({ type: 'activity', activity: 'idle' }); break;
+    case 'agent_settled': runtime.accept({ type: 'activity', activity: 'idle' }); void refreshForkMetadata(); break;
     case 'compaction_start': runtime.accept({ type: 'activity', activity: 'compacting' }); break;
     case 'auto_retry_start': runtime.accept({ type: 'activity', activity: 'retrying' }); break;
     case 'queue_update': runtime.accept({ type: 'queue', queue: normalizeQueue(value) }); break;
@@ -308,6 +321,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
             send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000),
           ]);
           const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
+          stream.reset();
           const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
           const mapped = withForkEntries(history, forkValue.messages).map(messageDTO);
           event({ type: 'chat-snapshot', snapshot: { ...state, messages: mapped, commands: commandsDTO(commandsValue.commands) } });
