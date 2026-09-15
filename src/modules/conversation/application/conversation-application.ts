@@ -1,6 +1,7 @@
 import { admitImage, ConversationFailure, MAX_ATTACHMENTS, selectAttachments } from '../domain/conversation.js';
 import type { Attachment, AttachmentSourceId, AttachmentToken, ExtensionResponse, SendIntent } from '../domain/conversation.js';
 import type { AttachmentResourcesPort, ConversationRuntimePort } from '../ports.js';
+import type { ChatModel } from '../../../shared/ipc/conversation.js';
 
 interface OperationContext {
   readonly attachments: Map<AttachmentToken, Attachment>;
@@ -11,6 +12,7 @@ interface OperationContext {
 /** Owns send/attachment business state only. SessionCoordinator still owns lifecycle.
  * Invalidation is synchronous and does not acknowledge host exit or release Session ownership. */
 export class ConversationApplication {
+  getAvailableModels(id: string): Promise<ChatModel[]> { this.current(id); return this.runtime.getAvailableModels(id); }
   private readonly contexts = new Map<string, OperationContext>();
   constructor(private readonly runtime: ConversationRuntimePort, private readonly resources: AttachmentResourcesPort) {}
 

@@ -19,6 +19,7 @@ const api: DesktopBridge = {
   respondToExtensionUI: (id, response) => ipcRenderer.invoke(invokeChannels.respondToExtensionUI, id, response),
   renameChatSession: (id, name) => ipcRenderer.invoke(invokeChannels.renameChatSession, id, name),
   forkChatSession: (id, entryId) => ipcRenderer.invoke(invokeChannels.forkChatSession, id, entryId),
+  getChatAvailableModels: id => ipcRenderer.invoke(invokeChannels.getChatAvailableModels, id),
   write: (id, data) => ipcRenderer.send(sendChannels.write, id, data),
   resize: (id, cols, rows) => ipcRenderer.send(sendChannels.resize, id, cols, rows),
   acknowledge: (id, size) => ipcRenderer.send(sendChannels.acknowledge, id, size),

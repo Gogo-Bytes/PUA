@@ -1,6 +1,7 @@
 import type { Attachment, AttachmentMetadata, AttachmentSourceId, AttachmentToken, ExtensionResponse, RuntimeSend } from './domain/conversation.js';
 import type { ConversationQueue } from './domain/runtime.js';
 import type { ConversationObject } from './domain/stream.js';
+import type { ChatModel } from '../../shared/ipc/conversation.js';
 
 /** Worker operations acknowledge once; unknown acceptance must never be replayed. */
 export interface RuntimeOperationsPort {
@@ -15,6 +16,7 @@ export interface DialogClockPort {
 }
 
 export interface ConversationRuntimePort {
+  getAvailableModels(id: string): Promise<ChatModel[]>;
   /** Capture authorized payloads and issue the request before returning; resolve only on acknowledgement. */
   send(id: string, command: RuntimeSend): Promise<void>;
   /** Delegates to the worker-scoped runtime's clear -> recovery -> abort use case. */

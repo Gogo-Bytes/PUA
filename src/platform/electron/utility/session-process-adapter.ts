@@ -14,6 +14,7 @@ import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../sha
 import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/ipc/desktop-api.js';
 import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../../../modules/sessions/index.js';
 import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
+import type { ChatModel } from '../../../shared/ipc/conversation.js';
 
 type ProcessHost = Omit<UtilityProcess, 'postMessage'> & WorkerInputPort<RpcWorkerInput | PtyWorkerInput>;
 interface AttachmentPayload extends ChatAttachment { imageData?: string }
@@ -315,6 +316,10 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
       return { data: item.imageData, mimeType: item.mimeType };
     });
     await this.request(resource, { type: 'send', text: input.text, filePaths, images, queuePreference: input.queuePreference });
+  }
+  async getAvailableModels(id: string): Promise<ChatModel[]> {
+    const result = await this.request<{ models: ChatModel[] }>(this.resource(id), { type: 'get-available-models' });
+    return result.models;
   }
 
   async stop(id: string): Promise<void> { await this.request(this.resource(id), { type: 'stop' }); }

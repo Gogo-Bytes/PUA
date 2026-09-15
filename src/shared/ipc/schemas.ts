@@ -76,6 +76,7 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   removeChatAttachment: tuple<'removeChatAttachment'>(2, (id, attachmentId) => [text(id), boundedText(attachmentId, 128, '附件 id')]),
   renameChatSession: tuple<'renameChatSession'>(2, (id, name) => [text(id), boundedText(name, 200, '会话名称')]),
   forkChatSession: tuple<'forkChatSession'>(2, (id, entryId) => [text(id), boundedText(entryId, 256, '分支消息 id')]),
+  getChatAvailableModels: idArgs,
   respondToExtensionUI: tuple<'respondToExtensionUI'>(2, (id, response) => [text(id), extensionResponse(response)]),
   sendChatMessage: tuple<'sendChatMessage'>(2, (id, input) => {
     const value = input && typeof input === 'object' ? input as Record<string, unknown> : {};
