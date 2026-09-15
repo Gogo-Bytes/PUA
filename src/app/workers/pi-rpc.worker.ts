@@ -169,12 +169,12 @@ function handleResponse(value: Record<string, unknown>): boolean {
   if (value.type !== 'response' || typeof value.id !== 'string') return false;
   const request = pending.get(value.id);
   if (!request) return true;
-  pending.delete(value.id);
   if (request.timer) clearTimeout(request.timer);
   try {
     // The slot and timer are retired before parsing or running any continuation.
     request.resolve(value);
   } catch (error) { request.reject(error instanceof Error ? error : new Error(String(error))); }
+  pending.delete(value.id);
   return true;
 }
 
