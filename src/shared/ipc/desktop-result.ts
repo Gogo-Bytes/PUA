@@ -42,6 +42,7 @@ export const desktopValueGuards = {
   startSession: empty, removeChatAttachment: empty, sendChatMessage: empty, stopChat: empty,
   respondToExtensionUI: empty, renameChatSession: empty, forkChatSession: v => record(v) && text(v.text) && bool(v.cancelled), getChatAvailableModels: v => arrayOf(v, x => record(x) && text(x.provider) && text(x.id)), openExternal: empty, openProject: empty, writeClipboard: empty,
   setChatModel: empty, setChatThinkingLevel: empty,
+  getChatThinkingLevels: v => arrayOf(v, text),
   gitStatus: (v: unknown) => record(v) && text(v.root) && text(v.branch) && text(v.capturedAt) && arrayOf(v.files, f => record(f) && text(f.path) && text(f.index) && text(f.worktree) && optional(f.originalPath, text)),
   fileDiff: (v: unknown) => record(v) && text(v.text) && oneOf(v.kind, ['diff', 'untracked', 'binary', 'symlink']) && bool(v.truncated),
   readClipboard: (v: unknown) => record(v) && text(v.text) && bool(v.image),

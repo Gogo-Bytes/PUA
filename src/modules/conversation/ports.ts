@@ -17,6 +17,7 @@ export interface DialogClockPort {
 
 export interface ConversationRuntimePort {
   getAvailableModels(id: string): Promise<ChatModel[]>;
+  getAvailableThinkingLevels(id: string): Promise<string[]>;
   setModel(id: string, provider: string, modelId: string): Promise<void>;
   setThinkingLevel(id: string, level: string): Promise<void>;
   /** Capture authorized payloads and issue the request before returning; resolve only on acknowledgement. */

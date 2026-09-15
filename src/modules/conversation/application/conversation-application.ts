@@ -13,6 +13,7 @@ interface OperationContext {
  * Invalidation is synchronous and does not acknowledge host exit or release Session ownership. */
 export class ConversationApplication {
   getAvailableModels(id: string): Promise<ChatModel[]> { this.current(id); return this.runtime.getAvailableModels(id); }
+  getAvailableThinkingLevels(id: string): Promise<string[]> { this.current(id); return this.runtime.getAvailableThinkingLevels(id); }
   setModel(id: string, provider: string, modelId: string): Promise<void> { this.current(id); return this.runtime.setModel(id, provider, modelId); }
   setThinkingLevel(id: string, level: string): Promise<void> { this.current(id); return this.runtime.setThinkingLevel(id, level); }
   private readonly contexts = new Map<string, OperationContext>();

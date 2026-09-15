@@ -20,6 +20,7 @@ const api: DesktopBridge = {
   renameChatSession: (id, name) => ipcRenderer.invoke(invokeChannels.renameChatSession, id, name),
   forkChatSession: (id, entryId) => ipcRenderer.invoke(invokeChannels.forkChatSession, id, entryId),
   getChatAvailableModels: id => ipcRenderer.invoke(invokeChannels.getChatAvailableModels, id),
+  getChatThinkingLevels: id => ipcRenderer.invoke(invokeChannels.getChatThinkingLevels, id),
   setChatModel: (id, provider, modelId) => ipcRenderer.invoke(invokeChannels.setChatModel, id, provider, modelId),
   setChatThinkingLevel: (id, level) => ipcRenderer.invoke(invokeChannels.setChatThinkingLevel, id, level),
   write: (id, data) => ipcRenderer.send(sendChannels.write, id, data),
