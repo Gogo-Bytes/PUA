@@ -35,6 +35,12 @@ it('production sidebar nests sessions below their project without tab semantics'
   fireEvent.click(screen.getAllByTitle('/two/empty')[0]); expect(create).toHaveBeenCalledWith('/two/empty');
   fireEvent.click(screen.getByRole('button', { name: '调查交互' })); expect(select).toHaveBeenCalledWith('s1');
 });
+it('production sidebar collapses and restores a project session list', () => {
+  render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle' }]} recentProjects={['/one/app']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={vi.fn()} onSelectSession={vi.fn()} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
+  const collapse = screen.getByRole('button', { name: '折叠 app' });
+  fireEvent.click(collapse); expect(screen.queryByRole('button', { name: '调查交互' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '展开 app' })); expect(screen.getByRole('button', { name: '调查交互' })).toBeTruthy();
+});
 it('SessionTabs separates selection from rename and passes the session id through its callback', () => {
   const select = vi.fn(), rename = vi.fn();
   render(<UIProvider><SessionTabs sessions={[{ id: 'a', title: 'One' }, { id: 'b', title: 'Two' }]} activeId="a" onSelect={select} onRename={rename} onAdd={() => {}}/></UIProvider>);
