@@ -12,6 +12,8 @@
 - Skills / Prompt Templates：采用 Codex 式 `@` 触发；输入时显示 tooltip 候选，用户可点击选择并插入引用。
 - Pi 特有能力：保留，完成能力说明后分别设计 PUA 入口。
 
+待用户确认的默认实施假设：模型与 Thinking 入口放在 Composer 底部，分别打开原生选择菜单；切换通过 Pi `get_available_models` / `set_model` / `get_available_thinking_levels` / `set_thinking_level` 完成。若用户选择其他入口，仅调整呈现层，不删除这些受控能力。
+
 补充决策：fork 入口放在每条对话消息的操作区，点击后提供“在此工作空间中创建分支”和“在新工作树中创建分支”两个选项；前者沿用当前 Project/Task 上下文，后者创建新的工作树上下文。Pi 特有能力全部保留；只有交互形态无法从 Codex 或 Pi 证据确定时才暂停讨论。
 
 | ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
