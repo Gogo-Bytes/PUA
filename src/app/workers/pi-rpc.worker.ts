@@ -331,5 +331,14 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }
-  if ('requestId' in data) post({ type: 'response', requestId: data.requestId, success: false, error: '该 Pi 能力尚未接入 RPC Adapter' });
+  if (data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats') {
+    const command: PiCommand = data.type === 'compact' ? { type: 'compact', ...(data.customInstructions === undefined ? {} : { customInstructions: data.customInstructions }) }
+      : data.type === 'set-model' ? { type: 'set_model', provider: data.provider, modelId: data.modelId }
+      : data.type === 'set-thinking-level' ? { type: 'set_thinking_level', level: data.level }
+      : data.type === 'switch-session' ? { type: 'switch_session', sessionPath: data.sessionPath }
+      : data.type === 'export-html' ? { type: 'export_html', outputPath: data.outputPath }
+      : { type: data.type.replaceAll('-', '_') as never };
+    void send(command).then(result => { if (!closing) post({ type: 'response', requestId: data.requestId, success: true, data: result }); }).catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
+    return;
+  }
 });
