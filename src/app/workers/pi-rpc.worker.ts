@@ -338,8 +338,9 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }
-  if (data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats') {
-    const command: PiCommand = data.type === 'compact' ? { type: 'compact', ...(data.customInstructions === undefined ? {} : { customInstructions: data.customInstructions }) }
+  if (data.type === 'get-available-models' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats') {
+    const command: PiCommand = data.type === 'get-available-models' ? { type: 'get_available_models' }
+      : data.type === 'compact' ? { type: 'compact', ...(data.customInstructions === undefined ? {} : { customInstructions: data.customInstructions }) }
       : data.type === 'set-model' ? { type: 'set_model', provider: data.provider, modelId: data.modelId }
       : data.type === 'set-thinking-level' ? { type: 'set_thinking_level', level: data.level }
       : data.type === 'switch-session' ? { type: 'switch_session', sessionPath: data.sessionPath }

@@ -10,6 +10,7 @@ export interface WorkerLaunch {
 export interface WorkerImage { data: string; mimeType: string }
 /** Pi 0.85.1 operations reserved for the explicit capability adapters. */
 export type RpcCapabilityOperation =
+  | { type: 'get-available-models' }
   | { type: 'get-tree' }
   | { type: 'get-fork-messages' }
   | { type: 'fork'; entryId: string }
