@@ -71,7 +71,11 @@ export function ProjectSidebar({
 }
 
 function TreeBranch({ nodes, onFork, depth = 0 }: { nodes: readonly ChatTreeNode[]; onFork(entryId: string): void; depth?: number }) {
-  return <ul className="workspace-session-branches" style={{ paddingLeft: `${12 + depth * 10}px` }}>{nodes.map(node => <li key={node.entryId}><Button variant="ghost" onClick={() => onFork(node.entryId)}>↗ {node.label || node.entryId}</Button>{node.children.length ? <TreeBranch nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}</li>)}</ul>;
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  return <ul className="workspace-session-branches" style={{ paddingLeft: `${12 + depth * 10}px` }}>{nodes.map(node => <li key={node.entryId}>
+    <span className="workspace-branch-row">{node.children.length > 0 && <Button variant="ghost" className="workspace-branch-collapse" aria-label={`${collapsed.has(node.entryId) ? '展开' : '折叠'}分支`} aria-expanded={!collapsed.has(node.entryId)} onClick={() => setCollapsed(current => { const next = new Set(current); next.has(node.entryId) ? next.delete(node.entryId) : next.add(node.entryId); return next; })}>{collapsed.has(node.entryId) ? '▸' : '▾'}</Button>}<Button variant="ghost" onClick={() => onFork(node.entryId)} title="从此历史节点创建分支">↗ {node.label || node.entryId}</Button></span>
+    {node.children.length && !collapsed.has(node.entryId) ? <TreeBranch nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}
+  </li>)}</ul>;
 }
 
 function sessionDescription(session: SessionInfo): string {
