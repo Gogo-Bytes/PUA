@@ -24,6 +24,7 @@ export function ProjectSidebar({
   onNewConversation, onSelectSession, onCloseSession, onRenameSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
   const [query, setQuery] = useState('');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const projects = groupProjects([...sessions], [...recentProjects]);
   const visible = projects.filter(project => `${project.name}\n${project.cwd}\n${project.sessions.map(session => session.title).join('\n')}`.toLowerCase().includes(query.trim().toLowerCase()));
   return <nav className="workspace-sidebar" aria-label="项目">
@@ -46,12 +47,13 @@ export function ProjectSidebar({
       <div className="workspace-tree-heading"><span>项目</span><IconButton icon="plus" label="打开项目并新建对话" variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation()}/></div>
       {visible.length === 0 ? <p className="ui-meta">暂无匹配项目</p> : visible.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line">
+          {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => setCollapsed(current => { const next = new Set(current); next.has(project.cwd) ? next.delete(project.cwd) : next.add(project.cwd); return next; })}>{collapsed.has(project.cwd) ? '▸' : '▾'}</Button>}
           <Tooltip content={project.cwd}><Button variant="ghost" className="workspace-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
             <Icon name="folder"/><span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
           </Button></Tooltip>
           <IconButton icon="plus" label={`在 ${project.name} 中新建对话`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
         </div>
-        {project.sessions.length > 0 && <ul className="workspace-session-list" aria-label={`${project.name} 的会话`}>
+        {project.sessions.length > 0 && !collapsed.has(project.cwd) && <ul className="workspace-session-list" aria-label={`${project.name} 的会话`}>
           {project.sessions.map(session => <li key={session.id} className="workspace-session-row" data-active={session.id === activeId || undefined}>
             <Icon name={session.kind === 'terminal' ? 'code' : 'chat'}/>
             <InlineRename value={session.title} selected={session.id === activeId} selectionRole="button" current={session.id === activeId} labels={{ hint: `${sessionDescription(session)} · 双击或 F2 重命名`, input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空', failed: '重命名失败' }} onSelect={() => onSelectSession(session.id)} onRename={title => onRenameSession(session.id, title)}/>
