@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
+import type { ChatTreeNode } from '../../../shared/ipc/conversation';
 import { Button, Icon, IconButton, InlineRename, Tooltip } from '../../ui';
 import { groupProjects } from './selection';
 
 interface ProjectSidebarProps {
-  sessions: readonly SessionInfo[];
+  sessions: readonly (SessionInfo & { sessionTree?: ChatTreeNode[] })[];
   recentProjects: readonly string[];
   activeId: string | null;
   activeProject?: string;
@@ -14,6 +15,7 @@ interface ProjectSidebarProps {
   onSelectSession(id: string): void;
   onCloseSession(id: string): void;
   onRenameSession(id: string, title: string): void | Promise<void>;
+  onForkSession?(id: string, entryId: string): void | Promise<void>;
   onSearch(): void;
   onSettings(): void;
 }
@@ -21,7 +23,7 @@ interface ProjectSidebarProps {
 /** Production navigation: projects own nested task rows; existing sessions are never represented as tabs. */
 export function ProjectSidebar({
   sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable,
-  onNewConversation, onSelectSession, onCloseSession, onRenameSession, onSearch, onSettings,
+  onNewConversation, onSelectSession, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
   const [query, setQuery] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -59,12 +61,17 @@ export function ProjectSidebar({
             <InlineRename value={session.title} selected={session.id === activeId} selectionRole="button" current={session.id === activeId} labels={{ hint: `${sessionDescription(session)} · 双击或 F2 重命名`, input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空', failed: '重命名失败' }} onSelect={() => onSelectSession(session.id)} onRename={title => onRenameSession(session.id, title)}/>
             {session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity" aria-label="处理中"/>}
             <IconButton className="workspace-session-close" icon="close" label={`关闭 ${session.title}`} variant="ghost" onClick={() => onCloseSession(session.id)}/>
+            {session.sessionTree?.length && onForkSession ? <TreeBranch nodes={session.sessionTree} onFork={entryId => void onForkSession(session.id, entryId)}/> : null}
           </li>)}
         </ul>}
       </section>)}
     </div>
     <div className="sidebar-bottom"><span className="ui-meta">{runtimeAvailable ? '本机 Pi' : '尚未连接 Pi'}</span></div>
   </nav>;
+}
+
+function TreeBranch({ nodes, onFork, depth = 0 }: { nodes: readonly ChatTreeNode[]; onFork(entryId: string): void; depth?: number }) {
+  return <ul className="workspace-session-branches" style={{ paddingLeft: `${12 + depth * 10}px` }}>{nodes.map(node => <li key={node.entryId}><Button variant="ghost" onClick={() => onFork(node.entryId)}>↗ {node.label || node.entryId}</Button>{node.children.length ? <TreeBranch nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}</li>)}</ul>;
 }
 
 function sessionDescription(session: SessionInfo): string {
