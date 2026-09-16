@@ -130,7 +130,7 @@ describe('production workspace navigation', () => {
     fireEvent.change(draft, { target: { value: '/revi' } }); fireEvent.keyDown(draft, { key: 'ArrowDown' });
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
     expect(screen.queryByLabelText('Pi 命令建议')).toBeNull(); expect(document.activeElement).toBe(draft); expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: '全部会话' })); fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    fireEvent.keyDown(screen.getByRole('button', { name: '会话 1' }), { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull(); expect(toggle.getAttribute('aria-expanded')).toBe('true');
     const closeButton = screen.getByRole('button', { name: '关闭变更面板' }); closeButton.focus(); fireEvent.keyDown(closeButton, { key: 'Escape' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false'); expect(document.activeElement).toBe(toggle);

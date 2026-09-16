@@ -12,7 +12,7 @@ import { Breadcrumbs, Button, Icon, ResizableWorkspace, UIProvider } from '../ui
 
 export function App() {
   const panelToggle = useRef<HTMLButtonElement>(null);
-  const closeReview = () => { panelToggle.current?.focus(); setReviewOpen(false); };
+  const closeReview = () => { setReviewOpen(false); setTimeout(() => panelToggle.current?.focus(), 0); };
   const [reviewOpen, setReviewOpen] = useState(true);
   const { desktopPresentation, workspace, palette, input, launch, sessionActions, navigation } = useWorkspaceComposition(() => {});
   const { boot, theme, error } = desktopPresentation;

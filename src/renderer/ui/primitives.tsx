@@ -1,11 +1,11 @@
-import { cloneElement, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode, type KeyboardEvent, type RefObject } from 'react';
+import { cloneElement, forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode, type KeyboardEvent, type RefObject } from 'react';
 import { Icon } from './Icon';
 import { Reveal, gsap, useGSAP, motionTokens } from './motion';
 import { useMotionScale } from './theme';
 export { Icon };
-export function Button({ variant = 'secondary', busy = false, className = '', children, disabled, ...props }: ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; busy?: boolean }) {
-  return <button type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</button>;
-}
+export const Button = forwardRef<HTMLButtonElement, ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; busy?: boolean }>(function Button({ variant = 'secondary', busy = false, className = '', children, disabled, ...props }, ref) {
+  return <button ref={ref} type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</button>;
+});
 export function IconButton({ label, icon, ...props }: Omit<Parameters<typeof Button>[0], 'children'> & { label: string; icon: Parameters<typeof Icon>[0]['name'] }) {
   return <Button {...props} className={`ui-icon-button ${props.className ?? ''}`} aria-label={label}><Icon name={icon}/></Button>;
 }
