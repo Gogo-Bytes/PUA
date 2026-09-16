@@ -97,7 +97,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await mount(); const pending = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
     vi.mocked(desktop.createSession).mockReturnValueOnce(pending.promise);
     fireEvent.click(screen.getByRole('button', { name: '新建会话' })); await flush();
-    expect(screen.getByRole('button', { name: '新建会话' })).toBeDisabled();
+    expect((screen.getByRole('button', { name: '新建会话' }) as HTMLButtonElement).disabled).toBe(true);
     expect(desktop.createSession).toHaveBeenCalledTimes(2);
     await act(async () => pending.resolve({ id: 'late', title: 'Late', cwd: '/one', kind: 'chat', processStatus: 'running', activity: 'idle' }));
     expect(screen.queryByRole('dialog')).toBeNull();
