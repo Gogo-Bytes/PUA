@@ -47,7 +47,7 @@ it('real registrar -> source preload -> client -> App/ChatPane retains submitted
   await act(async () => pending.reject(new DesktopApplicationError('SEND_PENDING', '发送未确认')));
   expect(await screen.findByText('Error: 发送未确认')).toBeTruthy();
   expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
-  fireEvent.click(screen.getByRole('tab', { name: /会话 1/ }));
+  fireEvent.click(screen.getByRole('button', { name: /会话 1/ }));
   expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('submitted draft'); expect(screen.getByText('submitted.txt')).toBeTruthy();
   expect(h.capabilities.session.start).toHaveBeenCalledTimes(2);
   // Real Virtuoso stays bounded rather than replacing virtualization with a test-only full map.
@@ -58,7 +58,7 @@ it('real registrar -> source preload -> client -> App/ChatPane retains submitted
   expect(screen.queryByText('submitted.txt')).toBeNull();
   act(() => h.emit({ type: 'chat-editor-text', id: 's2', text: 'background draft' }));
   expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('');
-  fireEvent.click(screen.getByRole('tab', { name: /会话 2/ }));
+  fireEvent.click(screen.getByRole('button', { name: /会话 2/ }));
   expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('background draft');
   view.unmount(); expect(h.listeners.size).toBe(0);
 });
