@@ -38,22 +38,28 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView; });
 
 async function createSession() {
+  const started = vi.mocked(desktop.startSession).mock.calls.length;
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+  await waitFor(() => expect(desktop.startSession).toHaveBeenCalledTimes(started + 1));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 }
 const selectProject = (path: string) => fireEvent.click(within(screen.getByRole('navigation', { name: '项目' })).getByTitle(path));
 
 describe('production workspace navigation', () => {
-  it('keeps actual ChatPane draft, attachments and stream subscriptions across tabs/projects; closes through host', async () => {
+  it('keeps actual ChatPane draft, attachments and stream subscriptions across sidebar sessions/projects; closes through host', async () => {
     const { container } = render(<App />);
-    await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    await screen.findByTitle('/one/app'); selectProject('/one/app');
+    await screen.findByRole('button', { name: '会话 1' });
     const firstPane = container.querySelector('[data-session-id="s1"]');
     const firstDraft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(firstDraft, { target: { value: 'unfinished first' } });
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
     await createSession(); fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: 'second draft' } });
-    selectProject('/two/app'); expect(screen.queryByText(/此项目还没有打开的会话/)).toBeNull(); await createSession();
+    selectProject('/two/app');
+    await screen.findByRole('button', { name: '会话 3' });
+    expect(screen.queryByRole('dialog')).toBeNull();
     emit({ id: 's1', type: 'chat-message-start', message: { id: 'm1', role: 'assistant', blocks: [{ type: 'text', text: 'background reply' }], timestamp: 1 } });
-    selectProject('/one/app'); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
+    fireEvent.click(screen.getByRole('button', { name: '会话 2' }));
+    expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
     fireEvent.click(screen.getByRole('button', { name: '会话 1' }));
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(firstDraft);
     expect((firstDraft as HTMLTextAreaElement).value).toBe('unfinished first'); expect(screen.getByText('context.txt')).toBeTruthy(); expect(screen.getByText('background reply')).toBeTruthy();
@@ -64,35 +70,47 @@ describe('production workspace navigation', () => {
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
     fireEvent.click(screen.getByRole('button', { name: '关闭 会话 1' })); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
-    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 2' })); await waitFor(() => expect(screen.queryByText(/此项目还没有打开的会话/)).toBeNull());
-    expect(screen.queryByRole('tab')).toBeNull(); expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 2' }));
+    await waitFor(() => expect(container.querySelector('[data-session-id="s2"]')).toBeNull());
+    expect(screen.queryByRole('button', { name: '会话 2' })).toBeNull();
+    expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
     expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
-  it('supports overflow keyboard/Escape focus return and tab keyboard navigation', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
-    const trigger = screen.getByRole('button', { name: '全部会话' }); fireEvent.click(trigger);
-    expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: '会话 2' }));
-    fireEvent.keyDown(document.activeElement!, { key: 'Home' }); expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: '会话 1' }));
-    fireEvent.keyDown(document.activeElement!, { key: 'Escape' }); expect(screen.queryByRole('menu')).toBeNull(); expect(document.activeElement).toBe(trigger);
-    fireEvent.click(screen.getByRole('button', { name: '会话 1' })); expect(screen.getByRole('button', { name: '会话 1' }).getAttribute('aria-current')).toBe('page');
+  it('collapses project children without unmounting the active conversation or losing its draft', async () => {
+    const { container } = render(<App />);
+    await screen.findByTitle('/one/app'); selectProject('/one/app');
+    await screen.findByRole('button', { name: '会话 1' }); await createSession();
+    const pane = container.querySelector('[data-session-id="s2"]');
+    const draft = screen.getByRole('textbox', { name: '发送消息' });
+    fireEvent.change(draft, { target: { value: 'retained while collapsed' } });
+    const collapse = screen.getByRole('button', { name: '折叠 app' });
+    collapse.focus(); fireEvent.click(collapse);
+    expect(screen.queryByRole('button', { name: '会话 2' })).toBeNull();
+    expect(container.querySelector('[data-session-id="s2"]')).toBe(pane);
+    expect((draft as HTMLTextAreaElement).value).toBe('retained while collapsed');
+    expect(document.activeElement).toBe(collapse);
+    fireEvent.click(screen.getByRole('button', { name: '展开 app' }));
+    expect(screen.getByRole('button', { name: '会话 2' }).getAttribute('aria-current')).toBe('page');
+    fireEvent.click(screen.getByRole('button', { name: '会话 1' }));
+    expect(screen.getByRole('button', { name: '会话 1' }).getAttribute('aria-current')).toBe('page');
     expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
-  it('scrolls overflow-selected tabs nearest without stealing focus from the menu trigger (no jsdom layout claim)', async () => {
-    const scrollIntoView = vi.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scrollIntoView });
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
-    scrollIntoView.mockClear();
-    const trigger = screen.getByRole('button', { name: '全部会话' }); fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole('menuitemradio', { name: '会话 1' }));
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
-    expect(scrollIntoView.mock.contexts.at(-1)).toBe(screen.getByRole('tab', { name: '会话 1' }));
-    expect(document.activeElement).toBe(trigger); expect(screen.queryByRole('menu')).toBeNull();
-    // An already active tab may also have been manually scrolled out of view.
-    scrollIntoView.mockClear(); fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole('menuitemradio', { name: '会话 1' }));
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
-    expect(scrollIntoView.mock.contexts.at(-1)).toBe(screen.getByRole('tab', { name: '会话 1' }));
-    expect(document.activeElement).toBe(trigger); expect(screen.queryByRole('menu')).toBeNull();
+  it('filters sidebar session names without changing selection or disposing hidden panes', async () => {
+    const { container } = render(<App />);
+    await screen.findByTitle('/one/app'); selectProject('/one/app');
+    await screen.findByRole('button', { name: '会话 1' });
+    selectProject('/two/app'); await screen.findByRole('button', { name: '会话 2' });
+    const pane = container.querySelector('[data-session-id="s2"]');
+    const draft = screen.getByRole('textbox', { name: '发送消息' });
+    const filter = screen.getByPlaceholderText('查找项目或会话…');
+    fireEvent.change(filter, { target: { value: '会话 1' } });
+    expect(screen.getByRole('button', { name: '会话 1' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '会话 2' })).toBeNull();
+    expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(draft);
+    expect(container.querySelector('[data-session-id="s2"]')).toBe(pane);
+    fireEvent.change(filter, { target: { value: '' } });
+    expect(screen.getByRole('button', { name: '会话 2' }).getAttribute('aria-current')).toBe('page');
+    expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
   it('does not consume closed-inspector Escape or editable/IME/local-menu Escape while open', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
