@@ -124,7 +124,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await create('terminal'); expect(screen.queryByRole('textbox', { name: '搜索终端历史' })).toBeNull(); fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '关闭 Session 2' })); await flush(); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
     terminal.trace = []; fireEvent.click(within(search().closest('form')!).getByRole('button', { name: '×' })); expect(terminal.trace).toEqual(['clear', 'focus']); expect(screen.queryByRole('textbox', { name: '搜索终端历史' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); fireEvent.change(search(), { target: { value: 'edited' } }); expect(screen.queryByText('未找到')).toBeNull(); expect(desktop.startSession).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); fireEvent.change(search(), { target: { value: 'edited' } }); expect(screen.queryByText('未找到')).toBeNull(); expect(desktop.startSession).toHaveBeenCalledTimes(4);
   });
   it.each(['chat', 'terminal'] as const)('Git %s reference preserves palette split, newline and narrow textarea focus without toggle focus', async kind => {
     await mount(kind); const draft = kind === 'chat' ? screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement : undefined;
