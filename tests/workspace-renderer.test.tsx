@@ -54,7 +54,7 @@ describe('production workspace navigation', () => {
     selectProject('/two/app'); expect(screen.queryByText(/此项目还没有打开的会话/)).toBeNull(); await createSession();
     emit({ id: 's1', type: 'chat-message-start', message: { id: 'm1', role: 'assistant', blocks: [{ type: 'text', text: 'background reply' }], timestamp: 1 } });
     selectProject('/one/app'); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
-    fireEvent.click(screen.getByRole('tab', { name: '会话 1' }));
+    fireEvent.click(screen.getByRole('button', { name: '会话 1' }));
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(firstDraft);
     expect((firstDraft as HTMLTextAreaElement).value).toBe('unfinished first'); expect(screen.getByText('context.txt')).toBeTruthy(); expect(screen.getByText('background reply')).toBeTruthy();
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
@@ -74,7 +74,7 @@ describe('production workspace navigation', () => {
     expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: '会话 2' }));
     fireEvent.keyDown(document.activeElement!, { key: 'Home' }); expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: '会话 1' }));
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' }); expect(screen.queryByRole('menu')).toBeNull(); expect(document.activeElement).toBe(trigger);
-    fireEvent.keyDown(screen.getByRole('tab', { name: '会话 2' }), { key: 'ArrowLeft' }); expect(screen.getByRole('tab', { name: '会话 1' }).getAttribute('aria-selected')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: '会话 1' })); expect(screen.getByRole('button', { name: '会话 1' }).getAttribute('aria-current')).toBe('page');
     expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
   it('scrolls overflow-selected tabs nearest without stealing focus from the menu trigger (no jsdom layout claim)', async () => {
@@ -170,7 +170,7 @@ function deferred<T>() {
   const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-const selected = (title: string) => expect(screen.getByRole('tab', { name: title }).getAttribute('aria-selected')).toBe('true');
+const selected = (title: string) => expect(screen.getByRole('button', { name: title }).getAttribute('aria-current')).toBe('page');
 const closeTab = (title: string) => fireEvent.click(screen.getByRole('button', { name: `关闭 ${title}` }));
 async function seedProjects() {
   const view = render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
@@ -187,7 +187,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     const { container, unmount } = await seedProjects(); const pending = deferred<boolean>();
     vi.mocked(desktop.closeSession).mockReturnValueOnce(pending.promise);
     closeTab('会话 3'); expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
-    if (scenario === 'remembered') fireEvent.click(screen.getByRole('tab', { name: '会话 1' }));
+    if (scenario === 'remembered') fireEvent.click(screen.getByRole('button', { name: '会话 1' }));
     selectProject(scenario === 'empty' ? '/empty' : '/two/app');
     await act(async () => pending.resolve(true));
     expect(container.querySelector('[data-session-id="s3"]')).toBeNull();
@@ -259,9 +259,9 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     expect(screen.getByText('b.txt')).toBeTruthy(); expect(within(container.querySelector('[data-session-id="s2"]') as HTMLElement).queryByText('only A background')).toBeNull();
     selectProject('/one/app'); selected('A renamed'); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(a); expect(a.value).toBe('A newer');
     expect(screen.queryByText('context.txt')).toBeNull(); expect(screen.getByText('only A background')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'A renamed' }).title).toContain('处理中');
-    emit({ id: 's1', type: 'chat-state', state: { activity: 'idle' } }); expect(screen.getByRole('tab', { name: 'A renamed' }).title).toContain('就绪');
-    emit({ id: 's1', type: 'exit', exitCode: 7 }); expect(screen.getByRole('tab', { name: 'A renamed' }).title).toContain('已退出'); expect(a.value).toBe('A newer');
+    expect(screen.getByRole('button', { name: 'A renamed' }).title).toContain('处理中');
+    emit({ id: 's1', type: 'chat-state', state: { activity: 'idle' } }); expect(screen.getByRole('button', { name: 'A renamed' }).title).toContain('就绪');
+    emit({ id: 's1', type: 'exit', exitCode: 7 }); expect(screen.getByRole('button', { name: 'A renamed' }).title).toContain('已退出'); expect(a.value).toBe('A newer');
     closeTab('A renamed'); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
     expect(screen.queryByRole('tab')).toBeNull(); selectProject('/two/app'); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(b); expect(b.value).toBe('B newer'); expect(screen.getByText('b.txt')).toBeTruthy();
     expect(desktop.startSession).toHaveBeenCalledTimes(2); expect(listeners.size).toBe(2); unmount(); expect(listeners.size).toBe(0);
