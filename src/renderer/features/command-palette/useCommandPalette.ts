@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ChatCommand, SessionKind } from '../../../shared/ipc/conversation';
 
 const terminalCommands = [
@@ -22,9 +22,9 @@ export function useCommandPalette(active: { id: string; kind: SessionKind } | un
   const onCommands = useCallback((id: string, commands: ChatCommand[]) => {
     setChatCommands(current => current[id] === commands ? current : { ...current, [id]: commands });
   }, []);
-  const commands = active?.kind === 'chat'
+  const commands = useMemo(() => active?.kind === 'chat'
     ? (chatCommands[active.id] ?? []).map(command => ({ ...command, label: `/${command.name}` }))
-    : terminalCommands.map(command => ({ ...command, source: 'terminal' as const }));
+    : terminalCommands.map(command => ({ ...command, source: 'terminal' as const })), [active?.id, active?.kind, active?.kind === 'chat' ? chatCommands[active.id] : undefined]);
 
   return { isOpen, query, setQuery, toggle, close, openFromSidebar, dismissAfterInsert, onCommands, commands, kind: active?.kind };
 }
