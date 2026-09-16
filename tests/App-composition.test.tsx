@@ -105,10 +105,10 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await act(async () => first.resolve({ ...boot, preferences: { ...boot.preferences, theme: 'light', recentProjects: ['/first'] } })); expect(document.documentElement.dataset.theme).toBe('light'); expect(screen.getByTitle('/first')).toBeTruthy();
   });
   it('rename keeps the edited tab identity when selection changes, and terminal rename never calls the host', async () => {
-    await mount(); await create(); fireEvent.keyDown(screen.getByRole('button', { selected: true, name: /Session/ }), { key: 'F2' });
+    await mount(); await create(); fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /Session/ }), { key: 'F2' });
     fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Submitted' } }); fireEvent.click(screen.getByRole('button', { name: 'Session 1' }));
     fireEvent.click(screen.getByRole('button', { name: '保存' })); await flush(); expect(desktop.renameChatSession).toHaveBeenCalledExactlyOnceWith('s2', 'Submitted');
-    expect(screen.getByRole('button', { name: 'Submitted' })).toBeTruthy(); await create('terminal'); fireEvent.keyDown(screen.getByRole('button', { selected: true, name: /Session/ }), { key: 'F2' });
+    expect(screen.getByRole('button', { name: 'Submitted' })).toBeTruthy(); await create('terminal'); fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /Session/ }), { key: 'F2' });
     fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Terminal local' } }); fireEvent.click(screen.getByRole('button', { name: '保存' })); await flush();
     expect(screen.getByRole('button', { name: 'Terminal local' })).toBeTruthy(); expect(desktop.renameChatSession).toHaveBeenCalledTimes(1);
   });
