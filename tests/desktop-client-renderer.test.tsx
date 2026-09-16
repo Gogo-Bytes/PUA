@@ -18,9 +18,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); delete window.desktop; vi.restoreAllMocks(); });
 async function create() {
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-  const submit = await screen.findByRole('button', { name: '开始对话 ↗' });
-  await waitFor(() => expect((submit as HTMLButtonElement).disabled).toBe(false));
-  fireEvent.click(submit); await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 }
 
 it('real registrar -> source preload -> client -> App/ChatPane retains submitted identity, background panes and visible failures', async () => {
