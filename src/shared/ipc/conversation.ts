@@ -47,7 +47,7 @@ export interface ChatRuntimeState {
   statuses: Record<string, string>;
   widgets: ChatWidget[];
 }
-export interface ChatModel { provider: string; id: string; name?: string; reasoning?: string[] }
+export interface ChatModel { provider: string; id: string; name?: string; reasoning?: boolean }
 export interface ChatSnapshot extends ChatRuntimeState {
   messages: ChatMessage[];
   commands: ChatCommand[];

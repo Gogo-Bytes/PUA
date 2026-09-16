@@ -1,7 +1,7 @@
 import type { Attachment, AttachmentMetadata, AttachmentSourceId, AttachmentToken, ExtensionResponse, RuntimeSend } from './domain/conversation.js';
 import type { ConversationQueue } from './domain/runtime.js';
 import type { ConversationObject } from './domain/stream.js';
-import type { ChatModel } from '../../shared/ipc/conversation.js';
+export interface ConversationModel { provider: string; id: string; name?: string; reasoning?: boolean }
 
 /** Worker operations acknowledge once; unknown acceptance must never be replayed. */
 export interface RuntimeOperationsPort {
@@ -16,7 +16,7 @@ export interface DialogClockPort {
 }
 
 export interface ConversationRuntimePort {
-  getAvailableModels(id: string): Promise<ChatModel[]>;
+  getAvailableModels(id: string): Promise<ConversationModel[]>;
   getAvailableThinkingLevels(id: string): Promise<string[]>;
   setModel(id: string, provider: string, modelId: string): Promise<void>;
   setThinkingLevel(id: string, level: string): Promise<void>;
