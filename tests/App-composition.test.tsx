@@ -41,7 +41,7 @@ const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) =>
 };
 async function create(kind: 'chat' | 'terminal' = 'chat') {
   if (kind === 'chat') fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-  else { fireEvent.click(screen.getByRole('button', { name: '兼容终端' })); const button = screen.getByRole('button', { name: '打开兼容终端 ↗' }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); }
+  else { if (!screen.queryByRole('button', { name: '兼容终端' })) { fireEvent.click(screen.getByRole('button', { name: '新建会话' })); await flush(); } fireEvent.click(screen.getByRole('button', { name: '兼容终端' })); const button = screen.getByRole('button', { name: '打开兼容终端 ↗' }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); }
   await flush();
 }
 async function mount(kind: 'chat' | 'terminal' = 'chat') {
