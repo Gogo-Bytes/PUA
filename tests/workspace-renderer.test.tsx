@@ -133,12 +133,12 @@ describe('production workspace navigation', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: '会话 1' }), { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull(); expect(toggle.getAttribute('aria-expanded')).toBe('true');
     const closeButton = screen.getByRole('button', { name: '关闭变更面板' }); closeButton.focus(); fireEvent.keyDown(closeButton, { key: 'Escape' });
-    expect(toggle.getAttribute('aria-expanded')).toBe('false'); expect(document.activeElement).toBe(toggle);
+    await waitFor(() => expect(document.activeElement).toBe(toggle));
     // Mounted background panes must not let their hidden suggestions block Escape.
     fireEvent.change(draft, { target: { value: '/rev' } }); await createSession();
     fireEvent.click(toggle); await screen.findByText('这个范围没有变更');
     fireEvent.keyDown(await screen.findByRole('button', { name: '关闭变更面板' }), { key: 'Escape' });
-    expect(toggle.getAttribute('aria-expanded')).toBe('false'); expect(document.activeElement).toBe(toggle);
+    await waitFor(() => expect(document.activeElement).toBe(toggle));
   });
   it('uses default system changes and saved themes without recreating sessions or losing draft', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();

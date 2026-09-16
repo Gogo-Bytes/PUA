@@ -93,7 +93,7 @@ export function ResizableWorkspace({ left, right, children, rightOpen, onRightOp
     const target = event.target as Element;
     if (target.closest('input, textarea, select, [contenteditable], dialog, [role="menu"]')) return;
     if (!rightRef.current?.contains(target) && target !== toggles.current.right && target !== (rightToggleRef && 'current' in rightToggleRef ? rightToggleRef.current : null)) return;
-    event.preventDefault(); toggles.current.right?.focus(); toggle('right', false);
+    event.preventDefault(); (toggles.current.right ?? (rightToggleRef && 'current' in rightToggleRef ? rightToggleRef.current : null))?.focus(); toggle('right', false);
   }}>
     {!hideToolbar && <div className="ui-workspace-toolbar">{(['left', 'right'] as const).map(side => <Button ref={node => { toggles.current[side] = node; if (side === 'right') { if (typeof rightToggleRef === 'function') rightToggleRef(node); else if (rightToggleRef) rightToggleRef.current = node; } }} key={side} variant="ghost" aria-expanded={visible[side]} aria-disabled={!visible[side] && !canShow(side) || undefined} title={!visible[side] ? 'Saved width returns when the container has enough room.' : undefined} onClick={() => { if (!visible[side] && !canShow(side)) return; stopDrag(); toggle(side, !visible[side]); }}><Icon name="panel"/>{visible[side] ? text.hide : text.show} {text[side]}</Button>)}{motionControls && <details className="ui-workspace-test-controls"><summary>测试控制 · 动效</summary><Button variant="ghost" onClick={() => setReplayCount(count => count + 1)}>Replay motion</Button></details>}{toolbarActions}<span className="ui-meta">{containerWidth < 736 ? text.compact : text.hint}</span></div>}
     <div ref={grid} className="ui-workspace-grid">
