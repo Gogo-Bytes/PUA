@@ -312,40 +312,14 @@ describe('Workspace edge ownership with actual App', () => {
   });
 });
 
-describe('Session launch through real App, dialog and controller with Fake Desktop', () => {
-  it('opens project → chooses → inspects → chooses trust → creates → adds/selects → closes → refreshes bootstrap', async () => {
-    const picking = deferred<string | null>(), inspecting = deferred<Awaited<ReturnType<DesktopAPI['inspectProjectResources']>>>();
-    const creating = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
-    desktop.chooseDirectory = vi.fn().mockReturnValue(picking.promise);
-    vi.mocked(desktop.inspectProjectResources).mockReturnValue(inspecting.promise);
-    vi.mocked(desktop.createSession).mockReturnValue(creating.promise);
+describe('Session launch through real App and direct sidebar controller', () => {
+  it('opens a remembered project and creates a chat directly without a dialog', async () => {
+    vi.mocked(desktop.createSession).mockResolvedValue({ id: 'chosen', title: 'Chosen session', cwd: '/one/app', kind: 'chat', processStatus: 'running', activity: 'idle' });
     const { container } = render(<App />); await screen.findByTitle('/one/app');
-    const opener = screen.getAllByRole('button', { name: '打开项目' })[0]; opener.focus(); fireEvent.click(opener);
-    const input = screen.getByRole('textbox', { name: '项目文件夹' }) as HTMLInputElement;
-    expect(input.value).toBe('/one/app'); expect(document.activeElement).toBe(input);
-    fireEvent.click(screen.getByRole('button', { name: '浏览…' })); await act(async () => picking.resolve('/chosen'));
-    await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalledWith('/chosen'));
-    expect((screen.getByRole('button', { name: '开始对话 ↗' }) as HTMLButtonElement).disabled).toBe(true);
-    await act(async () => inspecting.resolve({ hasResources: true, paths: ['/chosen/.pi'] }));
-    fireEvent.click(screen.getByRole('radio', { name: '本次信任并加载项目资源' }));
-    fireEvent.click(screen.getByRole('button', { name: '开始对话 ↗' }));
-    expect(desktop.createSession).toHaveBeenCalledExactlyOnceWith({ cwd: '/chosen', kind: 'chat', startMode: 'new', projectTrust: 'approve', cols: 100, rows: 30 });
-    expect(screen.queryByRole('tab')).toBeNull(); expect(desktop.bootstrap).toHaveBeenCalledTimes(1);
-    const refresh = deferred<Bootstrap>();
-    vi.mocked(desktop.bootstrap).mockImplementationOnce(() => {
-      // React's enqueue is not a committed DOM update inside this synchronous continuation.
-      expect(desktop.createSession).toHaveBeenCalledTimes(1);
-      return refresh.promise;
-    });
-    await act(async () => creating.resolve({ id: 'chosen', title: 'Chosen session', cwd: '/chosen', kind: 'chat', processStatus: 'running', activity: 'idle' }));
-    selected('Chosen session'); expect(screen.queryByRole('dialog')).toBeNull(); expect(desktop.bootstrap).toHaveBeenCalledTimes(2);
-    expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy(); expect(document.activeElement).toBe(opener);
-    await act(async () => refresh.reject(new Error('refresh failed')));
-    expect(screen.getByRole('alert').textContent).toContain('Error: refresh failed'); selected('Chosen session');
-    fireEvent.click(screen.getByRole('button', { name: '兼容终端' }));
-    expect((screen.getByRole('textbox', { name: '项目文件夹' }) as HTMLInputElement).value).toBe('/chosen');
-    expect((screen.getByRole('radio', { name: /^兼容终端/ }) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByRole('radio', { name: /^新会话/ }) as HTMLInputElement).checked).toBe(true);
+    const opener = screen.getByRole('button', { name: '在 app 中新建对话' }); opener.focus(); fireEvent.click(opener);
+    await waitFor(() => expect(desktop.createSession).toHaveBeenCalledWith(expect.objectContaining({ cwd: '/one/app', kind: 'chat', startMode: 'new' })));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy();
   });
   it('keeps home/project/continue defaults and settings navigation in App', async () => {
     boot = { ...boot, preferences: { ...boot.preferences, recentProjects: [] }, runtime: null };
