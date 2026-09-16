@@ -102,6 +102,7 @@ export function isDesktopSessionEvent(v: unknown): v is import('./conversation.j
   try {
     if (!record(v) || !text(v.id)) return false;
     switch (v.type) {
+      case 'chat-fork-metadata': return chatTree(v.sessionTree) && Array.isArray(v.entries) && v.entries.every(entry => record(entry) && text(entry.entryId) && text(entry.text));
       case 'terminal-data': return text(v.data);
       case 'session-info': return optional(v.title, text) && optional(v.processStatus, processStatus) && optional(v.activity, activity);
       case 'chat-state': return state(v.state);

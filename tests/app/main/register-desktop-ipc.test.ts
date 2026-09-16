@@ -13,13 +13,15 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   savePreferences: [initial], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
   forkChatSession: ['id', 'entry'],
+  getChatAvailableModels: ['id'], getChatThinkingLevels: ['id'],
+  setChatModel: ['id', 'provider', 'model'], setChatThinkingLevel: ['id', 'high'],
   sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
   write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
   openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
 };
 import { desktopIPCFake as harness } from '../../desktop-ipc-fake';
 describe('real registerDesktopIPC with Fake Electron and closed business dependencies', () => {
-  it('registers each original 21 invoke and 3 send exactly once and calls every real handler', async () => {
+  it('registers every declared invoke and send exactly once and calls every real handler', async () => {
     const h = harness(); expect([...h.invokes.keys()].sort()).toEqual(Object.values(invokeChannels).sort()); expect([...h.sends.keys()].sort()).toEqual(Object.values(sendChannels).sort());
     const results: Record<string, unknown> = {};
     for (const method of Object.keys(invokeChannels) as (keyof typeof invokeChannels)[]) results[method] = await h.call(method, ...samples[method]);
@@ -33,6 +35,10 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.capabilities.session.start).toHaveBeenCalledExactlyOnceWith('id'); expect(h.capabilities.session.close).toHaveBeenCalledExactlyOnceWith('id'); expect(results.closeSession).toBe(true);
     expect(h.capabilities.conversation.send).toHaveBeenCalledExactlyOnceWith('id', { text: 'message', attachmentIds: [], delivery: 'prompt' });
     expect(h.capabilities.conversation.stop).toHaveBeenCalledExactlyOnceWith('id'); expect(h.capabilities.conversation.respond).toHaveBeenCalledExactlyOnceWith('id', { id: 'request', confirmed: true });
+    expect(h.capabilities.conversation.getAvailableModels).toHaveBeenCalledExactlyOnceWith('id');
+    expect(h.capabilities.conversation.getAvailableThinkingLevels).toHaveBeenCalledExactlyOnceWith('id');
+    expect(h.capabilities.conversation.setModel).toHaveBeenCalledExactlyOnceWith('id', 'provider', 'model');
+    expect(h.capabilities.conversation.setThinkingLevel).toHaveBeenCalledExactlyOnceWith('id', 'high');
     expect(h.capabilities.conversation.removeAttachment).toHaveBeenCalledExactlyOnceWith('id', 'token'); expect(h.capabilities.conversation.rename).toHaveBeenCalledExactlyOnceWith('id', 'title');
     expect(h.capabilities.terminal.write).toHaveBeenCalledExactlyOnceWith('id', '\0\x1b[31m\r\n'); expect(h.capabilities.terminal.resize).toHaveBeenCalledExactlyOnceWith('id', 100, 30); expect(h.capabilities.terminal.acknowledge).toHaveBeenCalledExactlyOnceWith('id', 1);
     expect(h.shell.openExternal).toHaveBeenCalledExactlyOnceWith('https://example.com/'); expect(h.shell.openPath).toHaveBeenCalledExactlyOnceWith('/fake/project');

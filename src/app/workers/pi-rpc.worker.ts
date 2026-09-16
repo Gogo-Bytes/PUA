@@ -209,14 +209,18 @@ function handleExtensionUI(value: Record<string, unknown>): boolean {
   return true;
 }
 
+let forkMetadataGeneration = 0;
 async function refreshForkMetadata(): Promise<void> {
   if (closing) return;
+  const generation = ++forkMetadataGeneration;
   try {
-    const [stateValue, messagesValue, commandsValue, forkValue, treeValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000), send({ type: 'get_tree' }, 15_000)]);
-    const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
-    stream.reset();
-    const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
-    event({ type: 'chat-snapshot', snapshot: { ...state, commands: commandsDTO(commandsValue.commands), messages: withForkEntries(history, forkValue.messages).map(messageDTO), sessionTree: treeDTO(treeValue.tree) } });
+    const [forkValue, treeValue] = await Promise.all([send({ type: 'get_fork_messages' }, 15_000), send({ type: 'get_tree' }, 15_000)]);
+    if (closing || generation !== forkMetadataGeneration) return;
+    const entries = Array.isArray(forkValue.messages) ? forkValue.messages.flatMap(item =>
+      isRecord(item) && typeof item.entryId === 'string' && typeof item.text === 'string'
+        ? [{ entryId: item.entryId, text: item.text }] : []) : [];
+    // Enrichment must never replace live transcript identities or reset stream/tool correlation.
+    event({ type: 'chat-fork-metadata', entries, sessionTree: treeDTO(treeValue.tree) });
   } catch (error) {
     diagnostics.append(`Fork metadata refresh failed: ${String(error)}\n`);
   }
@@ -321,6 +325,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
     return;
   }
   if (data.type === 'fork') {
+    ++forkMetadataGeneration;
     void send({ type: 'fork', entryId: data.entryId })
       .then(async result => {
         if (!result.cancelled && !closing) {

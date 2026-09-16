@@ -151,6 +151,9 @@ it.each([false, true])('source-contract replay (diagnostics=%s): send -> final -
     worker.incoming({ type: 'message_end', message: assistant });
     worker.incoming({ type: 'agent_end', messages: [assistant] }); worker.incoming({ type: 'agent_settled' });
     await turns();
+    worker.response('get_fork_messages', { messages: [{ entryId: 'entry-user', text: 'acceptance request' }] });
+    worker.response('get_tree', { tree: [] });
+    await turns();
   });
   const final = worker.wire.filter(value => value.type === 'event' && value.event.type === 'chat-message-end' && value.event.message.role === 'assistant');
   expect(final, 'worker final with assistant body').toHaveLength(1);

@@ -101,6 +101,7 @@ function mappedEvent(value: unknown, sessionId: string): RpcWorkerEvent | undefi
   if (!record(value) || value.id !== sessionId) return;
   let valid = false;
   switch (value.type) {
+    case 'chat-fork-metadata': valid = tree(value.sessionTree) && Array.isArray(value.entries) && value.entries.every(entry => record(entry) && text(entry.entryId) && text(entry.text)); break;
     case 'session-info': valid = optional(value.title, text) && optional(value.activity, activity) && optional(value.processStatus, x => oneOf(x, ['starting', 'running', 'exited'])); break;
     case 'chat-state': valid = record(value.state) && optional(value.state.activity, activity) && optional(value.state.queue, queue) && optional(value.state.statuses, dictionary) && optional(value.state.widgets, Array.isArray); break;
     case 'chat-snapshot': valid = record(value.snapshot) && activity(value.snapshot.activity) && queue(value.snapshot.queue) && dictionary(value.snapshot.statuses) && Array.isArray(value.snapshot.widgets) && Array.isArray(value.snapshot.messages) && Array.isArray(value.snapshot.commands) && optional(value.snapshot.sessionTree, tree); break;

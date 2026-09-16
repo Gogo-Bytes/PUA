@@ -42,6 +42,10 @@ export function fakeCapabilities() {
       closeAll: vi.fn<WindowContext['capabilities']['session']['closeAll']>().mockResolvedValue(success),
     },
     conversation: {
+      getAvailableModels: vi.fn<WindowContext['capabilities']['conversation']['getAvailableModels']>().mockResolvedValue([]),
+      getAvailableThinkingLevels: vi.fn<WindowContext['capabilities']['conversation']['getAvailableThinkingLevels']>().mockResolvedValue([]),
+      setModel: vi.fn<WindowContext['capabilities']['conversation']['setModel']>().mockResolvedValue(undefined),
+      setThinkingLevel: vi.fn<WindowContext['capabilities']['conversation']['setThinkingLevel']>().mockResolvedValue(undefined),
       send: vi.fn<WindowContext['capabilities']['conversation']['send']>().mockResolvedValue(undefined),
       stop: vi.fn<WindowContext['capabilities']['conversation']['stop']>().mockResolvedValue(undefined),
       respond: vi.fn<WindowContext['capabilities']['conversation']['respond']>().mockResolvedValue(undefined),

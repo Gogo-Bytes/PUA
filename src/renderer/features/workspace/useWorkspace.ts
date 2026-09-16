@@ -20,6 +20,8 @@ export function useWorkspace(
     session.id === id ? { ...session, processStatus: 'exited', activity: 'idle', exitCode } : session));
 
   useEffect(() => desktop?.onSessionEvent(event => {
+    if (event.type === 'chat-fork-metadata') updateSessions(sessions => sessions.map(session =>
+      session.id === event.id && session.kind === 'chat' ? { ...session, sessionTree: event.sessionTree } : session));
     if (event.type === 'chat-snapshot') updateSessions(sessions => sessions.map(session =>
       session.id === event.id && session.kind === 'chat'
         ? { ...session, activity: event.snapshot.activity, sessionTree: event.snapshot.sessionTree ?? session.sessionTree }

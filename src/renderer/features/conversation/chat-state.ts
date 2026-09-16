@@ -39,6 +39,21 @@ function mergeTool(message: ChatMessage, tool: ToolActivity, blockIndex?: number
 
 export function reduceChatEvent(state: ChatViewState, event: SessionEvent): ChatViewState {
   switch (event.type) {
+    case 'chat-fork-metadata': {
+      let cursor = 0;
+      let entryId: string | undefined;
+      const messages = state.messages.map(message => {
+        if (message.role === 'user') {
+          const text = message.blocks.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n');
+          const index = event.entries.findIndex((entry, index) => index >= cursor && entry.text === text);
+          entryId = index < 0 ? undefined : event.entries[index].entryId;
+          if (index >= 0) cursor = index + 1;
+        }
+        return entryId && (message.role === 'user' || message.role === 'assistant')
+          ? { ...message, forkEntryId: entryId } : message;
+      });
+      return { ...state, messages, sessionTree: event.sessionTree };
+    }
     case 'chat-snapshot': return { ...state, ...event.snapshot, ready: true, notices: state.notices };
     case 'chat-message-start': {
       const messages = state.messages.some(message => message.id === event.message.id) ? state.messages : [...state.messages, event.message];

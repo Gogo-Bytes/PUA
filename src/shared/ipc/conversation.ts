@@ -79,6 +79,7 @@ export interface ChatAttachment {
 export type SessionEvent =
   | { type: 'terminal-data'; id: string; data: string }
   | { type: 'chat-snapshot'; id: string; snapshot: ChatSnapshot }
+  | { type: 'chat-fork-metadata'; id: string; entries: { entryId: string; text: string }[]; sessionTree: ChatTreeNode[] }
   | { type: 'chat-message-start'; id: string; message: ChatMessage }
   | { type: 'chat-message-delta'; id: string; messageId: string; blockIndex: number; blockType: 'text' | 'thinking'; delta: string }
   | { type: 'chat-message-end'; id: string; message: ChatMessage }
