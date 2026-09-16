@@ -163,7 +163,7 @@ describe('production workspace navigation', () => {
     emit({ id: 's1', type: 'chat-state', state: { activity: 'responding' } }); fireEvent.click(screen.getByRole('button', { name: '停止运行' }));
     await waitFor(() => expect(desktop.stopChat).toHaveBeenCalledWith('s1'));
     vi.mocked(desktop.renameChatSession).mockRejectedValueOnce(new Error('rename refused'));
-    fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /会话/ }), { key: 'F2' }); fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'New name' } });
+    fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /会话/ }), { key: 'F2' }); fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'New name' } });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
     expect((await screen.findByRole('alert')).textContent).toContain('rename refused');
   });
@@ -295,7 +295,7 @@ describe('Workspace edge ownership with actual App', () => {
   it('keeps rename bound to the request session after selection changes', async () => {
     await seedProjects(); const pending = deferred<void>();
     vi.mocked(desktop.renameChatSession).mockReturnValueOnce(pending.promise);
-    fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /会话/ }), { key: 'F2' });
+    fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /会话/ }), { key: 'F2' });
     fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'late A name' } });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
     // Inline editing permits switching projects while the original request is pending.
