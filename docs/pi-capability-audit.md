@@ -65,6 +65,6 @@
 ## Fork 交互保留项
 
 - 每条消息都保留 Fork 入口。
-- Fork 菜单必须保留“当前工作空间创建分支”和“新工作树创建分支”两个目标；当前仅完成消息级 RPC，目标选择器与树形投影仍待实现。
+- Fork 菜单必须保留“当前工作空间创建分支”和“新工作树创建分支”两个目标；当前消息级 native fork 与项目侧栏树已接入，工作树目标选择仍受 Pi 能力边界约束。
 - 用户已确认分支展示方案：项目下保留主会话，分支作为可折叠缩进子节点，所有节点均可直接切换。此前“Codex 式 A/C”是设计提案标签，不作为 Codex 已实测行为的证据。
-- 实施边界：Pi `get_tree` 是单会话历史树，节点 entryId 不等于 PUA Session id。Workspace 已按 Session id 聚合快照，切换项目不丢树，关闭会话删除投影并忽略迟到事件；独立 Fork 会话关系、历史节点导航与工作树目标仍需分别接入，不能以再次 Fork 冒充切换。
+- 实施边界：Pi `get_tree` 是单会话历史树，节点 entryId 不等于 PUA Session id。Workspace 已按 Session id 聚合树；元数据刷新通过独立 `chat-fork-metadata` 事件，仅更新入口与树，不重放 transcript 或重置消息身份。关闭会话删除投影并忽略迟到事件；点击历史节点执行 Pi 原生 `fork(entryId)`，不能以伪造 `switch_session` 冒充切换。
