@@ -40,10 +40,9 @@ const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) =>
   act(() => target.dispatchEvent(event)); return event;
 };
 async function create(kind: 'chat' | 'terminal' = 'chat') {
-  fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-  if (kind === 'terminal') fireEvent.click(screen.getByRole('radio', { name: /^兼容终端/ }));
-  const button = screen.getByRole('button', { name: kind === 'chat' ? '开始对话 ↗' : '打开兼容终端 ↗' });
-  await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); await flush();
+  if (kind === 'chat') fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+  else fireEvent.click(screen.getByRole('button', { name: '兼容终端' }));
+  await flush();
 }
 async function mount(kind: 'chat' | 'terminal' = 'chat') {
   const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await create(kind); return view;
@@ -83,8 +82,8 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     vi.spyOn(window, 'removeEventListener').mockImplementation((type, listener, options) => { if (type === 'keydown' && options === true) { trace.push('remove:capture'); captures.delete(listener); } remove(type, listener, options); });
     const view = await mount(); const initial = trace.filter(x => x.endsWith('capture')).length;
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'draft' } });
-    open(); filter('query'); close(); fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /Session/ }), { key: 'F2' }); fireEvent.keyDown(screen.getByRole('textbox', { name: /^重命名 / }), { key: 'Escape' });
-    await create(); fireEvent.click(screen.getByRole('tab', { name: 'Session 1' }));
+    open(); filter('query'); close(); fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /Session/ }), { key: 'F2' }); fireEvent.keyDown(screen.getByRole('textbox', { name: /^重命名 / }), { key: 'Escape' });
+    await create(); fireEvent.click(screen.getByRole('button', { name: 'Session 1' }));
     fireEvent.click(screen.getByRole('button', { name: '桌面设置' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush();
     expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial);
     await screen.findByRole('button', { name: 'a.ts M' });
@@ -98,20 +97,20 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await mount(); const old = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
     vi.mocked(desktop.createSession).mockReturnValueOnce(old.promise); await create(); close();
     const first = deferred<Bootstrap>(), second = deferred<Bootstrap>(); vi.mocked(desktop.bootstrap).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
-    await create(); expect(screen.queryByRole('dialog')).toBeNull(); expect(screen.getByRole('tab', { name: 'Session 2' }).getAttribute('aria-selected')).toBe('true');
+    await create(); expect(screen.queryByRole('dialog')).toBeNull(); expect(screen.getByRole('button', { name: 'Session 2' }).getAttribute('aria-current')).toBe('page');
     fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
     await act(async () => old.resolve({ id: 'old', title: 'Old', cwd: '/one', kind: 'chat', processStatus: 'running', activity: 'idle' }));
-    expect(screen.queryByRole('dialog')).toBeNull(); expect(screen.getByRole('tab', { name: 'Old' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('dialog')).toBeNull(); expect(screen.getByRole('button', { name: 'Old' }).getAttribute('aria-current')).toBe('page');
     await act(async () => second.resolve({ ...boot, preferences: { ...boot.preferences, theme: 'dark', recentProjects: ['/second'] } })); expect(document.documentElement.dataset.theme).toBe('dark');
     await act(async () => first.resolve({ ...boot, preferences: { ...boot.preferences, theme: 'light', recentProjects: ['/first'] } })); expect(document.documentElement.dataset.theme).toBe('light'); expect(screen.getByTitle('/first')).toBeTruthy();
   });
   it('rename keeps the edited tab identity when selection changes, and terminal rename never calls the host', async () => {
-    await mount(); await create(); fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /Session/ }), { key: 'F2' });
-    fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Submitted' } }); fireEvent.click(screen.getByRole('tab', { name: 'Session 1' }));
+    await mount(); await create(); fireEvent.keyDown(screen.getByRole('button', { selected: true, name: /Session/ }), { key: 'F2' });
+    fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Submitted' } }); fireEvent.click(screen.getByRole('button', { name: 'Session 1' }));
     fireEvent.click(screen.getByRole('button', { name: '保存' })); await flush(); expect(desktop.renameChatSession).toHaveBeenCalledExactlyOnceWith('s2', 'Submitted');
-    expect(screen.getByRole('tab', { name: 'Submitted' })).toBeTruthy(); await create('terminal'); fireEvent.keyDown(screen.getByRole('tab', { selected: true, name: /Session/ }), { key: 'F2' });
+    expect(screen.getByRole('button', { name: 'Submitted' })).toBeTruthy(); await create('terminal'); fireEvent.keyDown(screen.getByRole('button', { selected: true, name: /Session/ }), { key: 'F2' });
     fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Terminal local' } }); fireEvent.click(screen.getByRole('button', { name: '保存' })); await flush();
-    expect(screen.getByRole('tab', { name: 'Terminal local' })).toBeTruthy(); expect(desktop.renameChatSession).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Terminal local' })).toBeTruthy(); expect(desktop.renameChatSession).toHaveBeenCalledTimes(1);
   });
   it('late attachment queries the old ID in the live registry, never a disposed handle or newest active terminal', async () => {
     await mount('terminal'); const pending = deferred<string[]>(); vi.mocked(desktop.chooseAttachments).mockReturnValueOnce(pending.promise);
@@ -154,7 +153,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
 describe('App original synchronous throw versus rejection and dynamic client lookup', () => {
   it.each(['throw', 'reject'] as const)('create refresh %s retains add/close but only rejection reports the global error', async failure => {
     await mount(); vi.mocked(desktop.bootstrap).mockImplementationOnce(() => { if (failure === 'throw') throw new Error('refresh failure'); return Promise.reject(new Error('refresh failure')); });
-    await create(); expect(screen.getByRole('tab', { name: 'Session 2' }).getAttribute('aria-selected')).toBe('true'); expect(screen.queryByRole('dialog')).toBeNull();
+    await create(); expect(screen.getByRole('button', { name: 'Session 2' }).getAttribute('aria-current')).toBe('page'); expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.queryByText('Error: refresh failure') !== null).toBe(failure === 'reject');
     // Sync throw rejects create into the old form's catch, already unmounted; no global report.
   });
