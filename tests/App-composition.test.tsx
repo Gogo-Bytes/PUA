@@ -32,8 +32,8 @@ const query = () => screen.getByRole('textbox', { name: '搜索命令' }) as HTM
 const filter = (value: string) => fireEvent.change(query(), { target: { value } });
 const list = () => screen.getByRole('dialog').querySelector('.command-list') as HTMLElement;
 const items = () => within(list()).queryAllByRole('button');
-const open = () => fireEvent.click(screen.getByRole('button', { name: /搜索与命令/ }));
 const close = () => fireEvent.click(screen.getByRole('button', { name: '关闭对话框' }));
+const open = () => fireEvent.click(screen.getByRole('button', { name: /搜索与命令/ }));
 const selectProject = (path: string) => fireEvent.click(within(screen.getByRole('navigation', { name: '项目' })).getByTitle(path));
 const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) => {
   const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true, cancelable: true, ...init });
@@ -93,16 +93,14 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial + 4); expect(captures.size).toBe(1);
     view.unmount(); expect(captures.size).toBe(0); expect(listeners.size).toBe(0);
   });
-  it('publishes overlapping create refreshes in completion order without waiting, and old create closes a reopened launch', async () => {
-    await mount(); const old = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
-    vi.mocked(desktop.createSession).mockReturnValueOnce(old.promise); await create(); close();
-    const first = deferred<Bootstrap>(), second = deferred<Bootstrap>(); vi.mocked(desktop.bootstrap).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
-    await create(); expect(screen.queryByRole('dialog')).toBeNull(); expect(screen.getByRole('button', { name: 'Session 2' }).getAttribute('aria-current')).toBe('page');
-    fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-    await act(async () => old.resolve({ id: 'old', title: 'Old', cwd: '/one', kind: 'chat', processStatus: 'running', activity: 'idle' }));
-    expect(screen.queryByRole('dialog')).toBeNull(); expect(screen.getByRole('button', { name: 'Old' }).getAttribute('aria-current')).toBe('page');
-    await act(async () => second.resolve({ ...boot, preferences: { ...boot.preferences, theme: 'dark', recentProjects: ['/second'] } })); expect(document.documentElement.dataset.theme).toBe('dark');
-    await act(async () => first.resolve({ ...boot, preferences: { ...boot.preferences, theme: 'light', recentProjects: ['/first'] } })); expect(document.documentElement.dataset.theme).toBe('light'); expect(screen.getByTitle('/first')).toBeTruthy();
+  it('disables duplicate direct creation while the current project is still starting', async () => {
+    await mount(); const pending = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
+    vi.mocked(desktop.createSession).mockReturnValueOnce(pending.promise);
+    fireEvent.click(screen.getByRole('button', { name: '新建会话' })); await flush();
+    expect(screen.getByRole('button', { name: '新建会话' })).toBeDisabled();
+    expect(desktop.createSession).toHaveBeenCalledTimes(2);
+    await act(async () => pending.resolve({ id: 'late', title: 'Late', cwd: '/one', kind: 'chat', processStatus: 'running', activity: 'idle' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
   it('rename keeps the edited tab identity when selection changes, and terminal rename never calls the host', async () => {
     await mount(); await create(); fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /Session/ }), { key: 'F2' });
