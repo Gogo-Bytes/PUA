@@ -42,6 +42,7 @@ export type PtyWorkerInput =
 export type RpcWorkerEvent = Exclude<SessionEvent, { type: 'terminal-data' }>;
 export type RpcWorkerOutput =
   | { type: 'event'; event: RpcWorkerEvent }
+  | { type: 'session-identity'; sessionId: string; sessionFile: string }
   | { type: 'child-pid'; pid: number }
   | { type: 'response'; requestId: string; success: true; data?: unknown }
   | { type: 'response'; requestId: string; success: false; error: string };

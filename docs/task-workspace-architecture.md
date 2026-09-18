@@ -42,6 +42,8 @@ Task
 1. 建立 Task DTO、持久化存储端口、IPC snapshot/event 和 reducer；保留现有 Session 运行协议。
 2. 用 GlobalNav、ProjectTree、TaskList 替换 ProjectNav/SessionTabs 的生产组合。
 3. 接入任务生命周期与重启恢复，再接入任务栏操作和通知。
+
+当前过渡实现已建立 main-owned `workspace-sessions.json` 索引：Pi JSONL 仍是 transcript 权威，索引只保存 `cwd/title/sessionId/sessionFile`；恢复条目以 dormant Session 注册，项目点击不激活历史，用户点击具体历史后才启动 Pi。后续 Task Store 正式落地时应吸收该索引，而不是把 Pi transcript 复制到 renderer。
 4. 将 Composer、Conversation、Inspector 绑定 Task scope，补齐后台运行与搜索。
 5. 完成快捷键、窄窗、深链接、多窗口和完整回归旅程。
 

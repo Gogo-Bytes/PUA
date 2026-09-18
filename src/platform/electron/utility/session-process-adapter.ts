@@ -12,6 +12,7 @@ import { imageMimeType } from '../../filesystem/attachment-policy.js';
 import { validSize } from '../../../shared/ipc/schemas.js';
 import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../shared/ipc/conversation.js';
 import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/ipc/desktop-api.js';
+import type { ChatSessionIdentity, NativePiSessionIdentity } from '../../../shared/ipc/pi-session.js';
 import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../../../modules/sessions/index.js';
 import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ConversationSessionStats, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
 import type { ChatModel } from '../../../shared/ipc/conversation.js';
@@ -33,6 +34,9 @@ interface ProcessResource {
   closed?: Promise<{ exitCode: number }>;
   treeCleanup?: Promise<void>;
   activity: SessionActivity;
+  nativeIdentity?: NativePiSessionIdentity;
+  expectedIdentity?: ChatSessionIdentity;
+  firstMessageAccepted: boolean;
   pending: Map<string, { resolve(value?: unknown): void; reject(error: Error): void; command: RpcOperation['type'] }>;
   payloads: Map<AttachmentToken, AttachmentPayload>;
   sources: Map<AttachmentSourceId, string>;
@@ -58,6 +62,8 @@ export interface SessionProcessContext {
   emit(event: SessionEvent): void;
   /** Synchronous, non-throwing business invalidation; never releases Session ownership. */
   invalidateConversation(id: string): void;
+  onChatMessageAccepted?(id: string, identity: NativePiSessionIdentity): void | Promise<void>;
+  onChatIdentityChanged?(id: string, identity: NativePiSessionIdentity): void | Promise<void>;
 }
 
 /** Main-side resource owner. Lifecycle permissions are read from the coordinator, never cached here. */
@@ -67,16 +73,19 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
   private lifecycle: (event: SessionProcessEvent) => void = () => {};
   constructor(private readonly context: SessionProcessContext) {}
   observe(listener: (event: SessionProcessEvent) => void): void { this.lifecycle = listener; }
-  register(id: string, runtime: RuntimeInfo, options: CreateSessionOptions): void {
+  register(id: string, runtime: RuntimeInfo, options: CreateSessionOptions, identity?: ChatSessionIdentity): void {
     if (this.resources.has(id)) throw new Error('Duplicate process resource');
     const args = [...runtime.args];
+    const nativeSelector = args.some(arg => ['--session', '--session-id', '--continue', '-c', '--resume', '-r', '--fork'].includes(arg) || arg.startsWith('--session=') || arg.startsWith('--session-id=') || arg.startsWith('--fork='));
+    const managedIdentity = identity && !nativeSelector && !args.some(arg => arg === '--no-session' || arg.startsWith('--no-session=')) ? identity : undefined;
+    if (options.kind === 'chat' && managedIdentity) args.push(managedIdentity.mode === 'create' ? '--session-id' : '--session', managedIdentity.mode === 'restore' && managedIdentity.sessionFile ? managedIdentity.sessionFile : managedIdentity.piSessionId);
     if (options.startMode === 'continue') args.push('--continue');
     if (options.kind === 'terminal' && options.startMode === 'resume') args.push('--resume');
     if (options.kind === 'chat' && options.projectTrust === 'approve') args.push('--approve');
     if (options.kind === 'chat' && options.projectTrust === 'decline') args.push('--no-approve');
     let resolveHostExit!: () => void;
     const hostExit = new Promise<void>(resolve => { resolveHostExit = resolve; });
-    this.resources.set(id, { id, runtime: { ...runtime, args }, cols: options.cols ?? 100, rows: options.rows ?? 30, hostEnded: false, hostExit, resolveHostExit, exitCode: 0, invalidated: false, activity: 'idle', pending: new Map(), payloads: new Map(), sources: new Map() });
+    this.resources.set(id, { id, runtime: { ...runtime, args }, ...(managedIdentity ? { expectedIdentity: managedIdentity } : {}), cols: options.cols ?? 100, rows: options.rows ?? 30, hostEnded: false, hostExit, resolveHostExit, exitCode: 0, invalidated: false, activity: 'idle', firstMessageAccepted: false, pending: new Map(), payloads: new Map(), sources: new Map() });
     this.diagnostics.register(id, options.kind);
   }
   forget(id: string): void { this.resources.delete(id); }
@@ -130,6 +139,18 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
       }
       // PID registration remains allowed during graceful close, before the host has ended.
       if (message.type === 'child-pid') resource.childPid = message.pid;
+      if (chat && message.type === 'session-identity') {
+        const expected = resource.expectedIdentity;
+        if (expected && !resource.nativeIdentity && (message.sessionId !== expected.piSessionId || expected.mode === 'restore' && message.sessionFile !== expected.sessionFile)) {
+          this.lifecycle({ type: 'start-failed', id, detail: 'Pi 返回的会话 identity 与恢复目标不一致' });
+          return;
+        }
+        const previous = resource.nativeIdentity;
+        resource.nativeIdentity = { sessionId: message.sessionId, sessionFile: message.sessionFile };
+        if (previous && (previous.sessionId !== message.sessionId || previous.sessionFile !== message.sessionFile)) {
+          try { void Promise.resolve(this.context.onChatIdentityChanged?.(id, resource.nativeIdentity)).catch(() => {}); } catch { /* Index persistence never interrupts Pi fork/session semantics. */ }
+        }
+      }
       if (!this.accepts(resource)) return;
       if (chat && message.type === 'event' && message.event) {
         const event = message.event;
@@ -330,6 +351,12 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
       return { data: item.imageData, mimeType: item.mimeType };
     });
     await this.request(resource, { type: 'send', text: input.text, filePaths, images, queuePreference: input.queuePreference });
+    if (!resource.firstMessageAccepted && resource.nativeIdentity) {
+      try {
+        await this.context.onChatMessageAccepted?.(id, resource.nativeIdentity);
+        resource.firstMessageAccepted = true;
+      } catch { /* Message acceptance already belongs to Pi; a later prompt retries indexing. */ }
+    }
   }
   async getAvailableModels(id: string): Promise<ChatModel[]> {
     const result = await this.request<{ models: ChatModel[] }>(this.resource(id), { type: 'get-available-models' });

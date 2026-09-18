@@ -37,6 +37,44 @@ async function running(emit: (event: SessionEvent) => void = () => {}) {
 function reply(host: typeof fake.hosts[number]) { const request = host.postMessage.mock.calls.at(-1)![0]; host.emit('message', { type: 'response', requestId: request.requestId, success: true }); }
 
 describe('SessionProcessAdapter resource contract through main composition', () => {
+  it('uses a Pi session identity for new chats and persists the first accepted prompt identity', async () => {
+    const accepted = vi.fn();
+    const sessions = composeMain(() => {}, { prepareProject, onChatMessageAccepted: accepted });
+    const chat = await sessions.createSession(runtime, options); applySessionStartResult(sessions.session.start(chat.id));
+    const host = fake.hosts[0]; host.emit('spawn'); host.emit('message', { type: 'event', event: { type: 'session-info', id: chat.id, processStatus: 'running' } });
+    host.emit('message', { type: 'session-identity', sessionId: chat.id, sessionFile: '/home/pi/created.jsonl' });
+    expect(host.postMessage.mock.calls[0][0]).toMatchObject({ type: 'start', args: ['--session-id', chat.id] });
+    const sending = sessions.conversation.send(chat.id, sendIntent('first', [], 'prompt')); reply(host); await sending;
+    expect(accepted).toHaveBeenCalledExactlyOnceWith(chat.id, { sessionId: chat.id, sessionFile: '/home/pi/created.jsonl' });
+    const closed = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
+  });
+
+  it('restores by the exact session file and rejects a mismatched Pi handshake', async () => {
+    const sessions = composeMain(() => {}, { prepareProject });
+    const chat = await sessions.restoreChatSession(runtime, { id: 'pua-restore', cwd: '/fake/project', title: 'Recovered', piSessionId: 'pi-restore', sessionFile: '/home/pi/recovered.jsonl' });
+    applySessionStartResult(sessions.session.start(chat.id)); const host = fake.hosts[0]; host.emit('spawn');
+    expect(host.postMessage.mock.calls[0][0]).toMatchObject({ type: 'start', args: ['--session', '/home/pi/recovered.jsonl'] });
+    host.emit('message', { type: 'session-identity', sessionId: 'wrong', sessionFile: '/home/pi/recovered.jsonl' });
+    const closing = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await expect(closing).resolves.toBeUndefined();
+  });
+
+  it('refreshes durable identity when Pi switches to a native fork branch', async () => {
+    const changed = vi.fn();
+    const sessions = composeMain(() => {}, { prepareProject, onChatIdentityChanged: changed });
+    const chat = await sessions.createSession(runtime, options); applySessionStartResult(sessions.session.start(chat.id));
+    const host = fake.hosts[0]; host.emit('spawn');
+    host.emit('message', { type: 'session-identity', sessionId: chat.id, sessionFile: '/home/pi/original.jsonl' });
+    host.emit('message', { type: 'session-identity', sessionId: 'forked', sessionFile: '/home/pi/forked.jsonl' });
+    expect(changed).toHaveBeenCalledExactlyOnceWith(chat.id, { sessionId: 'forked', sessionFile: '/home/pi/forked.jsonl' });
+    const closing = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closing;
+  });
+
+  it('keeps Pi --no-session ephemeral and does not inject a PUA selector', async () => {
+    const sessions = composeMain(() => {}, { prepareProject });
+    const chat = await sessions.createSession({ ...runtime, args: ['--no-session'] }, options); applySessionStartResult(sessions.session.start(chat.id));
+    const host = fake.hosts[0]; host.emit('spawn'); expect(host.postMessage.mock.calls[0][0]).toMatchObject({ type: 'start', args: ['--no-session'] });
+    const closed = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
+  });
   it('rechecks admission after a deliberately delayed cwd and never registers or forks', async () => {
     const project = deferred<{ cwd: string; title: string }>();
     const sessions = composeMain(() => {}, { prepareProject: () => project.promise });

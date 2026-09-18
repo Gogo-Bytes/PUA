@@ -9,6 +9,8 @@ import { sessionChangeEvent, unwrapSessionResult } from './session-mapper.js';
 import type { CreateSessionOptions, RuntimeInfo } from '../../shared/ipc/desktop-api.js';
 import type { SessionEvent } from '../../shared/ipc/conversation.js';
 import { createSession, type SessionResourceRegistrationPort } from './create-session.js';
+import type { PersistedChatSession } from './workspace-session-store.js';
+import type { NativePiSessionIdentity } from '../../shared/ipc/pi-session.js';
 import { registerChatAttachments, type ChatAttachmentStagingPort } from './chat-attachments.js';
 
 // One physical owner implements the injected Ports; only this composition root knows its concrete class.
@@ -19,6 +21,9 @@ export interface CompositionDependencies {
   createId?(): string;
   /** Construction must not invoke context callbacks; register is synchronous/non-reentrant. */
   createAdapter?(context: SessionProcessContext): ProcessAdapter;
+  onSessionChanged?(session: import('../../modules/sessions/index.js').SessionSnapshot): void;
+  onChatMessageAccepted?(id: string, identity: NativePiSessionIdentity): void | Promise<void>;
+  onChatIdentityChanged?(id: string, identity: NativePiSessionIdentity): void | Promise<void>;
 }
 
 /** Constructs each authority once. Returned core capabilities are the actual instances, not proxies. */
@@ -33,6 +38,8 @@ export function composeMain(emit: (event: SessionEvent) => void, dependencies: C
     close: async id => { unwrapSessionResult(await coordinator.close(id)); },
     emit: notify,
     invalidateConversation: id => conversation.invalidate(id),
+    onChatMessageAccepted: dependencies.onChatMessageAccepted,
+    onChatIdentityChanged: dependencies.onChatIdentityChanged,
   };
   const adapter = dependencies.createAdapter?.(context) ?? new SessionProcessAdapter(context);
   const conversation = new ConversationApplication(adapter, adapter);
@@ -41,6 +48,7 @@ export function composeMain(emit: (event: SessionEvent) => void, dependencies: C
       conversation.invalidate(event.id);
       adapter.forget(event.id);
     } else {
+      if (event.type === 'changed') dependencies.onSessionChanged?.(event.session);
       const notification = sessionChangeEvent(event);
       if (notification) notify(notification);
     }
@@ -52,6 +60,9 @@ export function composeMain(emit: (event: SessionEvent) => void, dependencies: C
     terminal: adapter as Terminal,
     activity: (id: string) => adapter.activity(id),
     createSession: (runtime: RuntimeInfo, options: CreateSessionOptions) => createSession(preparation, runtime, options),
+    restoreChatSession: (runtime: RuntimeInfo, persisted: PersistedChatSession) => createSession(preparation, runtime, {
+      cwd: persisted.cwd, kind: 'chat', startMode: 'new', projectTrust: 'default', cols: 100, rows: 30,
+    }, { id: persisted.id, title: persisted.title, dormant: true, chat: { piSessionId: persisted.piSessionId, sessionFile: persisted.sessionFile, mode: 'restore' } }),
     registerChatAttachments: (id: string, paths: string[]) => registerChatAttachments(conversation, adapter, id, paths),
   };
 }

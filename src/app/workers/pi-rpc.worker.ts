@@ -212,6 +212,10 @@ function handleExtensionUI(value: Record<string, unknown>): boolean {
   return true;
 }
 
+function postSessionIdentity(value: unknown): void {
+  if (isRecord(value) && typeof value.sessionId === 'string' && typeof value.sessionFile === 'string') post({ type: 'session-identity', sessionId: value.sessionId, sessionFile: value.sessionFile });
+}
+
 let forkMetadataGeneration = 0;
 async function refreshForkMetadata(): Promise<void> {
   if (closing) return;
@@ -281,6 +285,7 @@ async function start(message: StartMessage): Promise<void> {
   const [stateValue, messagesValue, commandsValue] = await Promise.all([send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000)]);
   if (closing) return;
   const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
+  postSessionIdentity(stateValue);
   const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
   const messages = history.map(messageDTO);
   const commands = commandsDTO(commandsValue.commands);
@@ -335,6 +340,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
           const [stateValue, messagesValue, commandsValue, forkValue] = await Promise.all([
             send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000),
           ]);
+          postSessionIdentity(stateValue);
           const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
           stream.reset();
           const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));

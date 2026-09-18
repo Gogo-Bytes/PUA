@@ -125,7 +125,7 @@ describe('worker-protocol extension-ui request parser', () => {
 
 describe('worker-protocol output envelope parsers', () => {
   it.each<RpcWorkerOutput>([
-    { type: 'child-pid', pid: 7 }, { type: 'response', requestId: 'r', success: true },
+    { type: 'child-pid', pid: 7 }, { type: 'session-identity', sessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' }, { type: 'response', requestId: 'r', success: true },
     { type: 'response', requestId: 'r', success: true, data: { text: 'forked', cancelled: false } },
     { type: 'response', requestId: 'r', success: false, error: '' },
     { type: 'event', event: { type: 'session-info', id: 's', processStatus: 'running', activity: 'idle', title: '' } },
@@ -136,7 +136,7 @@ describe('worker-protocol output envelope parsers', () => {
     { type: 'child-pid', pid: 7 }, { type: 'data', data: '\0文' }, { type: 'error', message: '' }, { type: 'exit', exitCode: -1 },
   ])('accepts PTY $type', message => { expect(parsePtyWorkerOutput(message)).toEqual(message); });
   it.each([
-    null, [], { type: 'child-pid', pid: -1 }, { type: 'child-pid', pid: 1.5 },
+    null, [], { type: 'child-pid', pid: -1 }, { type: 'child-pid', pid: 1.5 }, { type: 'session-identity', sessionId: '', sessionFile: '/x' }, { type: 'session-identity', sessionId: 'pi', sessionFile: '' },
     { type: 'response', success: true }, { type: 'response', requestId: 'r', success: 1 },
     { type: 'response', requestId: 'r', success: false }, { type: 'response', requestId: 'r', success: true, data: [] },
     { type: 'event', event: { type: 'session-info', id: 'other', processStatus: 'running' } },

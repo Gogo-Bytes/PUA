@@ -123,6 +123,7 @@ function mappedEvent(value: unknown, sessionId: string): RpcWorkerEvent | undefi
 export function parseRpcWorkerOutput(value: unknown, sessionId: string): RpcWorkerOutput | undefined {
   if (!record(value)) return;
   if (value.type === 'child-pid' && positiveInteger(value.pid)) return { type: 'child-pid', pid: value.pid };
+  if (value.type === 'session-identity' && id(value.sessionId) && id(value.sessionFile) && value.sessionFile.length <= 4096) return { type: 'session-identity', sessionId: value.sessionId, sessionFile: value.sessionFile };
   if (value.type === 'event') {
     const event = mappedEvent(value.event, sessionId);
     return event ? { type: 'event', event } : undefined;

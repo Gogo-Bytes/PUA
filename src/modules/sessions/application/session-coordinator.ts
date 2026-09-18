@@ -33,7 +33,13 @@ export class SessionCoordinator {
     const admitted = this.checkAdmission(); if (!admitted.ok) return admitted;
     const entry = this.entries.get(id); if (!entry) return { ok: false, code: 'SESSION_NOT_FOUND' };
     if (entry.session.lifecycle.phase !== 'reserved') return { ok: false, code: 'SESSION_NOT_STARTABLE' };
+    if (entry.session.dormant) {
+      const active = this.list().filter(session => session.id !== id && session.lifecycle.phase !== 'exited' && !session.dormant);
+      if (entry.session.kind === 'terminal' || active.some(session => session.kind === 'terminal')) return { ok: false, code: 'TERMINAL_EXCLUSIVE' };
+      if (active.some(session => session.startMode === 'continue' && processStatus(session.lifecycle) === 'starting')) return { ok: false, code: 'RESTORE_CONFLICT' };
+    }
     entry.session.lifecycle = { phase: 'starting' };
+    entry.session.dormant = false;
     try {
       const started = this.transport.start(id);
       if (started) void started.catch(error => this.startFailed(entry, String(error)));

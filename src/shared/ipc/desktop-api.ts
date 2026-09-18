@@ -29,6 +29,7 @@ export interface Bootstrap {
   runtimeError?: string;
   home: string;
   platform: string;
+  restoredSessions?: SessionInfo[];
 }
 
 export interface SessionInfo {

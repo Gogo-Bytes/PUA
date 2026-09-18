@@ -55,6 +55,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const [skillDismissed, setSkillDismissed] = useState(false);
   const forkingRef = useRef(false);
   const initialSentRef = useRef(false);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = desktopClient.onSessionEvent(event => {
@@ -69,9 +70,14 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       } else if (event.type === 'chat-editor-text') changeDraft(event.text);
       else dispatch(event);
     });
-    void desktopClient.startSession(session.id).catch(error => onError(String(error)));
     return unsubscribe;
   }, [session.id]);
+
+  useEffect(() => {
+    if (!active || startedRef.current) return;
+    startedRef.current = true;
+    void desktopClient.startSession(session.id).catch(error => { startedRef.current = false; onError(String(error)); });
+  }, [active, session.id]);
 
   useEffect(() => {
     if (!missingAssistantRendererDiagnostics.enabled(session.id)) return;

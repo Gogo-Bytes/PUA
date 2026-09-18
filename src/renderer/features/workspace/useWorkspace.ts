@@ -49,6 +49,12 @@ export function useWorkspace(
     projectSessions: sessions.filter(session => session.cwd === project),
     selectSession: (id: string) => setState(current => selectSession(current, id)),
     prepareConversation: (cwd: string) => setState(current => prepareConversation(current, cwd)),
+    hydrateSessions: (incoming: SessionInfo[], preferredProject?: string) => setState(current => {
+      const byId = new Map(current.sessions.map(session => [session.id, session]));
+      for (const session of incoming) byId.set(session.id, { ...byId.get(session.id), ...session });
+      const next = { ...current, sessions: [...byId.values()] };
+      return current.project || current.activeId || !preferredProject ? next : prepareConversation(next, preferredProject);
+    }),
     selectProject: (cwd: string) => setState(current => selectProject(current, cwd)),
     addCreatedSession: (session: SessionInfo) => setState(current => addSession(current, session)),
     setSessionTitle: (id: string, title: string) => updateSessions(sessions => sessions.map(session => session.id === id ? { ...session, title } : session)),

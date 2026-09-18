@@ -25,7 +25,8 @@ const activity = (v: unknown) => oneOf(v, ['idle', 'responding', 'compacting', '
 const processStatus = (v: unknown) => oneOf(v, ['starting', 'running', 'exited']);
 const preferences = (v: unknown) => record(v) && optional(v.theme, x => oneOf(x, ['system', 'light', 'dark'])) && text(v.piPath) && text(v.nodePath) && strings(v.args) && finite(v.fontSize) && strings(v.recentProjects);
 const runtime = (v: unknown) => record(v) && text(v.executable) && strings(v.args) && text(v.source);
-const bootstrap = (v: unknown) => record(v) && preferences(v.preferences) && (v.runtime === null || runtime(v.runtime)) && optional(v.runtimeError, text) && text(v.home) && text(v.platform);
+const sessionInfo = (v: unknown) => record(v) && text(v.id) && text(v.cwd) && text(v.title) && oneOf(v.kind, ['chat', 'terminal']) && processStatus(v.processStatus) && activity(v.activity) && optional(v.exitCode, Number.isSafeInteger);
+const bootstrap = (v: unknown) => record(v) && preferences(v.preferences) && (v.runtime === null || runtime(v.runtime)) && optional(v.runtimeError, text) && text(v.home) && text(v.platform) && optional(v.restoredSessions, value => arrayOf(value, sessionInfo));
 const attachment = (v: unknown) => record(v) && text(v.id) && text(v.name) && text(v.path) && oneOf(v.kind, ['file', 'image']) && finite(v.size) && optional(v.mimeType, text) && optional(v.previewUrl, text);
 const sessionStats = (v: unknown) => {
   if (!record(v) || !finite(v.userMessages) || !finite(v.assistantMessages) || !finite(v.toolCalls) || !finite(v.toolResults) || !finite(v.totalMessages) || !finite(v.cost) || !record(v.tokens)) return false;
@@ -44,7 +45,7 @@ export const desktopValueGuards = {
   chooseDirectory: picker, chooseFile: picker, chooseAttachments: strings,
   chooseChatAttachments: (v: unknown) => arrayOf(v, attachment),
   inspectProjectResources: (v: unknown) => record(v) && bool(v.hasResources) && strings(v.paths),
-  createSession: (v: unknown) => record(v) && text(v.id) && text(v.cwd) && text(v.title) && oneOf(v.kind, ['chat', 'terminal']) && processStatus(v.processStatus) && activity(v.activity) && optional(v.exitCode, Number.isSafeInteger),
+  createSession: sessionInfo,
   closeSession: bool,
   startSession: empty, removeChatAttachment: empty, sendChatMessage: empty, stopChat: empty,
   respondToExtensionUI: empty, renameChatSession: empty, forkChatSession: v => record(v) && text(v.text) && bool(v.cancelled), getChatAvailableModels: v => arrayOf(v, x => record(x) && text(x.provider) && text(x.id)), openExternal: empty, openProject: empty, writeClipboard: empty,

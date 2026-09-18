@@ -24,11 +24,11 @@
 | PI-RPC-03 | tool start/update/end 与最终结果 | stream core、ToolExecutionCard | 已接入 | 工具过程折叠、失败展开、重试 |
 | PI-RPC-04 | agent settled / compacting / retrying | runtime activity；Pi RPC `compact` | 已接入 | 后台任务状态和通知；对话底部“压缩上下文”调用原生 compact，状态和失败由 Pi 事件回传 |
 | PI-RPC-05 | steer / followUp / clear queue | conversation queue、worker protocol | 已接入 | Composer 队列可视化与任务级恢复 |
-| PI-RPC-06 | history snapshot / continue | chat snapshot、create `continue` | 已接入 | 最近任务恢复；重启恢复需验证 |
+| PI-RPC-06 | history snapshot / continue | chat snapshot、create `continue`、Pi native session identity restore | 已接入（边界明确） | `continue` 只代表显式启动模式；重启恢复使用持久化 `sessionFile/sessionId`，项目草稿不写历史 |
 | PI-RPC-07 | session name | rename command、session-info | 已接入 | 任务标题编辑与自动更新 |
 | PI-RPC-08 | extension UI select/confirm/input/editor | Extension UI schema、Dialog | 已接入 | 任务上下文内等待态、焦点恢复 |
 | PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
-| PI-RPC-10 | `--resume` 历史选择器 | Pi 0.85.1 CLI `--resume, -r`；当前 `NewSessionDialog` 仅允许兼容终端使用 `startMode=resume`，主进程会原样追加 `--resume` | 部分接入 | 兼容终端入口可进入 Pi 原生历史选择器；RPC 原生对话暂不伪造选择器，需按 Pi 是否提供等价 RPC 再决定 |
+| PI-RPC-10 | `--resume` 历史选择器 | Pi 0.85.1 CLI `--resume, -r`；当前 `NewSessionDialog` 仅允许兼容终端使用 `startMode=resume`，主进程会原样追加 `--resume` | 部分接入 | 兼容终端入口可进入 Pi 原生历史选择器；RPC 原生对话使用已验证的持久化 identity，不伪造选择器 |
 | PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 已接入（边界明确） | 消息级 Fork、用户 entry 白名单、侧栏入口与 `agent_settled` 后实时树元数据刷新已接入；不把 `entryId` 冒充 PUA Session id |
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip 与命令面板已接入；项目级资源入口与状态展示仍待接入 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
@@ -42,7 +42,7 @@
 
 ## 本轮核验结果
 
-当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新、原生 `compact` 和 `get_session_stats` 路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree、skills、prompt templates、HTML export 与 session stats 能力。usage 已按稳定 DTO 接入并做主进程边界校验。下一轮优先核验 PI-RPC-10、PI-RPC-12 至 PI-RPC-13。
+当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新、原生 `compact`、`get_session_stats` 和 session identity 恢复路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree、skills、prompt templates、HTML export 与 session stats 能力。usage 已按稳定 DTO 接入并做主进程边界校验。`--no-session` 明确保留为 Pi 原生内存能力，不进入 durable task index。
 
 ## Pi 0.85.1 RPC 命令映射（静态核验）
 
@@ -57,6 +57,7 @@
 ## Pi 特有能力说明
 
 - **Session Tree / Fork**：会话是带 `id/parentId` 的 JSONL 树，可从历史节点创建独立分支；PUA 应将分支显示为任务内结构。
+- **Fork identity**：Pi 原生 `fork(entryId)` 会把当前运行时切换到新分支，同时保留旧 JSONL 分支。PUA 跟随 Pi 当前运行时更新任务的 `sessionId/sessionFile`，不伪造第二个任务或 worktree；旧分支仍由 Pi 的历史树/原生选择器管理。
 - **Compaction**：Pi 生成 compaction summary 并沿当前叶子路径重建上下文；PUA 展示状态和失败反馈，不自行截断消息。
 - **Extension UI**：扩展可请求 select、confirm、input、editor、notify、status、widget；custom renderer/editor 等 TUI 能力继续由兼容终端承载。
 - **Skills / Prompt Templates**：Pi 从资源目录加载并通过命令目录暴露；PUA 的 `@` 是输入筛选器，执行逻辑仍由 Pi 持有。

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createDesktopPreferences, validateChatArguments } from '../../../src/app/main/desktop-preferences';
 import type { Preferences, SessionInfo } from '../../../src/shared/ipc/desktop-api';
 import { deferred, failure, fakeCapabilities, sessionInfo, success } from './main-fakes';
+import type { NativePiSessionIdentity } from '../../../src/shared/ipc/pi-session';
 
 const options = { cwd: '/fake/project', kind: 'chat', startMode: 'new', projectTrust: 'default' } as const;
 const initial = (): Preferences => ({ piPath: '', nodePath: '', args: ['--fake'], fontSize: 14, recentProjects: ['/old'] });
@@ -14,6 +15,22 @@ function harness() {
   return { preferences, store, resolveRuntime, validateChatArguments, runtime, capabilities: fakeCapabilities() };
 }
 describe('desktop preferences workflow with real PreferencesApplication and Fake runtime/storage/Session', () => {
+  it('indexes a chat only after Pi accepts its first message, while preserving --no-session as ephemeral', async () => {
+    const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+    const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+    const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+    const capabilities = fakeCapabilities();
+    await preferences.createSession(options, capabilities);
+    expect(store.upsert).not.toHaveBeenCalled();
+    const identity: NativePiSessionIdentity = { sessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' };
+    await preferences.recordChatMessage('id', identity);
+    expect(store.upsert).toHaveBeenCalledWith({ id: 'id', cwd: '/fake/project', title: 'project', piSessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' });
+
+    const ephemeral = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => ({ ...runtime, args: ['--no-session'] }), validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+    await ephemeral.createSession(options, capabilities);
+    await ephemeral.recordChatMessage('id', identity);
+    expect(store.upsert).toHaveBeenCalledTimes(1);
+  });
   it('publishes and resolves bootstrap in the write continuation, preserving returned references', async () => {
     const h = harness(); const write = deferred<void>(); const trace: string[] = [];
     h.store.write.mockReturnValueOnce(write.promise); h.resolveRuntime.mockImplementation(() => { trace.push('runtime'); return h.runtime; });

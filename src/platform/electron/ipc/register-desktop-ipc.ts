@@ -23,7 +23,7 @@ export interface DesktopIPCDependencies {
 /** Closed Desktop methods only; sender → tuple parser → captured window/core workflow. */
 export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources }: DesktopIPCDependencies): void {
   const { handle, listen } = createIPCRegistrar(ipcMain, event => checkSender(event, requireCurrent().window.webContents, rendererURL));
-  handle('bootstrap', () => preferences.getBootstrap());
+  handle('bootstrap', async () => { await preferences.whenReady(); return preferences.getBootstrap(); });
   handle('chooseDirectory', async () => {
     const result = await dialog.showOpenDialog(requireCurrent().window, { properties: ['openDirectory'] });
     return result.canceled ? null : result.filePaths[0];
@@ -57,6 +57,7 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
       if (response !== 1) return false;
     }
     unwrapSessionResult(await capabilities.session.close(id));
+    try { await preferences.forgetSession(id); } catch (error) { console.warn(`无法移除已关闭会话索引 ${id}: ${String(error)}`); }
     return true;
   });
   handle('sendChatMessage', (id, input) => requireCurrent().capabilities.conversation.send(id, sendIntent(input.text, input.attachmentIds, input.delivery)).catch(conversationError));
@@ -66,7 +67,10 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
     try { requireCurrent().capabilities.conversation.removeAttachment(id, attachmentId); }
     catch (error) { conversationError(error); }
   });
-  handle('renameChatSession', (id, name) => requireCurrent().capabilities.conversation.rename(id, name));
+  handle('renameChatSession', async (id, name) => {
+    await requireCurrent().capabilities.conversation.rename(id, name);
+    try { await preferences.renameSession(id, name); } catch (error) { console.warn(`无法保存会话标题 ${id}: ${String(error)}`); }
+  });
   handle('forkChatSession', (id, entryId) => requireCurrent().capabilities.conversation.fork(id, entryId));
   handle('getChatAvailableModels', id => requireCurrent().capabilities.conversation.getAvailableModels(id));
   handle('getChatThinkingLevels', id => requireCurrent().capabilities.conversation.getAvailableThinkingLevels(id));

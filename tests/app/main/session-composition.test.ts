@@ -89,7 +89,7 @@ describe('main composition and prepared create', () => {
     const dto = await h.capabilities.createSession(runtime, options);
     expect(order).toEqual(['reserve', 'register', 'open']);
     expect(dto).toEqual({ id: 'id-1', cwd: '/prepared', title: 'Project', kind: 'chat', processStatus: 'starting', activity: 'idle' });
-    expect(h.adapter.register).toHaveBeenCalledWith(dto.id, runtime, options);
+    expect(h.adapter.register).toHaveBeenCalledWith(dto.id, runtime, expect.objectContaining(options), { mode: 'create', piSessionId: dto.id });
     const attachments = await h.capabilities.registerChatAttachments(dto.id, ['/fake.txt']);
     expect(attachments[0].path).toBe('/fake.txt');
     await h.capabilities.conversation.send(dto.id, { text: 'send', attachmentIds: ['token'], delivery: 'prompt' });
@@ -113,6 +113,14 @@ describe('main composition and prepared create', () => {
     expect(open).not.toHaveBeenCalled();
     await expect(h.capabilities.createSession(runtime, options)).rejects.toThrow('兼容终端');
     expect(h.context.snapshot(terminal.id)?.lifecycle.phase).toBe('reserved');
+  });
+  it('restored dormant chats do not block a terminal, but cannot start after terminal ownership begins', async () => {
+    const h = harness();
+    const restored = await h.capabilities.restoreChatSession(runtime, { id: 'restored', cwd: '/input', title: 'Recovered', piSessionId: 'restored', sessionFile: '/home/user/restored.jsonl' });
+    const terminal = await h.capabilities.createSession(runtime, { ...options, kind: 'terminal', cols: 80, rows: 24 });
+    applySessionStartResult(h.capabilities.session.start(terminal.id));
+    expect(() => applySessionStartResult(h.capabilities.session.start(restored.id))).toThrow('兼容终端');
+    expect(h.adapter.start).toHaveBeenCalledTimes(1);
   });
   it.each(['register-before', 'register-after', 'open'] as const)('compensates %s synchronously, retains reservation until confirmed cleanup, then forgets once', async where => {
     const h = harness(); const cleanup = deferred<{ exitCode: number }>(); const original = new Error(where);

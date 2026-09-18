@@ -65,6 +65,7 @@ async function mount(kind: 'chat' | 'terminal' = 'chat') {
 }
 beforeEach(() => {
   listeners = new Set(); draftCounter = 0; terminal.pastes = []; terminal.throwPaste = false; terminal.instances = []; terminal.trace = []; terminal.search.mockReset();
+  window.localStorage.clear();
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1000 });
   window.matchMedia = vi.fn(query => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
@@ -128,6 +129,16 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     expect(vi.mocked(desktop.createSession).mock.calls).toHaveLength(before);
     expect(screen.getByRole('region', { name: '新对话' })).toBeTruthy();
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBeTruthy();
+  });
+  it('hydrates persisted Pi sessions into the sidebar without auto-starting history when opening a project', async () => {
+    window.localStorage.setItem('pua.workspace.view.v1', JSON.stringify({ activeProject: '/one', collapsedProjects: [] }));
+    boot = { ...boot, restoredSessions: [{ id: 'restored', title: 'Recovered', cwd: '/one', kind: 'chat', processStatus: 'starting', activity: 'idle' }] };
+    render(<App />);
+    await screen.findByRole('button', { name: 'Recovered' });
+    expect(desktop.startSession).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Recovered' }));
+    await waitFor(() => expect(desktop.startSession).toHaveBeenCalledWith('restored'));
+    expect(desktop.createSession).not.toHaveBeenCalled();
   });
   it('rename keeps the edited tab identity when selection changes, and terminal rename never calls the host', async () => {
     await mount(); await create(); fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /Session/ }), { key: 'F2' });

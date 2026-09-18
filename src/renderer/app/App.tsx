@@ -4,12 +4,11 @@ import { TerminalPane } from '../features/terminal';
 import { ChatPane, PendingChatPane } from '../features/conversation';
 import { desktopClient } from './desktop-client';
 import { GitPanel } from '../features/change-review';
-import { ProjectSidebar, projectName } from '../features/workspace';
+import { ProjectSidebar, projectName, readWorkspaceView, writeWorkspaceView } from '../features/workspace';
 import { NewSessionDialog } from '../features/sessions';
 import { SettingsDialog } from '../features/preferences';
 import { CommandPalette } from '../features/command-palette';
 import { Breadcrumbs, Button, Icon, ResizableWorkspace, UIProvider } from '../ui';
-import { readWorkspaceView, writeWorkspaceView } from '../features/workspace/workspace-view-persistence';
 
 export function App() {
   const panelToggle = useRef<HTMLButtonElement>(null);
@@ -19,7 +18,11 @@ export function App() {
   const { boot, theme, error } = desktopPresentation;
   const { sessions, activeId, active, project } = workspace;
   const [workspaceView, setWorkspaceView] = useState(() => readWorkspaceView());
-  useEffect(() => { if (boot && !project && workspaceView.activeProject && boot.preferences.recentProjects.includes(workspaceView.activeProject)) navigation.selectProject(workspaceView.activeProject); }, [boot, project, workspaceView.activeProject]);
+  useEffect(() => {
+    if (!boot) return;
+    const preferred = workspaceView.activeProject && boot.preferences.recentProjects.includes(workspaceView.activeProject) ? workspaceView.activeProject : undefined;
+    workspace.hydrateSessions(boot.restoredSessions ?? [], preferred);
+  }, [boot]);
   useEffect(() => { writeWorkspaceView({ activeProject: project || workspaceView.activeProject, collapsedProjects: workspaceView.collapsedProjects }); }, [project, workspaceView]);
   useEffect(() => {
     const listener = (event: KeyboardEvent) => { const modifier = boot?.platform === 'darwin' ? event.metaKey : event.ctrlKey; if (event.isComposing || event.keyCode === 229) return; if (modifier && !event.shiftKey && event.key.toLowerCase() === 'n') { event.preventDefault(); void launch.newConversation(active?.cwd || project); return; } if (modifier && (event.key.toLowerCase() === 'k' || event.shiftKey && event.key.toLowerCase() === 'p')) { event.preventDefault(); palette.toggle(); } if (modifier && event.shiftKey && event.key.toLowerCase() === 'f' && active?.kind === 'terminal') { event.preventDefault(); input.toggleSearch(); } };
