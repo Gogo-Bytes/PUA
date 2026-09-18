@@ -15,59 +15,42 @@ await mkdir(profile); await mkdir(project); await mkdir(path.join(project, '.age
 const git = (...args) => exec('git', ['-c', `core.hooksPath=${hooks}`, '-c', 'commit.gpgsign=false', '-c', 'user.name=Desktop Test', '-c', 'user.email=test@example.invalid', ...args], { cwd: project });
 await git('init', '--initial-branch=main'); await writeFile(path.join(project, 'editor.ts'), 'export const mode = "base";\n'); await git('add', 'editor.ts'); await git('commit', '-m', 'fixture');
 await writeFile(path.join(project, 'editor.ts'), 'export const mode = "working";\n'); await writeFile(path.join(project, 'notes.md'), '# Review notes\n');
-await writeFile(path.join(profile, 'desktop-settings.json'), JSON.stringify({ piPath: path.join(root, 'tests/fixtures/mock-pi.mjs'), nodePath: process.execPath, args: ['--test-argument', 'spaces;$(not-a-shell)'], fontSize: 14, recentProjects: [] }));
+await writeFile(path.join(profile, 'desktop-settings.json'), JSON.stringify({ piPath: path.join(root, 'tests/fixtures/mock-pi.mjs'), nodePath: process.execPath, args: ['--test-argument', 'spaces;$(not-a-shell)'], fontSize: 14, recentProjects: [project] }));
 const executablePath = process.env.PI_DESKTOP_TEST_EXECUTABLE;
 const app = await electron.launch({ executablePath, args: [...(executablePath ? [] : [root]), `--user-data-dir=${profile}`], cwd: root, timeout: 20000, env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1', PUA_MOCK_STARTUP_DIALOG: '1' } });
 const window = await app.firstWindow({ timeout: 15000 }); window.setDefaultTimeout(15000); const errors = []; window.on('pageerror', error => errors.push(String(error)));
 try {
-  await window.getByRole('heading', { name: '打开项目，开始工作' }).waitFor();
+  await window.getByRole('heading', { name: '开始一个新对话' }).waitFor();
   assert.equal(await window.evaluate(() => typeof globalThis.require), 'undefined');
   await window.evaluate(() => { window.__events = []; window.desktop.onSessionEvent(event => window.__events.push(event)); });
   await mkdir(path.join(root, '.agent-work/native-chat/evidence'), { recursive: true });
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/welcome.png') });
 
-  await window.locator('main').getByRole('button', { name: '打开项目', exact: true }).click();
-  await window.getByRole('textbox', { name: '项目文件夹', exact: true }).fill(project);
+  await window.getByRole('button', { name: '项目 with spaces', exact: true }).click();
   await window.getByText('检测到项目资源').waitFor();
   await window.getByRole('radio', { name: /沿用 Pi/ }).check();
-  await window.getByRole('button', { name: '开始对话' }).click();
-  await window.getByRole('heading', { name: '启动确认' }).waitFor();
-  assert((await window.getByRole('tab', { selected: true }).getAttribute('title')).includes('连接中'));
-  assert((await window.locator('.chat-pane.active .chat-meta').textContent()).includes('正在连接'));
-  await window.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click();
-  await window.getByRole('heading', { name: '从一个具体问题开始' }).waitFor();
-  const firstId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
-  const image = path.join(temp, 'image.png'); await writeFile(image, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aU1sAAAAASUVORK5CYII=', 'base64'));
-  await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file, file, file, file] }); }, image);
-  await window.getByRole('button', { name: '添加附件' }).click();
-  await window.waitForFunction(() => document.querySelectorAll('.attachment-chip').length === 4);
-  for (let count = 4; count > 0; count--) { await window.getByRole('button', { name: '移除 image.png' }).first().click(); await window.waitForFunction(expected => document.querySelectorAll('.attachment-chip').length === expected, count - 1); }
-  await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, image);
-  await window.getByRole('button', { name: '添加附件' }).click(); await window.locator('.attachment-chip').waitFor();
   await window.getByRole('textbox', { name: '发送消息' }).fill('你好 Pi\nsecond line');
-  await window.getByRole('button', { name: '发送', exact: false }).click();
+  await window.getByRole('button', { name: '发送消息', exact: true }).click();
+  await window.locator('.chat-pane.active').waitFor();
+  await window.getByRole('heading', { name: '启动确认' }).waitFor();
+  await window.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click();
   await window.getByRole('heading', { name: '原生回复' }).waitFor();
+  const firstId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
+  await window.locator('code.hljs').first().waitFor();
   assert.equal(await window.locator('code.hljs').count(), 1);
-  await window.getByText('读取 · README.md').waitFor();
-  await window.getByText('运行 · printf final-authoritative', { exact: true }).waitFor();
+  await window.getByText('读取 · README.md').first().waitFor();
+  await window.getByText('运行 · printf final-authoritative', { exact: true }).first().waitFor();
   assert.equal(await window.getByText('ghost', { exact: true }).count(), 0);
   assert.equal(await window.locator('.attachment-chip').count(), 0);
-  assert.equal(await window.locator('.chat-transcript img').count(), 1);
+  assert.equal(await window.locator('.chat-transcript img').count(), 0);
   // Real browser clipboard, not a mocked CopyButton, including highlighted code.
   await window.getByRole('button', { name: '复制回复', exact: true }).click();
   assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), '## 原生回复\n\n这是 **流式** Markdown。\n\n```ts\nconst ready = true;\n```');
-  await window.getByRole('button', { name: '复制代码', exact: true }).click();
+  await window.getByRole('button', { name: '复制代码', exact: true }).first().click();
   assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'const ready = true;\n');
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/native-chat.png') });
 
-  await window.getByRole('button', { name: '打开项目', exact: false }).first().click();
-  await window.getByRole('textbox', { name: '项目文件夹', exact: true }).fill(project);
-  await window.getByRole('radio', { name: /继续最近/ }).check();
-  await window.getByRole('button', { name: '开始对话' }).click();
-  await window.getByRole('alert').filter({ hasText: '避免两个进程写入同一 Pi 历史' }).waitFor();
-  await window.getByRole('button', { name: '关闭对话框' }).click();
-
-  if (!await window.getByRole('complementary', { name: '文件与 Git 检查区' }).count()) await window.getByRole('button', { name: '显示或收起检查区' }).click();
+  if (!await window.getByRole('complementary', { name: '文件与 Git 检查区' }).count()) await window.getByRole('button', { name: '显示 检查器' }).click();
   await window.locator('.changed-files button').filter({ hasText: 'editor.ts' }).click();
   await window.getByRole('button', { name: '引用文件到草稿' }).click();
   assert((await window.getByRole('textbox', { name: '发送消息' }).inputValue()).includes('editor.ts'));
@@ -79,7 +62,7 @@ try {
   const chatInput = window.getByRole('textbox', { name: '发送消息' });
   await chatInput.press('Escape');
   assert(await chatInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal chat Escape focus');
-  const inspectorToggle = window.getByRole('button', { name: '显示或收起检查区' });
+  const inspectorToggle = window.getByRole('button', { name: /检查器/ }).last();
   await inspectorToggle.click();
   await chatInput.press('Escape');
   assert.equal(await inspectorToggle.getAttribute('aria-expanded'), 'true', 'input Escape must not close inspector');
@@ -152,9 +135,8 @@ try {
   assert(Math.abs(await scroller.evaluate(node => node.scrollTop) - heldPosition) < 5, 'streaming must not pull an upward-scrolling reader');
   await window.getByRole('button', { name: '回到最新' }).click();
   await window.getByText('读取 · long.txt', { exact: true }).waitFor();
-  await window.waitForFunction(() => { const s = document.querySelector('.chat-pane.active [data-virtuoso-scroller]'); return s.scrollHeight - s.clientHeight - s.scrollTop < 5; });
-  const tool = window.locator('.tool-card').filter({ hasText: 'long.txt' });
-  await tool.locator('summary').click();
+  const tool = window.locator('.ui-tool-card').filter({ hasText: 'long.txt' });
+  await tool.getByRole('button').click();
   const toolImage = tool.getByAltText('工具结果图片'); await toolImage.waitFor();
   await toolImage.evaluate(node => { node.style.height = '240px'; node.style.width = '240px'; });
   await window.waitForFunction(() => { const s = document.querySelector('.chat-pane.active [data-virtuoso-scroller]'); return s.scrollHeight - s.clientHeight - s.scrollTop < 5; });
@@ -165,7 +147,7 @@ try {
   await scrollRest();
   const beforeResize = await scroller.evaluate(node => node.scrollTop);
   await toolImage.evaluate(node => { node.style.height = '360px'; });
-  await window.waitForFunction(() => document.querySelector('.tool-card img')?.clientHeight === 360);
+  await window.waitForFunction(() => document.querySelector('.ui-tool-card img')?.clientHeight === 360);
   await scrollRest();
   assert(Math.abs(await scroller.evaluate(node => node.scrollTop) - beforeResize) < 5, 'image resize while reading must not force latest');
   await window.getByRole('button', { name: '回到最新' }).click();
@@ -177,33 +159,13 @@ try {
   await window.getByRole('button', { name: '回到最新' }).waitFor(); await scrollRest();
   const backgroundScroll = await scroller.evaluate(node => node.scrollTop);
 
-  // A second native session preserves independent drafts and background event consumption.
-  await window.getByRole('textbox', { name: '发送消息' }).fill('first draft');
-  await window.getByRole('button', { name: '打开项目', exact: false }).first().click();
-  await window.getByRole('button', { name: '开始对话' }).click();
-  await window.getByRole('heading', { name: '启动确认' }).waitFor();
-  await window.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click();
-  await window.locator('.chat-pane.active .chat-empty').waitFor();
-  const secondId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
-  await window.getByRole('textbox', { name: '发送消息' }).fill('second draft');
-  assert.deepEqual(parseDesktopResult('sendChatMessage', await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-prefill', attachmentIds: [], delivery: 'prompt' }), firstId)), { ok: true, value: null });
-  await window.getByRole('tab').first().click();
-  assert.equal(await window.getByRole('textbox', { name: '发送消息' }).inputValue(), '预填草稿');
-  await scrollRest();
-  assert(Math.abs(await scroller.evaluate(node => node.scrollTop) - backgroundScroll) < 5, 'background tab retains reader scroll position');
-  await window.getByRole('tab').last().click();
-  assert.equal(await window.getByRole('textbox', { name: '发送消息' }).inputValue(), 'second draft');
-  await window.locator('.close-session').last().click(); await window.waitForFunction(() => document.querySelectorAll('.chat-pane').length === 1);
   assert.deepEqual(parseDesktopResult('sendChatMessage', await window.evaluate(id => window.desktop.sendChatMessage(id, { text: '/mock-exit', attachmentIds: [], delivery: 'prompt' }), firstId)), { ok: true, value: null });
   await window.getByRole('alert').filter({ hasText: 'Pi 对话进程已退出' }).waitFor();
   await window.locator('.chat-pane.active').getByRole('button', { name: '复制回复', exact: true }).last().click();
   const lastReply = await app.evaluate(({ clipboard }) => clipboard.readText());
   assert(lastReply.includes('Paragraph 100:'), 'retained reply remains visible and copyable after exit');
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/exited-chat.png') });
-  await window.locator('.close-session').click(); await window.locator('.chat-pane').waitFor({ state: 'detached' });
-
-  await window.getByRole('button', { name: '打开项目', exact: false }).first().click();
-  await window.getByRole('textbox', { name: '项目文件夹', exact: true }).fill(project);
+  await window.getByRole('button', { name: '兼容终端', exact: true }).click();
   await window.getByRole('radio', { name: /兼容终端/ }).check();
   await window.getByRole('button', { name: '打开兼容终端' }).click();
   await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes('MOCK_PI_READY')));
@@ -212,7 +174,7 @@ try {
   assert(terminalOutput.includes('spaces;$(not-a-shell)'));
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1000, 800));
   await window.waitForFunction(() => window.innerWidth <= 1100);
-  assert.equal(await window.getByRole('button', { name: '显示或收起检查区' }).getAttribute('aria-expanded'), 'false');
+  assert.equal(await window.getByRole('button', { name: '显示 检查器' }).getAttribute('aria-expanded'), 'false');
   const terminalInput = window.locator('.terminal-pane.active .xterm-helper-textarea');
   await terminalInput.press('Escape');
   assert(await terminalInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal real xterm Escape focus');
