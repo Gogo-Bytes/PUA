@@ -16,6 +16,7 @@ export class ConversationApplication {
   getAvailableThinkingLevels(id: string): Promise<string[]> { this.current(id); return this.runtime.getAvailableThinkingLevels(id); }
   setModel(id: string, provider: string, modelId: string): Promise<void> { this.current(id); return this.runtime.setModel(id, provider, modelId); }
   setThinkingLevel(id: string, level: string): Promise<void> { this.current(id); return this.runtime.setThinkingLevel(id, level); }
+  getSessionStats(id: string) { this.current(id); return this.runtime.getSessionStats(id); }
   compact(id: string, customInstructions?: string): Promise<void> { this.current(id, 'send'); return this.runtime.compact(id, customInstructions); }
   private readonly contexts = new Map<string, OperationContext>();
   constructor(private readonly runtime: ConversationRuntimePort, private readonly resources: AttachmentResourcesPort) {}

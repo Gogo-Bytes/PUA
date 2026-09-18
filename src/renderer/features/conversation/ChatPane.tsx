@@ -4,7 +4,7 @@ import { MarkdownView, CopyButton, SourceView } from '../content';
 export { MarkdownView } from '../content';
 import { Button, Collapsible, Dialog, Icon } from '../../ui';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
-import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../../../shared/ipc/conversation';
+import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ChatSessionStats, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../../../shared/ipc/conversation';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { emptyChatState, queueText, reduceChatEvent, widgetsAt } from './chat-state';
 import { missingAssistantRendererDiagnostics } from './missing-assistant-diagnostics';
@@ -30,6 +30,9 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [models, setModels] = useState<import('../../../shared/ipc/conversation').ChatModel[]>([]);
   const [thinkingLevels, setThinkingLevels] = useState<string[]>([]);
+  const [sessionStats, setSessionStats] = useState<ChatSessionStats>();
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const sendingRef = useRef(false);
   const stoppingRef = useRef(false);
   const recoveredRequests = useRef(new Set<string>());
@@ -125,6 +128,13 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     catch (error) { onError(String(error)); }
     finally { sendingRef.current = false; }
   };
+  const showStats = async () => {
+    if (statsLoading || unavailable) return;
+    setStatsLoading(true);
+    try { setSessionStats(await desktopClient.getChatSessionStats(session.id)); setStatsOpen(true); }
+    catch (error) { onError(String(error)); }
+    finally { setStatsLoading(false); }
+  };
 
   useEffect(() => {
     if (!active || !state.ready || !initialMessage || initialSentRef.current) return;
@@ -157,7 +167,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       {!!queueText(state.queue).length && <div className="queue-strip"><strong>已排队</strong>{state.queue.steering.map((text, index) => <span key={`s${index}`}>引导 · {text}</span>)}{state.queue.followUp.map((text, index) => <span key={`f${index}`}>后续 · {text}</span>)}</div>}
       {!!slash.length && <div className="slash-menu" aria-label="Pi 命令建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSlashDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {slash.map(command => <Button key={command.name} onClick={() => { changeDraft(`/${command.name} `); setSlashDismissed(true); textarea.current?.focus(); }}><code>/{command.name}</code><span>{command.description || command.source}</span></Button>)}</div>}
       {!!skills.length && <div className="skill-menu" role="listbox" aria-label="技能建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSkillDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role=option]')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {skills.map(command => <Button key={command.name} role="option" aria-selected="false" onClick={() => { const before = draft.slice(0, draft.length - (skillMatch?.[1].length ?? 0)); const name = command.name.replace(/^skill:/, ''); changeDraft(`${before.replace(/@$/, '')}@${name} `); setSkillDismissed(true); textarea.current?.focus(); }}><code>@{command.name.replace(/^skill:/, '')}</code><span>{command.description || '@ Pi 技能'}</span></Button>)}</div>}
-      <div className="chat-runtime-controls"><select aria-label="模型" value={state.model ? `${state.model.provider}/${state.model.id}` : ''} onFocus={loadModels} onChange={event => { const [provider, ...rest] = event.target.value.split('/'); void desktopClient.setChatModel(session.id, provider, rest.join('/')).catch(error => onError(String(error))); }}>{!state.model && <option value="">模型</option>}{models.map(model => <option key={`${model.provider}/${model.id}`} value={`${model.provider}/${model.id}`}>{model.name || model.id}</option>)}</select><select aria-label="Thinking Level" value={state.thinkingLevel || ''} onFocus={loadThinkingLevels} onChange={event => { if (event.target.value) void desktopClient.setChatThinkingLevel(session.id, event.target.value).catch(error => onError(String(error))); }}><option value="">Thinking</option>{thinkingLevels.map(level => <option key={level} value={level}>{level}</option>)}</select><Button variant="ghost" disabled={busy || unavailable} onClick={() => void compact()}>压缩上下文</Button></div>
+      <div className="chat-runtime-controls"><select aria-label="模型" value={state.model ? `${state.model.provider}/${state.model.id}` : ''} onFocus={loadModels} onChange={event => { const [provider, ...rest] = event.target.value.split('/'); void desktopClient.setChatModel(session.id, provider, rest.join('/')).catch(error => onError(String(error))); }}>{!state.model && <option value="">模型</option>}{models.map(model => <option key={`${model.provider}/${model.id}`} value={`${model.provider}/${model.id}`}>{model.name || model.id}</option>)}</select><select aria-label="Thinking Level" value={state.thinkingLevel || ''} onFocus={loadThinkingLevels} onChange={event => { if (event.target.value) void desktopClient.setChatThinkingLevel(session.id, event.target.value).catch(error => onError(String(error))); }}><option value="">Thinking</option>{thinkingLevels.map(level => <option key={level} value={level}>{level}</option>)}</select><Button variant="ghost" disabled={busy || unavailable} onClick={() => void compact()}>压缩上下文</Button><Button variant="ghost" disabled={statsLoading || unavailable} onClick={() => void showStats()}>{statsLoading ? '读取统计…' : '会话统计'}</Button></div>
       {state.sessionTree?.length ? <div className="chat-session-tree" aria-label="会话分支历史"><strong>分支历史</strong><TreeNodes nodes={state.sessionTree} onFork={entryId => void fork(entryId)} /></div> : null}
       <Composer conversationKey={session.id} editorRef={textarea} disabled={unavailable} value={draft}
         attachments={attachments.map(item => ({ id: item.id, name: item.name, detail: <>{item.previewUrl && <img className="attachment-preview" src={item.previewUrl} alt=""/>}{formatBytes(item.size)}</> }))}
@@ -175,7 +185,20 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       <div className="chat-meta"><span>{state.exited || session.processStatus === 'exited' ? 'Pi 已退出' : session.processStatus === 'starting' || !state.ready ? '正在连接 Pi…' : activityLabel(state.activity)}</span><span>{state.model ? `${state.model.provider}/${state.model.id}` : '未选择模型'}{state.thinkingLevel ? ` · ${state.thinkingLevel}` : ''}</span>{Object.entries(state.statuses).map(([key, value]) => <span key={key}>{value}</span>)}</div>
     </div>
     {active && state.dialog && <ExtensionDialog key={state.dialog.id} request={state.dialog} onAnswer={answerDialog} />}
+    {active && statsOpen && sessionStats && <SessionStatsDialog stats={sessionStats} onClose={() => setStatsOpen(false)} />}
   </section>;
+}
+
+function SessionStatsDialog({ stats, onClose }: { stats: ChatSessionStats; onClose(): void }) {
+  const context = stats.contextUsage;
+  return <Dialog open title="Pi 会话统计" closeLabel="关闭" onClose={onClose}>
+    <div className="session-stats" aria-label="Pi 会话统计">
+      <dl><div><dt>用户消息</dt><dd>{stats.userMessages}</dd></div><div><dt>Pi 回复</dt><dd>{stats.assistantMessages}</dd></div><div><dt>工具调用</dt><dd>{stats.toolCalls}</dd></div><div><dt>工具结果</dt><dd>{stats.toolResults}</dd></div><div><dt>消息总数</dt><dd>{stats.totalMessages}</dd></div><div><dt>估算成本</dt><dd>{stats.cost}</dd></div></dl>
+      <p>Token：输入 {stats.tokens.input} · 输出 {stats.tokens.output} · 缓存读 {stats.tokens.cacheRead} · 缓存写 {stats.tokens.cacheWrite} · 总计 {stats.tokens.total}</p>
+      {context && <p>上下文：{context.tokens === null ? '未知' : context.tokens} / {context.contextWindow} token{context.percent === null ? '' : `（${context.percent.toFixed(1)}%）`}</p>}
+      <p className="ui-meta">数据由当前 Pi 会话原生统计提供，不代表账户级或云端用量。</p>
+    </div>
+  </Dialog>;
 }
 
 function TreeNodes({ nodes, onFork, depth = 0 }: { nodes: readonly import('../../../shared/ipc/conversation').ChatTreeNode[]; onFork(entryId: string): void; depth?: number }) {

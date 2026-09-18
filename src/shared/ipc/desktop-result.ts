@@ -27,6 +27,12 @@ const preferences = (v: unknown) => record(v) && optional(v.theme, x => oneOf(x,
 const runtime = (v: unknown) => record(v) && text(v.executable) && strings(v.args) && text(v.source);
 const bootstrap = (v: unknown) => record(v) && preferences(v.preferences) && (v.runtime === null || runtime(v.runtime)) && optional(v.runtimeError, text) && text(v.home) && text(v.platform);
 const attachment = (v: unknown) => record(v) && text(v.id) && text(v.name) && text(v.path) && oneOf(v.kind, ['file', 'image']) && finite(v.size) && optional(v.mimeType, text) && optional(v.previewUrl, text);
+const sessionStats = (v: unknown) => {
+  if (!record(v) || !finite(v.userMessages) || !finite(v.assistantMessages) || !finite(v.toolCalls) || !finite(v.toolResults) || !finite(v.totalMessages) || !finite(v.cost) || !record(v.tokens)) return false;
+  const tokens = v.tokens as Record<string, unknown>;
+  if (!['input', 'output', 'cacheRead', 'cacheWrite', 'total'].every(key => finite(tokens[key]))) return false;
+  return optional(v.contextUsage, context => record(context) && finite(context.contextWindow) && (context.tokens === null || finite(context.tokens)) && (context.percent === null || finite(context.percent)));
+};
 const arrayOf = (v: unknown, guard: (v: unknown) => boolean) => Array.isArray(v) && Array.from(v).every(guard);
 const empty = (v: unknown) => v === null;
 const picker = (v: unknown) => v === null || text(v);
@@ -42,7 +48,7 @@ export const desktopValueGuards = {
   closeSession: bool,
   startSession: empty, removeChatAttachment: empty, sendChatMessage: empty, stopChat: empty,
   respondToExtensionUI: empty, renameChatSession: empty, forkChatSession: v => record(v) && text(v.text) && bool(v.cancelled), getChatAvailableModels: v => arrayOf(v, x => record(x) && text(x.provider) && text(x.id)), openExternal: empty, openProject: empty, writeClipboard: empty,
-  setChatModel: empty, setChatThinkingLevel: empty, compactChatSession: empty,
+  setChatModel: empty, setChatThinkingLevel: empty, getChatSessionStats: sessionStats, compactChatSession: empty,
   getChatThinkingLevels: v => arrayOf(v, text),
   gitStatus: (v: unknown) => record(v) && text(v.root) && text(v.branch) && text(v.capturedAt) && arrayOf(v.files, f => record(f) && text(f.path) && text(f.index) && text(f.worktree) && optional(f.originalPath, text)),
   fileDiff: (v: unknown) => record(v) && text(v.text) && oneOf(v.kind, ['diff', 'untracked', 'binary', 'symlink']) && bool(v.truncated),

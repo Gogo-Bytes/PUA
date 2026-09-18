@@ -78,6 +78,7 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   forkChatSession: tuple<'forkChatSession'>(2, (id, entryId) => [text(id), boundedText(entryId, 256, '分支消息 id')]),
   getChatAvailableModels: idArgs,
   getChatThinkingLevels: idArgs,
+  getChatSessionStats: idArgs,
   setChatModel: tuple<'setChatModel'>(3, (id, provider, modelId) => [text(id), text(provider), text(modelId)]),
   setChatThinkingLevel: tuple<'setChatThinkingLevel'>(2, (id, level) => [text(id), text(level)]),
   compactChatSession: tuple<'compactChatSession'>(2, (id, customInstructions) => [text(id), customInstructions === undefined ? undefined : boundedText(customInstructions, 8 * 1024 * 1024, '压缩说明')]),

@@ -48,6 +48,17 @@ export interface ChatRuntimeState {
   widgets: ChatWidget[];
 }
 export interface ChatModel { provider: string; id: string; name?: string; reasoning?: boolean }
+/** Pi's native per-session counters, reduced to the fields useful to the desktop UI. */
+export interface ChatSessionStats {
+  userMessages: number;
+  assistantMessages: number;
+  toolCalls: number;
+  toolResults: number;
+  totalMessages: number;
+  tokens: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
+  cost: number;
+  contextUsage?: { tokens: number | null; contextWindow: number; percent: number | null };
+}
 export interface ChatSnapshot extends ChatRuntimeState {
   messages: ChatMessage[];
   commands: ChatCommand[];

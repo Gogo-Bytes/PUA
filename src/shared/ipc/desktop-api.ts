@@ -73,6 +73,7 @@ export interface DesktopAPI {
   getChatThinkingLevels(id: string): Promise<string[]>;
   setChatModel(id: string, provider: string, modelId: string): Promise<void>;
   setChatThinkingLevel(id: string, level: string): Promise<void>;
+  getChatSessionStats(id: string): Promise<import('./conversation.js').ChatSessionStats>;
   compactChatSession(id: string, customInstructions?: string): Promise<void>;
   write(id: string, data: string): void;
   resize(id: string, cols: number, rows: number): void;

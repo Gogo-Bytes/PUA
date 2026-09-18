@@ -11,11 +11,13 @@ import { ChatPane, MarkdownView, ToolCard } from '../src/renderer/features/conve
 afterEach(cleanup);
 let emit: ((event: import('../src/shared/ipc/conversation').SessionEvent) => void) | undefined;
 beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   emit = undefined;
   desktop = installDesktopFake({
     openExternal: vi.fn().mockResolvedValue(undefined), writeClipboard: vi.fn().mockResolvedValue(undefined), startSession: vi.fn().mockResolvedValue(undefined),
     onSessionEvent: vi.fn(callback => { emit = callback; return () => {}; }), sendChatMessage: vi.fn().mockResolvedValue(undefined), stopChat: vi.fn().mockResolvedValue(undefined), chooseChatAttachments: vi.fn().mockResolvedValue([]), respondToExtensionUI: vi.fn().mockResolvedValue(undefined),
-    forkChatSession: vi.fn().mockResolvedValue({ text: 'forked', cancelled: false }), compactChatSession: vi.fn().mockResolvedValue(undefined),
+    forkChatSession: vi.fn().mockResolvedValue({ text: 'forked', cancelled: false }), getChatSessionStats: vi.fn().mockResolvedValue({ userMessages: 1, assistantMessages: 1, toolCalls: 2, toolResults: 2, totalMessages: 2, tokens: { input: 3, output: 4, cacheRead: 5, cacheWrite: 6, total: 18 }, cost: 0.01, contextUsage: { tokens: 10, contextWindow: 100, percent: 10 } }), compactChatSession: vi.fn().mockResolvedValue(undefined),
   } as unknown as DesktopAPI);
 });
 
@@ -89,6 +91,14 @@ describe('native composer', () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', { name: '压缩上下文' }));
     await waitFor(() => expect(desktop.compactChatSession).toHaveBeenCalledExactlyOnceWith('s'));
+  });
+  it('exposes Pi-native session statistics without treating them as account usage', async () => {
+    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: '会话统计' }));
+    await waitFor(() => expect(desktop.getChatSessionStats).toHaveBeenCalledExactlyOnceWith('s'));
+    expect((await screen.findByRole('dialog', { name: 'Pi 会话统计' })).textContent).toContain('输入 3');
+    expect(screen.getByText(/不代表账户级或云端用量/)).toBeTruthy();
   });
 });
 

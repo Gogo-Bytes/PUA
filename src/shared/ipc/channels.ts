@@ -27,6 +27,7 @@ export const invokeChannels = {
   getChatThinkingLevels: 'desktop:chat-thinking-levels',
   setChatModel: 'desktop:chat-model-set',
   setChatThinkingLevel: 'desktop:chat-thinking-set',
+  getChatSessionStats: 'desktop:chat-session-stats',
   compactChatSession: 'desktop:chat-compact',
   openExternal: 'desktop:external',
   openProject: 'desktop:project',

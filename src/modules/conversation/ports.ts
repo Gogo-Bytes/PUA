@@ -1,4 +1,14 @@
 import type { Attachment, AttachmentMetadata, AttachmentSourceId, AttachmentToken, ExtensionResponse, RuntimeSend } from './domain/conversation.js';
+export interface ConversationSessionStats {
+  userMessages: number;
+  assistantMessages: number;
+  toolCalls: number;
+  toolResults: number;
+  totalMessages: number;
+  tokens: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
+  cost: number;
+  contextUsage?: { tokens: number | null; contextWindow: number; percent: number | null };
+}
 import type { ConversationQueue } from './domain/runtime.js';
 import type { ConversationObject } from './domain/stream.js';
 export interface ConversationModel { provider: string; id: string; name?: string; reasoning?: boolean }
@@ -20,6 +30,7 @@ export interface ConversationRuntimePort {
   getAvailableThinkingLevels(id: string): Promise<string[]>;
   setModel(id: string, provider: string, modelId: string): Promise<void>;
   setThinkingLevel(id: string, level: string): Promise<void>;
+  getSessionStats(id: string): Promise<ConversationSessionStats>;
   compact(id: string, customInstructions?: string): Promise<void>;
   /** Capture authorized payloads and issue the request before returning; resolve only on acknowledgement. */
   send(id: string, command: RuntimeSend): Promise<void>;

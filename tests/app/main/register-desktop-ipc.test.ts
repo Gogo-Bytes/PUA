@@ -14,6 +14,7 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
   forkChatSession: ['id', 'entry'],
   getChatAvailableModels: ['id'], getChatThinkingLevels: ['id'],
+  getChatSessionStats: ['id'],
   setChatModel: ['id', 'provider', 'model'], setChatThinkingLevel: ['id', 'high'],
   compactChatSession: ['id', undefined],
   sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
@@ -38,6 +39,7 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.capabilities.conversation.stop).toHaveBeenCalledExactlyOnceWith('id'); expect(h.capabilities.conversation.respond).toHaveBeenCalledExactlyOnceWith('id', { id: 'request', confirmed: true });
     expect(h.capabilities.conversation.getAvailableModels).toHaveBeenCalledExactlyOnceWith('id');
     expect(h.capabilities.conversation.getAvailableThinkingLevels).toHaveBeenCalledExactlyOnceWith('id');
+    expect(h.capabilities.conversation.getSessionStats).toHaveBeenCalledExactlyOnceWith('id');
     expect(h.capabilities.conversation.setModel).toHaveBeenCalledExactlyOnceWith('id', 'provider', 'model');
     expect(h.capabilities.conversation.setThinkingLevel).toHaveBeenCalledExactlyOnceWith('id', 'high');
     expect(h.capabilities.conversation.removeAttachment).toHaveBeenCalledExactlyOnceWith('id', 'token'); expect(h.capabilities.conversation.rename).toHaveBeenCalledExactlyOnceWith('id', 'title');

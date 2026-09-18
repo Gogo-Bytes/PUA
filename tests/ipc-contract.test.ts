@@ -8,15 +8,15 @@ const methods = Object.keys(samples) as RequestMethod[];
 describe('desktop IPC contract', () => {
   it('retains exactly the legacy invoke/send/event whitelist and unique channels', () => {
     const values = [...Object.values(invokeChannels), ...Object.values(sendChannels), ...Object.values(eventChannels)];
-    expect(values).toHaveLength(31);
-    expect(new Set(values).size).toBe(31);
-    expect(Object.keys(invokeChannels)).toHaveLength(27);
+    expect(values).toHaveLength(32);
+    expect(new Set(values).size).toBe(32);
+    expect(Object.keys(invokeChannels)).toHaveLength(28);
     expect(Object.keys(sendChannels)).toEqual(['write', 'resize', 'acknowledge']);
     expect(Object.keys(eventChannels)).toEqual(['onSessionEvent']);
     expect(values.map(value => value.replace('desktop:', '')).sort()).toEqual([
       'bootstrap', 'directory', 'file', 'attachments', 'chat-attachment-remove', 'chat-attachments', 'preferences',
       'project-resources', 'create', 'start', 'close', 'chat-send', 'chat-stop', 'extension-response', 'chat-rename', 'chat-models', 'chat-thinking-levels', 'chat-model-set', 'chat-thinking-set',
-      'external', 'project', 'git-status', 'file-diff', 'clipboard-read', 'clipboard-write', 'chat-fork', 'chat-compact', 'write', 'resize', 'ack', 'event',
+      'external', 'project', 'git-status', 'file-diff', 'clipboard-read', 'clipboard-write', 'chat-fork', 'chat-session-stats', 'chat-compact', 'write', 'resize', 'ack', 'event',
     ].sort());
     expect(Object.keys(requestParsers).sort()).toEqual(methods.sort());
   });

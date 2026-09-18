@@ -13,7 +13,7 @@ import { validSize } from '../../../shared/ipc/schemas.js';
 import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../shared/ipc/conversation.js';
 import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/ipc/desktop-api.js';
 import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../../../modules/sessions/index.js';
-import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
+import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ConversationSessionStats, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
 import type { ChatModel } from '../../../shared/ipc/conversation.js';
 
 type ProcessHost = Omit<UtilityProcess, 'postMessage'> & WorkerInputPort<RpcWorkerInput | PtyWorkerInput>;
@@ -36,6 +36,20 @@ interface ProcessResource {
   pending: Map<string, { resolve(value?: unknown): void; reject(error: Error): void; command: RpcOperation['type'] }>;
   payloads: Map<AttachmentToken, AttachmentPayload>;
   sources: Map<AttachmentSourceId, string>;
+}
+const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
+const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+function sessionStats(value: unknown): ConversationSessionStats {
+  if (!record(value) || !finite(value.userMessages) || !finite(value.assistantMessages) || !finite(value.toolCalls) || !finite(value.toolResults) || !finite(value.totalMessages) || !finite(value.cost) || !record(value.tokens)) throw new Error('Pi 返回了无效的会话统计');
+  const tokenKeys = ['input', 'output', 'cacheRead', 'cacheWrite', 'total'] as const;
+  const tokens = value.tokens as Record<string, unknown>;
+  if (!tokenKeys.every(key => finite(tokens[key]))) throw new Error('Pi 返回了无效的 token 统计');
+  let contextUsage: ConversationSessionStats['contextUsage'];
+  if (value.contextUsage !== undefined) {
+    if (!record(value.contextUsage) || !finite(value.contextUsage.contextWindow) || (value.contextUsage.tokens !== null && !finite(value.contextUsage.tokens)) || (value.contextUsage.percent !== null && !finite(value.contextUsage.percent))) throw new Error('Pi 返回了无效的上下文统计');
+    contextUsage = { tokens: value.contextUsage.tokens as number | null, contextWindow: value.contextUsage.contextWindow, percent: value.contextUsage.percent as number | null };
+  }
+  return { userMessages: value.userMessages, assistantMessages: value.assistantMessages, toolCalls: value.toolCalls, toolResults: value.toolResults, totalMessages: value.totalMessages, tokens: { input: tokens.input as number, output: tokens.output as number, cacheRead: tokens.cacheRead as number, cacheWrite: tokens.cacheWrite as number, total: tokens.total as number }, cost: value.cost, ...(contextUsage ? { contextUsage } : {}) };
 }
 export interface SessionProcessContext {
   workerPaths: { chat: string; terminal: string };
@@ -324,6 +338,7 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
   async setModel(id: string, provider: string, modelId: string): Promise<void> { await this.request(this.resource(id), { type: 'set-model', provider, modelId }); }
   async getAvailableThinkingLevels(id: string): Promise<string[]> { const result = await this.request<{ levels: string[] }>(this.resource(id), { type: 'get-available-thinking-levels' }); return result.levels; }
   async setThinkingLevel(id: string, level: string): Promise<void> { await this.request(this.resource(id), { type: 'set-thinking-level', level }); }
+  async getSessionStats(id: string): Promise<ConversationSessionStats> { return sessionStats(await this.request<unknown>(this.resource(id), { type: 'get-session-stats' })); }
   async compact(id: string, customInstructions?: string): Promise<void> { await this.request(this.resource(id), { type: 'compact', ...(customInstructions === undefined ? {} : { customInstructions }) }); }
 
   async stop(id: string): Promise<void> { await this.request(this.resource(id), { type: 'stop' }); }

@@ -32,7 +32,7 @@
 | PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 已接入（边界明确） | 消息级 Fork、用户 entry 白名单、侧栏入口与 `agent_settled` 后实时树元数据刷新已接入；不把 `entryId` 冒充 PUA Session id |
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip 与命令面板已接入；项目级资源入口与状态展示仍待接入 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
-| PI-RPC-14 | token / usage 统计 | Pi `FooterDataProvider` 暴露 context usage、session entries、model 信息；RPC DTO 尚未核对 | 待验证 | 核对 RPC usage 事件后增加任务级用量摘要 |
+| PI-RPC-14 | token / usage 统计 | Pi 0.85.1 `AgentSession.getSessionStats()` / RPC `get_session_stats` 返回消息与工具计数、input/output/cache token、cost 和可选 contextUsage（tokens/contextWindow/percent） | 已接入 | 会话工具栏提供只读“会话统计”；明确标注为当前 Pi 会话统计，不伪装账户级用量 |
 | PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 明确不做 | 不提供 HTML 导出入口；保留复制消息 |
 | PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
 
@@ -42,7 +42,7 @@
 
 ## 本轮核验结果
 
-当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新和原生 `compact` 路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree 事件、skills、prompt templates 与 HTML export 相关能力，但仍需核对 RPC 暴露方式和运行样例。usage 仍未找到可靠 DTO。下一轮优先核验 PI-RPC-10、PI-RPC-12 至 PI-RPC-14。
+当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新、原生 `compact` 和 `get_session_stats` 路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree、skills、prompt templates、HTML export 与 session stats 能力。usage 已按稳定 DTO 接入并做主进程边界校验。下一轮优先核验 PI-RPC-10、PI-RPC-12 至 PI-RPC-13。
 
 ## Pi 0.85.1 RPC 命令映射（静态核验）
 
@@ -62,6 +62,7 @@
 - **Skills / Prompt Templates**：Pi 从资源目录加载并通过命令目录暴露；PUA 的 `@` 是输入筛选器，执行逻辑仍由 Pi 持有。
 - **Model / Thinking Level**：Pi 支持按会话查询和切换，PUA 不接管凭据或配置文件；模型与 Thinking Level 已通过真实 RPC 查询/切换，UI 菜单按需加载 Pi 返回的列表。
 - **TUI custom 能力**：自定义主题、header/footer、renderer、editor 依赖终端绘制生命周期，RPC 没有等价 UI。
+- **Session stats**：Pi 的 `/session` 统计属于当前本地会话的消息、工具、token、成本与上下文估算；PUA 只读展示该会话数据，不扩展为 Codex 账户用量、计费或跨设备统计。
 
 ## Fork 交互保留项
 
