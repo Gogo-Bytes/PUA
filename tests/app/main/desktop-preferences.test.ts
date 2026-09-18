@@ -41,13 +41,17 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     const directory = await mkdtemp(path.join(os.tmpdir(), 'pua-preferences-'));
     try {
       const sessionFile = path.join(directory, 'pi-session.jsonl');
-      await writeFile(sessionFile, '{}\n');
+      await writeFile(sessionFile, [
+        JSON.stringify({ type: 'session', id: 'pi-1', cwd: '/fake/project' }),
+        JSON.stringify({ type: 'message', id: 'entry-1', timestamp: '2026-09-18T10:00:00.000Z', message: { role: 'user', content: '检查归档搜索' } }),
+      ].join('\n'));
       const store = new JsonWorkspaceSessionStore(path.join(directory, 'workspace-sessions.json'));
       const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
       const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
       const capabilities = fakeCapabilities();
       await preferences.createSession(options, capabilities);
       await preferences.recordChatMessage('id', { sessionId: 'pi-1', sessionFile });
+      await expect(preferences.searchHistory({ query: '归档' })).resolves.toEqual([expect.objectContaining({ taskId: 'id', entryId: 'entry-1', query: '归档', archived: false })]);
       await preferences.setSessionPinned('id', true);
       const restored = { ...sessionInfo, processStatus: 'exited' as const, activity: 'idle' as const };
       await preferences.restoreSessions({ restoreChatSession: vi.fn().mockResolvedValue(restored) });

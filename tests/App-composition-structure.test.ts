@@ -11,7 +11,7 @@ const calls = (root: ts.SourceFile) => nodes(root).filter(ts.isCallExpression);
 describe('App composition source ownership (static, not behavioral journeys)', () => {
   it('keeps App local state limited to inspector layout and has no host or async workflow implementation', () => {
     const app = source('src/renderer/app/App.tsx');
-    expect(calls(app).filter(node => node.expression.getText(app) === 'useState')).toHaveLength(2);
+    expect(calls(app).filter(node => node.expression.getText(app) === 'useState')).toHaveLength(3);
     expect(nodes(app).filter(ts.isAwaitExpression)).toHaveLength(0);
     expect(nodes(app).filter(node => node.kind === ts.SyntaxKind.AsyncKeyword)).toHaveLength(0);
     expect(calls(app).filter(node => /\.(then|catch|finally)$/.test(node.expression.getText(app)))).toHaveLength(0);

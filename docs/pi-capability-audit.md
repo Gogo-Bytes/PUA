@@ -34,7 +34,7 @@
 | PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
 | PI-RPC-10 | `--resume` 历史选择器 | Pi 0.85.1 CLI `--resume, -r`；当前 `NewSessionDialog` 仅允许兼容终端使用 `startMode=resume`，主进程会原样追加 `--resume` | 部分接入 | 兼容终端入口可进入 Pi 原生历史选择器；RPC 原生对话使用已验证的持久化 identity，不伪造选择器 |
 | PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 已接入（边界明确） | 消息级 Fork、用户 entry 白名单、侧栏入口与 `agent_settled` 后实时树元数据刷新已接入；不把 `entryId` 冒充 PUA Session id |
-| PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip 与命令面板已接入；项目级资源入口与状态展示仍待接入 |
+| PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip、命令面板和项目启动前资源/信任检查已接入；资源实际执行仍由 Pi 持有 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
 | PI-RPC-14 | token / usage 统计 | Pi 0.85.1 `AgentSession.getSessionStats()` / RPC `get_session_stats` 返回消息与工具计数、input/output/cache token、cost 和可选 contextUsage（tokens/contextWindow/percent） | 已接入 | 会话工具栏提供只读“会话统计”；明确标注为当前 Pi 会话统计，不伪装账户级用量 |
 | PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 明确不做 | 不提供 HTML 导出入口；保留复制消息 |

@@ -23,9 +23,10 @@ interface Props {
   onCommands(commands: ChatCommand[]): void;
   initialMessage?: string;
   onInitialMessageSent?(): void;
+  historyTarget?: { entryId: string; query: string };
 }
 
-export function ChatPane({ session, active, draft, onDraftChange, onError, onCommands, onTerminalRecovery, initialMessage, onInitialMessageSent }: Props) {
+export function ChatPane({ session, active, draft, onDraftChange, onError, onCommands, onTerminalRecovery, initialMessage, onInitialMessageSent, historyTarget }: Props) {
   const [state, dispatch] = useReducer(reduceChatEvent, undefined, emptyChatState);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [models, setModels] = useState<import('../../../shared/ipc/conversation').ChatModel[]>([]);
@@ -54,6 +55,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const [slashDismissed, setSlashDismissed] = useState(false);
   const [skillDismissed, setSkillDismissed] = useState(false);
   const forkingRef = useRef(false);
+  const focusedHistoryRef = useRef<string | undefined>(undefined);
   const initialSentRef = useRef(false);
   const startedRef = useRef(false);
 
@@ -86,6 +88,19 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     });
   }, [state, session.id]);
   useEffect(() => onCommands(state.commands), [state.commands]);
+
+  useEffect(() => {
+    if (!active || !state.ready || !historyTarget || historyTarget.entryId === '') return;
+    const target = historyTarget;
+    const targetKey = `${target.entryId}\u0000${target.query}`;
+    if (focusedHistoryRef.current === targetKey) return;
+    const index = state.messages.findIndex(message => message.forkEntryId === target.entryId || message.blocks.some(block => block.type === 'text' && block.text.toLocaleLowerCase().includes(target.query.toLocaleLowerCase())));
+    if (index >= 0) {
+      focusedHistoryRef.current = targetKey;
+      list.current?.scrollToIndex({ index, align: 'center', behavior: 'smooth' });
+      followOutput.current = false;
+    }
+  }, [active, state.ready, state.messages, historyTarget?.entryId, historyTarget?.query]);
 
 
   const busy = state.activity !== 'idle';

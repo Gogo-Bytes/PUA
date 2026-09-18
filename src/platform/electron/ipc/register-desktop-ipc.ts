@@ -64,6 +64,7 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('restoreArchivedSession', id => preferences.restoreArchivedSession(id));
   handle('deleteArchivedSession', id => preferences.deleteArchivedSession(id));
   handle('setSessionPinned', (id, pinned) => preferences.setSessionPinned(id, pinned));
+  handle('searchHistory', options => preferences.searchHistory(options));
   handle('sendChatMessage', (id, input) => requireCurrent().capabilities.conversation.send(id, sendIntent(input.text, input.attachmentIds, input.delivery)).catch(conversationError));
   handle('stopChat', id => requireCurrent().capabilities.conversation.stop(id));
   handle('respondToExtensionUI', (id, response) => requireCurrent().capabilities.conversation.respond(id, extensionResponse(response)));

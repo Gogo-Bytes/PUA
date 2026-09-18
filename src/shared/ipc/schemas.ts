@@ -71,6 +71,15 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   restoreArchivedSession: idArgs,
   deleteArchivedSession: idArgs,
   setSessionPinned: tuple<'setSessionPinned'>(2, (id, pinned) => [text(id), typeof pinned === 'boolean' ? pinned : (() => { throw new Error('无效置顶状态'); })()]),
+  searchHistory: tuple<'searchHistory'>(1, value => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('无效历史搜索参数');
+    const input = value as Record<string, unknown>;
+    const query = boundedText(input.query, 200, '搜索词').trim();
+    if (!query) throw new Error('搜索词不能为空');
+    const limit = input.limit === undefined ? undefined : input.limit;
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || Number(limit) < 1 || Number(limit) > 50)) throw new Error('无效搜索结果数量');
+    return [{ query, limit: limit as number | undefined }];
+  }),
   stopChat: idArgs,
   openProject: idArgs,
   gitStatus: idArgs,

@@ -46,6 +46,24 @@ export interface SessionInfo {
   lastActivityAt?: number;
 }
 
+export interface HistorySearchOptions {
+  query: string;
+  limit?: number;
+}
+
+/** Safe projection of a Pi JSONL entry; the session path and raw payload never cross IPC. */
+export interface HistorySearchResult {
+  taskId: string;
+  title: string;
+  cwd: string;
+  entryId: string;
+  role: 'user' | 'assistant' | 'custom' | 'summary' | 'bashExecution';
+  snippet: string;
+  timestamp: number;
+  archived: boolean;
+  query: string;
+}
+
 export interface CreateSessionOptions {
   cwd: string;
   kind: SessionKind;
@@ -73,6 +91,7 @@ export interface DesktopAPI {
   restoreArchivedSession(id: string): Promise<SessionInfo>;
   deleteArchivedSession(id: string): Promise<void>;
   setSessionPinned(id: string, pinned: boolean): Promise<void>;
+  searchHistory(options: HistorySearchOptions): Promise<HistorySearchResult[]>;
   sendChatMessage(id: string, input: { text: string; attachmentIds: string[]; delivery: ChatDelivery }): Promise<void>;
   stopChat(id: string): Promise<void>;
   respondToExtensionUI(id: string, response: ExtensionUIResponse): Promise<void>;

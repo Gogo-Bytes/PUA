@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { DesktopAPI, SessionInfo } from '../../../shared/ipc/desktop-api';
+import type { DesktopAPI, HistorySearchResult, SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
 import { addSession, prepareConversation, removeSession, selectProject, selectSession, type SessionWorkspace } from './selection';
 
@@ -25,11 +25,12 @@ interface WorkspaceLocation { project?: string; activeId: string | null }
 
 /** Window-local projection and selection owner; the host still owns Session lifecycle. */
 export function useWorkspace(
-  desktop: Pick<DesktopAPI, 'onSessionEvent' | 'closeSession'> & Partial<Pick<DesktopAPI, 'setSessionPinned'>> | undefined,
+  desktop: Pick<DesktopAPI, 'onSessionEvent' | 'closeSession'> & Partial<Pick<DesktopAPI, 'setSessionPinned' | 'restoreArchivedSession'>> | undefined,
   { onClosed, onError }: { onClosed(id: string): void; onError(message: string): void },
 ) {
   const [state, setState] = useState<SessionWorkspace<WorkspaceSessionInfo>>({ sessions: [], activeId: null });
   const [attentionEvents, setAttentionEvents] = useState<WorkspaceAttentionEvent[]>([]);
+  const [historyTarget, setHistoryTarget] = useState<{ sessionId: string; entryId: string; query: string }>();
   const activeIdRef = useRef<string | null>(null);
   const sessionsRef = useRef<WorkspaceSessionInfo[]>([]);
   const attentionSequence = useRef(0);
@@ -131,17 +132,34 @@ export function useWorkspace(
       return { ...next, sessions: next.sessions.map(session => session.id === id ? { ...session, needsAttention: false, attentionKind: undefined } : session) };
     });
     setAttentionEvents(current => current.filter(event => event.sessionId !== id));
+    setHistoryTarget(undefined);
   };
   const prepareWorkspaceConversation = (cwd: string) => {
     recordLocation({ project: cwd, activeId: null });
     activeIdRef.current = null;
     setState(current => prepareConversation(current, cwd));
+    setHistoryTarget(undefined);
   };
   const selectWorkspaceProject = (cwd: string) => {
     const next = selectProject(state, cwd);
     recordLocation({ project: cwd, activeId: next.activeId });
     activeIdRef.current = next.activeId;
     setState(current => selectProject(current, cwd));
+    setHistoryTarget(undefined);
+  };
+  const openHistoryResult = async (result: HistorySearchResult) => {
+    try {
+      if (result.archived) {
+        if (!desktop?.restoreArchivedSession) throw new Error('归档会话恢复不可用');
+        const restored = await desktop.restoreArchivedSession(result.taskId);
+        recordLocation({ project: restored.cwd, activeId: restored.id });
+        activeIdRef.current = restored.id;
+        setState(current => selectSession(addSession(current, restored), restored.id));
+      } else {
+        selectWorkspaceSession(result.taskId);
+      }
+      setHistoryTarget({ sessionId: result.taskId, entryId: result.entryId, query: result.query });
+    } catch (error) { onError(String(error)); }
   };
   const navigateHistory = (direction: -1 | 1) => {
     const next = historyIndex.current + direction;
@@ -165,6 +183,8 @@ export function useWorkspace(
     navigateBack: () => navigateHistory(-1),
     navigateForward: () => navigateHistory(1),
     selectSession: selectWorkspaceSession,
+    historyTarget,
+    openHistoryResult,
     dismissAttention,
     prepareConversation: prepareWorkspaceConversation,
     hydrateSessions: (incoming: SessionInfo[], preferredProject?: string) => setState(current => {

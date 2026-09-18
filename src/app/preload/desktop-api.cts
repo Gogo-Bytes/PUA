@@ -18,6 +18,7 @@ const api: DesktopBridge = {
   restoreArchivedSession: id => ipcRenderer.invoke(invokeChannels.restoreArchivedSession, id),
   deleteArchivedSession: id => ipcRenderer.invoke(invokeChannels.deleteArchivedSession, id),
   setSessionPinned: (id, pinned) => ipcRenderer.invoke(invokeChannels.setSessionPinned, id, pinned),
+  searchHistory: options => ipcRenderer.invoke(invokeChannels.searchHistory, options),
   sendChatMessage: (id, input) => ipcRenderer.invoke(invokeChannels.sendChatMessage, id, input),
   stopChat: id => ipcRenderer.invoke(invokeChannels.stopChat, id),
   respondToExtensionUI: (id, response) => ipcRenderer.invoke(invokeChannels.respondToExtensionUI, id, response),

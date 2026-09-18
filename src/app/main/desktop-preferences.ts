@@ -1,4 +1,4 @@
-import type { Bootstrap, CreateSessionOptions, Preferences, SessionInfo } from '../../shared/ipc/desktop-api.js';
+import type { Bootstrap, CreateSessionOptions, HistorySearchOptions, HistorySearchResult, Preferences, SessionInfo } from '../../shared/ipc/desktop-api.js';
 import type { PreferencesApplication } from '../../modules/preferences/index.js';
 import type { resolveRuntime as ResolveRuntime } from '../../platform/pi/runtime/discovery.js';
 import { unwrapSessionResult } from './session-mapper.js';
@@ -173,6 +173,28 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       persisted.set(id, next);
       restoredSessions = restoredSessions.map(item => item.id === id ? { ...item, pinned } : item);
       archivedSessions = archivedSessions.map(item => item.id === id ? { ...item, pinned } : item);
+    },
+    async searchHistory(options: HistorySearchOptions): Promise<HistorySearchResult[]> {
+      await restoreReady;
+      const query = options.query.trim();
+      const limit = Math.min(50, Math.max(1, options.limit ?? 30));
+      const results: HistorySearchResult[] = [];
+      // Search is deliberately main-owned and bounded. Raw Pi JSONL never crosses IPC.
+      const { readFile, stat } = await import('node:fs/promises');
+      const { parseSessionHistory } = await import('./session-history-search.js');
+      for (const record of persisted.values()) {
+        try {
+          const metadata = await stat(record.sessionFile);
+          if (!metadata.isFile() || metadata.size > 12 * 1024 * 1024) continue;
+          const content = await readFile(record.sessionFile, 'utf8');
+          results.push(...parseSessionHistory(content, {
+            taskId: record.id, title: record.title, cwd: record.cwd, archived: !!record.archived,
+          }, query, limit));
+        } catch {
+          // Missing or concurrently removed history is not an IPC error; the index remains recoverable.
+        }
+      }
+      return results.sort((a, b) => b.timestamp - a.timestamp || a.taskId.localeCompare(b.taskId)).slice(0, limit);
     },
     async forgetSession(id: string): Promise<void> {
       if (pending.has(id)) forgotten.add(id);

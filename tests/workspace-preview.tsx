@@ -38,6 +38,7 @@ installDesktopFake({
     ],
   } }),
   closeSession: async id => { sessions.delete(id); return true; },
+  searchHistory: async () => [],
   archiveSession: async () => {}, restoreArchivedSession: async id => sessions.get(id)!, deleteArchivedSession: async id => { sessions.delete(id); }, setSessionPinned: async (id, pinned) => { const session = sessions.get(id); if (session) session.pinned = pinned; },
   getChatAvailableModels: async () => [], getChatThinkingLevels: async () => [], setChatModel: async () => {}, setChatThinkingLevel: async () => {}, getChatSessionStats: async () => ({ userMessages: 0, assistantMessages: 0, toolCalls: 0, toolResults: 0, totalMessages: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }, cost: 0 }), compactChatSession: async () => {},
   renameChatSession: async (id, title) => { const session = sessions.get(id); if (session) session.title = title; },

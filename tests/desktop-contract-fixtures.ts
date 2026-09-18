@@ -3,7 +3,7 @@ export const preferences = { piPath: '', nodePath: '', args: [], fontSize: 14, r
 export const create = { cwd: '~/project', kind: 'chat', startMode: 'new', projectTrust: 'default' } as const;
 export const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   bootstrap: [], chooseDirectory: [], chooseFile: [], chooseAttachments: [], readClipboard: [],
-  chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], archiveSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true],
+  chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], archiveSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true], searchHistory: [{ query: 'message', limit: 10 }],
   stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], writeClipboard: ['clipboard'],
   savePreferences: [preferences], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
@@ -23,7 +23,7 @@ export const successes: { [K in InvokeMethod]: RequestResult<K> } = {
   savePreferences: { preferences, runtime: { executable: '/fake/pi', args: [], source: 'fake' }, home: '/fake', platform: 'darwin' },
   chooseDirectory: null, chooseFile: '', chooseAttachments: [], chooseChatAttachments: [],
   inspectProjectResources: { hasResources: false, paths: [] },
-  createSession: { id: 'id', cwd: '/fake/project', title: 'Fake', kind: 'chat', processStatus: 'starting', activity: 'idle' },
+  createSession: { id: 'id', cwd: '/fake/project', title: 'Fake', kind: 'chat', processStatus: 'starting', activity: 'idle' }, searchHistory: [],
   startSession: undefined, closeSession: false, archiveSession: undefined, restoreArchivedSession: { id: 'archived', cwd: '/fake/project', title: 'Archived', kind: 'chat', processStatus: 'exited', activity: 'idle', archived: true, pinned: false, lastActivityAt: 0 }, deleteArchivedSession: undefined, setSessionPinned: undefined, sendChatMessage: undefined, stopChat: undefined,
   removeChatAttachment: undefined, respondToExtensionUI: undefined, renameChatSession: undefined,
   forkChatSession: { text: 'forked', cancelled: false },

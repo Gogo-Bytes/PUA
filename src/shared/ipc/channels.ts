@@ -22,6 +22,7 @@ export const invokeChannels = {
   restoreArchivedSession: 'desktop:archive-restore',
   deleteArchivedSession: 'desktop:archive-delete',
   setSessionPinned: 'desktop:session-pin',
+  searchHistory: 'desktop:history-search',
   sendChatMessage: 'desktop:chat-send',
   stopChat: 'desktop:chat-stop',
   respondToExtensionUI: 'desktop:extension-response',
