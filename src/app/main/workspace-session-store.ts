@@ -7,12 +7,17 @@ export interface PersistedChatSession {
   title: string;
   piSessionId: string;
   sessionFile: string;
+  archived?: boolean;
+  pinned?: boolean;
+  lastActivityAt?: number;
 }
 
 export interface WorkspaceSessionStore {
   read(): Promise<PersistedChatSession[]>;
   upsert(session: PersistedChatSession): Promise<void>;
   remove(id: string): Promise<void>;
+  archive(id: string, archived: boolean): Promise<void>;
+  setPinned(id: string, pinned: boolean): Promise<void>;
   rename(id: string, title: string): Promise<void>;
 }
 
@@ -24,8 +29,12 @@ const valid = (value: unknown): value is PersistedChatSession => {
     && typeof item.id === 'string' && /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(item.id)
     && typeof item.piSessionId === 'string' && /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(item.piSessionId)
     && typeof item.cwd === 'string' && path.isAbsolute(item.cwd)
-    && typeof item.sessionFile === 'string' && path.isAbsolute(item.sessionFile);
+    && typeof item.sessionFile === 'string' && path.isAbsolute(item.sessionFile)
+    && (item.archived === undefined || typeof item.archived === 'boolean')
+    && (item.pinned === undefined || typeof item.pinned === 'boolean')
+    && (item.lastActivityAt === undefined || (typeof item.lastActivityAt === 'number' && Number.isFinite(item.lastActivityAt)));
 };
+const normalize = (item: PersistedChatSession): PersistedChatSession => ({ ...item, archived: item.archived ?? false, pinned: item.pinned ?? false, lastActivityAt: item.lastActivityAt ?? 0 });
 
 /** Main-owned durable index; Pi remains the authority for transcript contents. */
 export class JsonWorkspaceSessionStore implements WorkspaceSessionStore {
@@ -34,7 +43,7 @@ export class JsonWorkspaceSessionStore implements WorkspaceSessionStore {
   async read(): Promise<PersistedChatSession[]> {
     try {
       const value: unknown = JSON.parse(await readFile(this.file, 'utf8'));
-      return Array.isArray(value) ? value.filter(valid).slice(0, 256).map(item => ({ ...item })) : [];
+      return Array.isArray(value) ? value.filter(valid).slice(0, 256).map(item => normalize({ ...item })) : [];
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
       throw new Error(`无法读取任务索引 ${this.file}: ${String(error)}`);
@@ -45,6 +54,8 @@ export class JsonWorkspaceSessionStore implements WorkspaceSessionStore {
     return this.mutate(current => [...current.filter(item => item.id !== session.id), { ...session }]);
   }
   remove(id: string): Promise<void> { return this.mutate(current => current.filter(item => item.id !== id)); }
+  archive(id: string, archived: boolean): Promise<void> { return this.mutate(current => current.map(item => item.id === id ? { ...item, archived } : item)); }
+  setPinned(id: string, pinned: boolean): Promise<void> { return this.mutate(current => current.map(item => item.id === id ? { ...item, pinned } : item)); }
   rename(id: string, title: string): Promise<void> {
     if (typeof title !== 'string' || title.length === 0 || title.length > 4096) return Promise.reject(new Error('无效任务标题'));
     return this.mutate(current => current.map(item => item.id === id ? { ...item, title } : item));

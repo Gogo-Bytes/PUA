@@ -14,3 +14,4 @@
 .workspace-project-collapse{flex:none;width:22px;min-width:22px;padding:0;color:var(--ui-tertiary);font-size:12px}.workspace-project-collapse:hover{color:var(--ui-text)}
 .workspace-session-branches{margin:2px 0 4px;list-style:none}.workspace-session-branches li{min-height:24px}.workspace-session-branches button{width:100%;justify-content:flex-start;padding:2px 5px;color:var(--muted);font-size:12px}
 .workspace-branch-row{display:flex;align-items:center}.workspace-branch-collapse{width:22px!important;flex:0 0 22px}.workspace-branch-row>button:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-session-pin{opacity:0;flex:none;min-width:24px;padding:0 4px;color:var(--ui-secondary)}.workspace-session-row:focus-within .workspace-session-pin,.workspace-session-row:hover .workspace-session-pin,.workspace-session-pin:focus{opacity:1}

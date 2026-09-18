@@ -10,7 +10,7 @@ export interface WorkspaceSessionInfo extends SessionInfo {
 
 /** Window-local projection and selection owner; the host still owns Session lifecycle. */
 export function useWorkspace(
-  desktop: Pick<DesktopAPI, 'onSessionEvent' | 'closeSession'> | undefined,
+  desktop: Pick<DesktopAPI, 'onSessionEvent' | 'closeSession'> & Partial<Pick<DesktopAPI, 'setSessionPinned'>> | undefined,
   { onClosed, onError }: { onClosed(id: string): void; onError(message: string): void },
 ) {
   const [state, setState] = useState<SessionWorkspace<WorkspaceSessionInfo>>({ sessions: [], activeId: null });
@@ -41,6 +41,12 @@ export function useWorkspace(
       onClosed(id);
     } catch (error) { onError(String(error)); }
   };
+  const setSessionPinned = async (id: string, pinned: boolean) => {
+    try {
+      if (desktop?.setSessionPinned) await desktop.setSessionPinned(id, pinned);
+      updateSessions(sessions => sessions.map(session => session.id === id ? { ...session, pinned } : session));
+    } catch (error) { onError(String(error)); }
+  };
   const { sessions, activeId } = state;
   const active = sessions.find(session => session.id === activeId);
   const project = state.project ?? active?.cwd;
@@ -58,6 +64,7 @@ export function useWorkspace(
     selectProject: (cwd: string) => setState(current => selectProject(current, cwd)),
     addCreatedSession: (session: SessionInfo) => setState(current => addSession(current, session)),
     setSessionTitle: (id: string, title: string) => updateSessions(sessions => sessions.map(session => session.id === id ? { ...session, title } : session)),
+    setSessionPinned,
     markSessionExited,
     closeSession,
   } as const;

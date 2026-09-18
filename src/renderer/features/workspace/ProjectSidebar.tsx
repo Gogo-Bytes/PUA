@@ -16,6 +16,7 @@ interface ProjectSidebarProps {
   onCollapsedProjectsChange?(projects: readonly string[]): void;
   onNewConversation(cwd?: string): void;
   onSelectSession(id: string): void;
+  onTogglePinned?(id: string, pinned: boolean): void | Promise<void>;
   onCloseSession(id: string): void;
   onRenameSession(id: string, title: string): void | Promise<void>;
   onForkSession?(id: string, entryId: string): void | Promise<void>;
@@ -26,7 +27,7 @@ interface ProjectSidebarProps {
 /** Production navigation: projects own nested task rows; existing sessions are never represented as tabs. */
 export function ProjectSidebar({
   sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable, collapsedProjects: persistedCollapsed, onCollapsedProjectsChange,
-  onSelectProject, onNewConversation, onSelectSession, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
+  onSelectProject, onNewConversation, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
   const [query, setQuery] = useState('');
   const [localCollapsed, setLocalCollapsed] = useState<Set<string>>(new Set());
@@ -65,9 +66,10 @@ export function ProjectSidebar({
           <IconButton icon="plus" label={`在 ${project.name} 中新建对话`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
         </div>
         {project.sessions.length > 0 && !collapsed.has(project.cwd) && <ul className="workspace-session-list" aria-label={`${project.name} 的会话`}>
-          {project.sessions.map(session => <li key={session.id} className="workspace-session-row" data-active={session.id === activeId || undefined}>
+          {[...project.sessions].sort((a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false) || (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).map(session => <li key={session.id} className="workspace-session-row" data-active={session.id === activeId || undefined}>
             <Icon name={session.kind === 'terminal' ? 'code' : 'chat'}/>
             <InlineRename value={session.title} selected={session.id === activeId} selectionRole="button" current={session.id === activeId} labels={{ hint: `${sessionDescription(session)} · 双击或 F2 重命名`, input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空', failed: '重命名失败' }} onSelect={() => onSelectSession(session.id)} onRename={title => onRenameSession(session.id, title)}/>
+            {onTogglePinned && <Button className="workspace-session-pin" aria-label={session.pinned ? `取消置顶 ${session.title}` : `置顶 ${session.title}`} variant="ghost" onClick={() => void onTogglePinned(session.id, !session.pinned)}>{session.pinned ? '★' : '☆'}</Button>}
             {session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity" aria-label="处理中"/>}
             <IconButton className="workspace-session-close" icon="close" label={`关闭 ${session.title}`} variant="ghost" onClick={() => onCloseSession(session.id)}/>
             {session.sessionTree?.length && onForkSession ? <TreeBranch nodes={session.sessionTree} onFork={entryId => void onForkSession(session.id, entryId)}/> : null}

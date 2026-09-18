@@ -43,8 +43,8 @@ Task
 2. 用 GlobalNav、ProjectTree、TaskList 替换 ProjectNav/SessionTabs 的生产组合。
 3. 接入任务生命周期与重启恢复，再接入任务栏操作和通知。
 
-当前过渡实现已建立 main-owned `workspace-sessions.json` 索引：Pi JSONL 仍是 transcript 权威，索引只保存 `cwd/title/sessionId/sessionFile`；恢复条目以 dormant Session 注册，项目点击不激活历史，用户点击具体历史后才启动 Pi。后续 Task Store 正式落地时应吸收该索引，而不是把 Pi transcript 复制到 renderer。
-4. 将 Composer、Conversation、Inspector 绑定 Task scope，补齐后台运行与搜索。
+当前过渡实现已建立 main-owned `workspace-sessions.json` 索引：Pi JSONL 仍是 transcript 权威，索引保存 `cwd/title/sessionId/sessionFile` 以及 `archived/pinned/lastActivityAt` 元数据；恢复条目以 dormant Session 注册，项目点击不激活历史，用户点击具体历史后才启动 Pi。关闭默认写入归档状态；详情恢复重新绑定同一 Pi identity，永久删除在成功清理 Pi 文件后移除索引。后续 Task Store 正式落地时应吸收该索引，而不是把 Pi transcript 复制到 renderer。
+4. 将 Composer、Conversation、Inspector 绑定 Task scope，补齐后台运行与搜索。当前单窗口在关闭后隐藏到托盘，显式退出才关闭 Pi 资源；不做多窗口或孤儿后台进程。
 5. 完成快捷键、窄窗、深链接、多窗口和完整回归旅程。
 
 第一阶段完成标准：状态转换测试覆盖创建、切换、关闭、归档、恢复、后台运行和旧请求回写；IPC schema 可拒绝未知/无效任务状态；现有 Session/Conversation 测试保持通过。

@@ -18,6 +18,8 @@ vi.mock('electron', () => ({
   clipboard: { has: vi.fn(), readText: vi.fn(), writeText: vi.fn() },
   ipcMain: { handle: fake.handle, on: fake.ipcOn },
   Menu: { buildFromTemplate: fake.buildMenu, setApplicationMenu: fake.setMenu },
+  Tray: undefined,
+  nativeImage: undefined,
   shell: { openExternal: vi.fn(), openPath: vi.fn() },
 }));
 vi.mock('node:os', () => ({ default: { homedir: () => '/fake/home' } }));
@@ -54,7 +56,8 @@ describe('production bootstrap source with fully Fake Electron/store/composition
     expect(fake.BrowserWindow.mock.calls[0][0].webPreferences.preload).toBe(fileURLToPath(new URL('../../../src/app/preload/preload.cjs', import.meta.url)));
     expect(fake.GitAdapter).toHaveBeenCalledOnce(); expect(fake.captureSnapshot).not.toHaveBeenCalled(); expect(fake.readAuthorizedPreview).not.toHaveBeenCalled();
     expect(fake.error).not.toHaveBeenCalled();
-    expect(fake.on.mock.calls.map(call => call[0])).toEqual(['window-all-closed']); fake.on.mock.calls[0][1](); expect(fake.quit).toHaveBeenCalledOnce();
+    expect(fake.on.mock.calls.map(call => call[0])).toEqual(['before-quit', 'activate', 'window-all-closed']);
+    fake.on.mock.calls.find(call => call[0] === 'window-all-closed')![1](); expect(fake.quit).toHaveBeenCalledOnce();
     // Late emitter retains its original window rather than targeting a mutable global.
     const emit = fake.compose.mock.calls[0][0]; h.fake.destroy(); emit({ type: 'exit', id: 'id', exitCode: 0 }); expect(h.fake.webContents.send).not.toHaveBeenCalled();
   });
@@ -66,12 +69,12 @@ describe('production bootstrap source with fully Fake Electron/store/composition
     const h = prepare(); await import('../../../src/app/main/bootstrap'); h.ready.resolve(); await settle(); h.settings.reject(new Error('settings failed')); await settle();
     expect(fake.error.mock.calls).toEqual([['无法读取设置', 'settings failed'], ['PUA 启动失败', 'Error: settings failed']]); expect(fake.exit.mock.calls).toEqual([[1], [1]]); expect(fake.handle).not.toHaveBeenCalled(); expect(fake.BrowserWindow).not.toHaveBeenCalled();
   });
-  it('AST entry has no top-level await or new platform quit/activation policy', () => {
+  it('AST entry has no top-level await and records the resident-window quit/activation policy', () => {
     const text = readFileSync(new URL('../../../src/app/main/bootstrap.ts', import.meta.url), 'utf8'); const source = ts.createSourceFile('bootstrap.ts', text, ts.ScriptTarget.Latest, true);
     const visit = (node: ts.Node, insideFunction = false) => {
       if (ts.isAwaitExpression(node)) expect(insideFunction).toBe(true);
       ts.forEachChild(node, child => visit(child, insideFunction || ts.isFunctionLike(node)));
     };
-    visit(source); expect(text).toContain('void app.whenReady().then('); expect(text).not.toMatch(/before-quit|activate/);
+    visit(source); expect(text).toContain('void app.whenReady().then('); expect(text).toContain('background: true'); expect(text).toMatch(/activate/);
   });
 });

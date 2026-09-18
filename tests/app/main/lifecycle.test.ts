@@ -73,6 +73,23 @@ describe('bound window lifecycle with in-memory Electron/core Fakes', () => {
     expect(h.dialog.showMessageBoxSync).not.toHaveBeenCalled(); expect(h.fake.destroy).not.toHaveBeenCalled();
     h.cleanup.resolve(success); await settle(); expect(h.fake.destroy).toHaveBeenCalledOnce();
   });
+  it('background mode hides the window and only explicit quit closes Pi sessions', async () => {
+    const { fake, window } = fakeWindow(); const capabilities = fakeCapabilities();
+    const cleanup = deferred<SessionResult>(); capabilities.session.closeAll.mockReturnValue(cleanup.promise);
+    const listeners = new Map<string, (event?: { preventDefault?: () => void }) => void>();
+    const app = { quit: vi.fn(), on: vi.fn((event: string, listener: (event?: { preventDefault?: () => void }) => void) => listeners.set(event, listener)) };
+    const dialog = { showMessageBoxSync: vi.fn(() => 1), showErrorBox: vi.fn() };
+    (fake as unknown as { hide: ReturnType<typeof vi.fn> }).hide = vi.fn();
+    const lifecycle = bindWindowLifecycle({ window, capabilities, app, dialog, background: true });
+    const closeEvent = { preventDefault: vi.fn() }; fake.emit('close', closeEvent);
+    expect(closeEvent.preventDefault).toHaveBeenCalledOnce(); expect((fake as unknown as { hide: ReturnType<typeof vi.fn> }).hide).toHaveBeenCalledOnce();
+    expect(capabilities.session.closeAll).not.toHaveBeenCalled(); expect(app.quit).not.toHaveBeenCalled();
+    const beforeQuit = { preventDefault: vi.fn() }; listeners.get('before-quit')!(beforeQuit);
+    expect(beforeQuit.preventDefault).toHaveBeenCalledOnce(); expect(capabilities.session.closeAll).toHaveBeenCalledOnce();
+    cleanup.resolve(success); await settle();
+    expect(fake.destroy).toHaveBeenCalledOnce(); expect(app.quit).toHaveBeenCalledOnce();
+    await lifecycle.requestQuit(); expect(capabilities.session.closeAll).toHaveBeenCalledOnce();
+  });
   it.each(['false', 'reject', 'throw'] as const)('retains occupation/window on %s and repeated close reuses failed cleanup', async mode => {
     const h = harness();
     if (mode === 'throw') h.capabilities.session.closeAll.mockImplementation(() => { throw new Error('sync cleanup'); });

@@ -3,15 +3,19 @@ import { isSessionBusy, unwrapSessionResult } from './session-mapper.js';
 import type { WindowContext } from './create-window.js';
 
 type Dependencies = WindowContext & {
-  app: Pick<typeof ElectronApp, 'quit'>;
+  app: Pick<typeof ElectronApp, 'quit'> & { on?: unknown };
   dialog: Pick<typeof ElectronDialog, 'showMessageBoxSync' | 'showErrorBox'>;
+  /** Keep the single window resident when it is closed; explicit quit still owns cleanup. */
+  background?: boolean;
 };
 
 /** Per-window close intent and shared cleanup; Session core retains shutdown/failed ownership. */
-export function bindWindowLifecycle({ window, capabilities, app, dialog }: Dependencies): void {
+export function bindWindowLifecycle({ window, capabilities, app, dialog, background = false }: Dependencies): { requestQuit: () => Promise<void> } {
   let closing = false;
   let cleanup: Promise<void> | undefined;
   let crashNoticePending = false;
+  let quitRequested = false;
+  let allowQuit = false;
   const showError = (title: string, message: string) => {
     try { dialog.showErrorBox(title, message); }
     catch (error) { console.error('Lifecycle diagnostic failed:', error); }
@@ -32,6 +36,31 @@ export function bindWindowLifecycle({ window, capabilities, app, dialog }: Depen
     catch (error) { reject(error); }
     return cleanup;
   }
+  const requestQuit = async (): Promise<void> => {
+    if (allowQuit) return;
+    if (quitRequested) return cleanup ?? Promise.resolve();
+    quitRequested = true;
+    try {
+      await requestCleanup();
+      reportCrash({ ok: true });
+      allowQuit = true;
+      try { if (!window.isDestroyed()) window.destroy(); app.quit(); }
+      catch (error) { allowQuit = false; quitRequested = false; showError('关闭进程失败', String(error)); }
+    } catch (error) {
+      quitRequested = false;
+      reportCrash({ ok: false, error });
+      showError('关闭进程失败', String(error));
+    }
+  };
+  if (background) {
+    if (typeof app.on === 'function') {
+      (app.on as (event: string, listener: (event?: { preventDefault?: () => void }) => void) => unknown)('before-quit', event => {
+        if (allowQuit) return;
+        event?.preventDefault?.();
+        void requestQuit();
+      });
+    }
+  }
   window.webContents.on('render-process-gone', () => {
     crashNoticePending = true;
     void requestCleanup().then(
@@ -41,6 +70,10 @@ export function bindWindowLifecycle({ window, capabilities, app, dialog }: Depen
   });
   window.on('close', event => {
     event.preventDefault();
+    if (background) {
+      if (!allowQuit && !window.isDestroyed()) window.hide();
+      return;
+    }
     if (closing) return;
     // Also guards modal confirmation reentry, without sealing Session admission on cancel.
     closing = true;
@@ -66,4 +99,5 @@ export function bindWindowLifecycle({ window, capabilities, app, dialog }: Depen
       showError('关闭进程失败', String(error));
     }
   });
+  return { requestQuit };
 }

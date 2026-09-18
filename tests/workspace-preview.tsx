@@ -38,6 +38,7 @@ installDesktopFake({
     ],
   } }),
   closeSession: async id => { sessions.delete(id); return true; },
+  archiveSession: async () => {}, restoreArchivedSession: async id => sessions.get(id)!, deleteArchivedSession: async id => { sessions.delete(id); }, setSessionPinned: async (id, pinned) => { const session = sessions.get(id); if (session) session.pinned = pinned; },
   renameChatSession: async (id, title) => { const session = sessions.get(id); if (session) session.title = title; },
   forkChatSession: async () => ({ text: 'TEST ONLY', cancelled: false }),
   sendChatMessage: async (id, input) => emit({ id, type: 'chat-message-end', message: { id: `input-${++sequence}`, timestamp: Date.now(), role: 'user', blocks: [{ type: 'text', text: `[TEST ONLY · 未调用模型]\n${input.text}` }] } }),

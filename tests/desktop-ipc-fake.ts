@@ -6,7 +6,7 @@ import { registerDesktopIPC, type DesktopIPCDependencies } from '../src/platform
 import { createWindowHolder } from '../src/app/main/create-window';
 import { createDesktopPreferences } from '../src/app/main/desktop-preferences';
 import { invokeChannels, sendChannels } from '../src/shared/ipc/channels';
-import { fakeCapabilities, fakeWindow } from './app/main/main-fakes';
+import { fakeCapabilities, fakeWindow, sessionInfo } from './app/main/main-fakes';
 
 import { preloadFake } from './preload-fake';
 import { createDesktopClient } from '../src/renderer/app/desktop-client';
@@ -22,6 +22,7 @@ export function desktopIPCFake() {
   const store = { write: vi.fn().mockResolvedValue(undefined) }; const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
   const resolveRuntime = vi.fn(() => runtime); const validateChatArguments = vi.fn();
   const preferences = createDesktopPreferences({ application: new PreferencesApplication({ ...initial, recentProjects: [...initial.recentProjects] }, store), resolveRuntime, validateChatArguments, home: '/fake/home', platform: 'fake' });
+  preferences.restoreArchivedSession = vi.fn().mockResolvedValue({ ...sessionInfo, archived: true, pinned: false, lastActivityAt: 0 });
   const dialog = { showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: ['/fake/file'] }), showMessageBox: vi.fn().mockResolvedValue({ response: 1 }) };
   const shell = { openExternal: vi.fn().mockResolvedValue(undefined), openPath: vi.fn().mockResolvedValue('') };
   const clipboard = { readText: vi.fn(async () => 'clip'), has: vi.fn(async (type: string) => type === 'image/png'), writeText: vi.fn().mockResolvedValue(undefined) };

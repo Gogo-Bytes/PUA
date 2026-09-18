@@ -30,6 +30,7 @@ export interface Bootstrap {
   home: string;
   platform: string;
   restoredSessions?: SessionInfo[];
+  archivedSessions?: SessionInfo[];
 }
 
 export interface SessionInfo {
@@ -40,6 +41,9 @@ export interface SessionInfo {
   processStatus: SessionProcessStatus;
   activity: SessionActivity;
   exitCode?: number;
+  archived?: boolean;
+  pinned?: boolean;
+  lastActivityAt?: number;
 }
 
 export interface CreateSessionOptions {
@@ -65,6 +69,10 @@ export interface DesktopAPI {
   createSession(options: CreateSessionOptions): Promise<SessionInfo>;
   startSession(id: string): Promise<void>;
   closeSession(id: string): Promise<boolean>;
+  archiveSession(id: string): Promise<void>;
+  restoreArchivedSession(id: string): Promise<SessionInfo>;
+  deleteArchivedSession(id: string): Promise<void>;
+  setSessionPinned(id: string, pinned: boolean): Promise<void>;
   sendChatMessage(id: string, input: { text: string; attachmentIds: string[]; delivery: ChatDelivery }): Promise<void>;
   stopChat(id: string): Promise<void>;
   respondToExtensionUI(id: string, response: ExtensionUIResponse): Promise<void>;

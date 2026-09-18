@@ -1,4 +1,5 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, shell, Tray } from 'electron';
+import type { Tray as ElectronTray } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -15,9 +16,11 @@ import { createWindow, createWindowHolder, windowEventEmitter } from './create-w
 import { bindWindowLifecycle } from './lifecycle.js';
 import { installMenu } from './menu.js';
 import { JsonWorkspaceSessionStore } from './workspace-session-store.js';
+import { createBackgroundTray } from './background-tray.js';
 
 const rendererURL = new URL('../../renderer/index.html', import.meta.url).href;
 const preloadPath = fileURLToPath(new URL('../preload/preload.cjs', import.meta.url));
+let backgroundTray: ElectronTray | undefined;
 
 // Electron delays ready until ESM evaluation completes; top-level await here deadlocks startup.
 void app.whenReady().then(async () => {
@@ -41,9 +44,14 @@ void app.whenReady().then(async () => {
   void preferences.restoreSessions(capabilities).catch(error => console.warn(`无法读取工作区会话索引: ${String(error)}`));
   holder.set({ window, capabilities });
   window.on('closed', () => holder.clearIfCurrent(window));
-  bindWindowLifecycle({ window, capabilities, dialog, app });
+  const lifecycle = bindWindowLifecycle({ window, capabilities, dialog, app, background: true });
+  if (typeof Tray === 'function' && typeof nativeImage?.createFromDataURL === 'function') {
+    backgroundTray = createBackgroundTray({ Tray, Menu, nativeImage, window, onQuit: () => { void lifecycle.requestQuit(); } });
+  }
   void window.loadURL(rendererURL);
-  app.on('window-all-closed', () => app.quit());
+  app.on('activate', () => { if (!window.isDestroyed()) window.show(); });
+  // Closing the last window only hides it; the tray and explicit Quit own process shutdown.
+  app.on('window-all-closed', () => { if (!backgroundTray) app.quit(); });
 }).catch(error => {
   dialog.showErrorBox('PUA 启动失败', String(error));
   app.exit(1);

@@ -57,9 +57,13 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
       if (response !== 1) return false;
     }
     unwrapSessionResult(await capabilities.session.close(id));
-    try { await preferences.forgetSession(id); } catch (error) { console.warn(`无法移除已关闭会话索引 ${id}: ${String(error)}`); }
+    try { await preferences.archiveSession(id); } catch (error) { console.warn(`无法归档已关闭会话 ${id}: ${String(error)}`); }
     return true;
   });
+  handle('archiveSession', async id => { await preferences.archiveSession(id); });
+  handle('restoreArchivedSession', id => preferences.restoreArchivedSession(id));
+  handle('deleteArchivedSession', id => preferences.deleteArchivedSession(id));
+  handle('setSessionPinned', (id, pinned) => preferences.setSessionPinned(id, pinned));
   handle('sendChatMessage', (id, input) => requireCurrent().capabilities.conversation.send(id, sendIntent(input.text, input.attachmentIds, input.delivery)).catch(conversationError));
   handle('stopChat', id => requireCurrent().capabilities.conversation.stop(id));
   handle('respondToExtensionUI', (id, response) => requireCurrent().capabilities.conversation.respond(id, extensionResponse(response)));
