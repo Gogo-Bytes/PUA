@@ -122,6 +122,13 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await act(async () => pending.resolve({ id: 'late', title: 'Late', cwd: '/one', kind: 'chat', processStatus: 'running', activity: 'idle' }));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+  it('opens a project-scoped draft from the native new-task shortcut without creating history', async () => {
+    await mount(); const before = vi.mocked(desktop.createSession).mock.calls.length;
+    shortcut({ key: 'n' }); await flush();
+    expect(vi.mocked(desktop.createSession).mock.calls).toHaveLength(before);
+    expect(screen.getByRole('region', { name: '新对话' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: '发送消息' })).toBeTruthy();
+  });
   it('rename keeps the edited tab identity when selection changes, and terminal rename never calls the host', async () => {
     await mount(); await create(); fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /Session/ }), { key: 'F2' });
     fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'Submitted' } }); fireEvent.click(screen.getByRole('button', { name: 'Session 1' }));

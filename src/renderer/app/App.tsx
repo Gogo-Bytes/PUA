@@ -18,9 +18,9 @@ export function App() {
   const { boot, theme, error } = desktopPresentation;
   const { sessions, activeId, active, project } = workspace;
   useEffect(() => {
-    const listener = (event: KeyboardEvent) => { const modifier = boot?.platform === 'darwin' ? event.metaKey : event.ctrlKey; if (event.isComposing || event.keyCode === 229) return; if (modifier && (event.key.toLowerCase() === 'k' || event.shiftKey && event.key.toLowerCase() === 'p')) { event.preventDefault(); palette.toggle(); } if (modifier && event.shiftKey && event.key.toLowerCase() === 'f' && active?.kind === 'terminal') { event.preventDefault(); input.toggleSearch(); } };
+    const listener = (event: KeyboardEvent) => { const modifier = boot?.platform === 'darwin' ? event.metaKey : event.ctrlKey; if (event.isComposing || event.keyCode === 229) return; if (modifier && !event.shiftKey && event.key.toLowerCase() === 'n') { event.preventDefault(); void launch.newConversation(active?.cwd || project); return; } if (modifier && (event.key.toLowerCase() === 'k' || event.shiftKey && event.key.toLowerCase() === 'p')) { event.preventDefault(); palette.toggle(); } if (modifier && event.shiftKey && event.key.toLowerCase() === 'f' && active?.kind === 'terminal') { event.preventDefault(); input.toggleSearch(); } };
     window.addEventListener('keydown', listener, true); return () => window.removeEventListener('keydown', listener, true);
-  }, [boot?.platform, active?.kind]);
+  }, [boot?.platform, active?.kind, active?.cwd, project]);
   return <UIProvider theme={theme}><div className="workspace">
     <ResizableWorkspace hideToolbar rightToggleRef={panelToggle} rightOpen={reviewOpen} onRightOpenChange={setReviewOpen}
       labels={{ left: '项目', right: '检查器', show: '显示', hide: '收起', resize: side => side === 'left' ? '调整项目栏宽度' : '调整检查器宽度', compact: '空间足够时自动恢复面板', hint: '拖动边缘或使用方向键调整宽度' }}
