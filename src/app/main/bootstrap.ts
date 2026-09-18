@@ -21,9 +21,15 @@ import { createBackgroundTray } from './background-tray.js';
 const rendererURL = new URL('../../renderer/index.html', import.meta.url).href;
 const preloadPath = fileURLToPath(new URL('../preload/preload.cjs', import.meta.url));
 let backgroundTray: ElectronTray | undefined;
+let mainWindow: import('electron').BrowserWindow | undefined;
+
+const hasSingleInstanceLock = typeof app.requestSingleInstanceLock === 'function' ? app.requestSingleInstanceLock() : true;
+if (hasSingleInstanceLock) {
+  app.on('second-instance', () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show(); });
+}
 
 // Electron delays ready until ESM evaluation completes; top-level await here deadlocks startup.
-void app.whenReady().then(async () => {
+if (hasSingleInstanceLock) void app.whenReady().then(async () => {
   const storage = new JsonPreferencesStorage(path.join(app.getPath('userData'), 'desktop-settings.json'));
   const sessionStore = new JsonWorkspaceSessionStore(path.join(app.getPath('userData'), 'workspace-sessions.json'));
   let initial;
@@ -36,6 +42,7 @@ void app.whenReady().then(async () => {
   registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources });
   installMenu({ Menu, shell, platform: process.platform, diagnostics: process.env.PUA_MISSING_ASSISTANT_DIAGNOSTICS === 'next-chat' });
   const window = createWindow(options => new BrowserWindow(options), preloadPath);
+  mainWindow = window;
   capabilities = composeMain(windowEventEmitter(window), {
     onSessionChanged: session => preferences.syncSession(session),
     onChatMessageAccepted: (id, identity) => preferences.recordChatMessage(id, identity),

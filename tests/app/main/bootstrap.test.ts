@@ -56,7 +56,7 @@ describe('production bootstrap source with fully Fake Electron/store/composition
     expect(fake.BrowserWindow.mock.calls[0][0].webPreferences.preload).toBe(fileURLToPath(new URL('../../../src/app/preload/preload.cjs', import.meta.url)));
     expect(fake.GitAdapter).toHaveBeenCalledOnce(); expect(fake.captureSnapshot).not.toHaveBeenCalled(); expect(fake.readAuthorizedPreview).not.toHaveBeenCalled();
     expect(fake.error).not.toHaveBeenCalled();
-    expect(fake.on.mock.calls.map(call => call[0])).toEqual(['before-quit', 'activate', 'window-all-closed']);
+    expect(fake.on.mock.calls.map(call => call[0])).toEqual(['second-instance', 'before-quit', 'activate', 'window-all-closed']);
     fake.on.mock.calls.find(call => call[0] === 'window-all-closed')![1](); expect(fake.quit).toHaveBeenCalledOnce();
     // Late emitter retains its original window rather than targeting a mutable global.
     const emit = fake.compose.mock.calls[0][0]; h.fake.destroy(); emit({ type: 'exit', id: 'id', exitCode: 0 }); expect(h.fake.webContents.send).not.toHaveBeenCalled();
