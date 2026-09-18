@@ -43,6 +43,10 @@ class FakeResources implements AttachmentResourcesPort {
 function setup() {
   const resources = new FakeResources();
   const runtime = {
+    getAvailableModels: vi.fn().mockResolvedValue([]),
+    getAvailableThinkingLevels: vi.fn().mockResolvedValue([]),
+    setModel: vi.fn().mockResolvedValue(undefined),
+    setThinkingLevel: vi.fn().mockResolvedValue(undefined),
     send: vi.fn<(id: string, command: RuntimeSend) => Promise<void>>().mockResolvedValue(undefined),
     stop: vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined),
     respond: vi.fn<(id: string, response: ExtensionResponse) => Promise<void>>().mockResolvedValue(undefined),
@@ -67,7 +71,7 @@ describe('ConversationApplication send and attachment Interface', () => {
   });
 
   it('has a closed typed runtime surface rather than an arbitrary command bag', () => {
-    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'compact' | 'getSessionStats'>();
+    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'compact' | 'getSessionStats' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'setModel' | 'setThinkingLevel'>();
     expectTypeOf<keyof RuntimeSend>().toEqualTypeOf<'text' | 'attachmentIds' | 'queuePreference'>();
     expectTypeOf<ReturnType<ConversationRuntimePort['stop']>>().toEqualTypeOf<Promise<void>>();
     expectTypeOf<{ id: string; command: string }>().not.toExtend<ExtensionResponse>();
