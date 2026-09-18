@@ -20,7 +20,7 @@
 | ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
 |---|---|---|---|---|
 | PI-RPC-01 | prompt 与流式 delta | worker stream mapper、`ChatMessage` | 已接入 | 消息流、切换任务后恢复 |
-| PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper、Pi RPC `set_model` / `set_thinking_level` | 部分接入 | 当前信息可展示；原生列表和切换仍待实现。RPC prompt 不处理 TUI 内置 `/model` 与 `/thinking`，不得用插入命令冒充切换入口 |
+| PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper、Pi RPC `set_model` / `set_thinking_level` | 已接入 | Composer 控件按需查询 Pi 原生列表并切换；RPC prompt 不处理 TUI 内置 `/model` 与 `/thinking`，不得用插入命令冒充切换入口 |
 | PI-RPC-03 | tool start/update/end 与最终结果 | stream core、ToolExecutionCard | 已接入 | 工具过程折叠、失败展开、重试 |
 | PI-RPC-04 | agent settled / compacting / retrying | runtime activity；Pi RPC `compact` | 已接入 | 后台任务状态和通知；对话底部“压缩上下文”调用原生 compact，状态和失败由 Pi 事件回传 |
 | PI-RPC-05 | steer / followUp / clear queue | conversation queue、worker protocol | 已接入 | Composer 队列可视化与任务级恢复 |
@@ -48,7 +48,7 @@
 
 从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
 
-当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、模型/Thinking 查询与切换和部分会话查询；明确协议缺口仍包括 `get_tree` UI 投影、`switch_session`、`get_entries`、自动 compact/retry 设置、`compact`、`export_html`、`clone`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
+当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、模型/Thinking 查询与切换、compact 和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、自动 compact/retry 设置、`export_html`、`clone`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
 
 ### 已提取的参数契约（Pi 0.85.1）
 
