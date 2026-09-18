@@ -39,17 +39,31 @@ const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) =>
   const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true, cancelable: true, ...init });
   act(() => target.dispatchEvent(event)); return event;
 };
+let draftCounter = 0;
 async function create(kind: 'chat' | 'terminal' = 'chat') {
-  if (kind === 'chat') { fireEvent.click(screen.getByRole('button', { name: '新建会话' })); await flush(); return; }
+  if (kind === 'chat') {
+    fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+    const draft = await screen.findByRole('textbox', { name: '发送消息' });
+    fireEvent.change(draft, { target: { value: `seed ${++draftCounter}` } });
+    await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
+    await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
+    await waitFor(() => expect(desktop.createSession).toHaveBeenCalled());
+    const id = `s${vi.mocked(desktop.createSession).mock.calls.length}`;
+    await waitFor(() => expect(desktop.startSession).toHaveBeenCalledWith(id));
+    await flush(); snapshot(id, []); await flush();
+    await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith(id, expect.objectContaining({ delivery: 'prompt' })));
+    vi.mocked(desktop.sendChatMessage).mockClear();
+    return;
+  }
   fireEvent.click(screen.getByRole('button', { name: '兼容终端' }));
   const button = screen.getByRole('button', { name: '打开兼容终端 ↗' });
   await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); await flush();
 }
 async function mount(kind: 'chat' | 'terminal' = 'chat') {
-  const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await flush(); if (kind === 'terminal') await create(kind); return view;
+  const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await create('chat'); if (kind === 'terminal') await create(kind); return view;
 }
 beforeEach(() => {
-  listeners = new Set(); terminal.pastes = []; terminal.throwPaste = false;
+  listeners = new Set(); draftCounter = 0; terminal.pastes = []; terminal.throwPaste = false;
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1000 });
   window.matchMedia = vi.fn(query => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
@@ -101,10 +115,10 @@ describe('App command palette before/after characterization with real panes', ()
     await mount(); snapshot('s1', commandsA); open(); filter('ALPHA'); close(); shortcut(); expect(query().value).toBe('ALPHA');
     const cancel = new Event('cancel', { cancelable: true }); fireEvent(screen.getByRole('dialog'), cancel); expect(cancel.defaultPrevented).toBe(true);
     shortcut(); expect(query().value).toBe('ALPHA'); shortcut(); expect(screen.queryByRole('dialog')).toBeNull();
-    open(); expect(query().value).toBe(''); filter('beta'); selectProject('/empty'); await flush(); expect(query().value).toBe('beta'); expect(items()).toHaveLength(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Session 1' })); expect(query().value).toBe('beta'); fireEvent.click(items()[0]); shortcut(); expect(query().value).toBe('');
+    open(); expect(query().value).toBe(''); filter('beta'); selectProject('/empty'); await flush(); expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Session 1' })); open(); expect(query().value).toBe(''); filter('beta'); fireEvent.click(items()[0]); expect(screen.queryByRole('dialog')).toBeNull();
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/beta');
-    close(); fireEvent.click(screen.getByRole('button', { name: 'Session 2' })); shortcut(); expect(query().value).toBe(''); fireEvent.click(screen.getByRole('button', { name: 'Session 1' })); expect(query().value).toBe('');
+    open(); expect(query().value).toBe(''); close(); fireEvent.click(screen.getByRole('button', { name: 'Session 1' }));
     expect(desktop.sendChatMessage).not.toHaveBeenCalled();
   });
   it('preserves filter fields, distinct zero results, exact DOM and list navigation including index -1/zero', async () => {

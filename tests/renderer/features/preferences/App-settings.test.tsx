@@ -69,14 +69,15 @@ describe('real App → SettingsDialog → Fake Desktop characterization', () => 
     expect(desktop.bootstrap).toHaveBeenCalledTimes(1); expect(desktop.startSession).not.toHaveBeenCalled(); expect(desktop.createSession).not.toHaveBeenCalled(); expect(desktop.closeSession).not.toHaveBeenCalled();
     await open(); expect(input('Pi 路径').value).toBe('/fixed'); expect(screen.getByText('fixed runtime')).toBeTruthy();
   });
-  it('keeps NewSessionDialog → settings jump and uses saved bootstrap on a later launch', async () => {
+  it('keeps the project draft → settings jump and uses saved bootstrap for a later project draft', async () => {
     boot = { ...boot, runtime: null, runtimeError: 'no runtime' }; render(<App />);
-    const launch = screen.getByRole('button', { name: '新建会话' }); await waitFor(() => expect((launch as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(launch); fireEvent.click(screen.getByRole('button', { name: '先配置 Pi' }));
+    fireEvent.click(await screen.findByTitle('/old-project'));
+    expect(screen.getByRole('region', { name: '新对话' })).toBeTruthy(); expect(screen.getByText('尚未配置 Pi。')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '打开设置' }));
     expect(screen.queryByRole('textbox', { name: '项目文件夹' })).toBeNull(); expect(input('Pi 路径')).toBeTruthy();
     vi.mocked(desktop.savePreferences).mockResolvedValueOnce({ ...boot, runtimeError: undefined, runtime: { executable: '/fixed', args: [], source: '/fixed' }, preferences: { ...boot.preferences, recentProjects: ['/saved-default'] } });
     fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush(); expect(screen.queryByRole('dialog')).toBeNull();
-    fireEvent.click(launch); expect(input('项目文件夹').value).toBe('/saved-default'); expect(screen.getByRole('button', { name: '开始对话 ↗' })).toBeTruthy(); expect(screen.queryByRole('button', { name: '先配置 Pi' })).toBeNull();
+    fireEvent.click(await screen.findByTitle('/saved-default')); expect(screen.getByText('/saved-default')).toBeTruthy(); expect(screen.getByRole('textbox', { name: '发送消息' })).toBeTruthy(); expect(screen.queryByRole('textbox', { name: '项目文件夹' })).toBeNull();
     expect(desktop.createSession).not.toHaveBeenCalled();
   });
   it.each(['success', 'runtimeError', 'reject'] as const)('preserves late old-save %s after closing and opening another settings dialog', async outcome => {

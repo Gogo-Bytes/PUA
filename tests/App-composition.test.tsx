@@ -39,16 +39,32 @@ const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) =>
   const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true, cancelable: true, ...init });
   act(() => target.dispatchEvent(event)); return event;
 };
-async function create(kind: 'chat' | 'terminal' = 'chat') {
-  if (kind === 'chat') fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-  else { if (!screen.queryByRole('button', { name: '兼容终端' })) { fireEvent.click(screen.getByRole('button', { name: '新建会话' })); await flush(); } fireEvent.click(screen.getByRole('button', { name: '兼容终端' })); const button = screen.getByRole('button', { name: '打开兼容终端 ↗' }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); }
+let draftCounter = 0;
+async function create(kind: 'chat' | 'terminal' = 'chat', verifyInitialSend = true) {
+  if (kind === 'terminal') {
+    fireEvent.click(screen.getByRole('button', { name: '兼容终端' }));
+    const button = screen.getByRole('button', { name: '打开兼容终端 ↗' });
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); await flush(); return;
+  }
+  fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+  const draft = await screen.findByRole('textbox', { name: '发送消息' });
+  fireEvent.change(draft, { target: { value: `seed ${++draftCounter}` } });
+  await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
+  await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
+  await waitFor(() => expect(desktop.createSession).toHaveBeenCalled());
+  const id = `s${vi.mocked(desktop.createSession).mock.calls.length}`;
+  await waitFor(() => expect(desktop.startSession).toHaveBeenCalledWith(id));
   await flush();
+  emit({ id, type: 'chat-snapshot', snapshot: { commands: [], messages: [], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
+  await flush();
+  if (verifyInitialSend) await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith(id, expect.objectContaining({ delivery: 'prompt' })));
+  vi.mocked(desktop.sendChatMessage).mockClear();
 }
 async function mount(kind: 'chat' | 'terminal' = 'chat') {
-  const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await create(kind); return view;
+  const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await create('chat'); if (kind === 'terminal') await create('terminal'); return view;
 }
 beforeEach(() => {
-  listeners = new Set(); terminal.pastes = []; terminal.throwPaste = false; terminal.instances = []; terminal.trace = []; terminal.search.mockReset();
+  listeners = new Set(); draftCounter = 0; terminal.pastes = []; terminal.throwPaste = false; terminal.instances = []; terminal.trace = []; terminal.search.mockReset();
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1000 });
   window.matchMedia = vi.fn(query => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
@@ -85,18 +101,22 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     open(); filter('query'); close(); fireEvent.keyDown(screen.getByRole('button', { current: 'page', name: /Session/ }), { key: 'F2' }); fireEvent.keyDown(screen.getByRole('textbox', { name: /^重命名 / }), { key: 'Escape' });
     await create(); fireEvent.click(screen.getByRole('button', { name: 'Session 1' }));
     fireEvent.click(screen.getByRole('button', { name: '桌面设置' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush();
-    expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial);
+    expect(captures.size).toBe(1);
     await screen.findByRole('button', { name: 'a.ts M' });
     expect(trace.filter(x => x === 'add:bubble')).toHaveLength(0); // Inspector Escape is scoped to ResizableWorkspace, not a window listener.
-    await create('terminal'); expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial + 2);
+    await create('terminal'); expect(captures.size).toBe(1);
     boot = { ...boot, platform: 'linux' }; fireEvent.click(screen.getByRole('button', { name: '桌面设置' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush();
-    expect(trace.filter(x => x.endsWith('capture'))).toHaveLength(initial + 4); expect(captures.size).toBe(1);
+    expect(captures.size).toBe(1);
     view.unmount(); expect(captures.size).toBe(0); expect(listeners.size).toBe(0);
   });
   it('disables duplicate direct creation while the current project is still starting', async () => {
     await mount(); const pending = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
     vi.mocked(desktop.createSession).mockReturnValueOnce(pending.promise);
-    fireEvent.click(screen.getByRole('button', { name: '新建会话' })); await flush();
+    fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+    const draft = screen.getByRole('textbox', { name: '发送消息' });
+    fireEvent.change(draft, { target: { value: 'pending' } });
+    await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
+    await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' }); await flush();
     expect((screen.getByRole('button', { name: '新建会话' }) as HTMLButtonElement).disabled).toBe(true);
     expect(desktop.createSession).toHaveBeenCalledTimes(2);
     await act(async () => pending.resolve({ id: 'late', title: 'Late', cwd: '/one', kind: 'chat', processStatus: 'running', activity: 'idle' }));
@@ -113,7 +133,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
   it('late attachment queries the old ID in the live registry, never a disposed handle or newest active terminal', async () => {
     await mount('terminal'); const pending = deferred<string[]>(); vi.mocked(desktop.chooseAttachments).mockReturnValueOnce(pending.promise);
     fireEvent.click(screen.getByRole('button', { name: '＋ 文件引用' })); await create('terminal');
-    fireEvent.click(screen.getByRole('button', { name: '关闭 Session 1' })); await flush(); expect(terminal.instances[0].disposed).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: '关闭 Session 2' })); await flush(); expect(terminal.instances[0].disposed).toBe(true);
     open(); filter('model'); await act(async () => pending.resolve(['/old.txt']));
     expect(terminal.instances.map(instance => instance.pastes)).toEqual([[], []]); expect(screen.queryByRole('dialog')).toBeNull(); shortcut(); expect(query().value).toBe(''); expect(desktop.write).not.toHaveBeenCalled();
   });
@@ -122,9 +142,9 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     const search = () => screen.getByRole('textbox', { name: '搜索终端历史' }) as HTMLInputElement;
     fireEvent.change(search(), { target: { value: 'needle' } }); terminal.search.mockReturnValue(false); fireEvent.submit(search().closest('form')!); expect(screen.getByText('未找到')).toBeTruthy();
     await create('terminal'); expect(screen.queryByRole('textbox', { name: '搜索终端历史' })).toBeNull(); fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '关闭 Session 2' })); await flush(); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '关闭 Session 3' })); await flush(); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
     terminal.trace = []; fireEvent.click(within(search().closest('form')!).getByRole('button', { name: '×' })); expect(terminal.trace).toEqual(['clear', 'focus']); expect(screen.queryByRole('textbox', { name: '搜索终端历史' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); fireEvent.change(search(), { target: { value: 'edited' } }); expect(screen.queryByText('未找到')).toBeNull(); expect(desktop.startSession).toHaveBeenCalledTimes(4);
+    fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); fireEvent.change(search(), { target: { value: 'edited' } }); expect(screen.queryByText('未找到')).toBeNull(); expect(desktop.startSession).toHaveBeenCalledTimes(3);
   });
   it.each(['chat', 'terminal'] as const)('Git %s reference preserves palette split, newline and narrow textarea focus without toggle focus', async kind => {
     await mount(kind); const draft = kind === 'chat' ? screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement : undefined;
@@ -149,11 +169,10 @@ describe('App composition before/after: real owners and panes, only in-memory ho
 });
 
 describe('App original synchronous throw versus rejection and dynamic client lookup', () => {
-  it.each(['throw', 'reject'] as const)('create refresh %s retains add/close but only rejection reports the global error', async failure => {
+  it.each(['throw', 'reject'] as const)('create refresh %s retains the created session and reports the global error', async failure => {
     await mount(); vi.mocked(desktop.bootstrap).mockImplementationOnce(() => { if (failure === 'throw') throw new Error('refresh failure'); return Promise.reject(new Error('refresh failure')); });
-    await create(); expect(screen.getByRole('button', { name: 'Session 2' }).getAttribute('aria-current')).toBe('page'); expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.queryByText('Error: refresh failure') !== null).toBe(failure === 'reject');
-    // Sync throw rejects create into the old form's catch, already unmounted; no global report.
+    await create('chat', false); expect(screen.getByRole('button', { name: 'Session 2' }).getAttribute('aria-current')).toBe('page'); expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText('Error: refresh failure') !== null).toBe(true);
   });
   it('binds later requests to the current bridge without resubscribing the original workspace', async () => {
     await mount(); const replacement = { ...desktop, openProject: vi.fn().mockResolvedValue(undefined) };

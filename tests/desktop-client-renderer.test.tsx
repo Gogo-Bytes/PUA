@@ -16,9 +16,13 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
 });
 afterEach(() => { cleanup(); delete window.desktop; vi.restoreAllMocks(); });
-async function create() {
+async function create(title: string) {
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+  const draft = await screen.findByRole('textbox', { name: '发送消息' });
+  fireEvent.change(draft, { target: { value: `seed ${Date.now()}` } });
+  await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  await screen.findByRole('button', { name: title });
 }
 
 it('real registrar -> source preload -> client -> App/ChatPane retains submitted identity, background panes and visible failures', async () => {
@@ -34,7 +38,7 @@ it('real registrar -> source preload -> client -> App/ChatPane retains submitted
   });
   h.capabilities.registerChatAttachments.mockResolvedValue([{ id: 'token', name: 'submitted.txt', path: '/fake/submitted.txt', kind: 'file', size: 2 }]);
   const view = render(<VirtuosoMockContext.Provider value={{ viewportHeight: 400, itemHeight: 80 }}><App /></VirtuosoMockContext.Provider>);
-  await screen.findByTitle('/old'); await create();
+  await screen.findByTitle('/old'); await create('会话 1');
   const firstPane = view.container.querySelector('[data-session-id="s1"]');
   const draft = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
   fireEvent.change(draft, { target: { value: 'submitted draft' } });
@@ -42,7 +46,7 @@ it('real registrar -> source preload -> client -> App/ChatPane retains submitted
   const pending = deferred<void>(); h.capabilities.conversation.send.mockReturnValueOnce(pending.promise);
   fireEvent.keyDown(draft, { key: 'Enter' });
   await waitFor(() => expect(h.capabilities.conversation.send).toHaveBeenCalledWith('s1', { text: 'submitted draft', attachmentIds: ['token'], delivery: 'prompt' }));
-  await create(); fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: 'second draft' } });
+  await create('会话 2'); fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: 'second draft' } });
   expect(h.listeners.size).toBe(3); expect(view.container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
   await act(async () => pending.reject(new DesktopApplicationError('SEND_PENDING', '发送未确认')));
   expect(await screen.findByText('Error: 发送未确认')).toBeTruthy();
