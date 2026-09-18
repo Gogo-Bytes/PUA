@@ -4,6 +4,7 @@ export type { WorkspaceSession, SessionWorkspace } from './selection';
 export { useSessionInput } from './useSessionInput';
 export { ProjectNav, ProjectNavigation, type ProjectNavItem, type ProjectNavLabels, type ProjectNavProps } from './ProjectNav';
 export { ProjectSidebar } from './ProjectSidebar';
+export { TaskToolbar, type TaskToolbarProps } from './TaskToolbar';
 export { readWorkspaceView, writeWorkspaceView, type WorkspaceViewPersistence } from './workspace-view-persistence';
 export { SessionTabs, type WorkspaceSessionTab, type SessionTabsLabels, type SessionTabsProps } from './SessionTabs';
 export { referencePaths } from './reference-paths';

@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
-import { ProjectNav, ProjectSidebar, SessionTabs } from '../src/renderer/features/workspace';
+import { ProjectNav, ProjectSidebar, SessionTabs, TaskToolbar } from '../src/renderer/features/workspace';
 import { FileRow, InspectorHeader } from '../src/renderer/features/change-review';
 import { ChatMessage, ToolExecutionCard } from '../src/renderer/features/conversation';
 import { UIProvider } from '../src/renderer/ui';
@@ -34,6 +34,21 @@ it('production sidebar nests sessions below their project without tab semantics'
   expect(screen.getByRole('list', { name: 'app 的会话' }).contains(screen.getByRole('button', { name: '调查交互' }))).toBe(true);
   fireEvent.click(screen.getAllByTitle('/two/empty')[0]); expect(create).toHaveBeenCalledWith('/two/empty');
   fireEvent.click(screen.getByRole('button', { name: '调查交互' })); expect(select).toHaveBeenCalledWith('s1');
+});
+it('task toolbar exposes task-scoped actions without inventing a session-level fork', () => {
+  const openProject = vi.fn(), rename = vi.fn(), archive = vi.fn(), pin = vi.fn(), inspector = vi.fn();
+  render(<UIProvider><TaskToolbar task={{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'responding', pinned: false }} inspectorOpen onToggleInspector={inspector} onOpenProject={openProject} onRename={rename} onArchive={archive} onTogglePinned={pin}/></UIProvider>);
+  expect(screen.getByRole('banner', { name: '当前任务操作栏' })).toBeTruthy();
+  expect(screen.getByText('处理中')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /Fork|分支/ })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '更多任务操作' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: '重命名任务' })); expect(rename).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button', { name: '更多任务操作' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: '置顶任务' })); expect(pin).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button', { name: '更多任务操作' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: '归档并关闭任务' })); expect(archive).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button', { name: '打开目录' })); expect(openProject).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button', { name: '收起 检查器' })); expect(inspector).toHaveBeenCalledOnce();
 });
 it('production sidebar collapses and restores a project session list', () => {
   render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle' }]} recentProjects={['/one/app']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={vi.fn()} onSelectSession={vi.fn()} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
