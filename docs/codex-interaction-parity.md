@@ -15,7 +15,7 @@ PUA 的一级对象是任务（Task），项目（Project）用于分组，Pi �
 | 任务生命周期 | 创建、恢复、关闭、归档、取消归档、置顶、重命名 | 已支持创建、精确恢复、默认归档、详情取消归档/永久删除、置顶排序与重命名 |
 | 任务栏 | 标题、项目、分支、运行状态、分享、更多操作 | 已接入当前任务标题/项目/类型/Process 与 Pi activity 状态、打开目录、检查器、重命名、置顶和归档操作；不伪造 Codex 分享或任务级 Fork，消息级 Fork 仍遵循 Pi 原生入口 |
 | 对话 | 消息操作、工具过程、重试/继续/停止/排队、附件与命令 | Pi 能力分散在 ChatPane；压缩上下文与当前会话统计已通过 Pi 原生 RPC 接入 |
-| 检查器 | 变更、文件、分支、终端与任务上下文联动 | GitPanel 已保留独立状态；任务详情与 Git/环境切换面板待接入 |
+| 检查器 | 变更、文件、分支、终端与任务上下文联动 | 已接入“任务详情 / Git·环境”双模式；GitPanel 仍独占 Git snapshot、scope、selected path 与 diff 状态，详情只展示安全任务投影 |
 | 搜索 | 全局任务、项目内任务、当前对话/终端 | 已支持项目/会话筛选、命令菜单与终端搜索；全文历史搜索待接入 |
 | 后台状态 | 离开任务后保留运行、完成、失败、通知 | 单窗口关闭后隐藏到托盘；显式退出才关闭 Pi 资源；任务通知与更细粒度后台状态仍待补齐 |
 | 恢复 | 重启后恢复最近任务、布局、草稿与面板状态 | 主进程持久化 Pi session identity/file；启动只恢复侧栏任务元数据为 dormant，点击历史项后才按原生 identity 启动；项目点击仍只打开新草稿 |
@@ -87,4 +87,11 @@ Pi 能力审计完成前，不将 Task DTO、历史恢复映射或能力排除�
 - 阶段 A 已接入 `TaskToolbar`：复用现有 `SessionInfo` 和 Desktop API，不新增 IPC 或 Task Store。归档按钮沿用 `closeSession` 的“停止托管进程 → 写入归档 → 从活动投影移除”语义，避免引入后台归档的新行为。
 - 任务栏状态只解释已有 `processStatus` 与 Pi `activity`；不会把 `running` 或 Pi entry tree 推断成 Codex 分支状态。
 - 任务级 Fork 不放入工具栏。Pi 原生 Fork 仍只从可分支的用户消息/历史节点触发，并更新同一任务的 Pi identity。
-- 下一阶段接入右侧 Inspector 的任务详情 / Git 环境切换；GitPanel 继续独占 Git snapshot、scope、selected path、diff generation 与文件引用状态。
+- 阶段 B 已接入右侧 Inspector 的任务详情 / Git 环境切换；GitPanel 继续独占 Git snapshot、scope、selected path、diff generation 与文件引用状态。
+
+### 阶段 B：任务详情 Inspector（已接入）
+
+- 右侧 Inspector 默认保持既有 Git / 环境视图，并增加可键盘切换的任务详情视图，避免改变原有 Git 工作流。
+- 任务详情只读取 `SessionInfo` 与 `Bootstrap.runtime` 的已有投影：项目目录、任务类型、Process Status、Pi Agent Activity、最近活动和运行时来源。
+- 不从 renderer 反读 Pi transcript/sessionFile/auth/trust，也不把模型、Thinking、队列、扩展 UI 或 Session Tree 复制成第二份状态；这些仍由 Conversation/Pi 原生事件负责。
+- 任务详情中的归档、置顶、重命名和打开目录复用现有 callbacks；Settings 继续承载归档恢复与永久删除。
