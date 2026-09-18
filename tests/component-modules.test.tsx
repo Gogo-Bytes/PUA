@@ -28,11 +28,11 @@ it('ProjectNav keeps cwd as callback identity and only reveals duplicate paths o
   const rows = screen.getAllByRole('button', { name: /Atlas/ }); fireEvent.focus(rows[1]); expect(screen.getByRole('tooltip').textContent).toBe('/two/atlas'); fireEvent.click(rows[1]); expect(select).toHaveBeenCalledWith('/two/atlas');
 });
 it('production sidebar nests sessions below their project without tab semantics', () => {
-  const create = vi.fn(), select = vi.fn();
-  render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle' }]} recentProjects={['/one/app', '/two/empty']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={create} onSelectSession={select} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
+  const create = vi.fn(), select = vi.fn(), selectProject = vi.fn();
+  render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle' }]} recentProjects={['/one/app', '/two/empty']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={create} onSelectProject={selectProject} onSelectSession={select} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
   expect(screen.queryByRole('tablist')).toBeNull(); expect(screen.queryByRole('tab')).toBeNull();
   expect(screen.getByRole('list', { name: 'app 的会话' }).contains(screen.getByRole('button', { name: '调查交互' }))).toBe(true);
-  fireEvent.click(screen.getAllByTitle('/two/empty')[0]); expect(create).toHaveBeenCalledWith('/two/empty');
+  fireEvent.click(screen.getAllByTitle('/two/empty')[0]); expect(selectProject).toHaveBeenCalledWith('/two/empty'); expect(create).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '调查交互' })); expect(select).toHaveBeenCalledWith('s1');
 });
 it('production sidebar collapses and restores a project session list', () => {

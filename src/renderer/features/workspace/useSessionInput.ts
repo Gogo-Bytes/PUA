@@ -15,13 +15,27 @@ interface SessionInputOptions {
 /** Window input presentation: text by ID and live handles, not Chat revisions or xterm lifetime. */
 export function useSessionInput({ active, activeId, dismissAfterInsert, reportError, afterReference }: SessionInputOptions) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [projectDrafts, setProjectDrafts] = useState<Record<string, string>>({});
+  const [initialSends, setInitialSends] = useState<Record<string, string>>({});
   const handles = useRef(new Map<string, TerminalHandle>());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [found, setFound] = useState(true);
   const readDraft = (id: string) => drafts[id] || '';
   const replaceDraft = (id: string, text: string) => setDrafts(current => ({ ...current, [id]: text }));
-  const forgetDraft = (id: string) => setDrafts(current => { const next = { ...current }; delete next[id]; return next; });
+  const readProjectDraft = (cwd: string) => projectDrafts[cwd] || '';
+  const replaceProjectDraft = (cwd: string, text: string) => setProjectDrafts(current => ({ ...current, [cwd]: text }));
+  const beginProjectSession = (cwd: string, id: string, text: string) => {
+    setDrafts(current => ({ ...current, [id]: text }));
+    setInitialSends(current => ({ ...current, [id]: text }));
+    setProjectDrafts(current => { const next = { ...current }; delete next[cwd]; return next; });
+  };
+  const readInitialSend = (id: string) => initialSends[id];
+  const clearInitialSend = (id: string) => setInitialSends(current => { const next = { ...current }; delete next[id]; return next; });
+  const forgetDraft = (id: string) => {
+    setDrafts(current => { const next = { ...current }; delete next[id]; return next; });
+    clearInitialSend(id);
+  };
   const onTerminalReady = (id: string, handle: TerminalHandle | null) => { if (handle) handles.current.set(id, handle); else handles.current.delete(id); };
   const handle = () => activeId ? handles.current.get(activeId) : undefined;
   const draft = activeId ? readDraft(activeId) : '';
@@ -49,7 +63,7 @@ export function useSessionInput({ active, activeId, dismissAfterInsert, reportEr
   const toggleSearch = useCallback(() => setSearchOpen(value => !value), []);
   const hideSearch = useCallback(() => setSearchOpen(false), []);
   return {
-    readDraft, replaceDraft, forgetDraft, onTerminalReady, insertCommand, chooseTerminalReferences, reference,
+    readDraft, replaceDraft, readProjectDraft, replaceProjectDraft, beginProjectSession, readInitialSend, clearInitialSend, forgetDraft, onTerminalReady, insertCommand, chooseTerminalReferences, reference,
     searchOpen, searchText, found, toggleSearch, hideSearch,
     editSearch: (text: string) => { setSearchText(text); setFound(true); },
     find: (backwards?: boolean) => setFound(handle()?.search(searchText, backwards) ?? false),

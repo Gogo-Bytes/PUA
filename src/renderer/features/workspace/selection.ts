@@ -26,6 +26,11 @@ export function selectProject<S extends WorkspaceSession>(current: SessionWorksp
   const id = sessions.find(session => session.id === current.lastActive?.[cwd])?.id ?? sessions[0]?.id ?? null;
   return { ...current, project: cwd, activeId: id, lastActive: id ? { ...current.lastActive, [cwd]: id } : current.lastActive };
 }
+
+/** Project navigation opens one local unsent composer. It must not reserve a Pi session. */
+export function prepareConversation<S extends WorkspaceSession>(current: SessionWorkspace<S>, cwd: string): SessionWorkspace<S> {
+  return { ...current, project: cwd, activeId: null };
+}
 export function addSession<S extends WorkspaceSession>(current: SessionWorkspace<S>, session: S): SessionWorkspace<S> {
   return selectSession({ ...current, sessions: [...current.sessions, session] }, session.id);
 }

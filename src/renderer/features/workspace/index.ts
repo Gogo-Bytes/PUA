@@ -1,5 +1,5 @@
 export { useWorkspace } from './useWorkspace';
-export { projectName, groupProjects, selectSession, selectProject, addSession, removeSession } from './selection';
+export { projectName, groupProjects, selectSession, selectProject, prepareConversation, addSession, removeSession } from './selection';
 export type { WorkspaceSession, SessionWorkspace } from './selection';
 export { useSessionInput } from './useSessionInput';
 export { ProjectNav, ProjectNavigation, type ProjectNavItem, type ProjectNavLabels, type ProjectNavProps } from './ProjectNav';

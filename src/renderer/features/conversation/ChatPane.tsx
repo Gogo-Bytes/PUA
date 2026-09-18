@@ -11,6 +11,7 @@ import { missingAssistantRendererDiagnostics } from './missing-assistant-diagnos
 import { ToolExecutionCard } from './ToolExecutionCard';
 import { ChatMessage as ConversationMessage } from './ChatMessage';
 import { Composer } from './Composer';
+import { expandSkillReference } from './skill-references';
 
 interface Props {
   session: SessionInfo;
@@ -20,9 +21,11 @@ interface Props {
   onError(message: string): void;
   onTerminalRecovery?(): void;
   onCommands(commands: ChatCommand[]): void;
+  initialMessage?: string;
+  onInitialMessageSent?(): void;
 }
 
-export function ChatPane({ session, active, draft, onDraftChange, onError, onCommands, onTerminalRecovery }: Props) {
+export function ChatPane({ session, active, draft, onDraftChange, onError, onCommands, onTerminalRecovery, initialMessage, onInitialMessageSent }: Props) {
   const [state, dispatch] = useReducer(reduceChatEvent, undefined, emptyChatState);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [models, setModels] = useState<import('../../../shared/ipc/conversation').ChatModel[]>([]);
@@ -48,6 +51,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const [slashDismissed, setSlashDismissed] = useState(false);
   const [skillDismissed, setSkillDismissed] = useState(false);
   const forkingRef = useRef(false);
+  const initialSentRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = desktopClient.onSessionEvent(event => {
@@ -77,19 +81,20 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
 
   const busy = state.activity !== 'idle';
   const unavailable = state.exited || session.processStatus !== 'running';
-  const send = async (delivery?: 'prompt' | 'steer' | 'followUp') => {
-    if (sendingRef.current || unavailable) return;
+  const send = async (delivery?: 'prompt' | 'steer' | 'followUp'): Promise<boolean> => {
+    if (sendingRef.current || unavailable) return false;
     const submitted = { ...draftRef.current };
     const submittedIds = attachments.map(item => item.id);
-    const value = submitted.text.trim(); if (!value && !attachments.length) return;
+    const value = submitted.text.trim(); if (!value && !attachments.length) return false;
     const mode = delivery ?? (busy ? 'steer' : 'prompt');
     sendingRef.current = true;
     try {
-      await desktopClient.sendChatMessage(session.id, { text: submitted.text, attachmentIds: submittedIds, delivery: mode });
+      await desktopClient.sendChatMessage(session.id, { text: expandSkillReference(submitted.text, state.commands), attachmentIds: submittedIds, delivery: mode });
       if (draftRef.current.revision === submitted.revision) changeDraft('');
       setAttachments(current => current.filter(item => !submittedIds.includes(item.id)));
-    } catch (error) { onError(String(error)); }
+    } catch (error) { onError(String(error)); return false; }
     finally { sendingRef.current = false; }
+    return true;
   };
   const chooseAttachments = async () => {
     try { const selected = await desktopClient.chooseChatAttachments(session.id); setAttachments(current => [...current, ...selected]); }
@@ -113,6 +118,15 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     catch (error) { onError(String(error)); }
     finally { forkingRef.current = false; }
   };
+
+  useEffect(() => {
+    if (!active || !state.ready || !initialMessage || initialSentRef.current) return;
+    initialSentRef.current = true;
+    void send('prompt').then(sent => {
+      if (sent) onInitialMessageSent?.();
+      else initialSentRef.current = false;
+    });
+  }, [active, state.ready, initialMessage]);
 
   const slash = !slashDismissed && draft.startsWith('/') ? state.commands.filter(command => `/${command.name} ${command.description ?? ''}`.toLowerCase().includes(draft.toLowerCase())).slice(0, 8) : [];
   const skillMatch = !skillDismissed ? draft.match(/(?:^|\s)@([^\s]*)$/) : null;
@@ -143,7 +157,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
         onAddAttachments={() => void chooseAttachments()}
         onRemoveAttachment={id => void desktopClient.removeChatAttachment(session.id, id).then(() => setAttachments(current => current.filter(item => item.id !== id))).catch(error => onError(String(error)))}
         onValueChange={value => { changeDraft(value); setSlashDismissed(false); setSkillDismissed(false); }}
-        busy={busy} onSend={() => send()} onQueue={() => send('steer')} onFollowUp={() => send('followUp')} onStop={stop}
+        busy={busy} onSend={() => { void send(); }} onQueue={() => { void send('steer'); }} onFollowUp={() => { void send('followUp'); }} onStop={stop}
         labels={{ message: '发送消息', placeholder: busy ? '输入可在当前工具完成后引导 Pi…' : '描述任务、粘贴内容或添加文件…', hint: busy ? 'Enter 引导 · ⌥Enter 后续 · ⇧Enter 换行' : 'Enter 发送 · ⇧Enter 换行', send: '发送消息', queue: '引导 Pi', stop: '停止运行', addAttachments: '添加附件', attachments: '附件', removeAttachment: name => `移除 ${name}`, failed: '操作失败', error: '操作失败' }}
         onEditorKeyDown={event => {
           if (event.key === 'Escape') { setSlashDismissed(true); setSkillDismissed(true); return; }
@@ -158,7 +172,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
 }
 
 function TreeNodes({ nodes, onFork, depth = 0 }: { nodes: readonly import('../../../shared/ipc/conversation').ChatTreeNode[]; onFork(entryId: string): void; depth?: number }) {
-  return <ul style={{ marginLeft: depth * 12 }}>{nodes.map(node => <li key={node.entryId}><Button variant="ghost" onClick={() => onFork(node.entryId)} title="从此历史节点创建分支">↗ {node.label || node.entryId}</Button>{node.children.length ? <TreeNodes nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}</li>)}</ul>;
+  return <ul style={{ marginLeft: depth * 12 }}>{nodes.map(node => <li key={node.entryId}>{node.forkable === false ? <span className="chat-tree-label">{node.label || node.entryId}</span> : <Button variant="ghost" onClick={() => onFork(node.entryId)} title="从此历史节点创建分支">↗ {node.label || node.entryId}</Button>}{node.children.length ? <TreeNodes nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}</li>)}</ul>;
 }
 
 const MessageView = memo(function MessageView({ message, onFork }: { message: ChatMessage; onFork(entryId: string): void }) {

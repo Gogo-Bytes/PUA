@@ -11,6 +11,7 @@ interface ProjectSidebarProps {
   activeProject?: string;
   creatingProject?: string;
   runtimeAvailable: boolean;
+  onSelectProject(cwd: string): void;
   onNewConversation(cwd?: string): void;
   onSelectSession(id: string): void;
   onCloseSession(id: string): void;
@@ -23,7 +24,7 @@ interface ProjectSidebarProps {
 /** Production navigation: projects own nested task rows; existing sessions are never represented as tabs. */
 export function ProjectSidebar({
   sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable,
-  onNewConversation, onSelectSession, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
+  onSelectProject, onNewConversation, onSelectSession, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
   const [query, setQuery] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -50,7 +51,7 @@ export function ProjectSidebar({
       {visible.length === 0 ? <p className="ui-meta">暂无匹配项目</p> : visible.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line">
           {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => setCollapsed(current => { const next = new Set(current); next.has(project.cwd) ? next.delete(project.cwd) : next.add(project.cwd); return next; })}>{collapsed.has(project.cwd) ? '▸' : '▾'}</Button>}
-          <Tooltip content={project.cwd}><Button variant="ghost" className="workspace-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
+          <Tooltip content={project.cwd}><Button variant="ghost" className="workspace-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onSelectProject(project.cwd)}>
             <Icon name="folder"/><span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
           </Button></Tooltip>
           <IconButton icon="plus" label={`在 ${project.name} 中新建对话`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
@@ -73,7 +74,7 @@ export function ProjectSidebar({
 function TreeBranch({ nodes, onFork, depth = 0 }: { nodes: readonly ChatTreeNode[]; onFork(entryId: string): void; depth?: number }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   return <ul className="workspace-session-branches" style={{ paddingLeft: `${12 + depth * 10}px` }}>{nodes.map(node => <li key={node.entryId}>
-    <span className="workspace-branch-row">{node.children.length > 0 && <Button variant="ghost" className="workspace-branch-collapse" aria-label={`${collapsed.has(node.entryId) ? '展开' : '折叠'}分支`} aria-expanded={!collapsed.has(node.entryId)} onClick={() => setCollapsed(current => { const next = new Set(current); next.has(node.entryId) ? next.delete(node.entryId) : next.add(node.entryId); return next; })}>{collapsed.has(node.entryId) ? '▸' : '▾'}</Button>}<Button variant="ghost" onClick={() => onFork(node.entryId)} title="从此历史节点创建分支">↗ {node.label || node.entryId}</Button></span>
+    <span className="workspace-branch-row">{node.children.length > 0 && <Button variant="ghost" className="workspace-branch-collapse" aria-label={`${collapsed.has(node.entryId) ? '展开' : '折叠'}分支`} aria-expanded={!collapsed.has(node.entryId)} onClick={() => setCollapsed(current => { const next = new Set(current); next.has(node.entryId) ? next.delete(node.entryId) : next.add(node.entryId); return next; })}>{collapsed.has(node.entryId) ? '▸' : '▾'}</Button>}{node.forkable === false ? <span>{node.label || node.entryId}</span> : <Button variant="ghost" onClick={() => onFork(node.entryId)} title="从此历史节点创建分支">↗ {node.label || node.entryId}</Button>}</span>
     {node.children.length && !collapsed.has(node.entryId) ? <TreeBranch nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}
   </li>)}</ul>;
 }

@@ -17,6 +17,7 @@ let boot: Bootstrap;
 const emit = (event: SessionEvent) => act(() => { listeners.forEach(listener => listener(event)); });
 beforeEach(() => {
   listeners = new Set(); mediaListeners = new Set();
+  draftSequence = 0;
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1000 });
   window.matchMedia = vi.fn(query => ({ matches: false, media: query, addEventListener: (_type: string, callback: (event: MediaQueryListEvent) => void) => { if (query.includes('color-scheme')) mediaListeners.add(callback); }, removeEventListener: (_type: string, callback: (event: MediaQueryListEvent) => void) => mediaListeners.delete(callback) })) as unknown as typeof window.matchMedia;
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
@@ -37,25 +38,36 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView; });
 
+let draftSequence = 0;
 async function createSession() {
   const started = vi.mocked(desktop.startSession).mock.calls.length;
+  const created = vi.mocked(desktop.createSession).mock.calls.length;
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+  const draft = await screen.findByRole('textbox', { name: '发送消息' });
+  fireEvent.change(draft, { target: { value: `seed ${++draftSequence}` } });
+  await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
+  await new Promise(resolve => setTimeout(resolve, 180));
+  fireEvent.keyDown(draft, { key: 'Enter' });
+  await waitFor(() => expect(desktop.createSession).toHaveBeenCalledTimes(created + 1));
+  const id = (vi.mocked(desktop.createSession).mock.results.at(-1)?.value as Promise<{ id: string }> | undefined);
+  const session = id ? await id : undefined;
   await waitFor(() => expect(desktop.startSession).toHaveBeenCalledTimes(started + 1));
-  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  if (session?.id) emit({ id: session.id, type: 'chat-snapshot', snapshot: { messages: [], commands: [], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
+  await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith(session?.id, expect.objectContaining({ delivery: 'prompt' })));
+  vi.mocked(desktop.sendChatMessage).mockClear();
 }
 const selectProject = (path: string) => fireEvent.click(within(screen.getByRole('navigation', { name: '项目' })).getByTitle(path));
+const selectSession = (title: string) => fireEvent.click(screen.getByRole('button', { name: title }));
 
 describe('production workspace navigation', () => {
   it('keeps actual ChatPane draft, attachments and stream subscriptions across sidebar sessions/projects; closes through host', async () => {
     const { container } = render(<App />);
-    await screen.findByTitle('/one/app'); selectProject('/one/app');
-    await screen.findByRole('button', { name: '会话 1' });
+    await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     const firstPane = container.querySelector('[data-session-id="s1"]');
     const firstDraft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(firstDraft, { target: { value: 'unfinished first' } });
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
     await createSession(); fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: 'second draft' } });
-    selectProject('/two/app');
-    await screen.findByRole('button', { name: '会话 3' });
+    selectProject('/two/app'); await createSession();
     expect(screen.queryByRole('dialog')).toBeNull();
     emit({ id: 's1', type: 'chat-message-start', message: { id: 'm1', role: 'assistant', blocks: [{ type: 'text', text: 'background reply' }], timestamp: 1 } });
     fireEvent.click(screen.getByRole('button', { name: '会话 2' }));
@@ -78,8 +90,7 @@ describe('production workspace navigation', () => {
   });
   it('collapses project children without unmounting the active conversation or losing its draft', async () => {
     const { container } = render(<App />);
-    await screen.findByTitle('/one/app'); selectProject('/one/app');
-    await screen.findByRole('button', { name: '会话 1' }); await createSession();
+    await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
     const pane = container.querySelector('[data-session-id="s2"]');
     const draft = screen.getByRole('textbox', { name: '发送消息' });
     fireEvent.change(draft, { target: { value: 'retained while collapsed' } });
@@ -97,9 +108,8 @@ describe('production workspace navigation', () => {
   });
   it('filters sidebar session names without changing selection or disposing hidden panes', async () => {
     const { container } = render(<App />);
-    await screen.findByTitle('/one/app'); selectProject('/one/app');
-    await screen.findByRole('button', { name: '会话 1' });
-    selectProject('/two/app'); await screen.findByRole('button', { name: '会话 2' });
+    await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    selectProject('/two/app'); await createSession();
     const pane = container.querySelector('[data-session-id="s2"]');
     const draft = screen.getByRole('textbox', { name: '发送消息' });
     const filter = screen.getByPlaceholderText('查找项目或会话…');
@@ -136,9 +146,10 @@ describe('production workspace navigation', () => {
     await waitFor(() => expect(document.activeElement).toBe(toggle));
     // Mounted background panes must not let their hidden suggestions block Escape.
     fireEvent.change(draft, { target: { value: '/rev' } }); await createSession();
-    fireEvent.click(toggle); await screen.findByText('这个范围没有变更');
+    fireEvent.click(screen.getByRole('button', { name: /(?:显示|收起) 检查器/ })); await screen.findByText('这个范围没有变更');
+    const currentToggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
     fireEvent.keyDown(await screen.findByRole('button', { name: '关闭变更面板' }), { key: 'Escape' });
-    await waitFor(() => expect(document.activeElement).toBe(toggle));
+    await waitFor(() => expect(document.activeElement).toBe(currentToggle));
   });
   it('uses default system changes and saved themes without recreating sessions or losing draft', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
@@ -174,12 +185,13 @@ describe('production workspace navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
     const toggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
     await screen.findByText('这个范围没有变更'); expect(desktop.gitStatus).toHaveBeenCalledWith('s1');
-    fireEvent.click(screen.getByRole('button', { name: '关闭变更面板' })); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull(); expect(document.activeElement).toBe(toggle);
-    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole('button', { name: '关闭变更面板' })); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull();
+    const currentToggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
+    fireEvent.click(currentToggle);
     // The inserted command has suggestions: dismiss that local menu before the inspector.
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Escape' });
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    fireEvent.keyDown(toggle, { key: 'Escape' }); expect(document.activeElement).toBe(toggle); expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(currentToggle.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.keyDown(currentToggle, { key: 'Escape' }); expect(document.activeElement).toBe(currentToggle); expect(currentToggle.getAttribute('aria-expanded')).toBe('false');
   });
 });
 
@@ -193,11 +205,14 @@ const closeTab = (title: string) => fireEvent.click(screen.getByRole('button', {
 async function seedProjects() {
   const view = render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
   await createSession(); await createSession(); await createSession();
-  selectProject('/two/app'); await createSession(); selectProject('/one/app');
+  selectProject('/two/app'); await createSession(); selectProject('/one/app'); selectSession('会话 3');
   return view;
 }
 async function submitPendingCreate() {
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
+  const draft = await screen.findByRole('textbox', { name: '发送消息' });
+  fireEvent.change(draft, { target: { value: `pending ${++draftSequence}` } });
+  await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
 }
 
 describe('Workspace real App with in-memory Desktop deferred completions (not Electron/Pi)', () => {
@@ -206,12 +221,12 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     vi.mocked(desktop.closeSession).mockReturnValueOnce(pending.promise);
     closeTab('会话 3'); expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
     if (scenario === 'remembered') fireEvent.click(screen.getByRole('button', { name: '会话 1' }));
-    selectProject(scenario === 'empty' ? '/empty' : '/two/app');
+    if (scenario === 'empty') selectProject('/empty'); else { selectProject('/two/app'); selectSession('会话 4'); }
     await act(async () => pending.resolve(true));
     expect(container.querySelector('[data-session-id="s3"]')).toBeNull();
     if (scenario === 'empty') { expect(screen.queryByRole('tab')).toBeNull(); expect(within(screen.getByRole('navigation', { name: '项目' })).getByTitle('/empty').getAttribute('aria-current')).toBe('page'); }
     else selected('会话 4');
-    selectProject('/one/app'); selected(scenario === 'remembered' ? '会话 1' : '会话 2');
+    selectProject('/one/app'); selectSession(scenario === 'remembered' ? '会话 1' : '会话 2'); selected(scenario === 'remembered' ? '会话 1' : '会话 2');
     expect(desktop.startSession).toHaveBeenCalledTimes(4); expect(listeners.size).toBe(4);
     unmount(); expect(listeners.size).toBe(0);
   });
@@ -243,20 +258,18 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     await seedProjects(); const pending = deferred<boolean>(); vi.mocked(desktop.closeSession).mockReturnValueOnce(pending.promise);
     closeTab('会话 3'); await createSession(); selected('会话 5');
     await act(async () => pending.resolve(true)); selected('会话 5');
-    selectProject('/two/app'); selectProject('/one/app'); selected('会话 5');
+    selectProject('/two/app'); selectProject('/one/app'); selectSession('会话 5'); selected('会话 5');
   });
-  it('appends and selects creates in completion order through two real dialog submissions', async () => {
+  it('creates and selects a chat after a project draft is submitted', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
-    const first = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>(), second = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
-    vi.mocked(desktop.createSession).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
-    await submitPendingCreate(); fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true }));
-    await submitPendingCreate(); expect(desktop.createSession).toHaveBeenCalledTimes(2);
+    const first = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
+    vi.mocked(desktop.createSession).mockReturnValueOnce(first.promise);
+    await submitPendingCreate(); expect(desktop.createSession).toHaveBeenCalledTimes(1);
     const session = (id: string) => ({ id, title: id, cwd: '/one/app', kind: 'chat' as const, processStatus: 'running' as const, activity: 'idle' as const });
     emit({ id: 'first', type: 'session-info', title: 'too early' });
-    await act(async () => second.resolve(session('second'))); selected('second'); expect(screen.queryByRole('dialog')).toBeNull();
     await act(async () => first.resolve(session('first'))); selected('first');
-    expect(within(screen.getByRole('tablist', { name: '项目会话' })).getAllByRole('tab').map(tab => tab.textContent)).toEqual(['second', 'first']);
-    expect(desktop.bootstrap).toHaveBeenCalledTimes(3); expect(desktop.startSession).toHaveBeenCalledTimes(2);
+    expect(within(screen.getByRole('list', { name: 'app 的会话' })).getAllByRole('button').map(button => button.textContent)).toContain('first');
+    expect(desktop.startSession).toHaveBeenCalledTimes(1);
   });
   it('keeps both real drafts/attachments and background events; send completion owns only its submission', async () => {
     const { container, unmount } = render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
@@ -275,13 +288,13 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     emit({ id: 'unknown', type: 'session-info', title: 'not a new session' });
     await act(async () => send.resolve()); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(b); expect(b.value).toBe('B newer');
     expect(screen.getByText('b.txt')).toBeTruthy(); expect(within(container.querySelector('[data-session-id="s2"]') as HTMLElement).queryByText('only A background')).toBeNull();
-    selectProject('/one/app'); selected('A renamed'); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(a); expect(a.value).toBe('A newer');
+    selectProject('/one/app'); selectSession('A renamed'); selected('A renamed'); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(a); expect(a.value).toBe('A newer');
     expect(screen.queryByText('context.txt')).toBeNull(); expect(screen.getByText('only A background')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'A renamed' }).title).toContain('处理中');
     emit({ id: 's1', type: 'chat-state', state: { activity: 'idle' } }); expect(screen.getByRole('button', { name: 'A renamed' }).title).toContain('就绪');
     emit({ id: 's1', type: 'exit', exitCode: 7 }); expect(screen.getByRole('button', { name: 'A renamed' }).title).toContain('已退出'); expect(a.value).toBe('A newer');
     closeTab('A renamed'); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
-    expect(screen.queryByRole('tab')).toBeNull(); selectProject('/two/app'); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(b); expect(b.value).toBe('B newer'); expect(screen.getByText('b.txt')).toBeTruthy();
+    expect(screen.queryByRole('tab')).toBeNull(); selectProject('/two/app'); selectSession('会话 2'); expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(b); expect(b.value).toBe('B newer'); expect(screen.getByText('b.txt')).toBeTruthy();
     expect(desktop.startSession).toHaveBeenCalledTimes(2); expect(listeners.size).toBe(2); unmount(); expect(listeners.size).toBe(0);
   });
 });
@@ -299,9 +312,9 @@ describe('Workspace edge ownership with actual App', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /^重命名 / }), { target: { value: 'late A name' } });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
     // Inline editing permits switching projects while the original request is pending.
-    selectProject('/two/app'); await act(async () => pending.resolve()); selected('会话 4');
+    selectProject('/two/app'); selectSession('会话 4'); await act(async () => pending.resolve()); selected('会话 4');
     expect(desktop.renameChatSession).toHaveBeenCalledWith('s3', 'late A name');
-    selectProject('/one/app'); selected('late A name');
+    selectProject('/one/app'); selectSession('late A name'); selected('late A name');
   });
   it('unsubscribes on unmount without adding cancellation to a pending host close', async () => {
     const { unmount } = await seedProjects(); const pending = deferred<boolean>();
@@ -313,28 +326,36 @@ describe('Workspace edge ownership with actual App', () => {
 });
 
 describe('Session launch through real App and direct sidebar controller', () => {
+  it('opens a project draft without creating history until the first message', async () => {
+    render(<App />); await screen.findByTitle('/one/app');
+    fireEvent.click(screen.getByTitle('/one/app'));
+    expect(desktop.createSession).not.toHaveBeenCalled();
+    const draft = await screen.findByRole('textbox', { name: '发送消息' });
+    fireEvent.change(draft, { target: { value: 'first real task' } });
+    await new Promise(resolve => setTimeout(resolve, 180));
+    fireEvent.keyDown(draft, { key: 'Enter' });
+    await waitFor(() => expect(desktop.createSession).toHaveBeenCalledWith(expect.objectContaining({ cwd: '/one/app', kind: 'chat', startMode: 'new' })));
+    expect(desktop.createSession).toHaveBeenCalledTimes(1);
+  });
   it('opens a remembered project and creates a chat directly without a dialog', async () => {
     vi.mocked(desktop.createSession).mockResolvedValue({ id: 'chosen', title: 'Chosen session', cwd: '/one/app', kind: 'chat', processStatus: 'running', activity: 'idle' });
     const { container } = render(<App />); await screen.findByTitle('/one/app');
     const opener = within(screen.getAllByRole('region', { name: 'app' })[0]).getByRole('button', { name: '在 app 中新建对话' }); opener.focus(); fireEvent.click(opener);
+    const draft = await screen.findByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'start work' } });
+    await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
     await waitFor(() => expect(desktop.createSession).toHaveBeenCalledWith(expect.objectContaining({ cwd: '/one/app', kind: 'chat', startMode: 'new' })));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy();
   });
-  it('keeps home/project/continue defaults and settings navigation in App', async () => {
+  it('keeps project drafts usable while Pi is unconfigured and routes to settings', async () => {
     boot = { ...boot, preferences: { ...boot.preferences, recentProjects: [] }, runtime: null };
-    render(<App />); await waitFor(() => expect((screen.getAllByRole('button', { name: '打开项目' })[0] as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(screen.getAllByRole('button', { name: '打开项目' })[0]);
-    expect((screen.getByRole('textbox', { name: '项目文件夹' }) as HTMLInputElement).value).toBe('/home');
-    fireEvent.click(screen.getByRole('button', { name: '先配置 Pi' })); expect(screen.getByRole('dialog', { name: '桌面设置' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '取消' })); cleanup();
     boot = { ...boot, preferences: { ...boot.preferences, recentProjects: ['/empty'] } };
     render(<App />); await screen.findByTitle('/empty'); selectProject('/empty');
-    fireEvent.click(screen.getByRole('button', { name: '继续最近会话' }));
-    expect((screen.getByRole('textbox', { name: '项目文件夹' }) as HTMLInputElement).value).toBe('/empty');
-    expect((screen.getByRole('radio', { name: /^继续最近/ }) as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: '关闭对话框' })); fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
-    expect((screen.getByRole('radio', { name: /^新会话/ }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole('textbox', { name: '发送消息' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('尚未配置 Pi');
+    fireEvent.click(screen.getByRole('button', { name: '打开设置' }));
+    expect(screen.getByRole('dialog', { name: '桌面设置' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
     expect(desktop.createSession).not.toHaveBeenCalled();
   });
 });

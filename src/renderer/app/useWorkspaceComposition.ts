@@ -19,6 +19,7 @@ export function useWorkspaceComposition(afterReference: () => void) {
     onCreated: workspace.addCreatedSession,
     afterCreated: () => { input.hideSearch(); desktopPresentation.refresh(); },
     onSettings: desktopPresentation.showSettings,
+    onPrepare: workspace.prepareConversation,
     onError: desktopPresentation.reportError,
   });
   const sessionActions = useSessionPresentation(workspace.active, workspace.setSessionTitle, desktopPresentation.reportError);
@@ -28,7 +29,10 @@ export function useWorkspaceComposition(afterReference: () => void) {
       if (session) return sessionActions.renameSession(session, title);
     },
     selectSession: (id: string) => { workspace.selectSession(id); input.hideSearch(); },
-    selectProject: (cwd: string) => { workspace.selectProject(cwd); input.hideSearch(); },
+    selectProject: (cwd: string) => { workspace.prepareConversation(cwd); input.hideSearch(); },
+    startProjectConversation: (cwd: string, text: string, trust: import('../../shared/ipc/conversation').ProjectTrust) => {
+      launch.createChatAnd(cwd, trust, session => input.beginProjectSession(cwd, session.id, text));
+    },
   };
   return { desktopPresentation, workspace, palette, input, launch, sessionActions, navigation };
 }

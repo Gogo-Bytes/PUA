@@ -53,7 +53,13 @@ export interface ChatSnapshot extends ChatRuntimeState {
   commands: ChatCommand[];
   sessionTree?: ChatTreeNode[];
 }
-export interface ChatTreeNode { entryId: string; label?: string; children: ChatTreeNode[] }
+export interface ChatTreeNode {
+  entryId: string;
+  label?: string;
+  /** Pi's native fork command accepts user message entries only. */
+  forkable?: boolean;
+  children: ChatTreeNode[];
+}
 
 export type ExtensionUIRequest = ({ expiresAt?: number } & (
   | { id: string; method: 'select'; title: string; options: string[] }

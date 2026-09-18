@@ -11,10 +11,11 @@
 - 模型与 Thinking Level：提供 PUA 任务级切换入口。
 - Skills / Prompt Templates：采用 Codex 式 `@` 触发；输入时显示 tooltip 候选，用户可点击选择并插入引用。
 - Pi 特有能力：保留，完成能力说明后分别设计 PUA 入口。
+- 项目点击与历史创建：项目点击只创建本地未提交草稿；首次发送/开始工作时才调用 Pi 新会话并写入历史，避免重复点击产生空白历史。
 
 待用户确认的默认实施假设：模型与 Thinking 入口放在 Composer 底部，分别打开原生选择菜单；切换通过 Pi `get_available_models` / `set_model` / `get_available_thinking_levels` / `set_thinking_level` 完成。若用户选择其他入口，仅调整呈现层，不删除这些受控能力。
 
-补充决策：fork 入口放在每条对话消息的操作区，点击后提供“在此工作空间中创建分支”和“在新工作树中创建分支”两个选项；前者沿用当前 Project/Task 上下文，后者创建新的工作树上下文。Pi 特有能力全部保留；只有交互形态无法从 Codex 或 Pi 证据确定时才暂停讨论。
+补充决策：fork 入口放在每条可分支消息的操作区，调用 Pi 原生 `fork(entryId)`，并遵循 Pi 只允许从用户消息 entry 创建分支的约束。PUA 不为了模仿 Codex 擅自增加“新工作树”分支目标；若后续要把 Pi CLI 的 `--fork` 映射为独立工作树，会单独核验并讨论。Pi 特有能力全部保留；只有交互形态无法从 Codex 或 Pi 证据确定时才暂停讨论。
 
 | ID | Pi 能力 | 证据 | PUA 状态 | 后续入口/验收 |
 |---|---|---|---|---|
@@ -65,6 +66,6 @@
 ## Fork 交互保留项
 
 - 每条消息都保留 Fork 入口。
-- Fork 菜单必须保留“当前工作空间创建分支”和“新工作树创建分支”两个目标；当前消息级 native fork 与项目侧栏树已接入，工作树目标选择仍受 Pi 能力边界约束。
+- Fork 入口必须保留 Pi 原生 `fork(entryId)`；仅对 Pi 标记为可分支的用户消息显示可点击操作，助手/工具/系统节点只作为历史树信息展示。独立新工作树不是当前 PUA RPC 的等价能力，不为视觉模仿伪造入口。
 - 用户已确认分支展示方案：项目下保留主会话，分支作为可折叠缩进子节点，所有节点均可直接切换。此前“Codex 式 A/C”是设计提案标签，不作为 Codex 已实测行为的证据。
 - 实施边界：Pi `get_tree` 是单会话历史树，节点 entryId 不等于 PUA Session id。Workspace 已按 Session id 聚合树；元数据刷新通过独立 `chat-fork-metadata` 事件，仅更新入口与树，不重放 transcript 或重置消息身份。关闭会话删除投影并忽略迟到事件；点击历史节点执行 Pi 原生 `fork(entryId)`，不能以伪造 `switch_session` 冒充切换。

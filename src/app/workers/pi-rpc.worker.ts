@@ -61,7 +61,10 @@ function treeDTO(value: unknown): ChatTreeNode[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap(item => {
     if (!isRecord(item) || !isRecord(item.entry) || typeof item.entry.id !== 'string') return [];
-    return [{ entryId: item.entry.id, label: typeof item.label === 'string' ? item.label : undefined, children: treeDTO(item.children) }];
+    const entry = item.entry;
+    const entryId = entry.id as string;
+    const forkable = entry.type === 'message' && isRecord(entry.message) && entry.message.role === 'user';
+    return [{ entryId, label: typeof item.label === 'string' ? item.label : undefined, forkable, children: treeDTO(item.children) }];
   });
 }
 function withForkEntries(messages: readonly ConversationMessage[], value: unknown): ConversationMessage[] {

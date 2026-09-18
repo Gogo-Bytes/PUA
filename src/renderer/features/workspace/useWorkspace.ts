@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { DesktopAPI, SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
-import { addSession, removeSession, selectProject, selectSession, type SessionWorkspace } from './selection';
+import { addSession, prepareConversation, removeSession, selectProject, selectSession, type SessionWorkspace } from './selection';
 
 /** History nodes belong to one managed session; they are not independently running sessions. */
 export interface WorkspaceSessionInfo extends SessionInfo {
@@ -48,6 +48,7 @@ export function useWorkspace(
     sessions, activeId, active, project,
     projectSessions: sessions.filter(session => session.cwd === project),
     selectSession: (id: string) => setState(current => selectSession(current, id)),
+    prepareConversation: (cwd: string) => setState(current => prepareConversation(current, cwd)),
     selectProject: (cwd: string) => setState(current => selectProject(current, cwd)),
     addCreatedSession: (session: SessionInfo) => setState(current => addSession(current, session)),
     setSessionTitle: (id: string, title: string) => updateSessions(sessions => sessions.map(session => session.id === id ? { ...session, title } : session)),
