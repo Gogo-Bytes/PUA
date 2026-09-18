@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DesktopAPI, SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
 import { addSession, prepareConversation, removeSession, selectProject, selectSession, type SessionWorkspace } from './selection';
@@ -6,6 +6,19 @@ import { addSession, prepareConversation, removeSession, selectProject, selectSe
 /** History nodes belong to one managed session; they are not independently running sessions. */
 export interface WorkspaceSessionInfo extends SessionInfo {
   sessionTree?: ChatTreeNode[];
+  /** Window-local attention projection; Pi remains the source of truth for runtime state. */
+  needsAttention?: boolean;
+  attentionKind?: WorkspaceAttentionKind;
+}
+
+export type WorkspaceAttentionKind = 'waiting-input' | 'notice' | 'exit' | 'completed';
+export interface WorkspaceAttentionEvent {
+  id: string;
+  sessionId: string;
+  title: string;
+  kind: WorkspaceAttentionKind;
+  tone: 'info' | 'warning' | 'error';
+  message: string;
 }
 
 /** Window-local projection and selection owner; the host still owns Session lifecycle. */
@@ -14,22 +27,56 @@ export function useWorkspace(
   { onClosed, onError }: { onClosed(id: string): void; onError(message: string): void },
 ) {
   const [state, setState] = useState<SessionWorkspace<WorkspaceSessionInfo>>({ sessions: [], activeId: null });
+  const [attentionEvents, setAttentionEvents] = useState<WorkspaceAttentionEvent[]>([]);
+  const activeIdRef = useRef<string | null>(null);
+  const sessionsRef = useRef<WorkspaceSessionInfo[]>([]);
+  const attentionSequence = useRef(0);
+  activeIdRef.current = state.activeId;
+  sessionsRef.current = state.sessions;
   const updateSessions = (update: (sessions: WorkspaceSessionInfo[]) => WorkspaceSessionInfo[]) =>
-    setState(current => ({ ...current, sessions: update(current.sessions) }));
-  const markSessionExited = (id: string, exitCode: number) => updateSessions(sessions => sessions.map(session =>
-    session.id === id ? { ...session, processStatus: 'exited', activity: 'idle', exitCode } : session));
+    setState(current => {
+      const sessions = update(current.sessions);
+      sessionsRef.current = sessions;
+      return { ...current, sessions };
+    });
+  const queueAttention = (sessionId: string, kind: WorkspaceAttentionKind, tone: WorkspaceAttentionEvent['tone'], message: string) => {
+    if (activeIdRef.current === sessionId) return;
+    const session = sessionsRef.current.find(item => item.id === sessionId);
+    if (!session) return;
+    const event = { id: `attention-${attentionSequence.current++}`, sessionId, title: session.title, kind, tone, message } satisfies WorkspaceAttentionEvent;
+    updateSessions(sessions => sessions.map(item => item.id === sessionId ? { ...item, needsAttention: true, attentionKind: kind } : item));
+    setAttentionEvents(current => [...current, event].slice(-12));
+  };
+  const markSessionExited = (id: string, exitCode: number) => {
+    const previous = sessionsRef.current.find(session => session.id === id);
+    updateSessions(sessions => sessions.map(session =>
+      session.id === id ? { ...session, processStatus: 'exited', activity: 'idle', exitCode } : session));
+    if (previous && activeIdRef.current !== id) queueAttention(id, 'exit', exitCode === 0 ? 'info' : 'error', exitCode === 0 ? '任务已结束' : `任务异常退出（${exitCode}）`);
+  };
 
   useEffect(() => desktop?.onSessionEvent(event => {
     if (event.type === 'chat-fork-metadata') updateSessions(sessions => sessions.map(session =>
       session.id === event.id && session.kind === 'chat' ? { ...session, sessionTree: event.sessionTree } : session));
-    if (event.type === 'chat-snapshot') updateSessions(sessions => sessions.map(session =>
-      session.id === event.id && session.kind === 'chat'
-        ? { ...session, activity: event.snapshot.activity, sessionTree: event.snapshot.sessionTree ?? session.sessionTree }
-        : session));
-    if (event.type === 'session-info') updateSessions(sessions => sessions.map(session => session.id === event.id
-      ? { ...session, title: event.title ?? session.title, processStatus: event.processStatus ?? session.processStatus, activity: event.activity ?? session.activity } : session));
-    if (event.type === 'chat-state' && event.state.activity) updateSessions(sessions => sessions.map(session =>
-      session.id === event.id ? { ...session, activity: event.state.activity! } : session));
+    if (event.type === 'chat-snapshot') {
+      const previous = sessionsRef.current.find(session => session.id === event.id);
+      updateSessions(sessions => sessions.map(session => session.id === event.id && session.kind === 'chat'
+        ? { ...session, activity: event.snapshot.activity, sessionTree: event.snapshot.sessionTree ?? session.sessionTree } : session));
+      if (previous && previous.activity !== 'idle' && event.snapshot.activity === 'idle') queueAttention(event.id, 'completed', 'info', '任务已完成');
+    }
+    if (event.type === 'session-info') {
+      const previous = sessionsRef.current.find(session => session.id === event.id);
+      updateSessions(sessions => sessions.map(session => session.id === event.id
+        ? { ...session, title: event.title ?? session.title, processStatus: event.processStatus ?? session.processStatus, activity: event.activity ?? session.activity } : session));
+      if (previous && previous.activity !== 'idle' && event.activity === 'idle') queueAttention(event.id, 'completed', 'info', '任务已完成');
+      if (event.processStatus === 'exited' && previous?.processStatus !== 'exited') markSessionExited(event.id, previous?.exitCode ?? 0);
+    }
+    if (event.type === 'chat-state' && event.state.activity) {
+      const previous = sessionsRef.current.find(session => session.id === event.id);
+      updateSessions(sessions => sessions.map(session => session.id === event.id ? { ...session, activity: event.state.activity! } : session));
+      if (previous && previous.activity !== 'idle' && event.state.activity === 'idle') queueAttention(event.id, 'completed', 'info', '任务已完成');
+    }
+    if (event.type === 'chat-notice') queueAttention(event.id, 'notice', event.level, event.message);
+    if (event.type === 'extension-ui') queueAttention(event.id, 'waiting-input', 'warning', `任务需要输入：${event.request.title}`);
     if (event.type === 'exit') markSessionExited(event.id, event.exitCode);
   }), []);
 
@@ -38,6 +85,7 @@ export function useWorkspace(
       if (!await desktop!.closeSession(id)) return;
       // Reconcile against latest selection, then clear presentation data in this same continuation.
       setState(current => removeSession(current, id));
+      setAttentionEvents(current => current.filter(event => event.sessionId !== id));
       onClosed(id);
     } catch (error) { onError(String(error)); }
   };
@@ -50,10 +98,27 @@ export function useWorkspace(
   const { sessions, activeId } = state;
   const active = sessions.find(session => session.id === activeId);
   const project = state.project ?? active?.cwd;
+  const selectWorkspaceSession = (id: string) => {
+    activeIdRef.current = id;
+    setState(current => {
+      const next = selectSession(current, id);
+      return { ...next, sessions: next.sessions.map(session => session.id === id ? { ...session, needsAttention: false, attentionKind: undefined } : session) };
+    });
+    setAttentionEvents(current => current.filter(event => event.sessionId !== id));
+  };
+  const dismissAttention = (id: string) => {
+    const dismissed = attentionEvents.find(event => event.id === id);
+    if (!dismissed) return;
+    const remainingForSession = attentionEvents.some(event => event.id !== id && event.sessionId === dismissed.sessionId);
+    setAttentionEvents(current => current.filter(event => event.id !== id));
+    if (!remainingForSession) updateSessions(sessions => sessions.map(session => session.id === dismissed.sessionId ? { ...session, needsAttention: false, attentionKind: undefined } : session));
+  };
   return {
     sessions, activeId, active, project,
     projectSessions: sessions.filter(session => session.cwd === project),
-    selectSession: (id: string) => setState(current => selectSession(current, id)),
+    attentionEvents,
+    selectSession: selectWorkspaceSession,
+    dismissAttention,
     prepareConversation: (cwd: string) => setState(current => prepareConversation(current, cwd)),
     hydrateSessions: (incoming: SessionInfo[], preferredProject?: string) => setState(current => {
       const byId = new Map(current.sessions.map(session => [session.id, session]));

@@ -47,7 +47,9 @@ Task
 
 当前 slice：右侧 Inspector 已增加任务详情与 Git/环境切换。TaskDetails 只展示已有 Session/Bootstrap 投影；GitPanel 继续持有 Git 状态，不把快照提升为 Task Store 或持久化任务元数据。Inspector tab 是窗口级 renderer presentation state，不写入 Task Store。
 
-下一 slice：跨任务后台状态、需要用户处理的提醒和未读投影；本 slice 不新增通知收件箱或后台提醒语义。
+当前 slice：跨任务后台状态、需要用户处理的提醒和未读投影已接入为 renderer 窗口级短生命周期投影。Workspace 消费 Pi `SessionEvent`，侧边栏显示需关注标记，App 通过受控 `ToastHost` 提供不抢焦点的“查看任务”动作；不新增通知收件箱、系统推送或持久化未读语义。
+
+后台提醒的事件边界固定为 Pi 已有语义：extension UI 等待输入、chat notice、运行态回到 idle 的完成提示，以及 exit 的正常/异常退出。Conversation 仍拥有当前任务的原生内联 notice/dialog，Workspace 只对 inactive task 做跨任务投影，避免重复提示。
 
 当前过渡实现已建立 main-owned `workspace-sessions.json` 索引：Pi JSONL 仍是 transcript 权威，索引保存 `cwd/title/sessionId/sessionFile` 以及 `archived/pinned/lastActivityAt` 元数据；恢复条目以 dormant Session 注册，项目点击不激活历史，用户点击具体历史后才启动 Pi。关闭默认写入归档状态；详情恢复重新绑定同一 Pi identity，永久删除在成功清理 Pi 文件后移除索引。后续 Task Store 正式落地时应吸收该索引，而不是把 Pi transcript 复制到 renderer。
 4. 将 Composer、Conversation、Inspector 绑定 Task scope，补齐后台运行与搜索。当前单窗口在关闭后隐藏到托盘，显式退出才关闭 Pi 资源；不做多窗口或孤儿后台进程。

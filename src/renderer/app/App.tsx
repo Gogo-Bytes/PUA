@@ -9,7 +9,7 @@ import { NewSessionDialog, RenameDialog } from '../features/sessions';
 import { SettingsDialog } from '../features/preferences';
 import { CommandPalette } from '../features/command-palette';
 import { InspectorShell } from './InspectorShell';
-import { Button, Icon, ResizableWorkspace, UIProvider } from '../ui';
+import { Button, Icon, ResizableWorkspace, ToastHost, UIProvider } from '../ui';
 
 export function App() {
   const panelToggle = useRef<HTMLButtonElement>(null);
@@ -19,6 +19,14 @@ export function App() {
   const { boot, theme, error } = desktopPresentation;
   const { sessions, activeId, active, project } = workspace;
   const [workspaceView, setWorkspaceView] = useState(() => readWorkspaceView());
+  const attentionToasts = workspace.attentionEvents.map(event => ({
+    id: event.id,
+    tone: event.tone,
+    announcement: event.tone === 'error' ? 'assertive' as const : 'polite' as const,
+    children: <span><strong>{event.title}</strong>：{event.message}</span>,
+    duration: event.kind === 'waiting-input' || event.tone === 'error' ? 0 : 7000,
+    action: { label: '查看任务', onClick: () => navigation.selectSession(event.sessionId) },
+  }));
   useEffect(() => {
     if (!boot) return;
     const preferred = workspaceView.activeProject && boot.preferences.recentProjects.includes(workspaceView.activeProject) ? workspaceView.activeProject : undefined;
@@ -48,5 +56,6 @@ export function App() {
     {sessionActions.renaming && active && <RenameDialog title={active.title} persistent={active.kind === 'chat'} onClose={sessionActions.closeRename} onSave={sessionActions.saveRename} />}
     {desktopPresentation.settingsOpen && boot && <SettingsDialog boot={boot} onClose={desktopPresentation.closeSettings} onSave={desktopPresentation.publish} />}
     <CommandPalette palette={palette} onInsert={input.insertCommand} />
+    <ToastHost items={attentionToasts} onDismiss={workspace.dismissAttention} label="后台任务提醒" />
   </div></UIProvider>;
 }

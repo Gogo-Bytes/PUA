@@ -3,9 +3,10 @@ import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
 import { Button, Icon, IconButton, InlineRename, Tooltip } from '../../ui';
 import { groupProjects } from './selection';
+import type { WorkspaceSessionInfo } from './useWorkspace';
 
 interface ProjectSidebarProps {
-  sessions: readonly (SessionInfo & { sessionTree?: ChatTreeNode[] })[];
+  sessions: readonly WorkspaceSessionInfo[];
   recentProjects: readonly string[];
   activeId: string | null;
   activeProject?: string;
@@ -70,6 +71,7 @@ export function ProjectSidebar({
             <Icon name={session.kind === 'terminal' ? 'code' : 'chat'}/>
             <InlineRename value={session.title} selected={session.id === activeId} selectionRole="button" current={session.id === activeId} labels={{ hint: `${sessionDescription(session)} · 双击或 F2 重命名`, input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空', failed: '重命名失败' }} onSelect={() => onSelectSession(session.id)} onRename={title => onRenameSession(session.id, title)}/>
             {onTogglePinned && <Button className="workspace-session-pin" aria-label={session.pinned ? `取消置顶 ${session.title}` : `置顶 ${session.title}`} variant="ghost" onClick={() => void onTogglePinned(session.id, !session.pinned)}>{session.pinned ? '★' : '☆'}</Button>}
+            {session.needsAttention && <i className="workspace-session-attention" aria-label="需要关注">!</i>}
             {session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity" aria-label="处理中"/>}
             <IconButton className="workspace-session-close" icon="close" label={`关闭 ${session.title}`} variant="ghost" onClick={() => onCloseSession(session.id)}/>
             {session.sessionTree?.length && onForkSession ? <TreeBranch nodes={session.sessionTree} onFork={entryId => void onForkSession(session.id, entryId)}/> : null}
