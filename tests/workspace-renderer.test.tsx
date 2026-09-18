@@ -329,6 +329,7 @@ describe('Session launch through real App and direct sidebar controller', () => 
   it('opens a project draft without creating history until the first message', async () => {
     render(<App />); await screen.findByTitle('/one/app');
     fireEvent.click(screen.getByTitle('/one/app'));
+    fireEvent.click(screen.getByTitle('/one/app'));
     expect(desktop.createSession).not.toHaveBeenCalled();
     const draft = await screen.findByRole('textbox', { name: '发送消息' });
     fireEvent.change(draft, { target: { value: 'first real task' } });
