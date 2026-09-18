@@ -40,6 +40,7 @@
 | PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 明确不做 | 不提供 HTML 导出入口；保留复制消息 |
 | PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
 | PI-RPC-17 | 自动上下文压缩与自动重试开关 | Pi 0.85.1 `set_auto_compaction` / `set_auto_retry` RPC，`docs/rpc.md` 436–461；改变运行中的失败恢复与上下文策略 | 待讨论 | 保留 Pi 原生默认值；是否在任务详情或会话设置暴露受控开关，需要单独决定，不在 Codex 对标阶段擅自改变 |
+| PI-RPC-18 | `clone` 当前会话为新 session 文件 | Pi 0.85.1 RPC `clone` 与 Sessions 文档 `/clone`；复制当前活动分支并创建新的 Pi session identity | 待讨论 | 不把 clone 冒充消息级 fork；需要决定是否创建新的 PUA 任务、标题和项目树归属后再接入 |
 
 ## 每项能力的完成条件
 
@@ -53,7 +54,7 @@
 
 从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
 
-当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、模型/Thinking 查询与切换、compact 和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、自动 compact/retry 设置、`export_html`、`clone`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
+当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、模型/Thinking 查询与切换、compact 和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、自动 compact/retry 设置、`export_html`、`clone`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。`clone` 与自动策略已登记为待讨论项，不因 Codex 对照直接实现。
 
 ### 已提取的参数契约（Pi 0.85.1）
 
