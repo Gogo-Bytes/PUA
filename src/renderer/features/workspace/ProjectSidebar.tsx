@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
 import { Button, Icon, IconButton, InlineRename, Tooltip } from '../../ui';
-import { groupProjects } from './selection';
+import { groupProjects, projectName } from './selection';
 import type { WorkspaceSessionInfo } from './useWorkspace';
 
 interface ProjectSidebarProps {
@@ -13,6 +13,10 @@ interface ProjectSidebarProps {
   creatingProject?: string;
   runtimeAvailable: boolean;
   onSelectProject?(cwd: string): void;
+  canNavigateBack?: boolean;
+  canNavigateForward?: boolean;
+  onNavigateBack?(): void;
+  onNavigateForward?(): void;
   collapsedProjects?: readonly string[];
   onCollapsedProjectsChange?(projects: readonly string[]): void;
   onNewConversation(cwd?: string): void;
@@ -28,9 +32,10 @@ interface ProjectSidebarProps {
 /** Production navigation: projects own nested task rows; existing sessions are never represented as tabs. */
 export function ProjectSidebar({
   sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable, collapsedProjects: persistedCollapsed, onCollapsedProjectsChange,
-  onSelectProject, onNewConversation, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
+  onSelectProject, canNavigateBack = false, canNavigateForward = false, onNavigateBack, onNavigateForward, onNewConversation, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
   const [query, setQuery] = useState('');
+  const [recentOpen, setRecentOpen] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState<Set<string>>(new Set());
   const collapsed = new Set(persistedCollapsed ?? localCollapsed);
   const toggleProject = (cwd: string) => {
@@ -42,6 +47,10 @@ export function ProjectSidebar({
   const visible = projects.filter(project => `${project.name}\n${project.cwd}\n${project.sessions.map(session => session.title).join('\n')}`.toLowerCase().includes(query.trim().toLowerCase()));
   return <nav className="workspace-sidebar" aria-label="项目">
     <div className="workspace-sidebar-brand">
+      <span className="workspace-sidebar-history" aria-label="工作区导航">
+        <IconButton icon="back" label="后退" variant="ghost" disabled={!canNavigateBack} onClick={onNavigateBack}/>
+        <IconButton icon="forward" label="前进" variant="ghost" disabled={!canNavigateForward} onClick={onNavigateForward}/>
+      </span>
       <strong>PUA</strong>
       <span className="workspace-sidebar-actions">
         <IconButton icon="search" label="搜索与命令" variant="ghost" onClick={onSearch}/>
@@ -79,6 +88,15 @@ export function ProjectSidebar({
         </ul>}
       </section>)}
     </div>
+    <section className="workspace-recent" aria-label="最近任务">
+      <Button variant="ghost" className="workspace-recent-toggle" aria-expanded={recentOpen} onClick={() => setRecentOpen(open => !open)}><Icon name="clock"/><span>最近</span><span aria-hidden="true">{recentOpen ? '⌄' : '›'}</span></Button>
+      {recentOpen && <ul className="workspace-recent-list" aria-label="最近任务列表">
+        {sessions.filter(session => `${session.title}\n${session.cwd}`.toLowerCase().includes(query.trim().toLowerCase())).slice().sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).slice(0, 8).map(session => <li key={session.id} data-active={session.id === activeId || undefined}>
+          <Button variant="ghost" className="workspace-recent-item" aria-current={session.id === activeId ? 'page' : undefined} onClick={() => onSelectSession(session.id)}><Icon name={session.kind === 'terminal' ? 'code' : 'chat'}/><span><strong>{session.title}</strong><small>{projectName(session.cwd)}</small></span></Button>
+        </li>)}
+        {!sessions.length && <li className="ui-meta">暂无最近任务</li>}
+      </ul>}
+    </section>
     <div className="sidebar-bottom"><span className="ui-meta">{runtimeAvailable ? '本机 Pi' : '尚未连接 Pi'}</span></div>
   </nav>;
 }

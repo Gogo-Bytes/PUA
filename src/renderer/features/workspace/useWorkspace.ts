@@ -21,6 +21,8 @@ export interface WorkspaceAttentionEvent {
   message: string;
 }
 
+interface WorkspaceLocation { project?: string; activeId: string | null }
+
 /** Window-local projection and selection owner; the host still owns Session lifecycle. */
 export function useWorkspace(
   desktop: Pick<DesktopAPI, 'onSessionEvent' | 'closeSession'> & Partial<Pick<DesktopAPI, 'setSessionPinned'>> | undefined,
@@ -31,6 +33,8 @@ export function useWorkspace(
   const activeIdRef = useRef<string | null>(null);
   const sessionsRef = useRef<WorkspaceSessionInfo[]>([]);
   const attentionSequence = useRef(0);
+  const history = useRef<WorkspaceLocation[]>([]);
+  const historyIndex = useRef(-1);
   activeIdRef.current = state.activeId;
   sessionsRef.current = state.sessions;
   const updateSessions = (update: (sessions: WorkspaceSessionInfo[]) => WorkspaceSessionInfo[]) =>
@@ -46,6 +50,25 @@ export function useWorkspace(
     const event = { id: `attention-${attentionSequence.current++}`, sessionId, title: session.title, kind, tone, message } satisfies WorkspaceAttentionEvent;
     updateSessions(sessions => sessions.map(item => item.id === sessionId ? { ...item, needsAttention: true, attentionKind: kind } : item));
     setAttentionEvents(current => [...current, event].slice(-12));
+  };
+  const locationKey = (location: WorkspaceLocation) => `${location.project ?? ''}\u0000${location.activeId ?? ''}`;
+  const recordLocation = (location: WorkspaceLocation) => {
+    const current = history.current[historyIndex.current];
+    if (current && locationKey(current) === locationKey(location)) return;
+    history.current = history.current.slice(0, historyIndex.current + 1);
+    history.current.push(location);
+    historyIndex.current = history.current.length - 1;
+  };
+  const applyLocation = (location: WorkspaceLocation) => {
+    activeIdRef.current = location.activeId;
+    setState(current => {
+      if (location.activeId && current.sessions.some(session => session.id === location.activeId)) {
+        const next = selectSession(current, location.activeId);
+        return { ...next, sessions: next.sessions.map(session => session.id === location.activeId ? { ...session, needsAttention: false, attentionKind: undefined } : session) };
+      }
+      return location.project ? prepareConversation(current, location.project) : { ...current, project: undefined, activeId: null };
+    });
+    if (location.activeId) setAttentionEvents(current => current.filter(event => event.sessionId !== location.activeId));
   };
   const markSessionExited = (id: string, exitCode: number) => {
     const previous = sessionsRef.current.find(session => session.id === id);
@@ -99,12 +122,32 @@ export function useWorkspace(
   const active = sessions.find(session => session.id === activeId);
   const project = state.project ?? active?.cwd;
   const selectWorkspaceSession = (id: string) => {
+    const session = state.sessions.find(item => item.id === id);
+    if (!session) return;
+    recordLocation({ project: session.cwd, activeId: id });
     activeIdRef.current = id;
     setState(current => {
       const next = selectSession(current, id);
       return { ...next, sessions: next.sessions.map(session => session.id === id ? { ...session, needsAttention: false, attentionKind: undefined } : session) };
     });
     setAttentionEvents(current => current.filter(event => event.sessionId !== id));
+  };
+  const prepareWorkspaceConversation = (cwd: string) => {
+    recordLocation({ project: cwd, activeId: null });
+    activeIdRef.current = null;
+    setState(current => prepareConversation(current, cwd));
+  };
+  const selectWorkspaceProject = (cwd: string) => {
+    const next = selectProject(state, cwd);
+    recordLocation({ project: cwd, activeId: next.activeId });
+    activeIdRef.current = next.activeId;
+    setState(current => selectProject(current, cwd));
+  };
+  const navigateHistory = (direction: -1 | 1) => {
+    const next = historyIndex.current + direction;
+    if (next < 0 || next >= history.current.length) return;
+    historyIndex.current = next;
+    applyLocation(history.current[next]);
   };
   const dismissAttention = (id: string) => {
     const dismissed = attentionEvents.find(event => event.id === id);
@@ -117,16 +160,20 @@ export function useWorkspace(
     sessions, activeId, active, project,
     projectSessions: sessions.filter(session => session.cwd === project),
     attentionEvents,
+    canNavigateBack: historyIndex.current > 0,
+    canNavigateForward: historyIndex.current >= 0 && historyIndex.current < history.current.length - 1,
+    navigateBack: () => navigateHistory(-1),
+    navigateForward: () => navigateHistory(1),
     selectSession: selectWorkspaceSession,
     dismissAttention,
-    prepareConversation: (cwd: string) => setState(current => prepareConversation(current, cwd)),
+    prepareConversation: prepareWorkspaceConversation,
     hydrateSessions: (incoming: SessionInfo[], preferredProject?: string) => setState(current => {
       const byId = new Map(current.sessions.map(session => [session.id, session]));
       for (const session of incoming) byId.set(session.id, { ...byId.get(session.id), ...session });
       const next = { ...current, sessions: [...byId.values()] };
       return current.project || current.activeId || !preferredProject ? next : prepareConversation(next, preferredProject);
     }),
-    selectProject: (cwd: string) => setState(current => selectProject(current, cwd)),
+    selectProject: selectWorkspaceProject,
     addCreatedSession: (session: SessionInfo) => setState(current => addSession(current, session)),
     setSessionTitle: (id: string, title: string) => updateSessions(sessions => sessions.map(session => session.id === id ? { ...session, title } : session)),
     setSessionPinned,

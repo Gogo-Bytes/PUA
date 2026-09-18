@@ -1,6 +1,6 @@
 {
   "src/renderer/ui/Breadcrumbs.tsx": "474f58d130919ef63193dfca9d33d6fba62563becf2216faa46deff3edcca6b4",
-  "src/renderer/ui/Icon.tsx": "d760384c38925ad8fb5df2ffd6e9f3e3677e66a276980e97cb44e15a9a0d7c06",
+  "src/renderer/ui/Icon.tsx": "f209c960a735fd0f6ca34d83c6f12fac849662581aae8fb25ed0471df862fb9c",
   "src/renderer/ui/InlineRename.tsx": "19f036c2da2448f74d87bc5a5bd0e98b31143d5fb8ea0a3786c6dab11c18ef44",
   "src/renderer/ui/Message.tsx": "0687eed5f073b4253e31b05f52f00e67631cb5929c05216f2a68931778fbf799",
   "src/renderer/ui/README.md": "f02028a592ff50affbdadae2869f43a349d7aa33b12fa80b4ad66d945c14d8d6",
@@ -16,7 +16,7 @@
   "src/renderer/ui/ui.css": "4210651faa98160ebe797b67c1169c6cd5b18a5d48273004066cc216d56238e3",
   "tests/component-composer.test.tsx": "5b4573f8baa5b06cc02a6a7dbe3ef6596f21cbcff5e32b593c0af0263e84e973",
   "tests/component-inline-rename.test.tsx": "0f83895e614d6d51996e86302103e2d9ca06b9f93e0a56d45e4ee0655fdb7211",
-  "tests/component-modules.test.tsx": "4eebf2e6291bea7be1074f848537259349c33e97b4b8a5cda0bfe6ecac786d44",
+  "tests/component-modules.test.tsx": "de3b9becec5a82c8eae1ba350a99e71e66b3a07c936acd2303aa327734efc11a",
   "tests/component-motion.test.tsx": "12ee921332cf0d6bd5603dd93d22d16f055991ccb94fe904fc555f3ab38ef113",
   "tests/component-notifications.test.tsx": "2860a6e24ac63892bea3fbe750e33384087fbeef7ae617c8101b953381058dcd",
   "tests/component-preview/CompletionExamples.tsx": "07f18b8bc587ae0c84191956147bf2d3c90b4186ef47285f0dd5b0859f7d1958",

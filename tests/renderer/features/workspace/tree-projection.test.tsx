@@ -59,7 +59,8 @@ it('does not duplicate foreground notices, but queues inactive input requests an
   };
   const { result } = renderHook(() => useWorkspace(desktop, { onClosed: vi.fn(), onError: vi.fn() }));
   const session = (id: string): SessionInfo => ({ id, cwd: '/project', title: id, kind: 'chat', processStatus: 'running', activity: 'idle' });
-  act(() => { result.current.addCreatedSession(session('a')); result.current.addCreatedSession(session('b')); result.current.selectSession('a'); });
+  act(() => { result.current.addCreatedSession(session('a')); result.current.addCreatedSession(session('b')); });
+  act(() => result.current.selectSession('a'));
   act(() => emit({ type: 'chat-notice', id: 'a', level: 'error', message: '当前错误' }));
   expect(result.current.attentionEvents).toHaveLength(0);
   act(() => emit({ type: 'extension-ui', id: 'b', request: { id: 'request-1', method: 'confirm', title: '需要确认', message: '继续吗？' } }));
@@ -71,4 +72,20 @@ it('does not duplicate foreground notices, but queues inactive input requests an
   expect(result.current.sessions.find(item => item.id === 'b')?.needsAttention).toBe(true);
   act(() => result.current.dismissAttention(result.current.attentionEvents[0].id));
   expect(result.current.sessions.find(item => item.id === 'b')?.needsAttention).toBe(false);
+});
+
+it('keeps project and task selection history with back/forward navigation', () => {
+  const desktop = { onSessionEvent: () => () => {}, closeSession: vi.fn(async () => true) };
+  const { result } = renderHook(() => useWorkspace(desktop, { onClosed: vi.fn(), onError: vi.fn() }));
+  const session = (id: string, cwd = '/project'): SessionInfo => ({ id, cwd, title: id, kind: 'chat', processStatus: 'running', activity: 'idle' });
+  act(() => { result.current.addCreatedSession(session('a')); result.current.addCreatedSession(session('b')); });
+  act(() => result.current.selectSession('a'));
+  act(() => result.current.prepareConversation('/other'));
+  expect(result.current.project).toBe('/other');
+  expect(result.current.canNavigateBack).toBe(true);
+  act(() => result.current.navigateBack());
+  expect(result.current.activeId).toBe('a');
+  act(() => result.current.navigateForward());
+  expect(result.current.project).toBe('/other');
+  expect(result.current.activeId).toBeNull();
 });

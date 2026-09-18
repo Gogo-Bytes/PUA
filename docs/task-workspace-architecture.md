@@ -51,6 +51,8 @@ Task
 
 后台提醒的事件边界固定为 Pi 已有语义：extension UI 等待输入、chat notice、运行态回到 idle 的完成提示，以及 exit 的正常/异常退出。Conversation 仍拥有当前任务的原生内联 notice/dialog，Workspace 只对 inactive task 做跨任务投影，避免重复提示。
 
+窗口级选择历史由 Workspace 持有：侧边栏提供最近任务折叠视图及前进/后退按钮；这些是 renderer presentation state，不写入 Task Store，也不会为草稿导航创建 Pi Session。
+
 当前过渡实现已建立 main-owned `workspace-sessions.json` 索引：Pi JSONL 仍是 transcript 权威，索引保存 `cwd/title/sessionId/sessionFile` 以及 `archived/pinned/lastActivityAt` 元数据；恢复条目以 dormant Session 注册，项目点击不激活历史，用户点击具体历史后才启动 Pi。关闭默认写入归档状态；详情恢复重新绑定同一 Pi identity，永久删除在成功清理 Pi 文件后移除索引。后续 Task Store 正式落地时应吸收该索引，而不是把 Pi transcript 复制到 renderer。
 4. 将 Composer、Conversation、Inspector 绑定 Task scope，补齐后台运行与搜索。当前单窗口在关闭后隐藏到托盘，显式退出才关闭 Pi 资源；不做多窗口或孤儿后台进程。
 5. 完成快捷键、窄窗、深链接、多窗口和完整回归旅程。

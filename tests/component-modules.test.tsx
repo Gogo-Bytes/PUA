@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
 import { ProjectNav, ProjectSidebar, SessionTabs, TaskToolbar } from '../src/renderer/features/workspace';
@@ -55,6 +55,15 @@ it('production sidebar collapses and restores a project session list', () => {
   const collapse = screen.getByRole('button', { name: '折叠 app' });
   fireEvent.click(collapse); expect(screen.queryByRole('button', { name: '调查交互' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '展开 app' })); expect(screen.getByRole('button', { name: '调查交互' })).toBeTruthy();
+});
+it('production sidebar exposes a collapsed recent task view without changing project grouping', () => {
+  const select = vi.fn();
+  render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle', lastActivityAt: 2 }, { id: 's2', cwd: '/two/app', title: '修复构建', kind: 'chat', processStatus: 'running', activity: 'idle', lastActivityAt: 3 }]} recentProjects={['/one/app', '/two/app']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={vi.fn()} onSelectSession={select} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
+  expect(screen.queryByRole('list', { name: '最近任务列表' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '最近' }));
+  expect(screen.getByRole('list', { name: '最近任务列表' })).toBeTruthy();
+  fireEvent.click(within(screen.getByRole('list', { name: '最近任务列表' })).getByRole('button', { name: /修复构建/ }));
+  expect(select).toHaveBeenCalledWith('s2');
 });
 it('production sidebar renders nested history and forks the selected entry', () => {
   const fork = vi.fn();
