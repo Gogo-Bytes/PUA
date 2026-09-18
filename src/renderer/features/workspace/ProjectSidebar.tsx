@@ -11,7 +11,7 @@ interface ProjectSidebarProps {
   activeProject?: string;
   creatingProject?: string;
   runtimeAvailable: boolean;
-  onSelectProject(cwd: string): void;
+  onSelectProject?(cwd: string): void;
   onNewConversation(cwd?: string): void;
   onSelectSession(id: string): void;
   onCloseSession(id: string): void;
@@ -51,7 +51,7 @@ export function ProjectSidebar({
       {visible.length === 0 ? <p className="ui-meta">暂无匹配项目</p> : visible.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line">
           {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => setCollapsed(current => { const next = new Set(current); next.has(project.cwd) ? next.delete(project.cwd) : next.add(project.cwd); return next; })}>{collapsed.has(project.cwd) ? '▸' : '▾'}</Button>}
-          <Tooltip content={project.cwd}><Button variant="ghost" className="workspace-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onSelectProject(project.cwd)}>
+          <Tooltip content={project.cwd}><Button variant="ghost" className="workspace-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => (onSelectProject ?? onNewConversation)(project.cwd)}>
             <Icon name="folder"/><span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
           </Button></Tooltip>
           <IconButton icon="plus" label={`在 ${project.name} 中新建对话`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
