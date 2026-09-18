@@ -28,7 +28,7 @@
 | PI-RPC-07 | session name | rename command、session-info | 已接入 | 任务标题编辑与自动更新 |
 | PI-RPC-08 | extension UI select/confirm/input/editor | Extension UI schema、Dialog | 已接入 | 任务上下文内等待态、焦点恢复 |
 | PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
-| PI-RPC-10 | `--resume` 历史选择器 | native-chat-design 记录 | 待接入 | 兼容终端入口；原生任务恢复流程 |
+| PI-RPC-10 | `--resume` 历史选择器 | Pi 0.85.1 CLI `--resume, -r`；当前 `NewSessionDialog` 仅允许兼容终端使用 `startMode=resume`，主进程会原样追加 `--resume` | 部分接入 | 兼容终端入口可进入 Pi 原生历史选择器；RPC 原生对话暂不伪造选择器，需按 Pi 是否提供等价 RPC 再决定 |
 | PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 已接入（边界明确） | 消息级 Fork、用户 entry 白名单、侧栏入口与 `agent_settled` 后实时树元数据刷新已接入；不把 `entryId` 冒充 PUA Session id |
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip 与命令面板已接入；项目级资源入口与状态展示仍待接入 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
