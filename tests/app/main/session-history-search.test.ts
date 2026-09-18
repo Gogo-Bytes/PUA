@@ -14,8 +14,8 @@ describe('Pi JSONL history search projection', () => {
     ].join('\n');
     const results = parseSessionHistory(content, session, '登录', 10);
     expect(results).toHaveLength(3);
-    expect(results.map(result => result.entryId)).toEqual(['u1', 'a1', 's1']);
-    expect(results[0]).toMatchObject({ taskId: 'task-1', cwd: '/work/app', role: 'user', archived: false, query: '登录' });
+    expect(results.map(result => result.entryId)).toEqual(['s1', 'a1', 'u1']);
+    expect(results.find(result => result.entryId === 'u1')).toMatchObject({ taskId: 'task-1', cwd: '/work/app', role: 'user', archived: false, query: '登录' });
     expect(JSON.stringify(results)).not.toContain('never search this');
   });
 
@@ -26,5 +26,10 @@ describe('Pi JSONL history search projection', () => {
     ].join('\n');
     expect(parseSessionHistory(content, { ...session, archived: true }, '登录', 2)).toHaveLength(2);
     expect(parseSessionHistory(content, session, ' ', 2)).toEqual([]);
+  });
+
+  it('keeps the newest matches when one session contains more matches than the result limit', () => {
+    const content = Array.from({ length: 4 }, (_, index) => JSON.stringify({ type: 'message', id: `u${index}`, timestamp: `2026-09-18T10:0${index}:00.000Z`, message: { role: 'user', content: `登录 ${index}` } })).join('\n');
+    expect(parseSessionHistory(content, session, '登录', 2).map(result => result.entryId)).toEqual(['u3', 'u2']);
   });
 });

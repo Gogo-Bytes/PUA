@@ -41,7 +41,6 @@ export function parseSessionHistory(content: string, session: SearchableSession,
   if (!normalizedQuery) return [];
   const results: HistorySearchResult[] = [];
   for (const line of content.split(/\r?\n/)) {
-    if (results.length >= limit) break;
     if (!line.trim()) continue;
     let entry: Record<string, unknown>;
     try { entry = JSON.parse(line) as Record<string, unknown>; }
@@ -65,6 +64,7 @@ export function parseSessionHistory(content: string, session: SearchableSession,
       archived: session.archived,
       query: query.trim(),
     });
+    if (results.length > limit) results.sort((a, b) => b.timestamp - a.timestamp || a.entryId.localeCompare(b.entryId)).length = limit;
   }
-  return results;
+  return results.sort((a, b) => b.timestamp - a.timestamp || a.entryId.localeCompare(b.entryId));
 }

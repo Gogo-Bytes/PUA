@@ -182,10 +182,12 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       // Search is deliberately main-owned and bounded. Raw Pi JSONL never crosses IPC.
       const { readFile, stat } = await import('node:fs/promises');
       const { parseSessionHistory } = await import('./session-history-search.js');
+      let scannedBytes = 0;
       for (const record of persisted.values()) {
         try {
           const metadata = await stat(record.sessionFile);
-          if (!metadata.isFile() || metadata.size > 12 * 1024 * 1024) continue;
+          if (!metadata.isFile() || metadata.size > 12 * 1024 * 1024 || scannedBytes + metadata.size > 64 * 1024 * 1024) continue;
+          scannedBytes += metadata.size;
           const content = await readFile(record.sessionFile, 'utf8');
           results.push(...parseSessionHistory(content, {
             taskId: record.id, title: record.title, cwd: record.cwd, archived: !!record.archived,
