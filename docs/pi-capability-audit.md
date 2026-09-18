@@ -35,10 +35,11 @@
 | PI-RPC-10 | `--resume` 历史选择器 | Pi 0.85.1 CLI `--resume, -r`；当前 `NewSessionDialog` 仅允许兼容终端使用 `startMode=resume`，主进程会原样追加 `--resume` | 部分接入 | 兼容终端入口可进入 Pi 原生历史选择器；RPC 原生对话使用已验证的持久化 identity，不伪造选择器 |
 | PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 已接入（边界明确） | 消息级 Fork、用户 entry 白名单、侧栏入口与 `agent_settled` 后实时树元数据刷新已接入；不把 `entryId` 冒充 PUA Session id |
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip、命令面板和项目启动前资源/信任检查已接入；资源实际执行仍由 Pi 持有 |
-| PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
+| PI-RPC-13 | 自定义 extension command 与 custom UI | Pi extensions 文档确认 `registerCommand` 在 RPC 可通过 `get_commands` 暴露；`ctx.ui.custom()`、自定义 renderer/editor 依赖 TUI，在 RPC 中 `custom()` 返回 `undefined`（`docs/extensions.md` 970、2933） | 部分接入（边界明确） | RPC 命令继续进入命令面板；select/confirm/input/editor/notify/status/widget/title/editor text 已接入；TUI custom renderer/editor 继续由兼容终端承载，不伪造等价 DOM |
 | PI-RPC-14 | token / usage 统计 | Pi 0.85.1 `AgentSession.getSessionStats()` / RPC `get_session_stats` 返回消息与工具计数、input/output/cache token、cost 和可选 contextUsage（tokens/contextWindow/percent） | 已接入 | 会话工具栏提供只读“会话统计”；明确标注为当前 Pi 会话统计，不伪装账户级用量 |
 | PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 明确不做 | 不提供 HTML 导出入口；保留复制消息 |
 | PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
+| PI-RPC-17 | 自动上下文压缩与自动重试开关 | Pi 0.85.1 `set_auto_compaction` / `set_auto_retry` RPC，`docs/rpc.md` 436–461；改变运行中的失败恢复与上下文策略 | 待讨论 | 保留 Pi 原生默认值；是否在任务详情或会话设置暴露受控开关，需要单独决定，不在 Codex 对标阶段擅自改变 |
 
 ## 每项能力的完成条件
 
@@ -63,11 +64,12 @@
 - **Session Tree / Fork**：会话是带 `id/parentId` 的 JSONL 树，可从历史节点创建独立分支；PUA 应将分支显示为任务内结构。
 - **Fork identity**：Pi 原生 `fork(entryId)` 会把当前运行时切换到新分支，同时保留旧 JSONL 分支。PUA 跟随 Pi 当前运行时更新任务的 `sessionId/sessionFile`，不伪造第二个任务或 worktree；旧分支仍由 Pi 的历史树/原生选择器管理。
 - **Compaction**：Pi 生成 compaction summary 并沿当前叶子路径重建上下文；PUA 展示状态和失败反馈，不自行截断消息。
-- **Extension UI**：扩展可请求 select、confirm、input、editor、notify、status、widget；custom renderer/editor 等 TUI 能力继续由兼容终端承载。
+- **Extension UI**：扩展可请求 select、confirm、input、editor、notify、status、widget、title 和 editor text；RPC 对话可以承载这些 JSON 子协议。`ctx.ui.custom()`、自定义 renderer/editor 仍要求 TUI，RPC 返回 `undefined`，因此继续由兼容终端承载。
 - **Skills / Prompt Templates**：Pi 从资源目录加载并通过命令目录暴露；PUA 的 `@` 是输入筛选器，执行逻辑仍由 Pi 持有。
 - **Model / Thinking Level**：Pi 支持按会话查询和切换，PUA 不接管凭据或配置文件；模型与 Thinking Level 已通过真实 RPC 查询/切换，UI 菜单按需加载 Pi 返回的列表。
 - **TUI custom 能力**：自定义主题、header/footer、renderer、editor 依赖终端绘制生命周期，RPC 没有等价 UI。
 - **Session stats**：Pi 的 `/session` 统计属于当前本地会话的消息、工具、token、成本与上下文估算；PUA 只读展示该会话数据，不扩展为 Codex 账户用量、计费或跨设备统计。
+- **自动策略**：Pi 可通过 `set_auto_compaction` 与 `set_auto_retry` 在当前 RPC 会话切换自动压缩/重试。它们不是只读状态，而是会改变任务失败恢复和上下文生命周期；PUA 暂不发送这两个命令，避免改变 Pi 原生默认值，入口与默认策略需产品单独确认。
 
 ## Fork 交互保留项
 
