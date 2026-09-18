@@ -45,7 +45,10 @@ export class JsonWorkspaceSessionStore implements WorkspaceSessionStore {
     return this.mutate(current => [...current.filter(item => item.id !== session.id), { ...session }]);
   }
   remove(id: string): Promise<void> { return this.mutate(current => current.filter(item => item.id !== id)); }
-  rename(id: string, title: string): Promise<void> { return this.mutate(current => current.map(item => item.id === id ? { ...item, title } : item)); }
+  rename(id: string, title: string): Promise<void> {
+    if (typeof title !== 'string' || title.length === 0 || title.length > 4096) return Promise.reject(new Error('无效任务标题'));
+    return this.mutate(current => current.map(item => item.id === id ? { ...item, title } : item));
+  }
   private mutate(update: (current: PersistedChatSession[]) => PersistedChatSession[]): Promise<void> {
     const next = this.queue.catch(() => {}).then(async () => {
       const current = await this.read();

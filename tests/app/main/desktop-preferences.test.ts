@@ -25,11 +25,13 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     const identity: NativePiSessionIdentity = { sessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' };
     await preferences.recordChatMessage('id', identity);
     expect(store.upsert).toHaveBeenCalledWith({ id: 'id', cwd: '/fake/project', title: 'project', piSessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' });
+    await preferences.updateChatIdentity('id', { sessionId: 'pi-fork', sessionFile: '/home/pi/fork.jsonl' });
+    expect(store.upsert).toHaveBeenLastCalledWith({ id: 'id', cwd: '/fake/project', title: 'project', piSessionId: 'pi-fork', sessionFile: '/home/pi/fork.jsonl' });
 
     const ephemeral = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => ({ ...runtime, args: ['--no-session'] }), validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
     await ephemeral.createSession(options, capabilities);
     await ephemeral.recordChatMessage('id', identity);
-    expect(store.upsert).toHaveBeenCalledTimes(1);
+    expect(store.upsert).toHaveBeenCalledTimes(2);
   });
   it('publishes and resolves bootstrap in the write continuation, preserving returned references', async () => {
     const h = harness(); const write = deferred<void>(); const trace: string[] = [];
@@ -99,7 +101,7 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
 
 
 describe('Chat creation edge argument ownership', () => {
-  it.each(['--', '--mode', '--print', '-p', '--session', '--fork', '--continue', '-c', '--resume', '-r', '--approve', '-a', '--no-approve', '-na', '--mode=rpc', '--session=x', '--fork=x'])('rejects %s synchronously with unchanged first-conflict text', flag => {
+  it.each(['--', '--mode', '--print', '-p', '--session', '--session-id', '--fork', '--continue', '-c', '--resume', '-r', '--approve', '-a', '--no-approve', '-na', '--mode=rpc', '--session=x', '--session-id=x', '--fork=x'])('rejects %s synchronously with unchanged first-conflict text', flag => {
     expect(() => validateChatArguments(['--model', 'fake', flag, '--mode'])).toThrow(`聊天模式不能使用附加参数 ${flag}。请通过桌面会话与信任选项控制；兼容终端仍可使用原生参数。`);
   });
   it.each(['--continue=x', '--resume=x', '--approve=x', '--no-session', '--Mode', '--model', ';', '--extension=x'])('does not invent ownership for %s', flag => {
