@@ -22,14 +22,14 @@
 | PI-RPC-01 | prompt 与流式 delta | worker stream mapper、`ChatMessage` | 已接入 | 消息流、切换任务后恢复 |
 | PI-RPC-02 | thinking / model / thinking level | `ChatSnapshot`、runtime mapper、Pi RPC `set_model` / `set_thinking_level` | 部分接入 | 当前信息可展示；原生列表和切换仍待实现。RPC prompt 不处理 TUI 内置 `/model` 与 `/thinking`，不得用插入命令冒充切换入口 |
 | PI-RPC-03 | tool start/update/end 与最终结果 | stream core、ToolExecutionCard | 已接入 | 工具过程折叠、失败展开、重试 |
-| PI-RPC-04 | agent settled / compacting / retrying | runtime activity | 已接入 | 后台任务状态和通知 |
+| PI-RPC-04 | agent settled / compacting / retrying | runtime activity；Pi RPC `compact` | 已接入 | 后台任务状态和通知；对话底部“压缩上下文”调用原生 compact，状态和失败由 Pi 事件回传 |
 | PI-RPC-05 | steer / followUp / clear queue | conversation queue、worker protocol | 已接入 | Composer 队列可视化与任务级恢复 |
 | PI-RPC-06 | history snapshot / continue | chat snapshot、create `continue` | 已接入 | 最近任务恢复；重启恢复需验证 |
 | PI-RPC-07 | session name | rename command、session-info | 已接入 | 任务标题编辑与自动更新 |
 | PI-RPC-08 | extension UI select/confirm/input/editor | Extension UI schema、Dialog | 已接入 | 任务上下文内等待态、焦点恢复 |
 | PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
 | PI-RPC-10 | `--resume` 历史选择器 | native-chat-design 记录 | 待接入 | 兼容终端入口；原生任务恢复流程 |
-| PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 部分接入 | 消息级 Fork 已贯通白名单、响应校验、侧栏入口与实时元数据刷新；`get_tree` 分支树视图仍待接入 |
+| PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 已接入（边界明确） | 消息级 Fork、用户 entry 白名单、侧栏入口与 `agent_settled` 后实时树元数据刷新已接入；不把 `entryId` 冒充 PUA Session id |
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip 与命令面板已接入；项目级资源入口与状态展示仍待接入 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | TUI custom 能力有记录，RPC 等价不完整 | 待验证 | 明确降级到终端或设计桥接 |
 | PI-RPC-14 | token / usage 统计 | Pi `FooterDataProvider` 暴露 context usage、session entries、model 信息；RPC DTO 尚未核对 | 待验证 | 核对 RPC usage 事件后增加任务级用量摘要 |
@@ -42,7 +42,7 @@
 
 ## 本轮核验结果
 
-当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话和消息级 Fork 路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree 事件、skills、prompt templates 与 HTML export 相关能力，但仍需核对 RPC 暴露方式和运行样例。usage 仍未找到可靠 DTO。下一轮优先核验 PI-RPC-10 至 PI-RPC-14。
+当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新和原生 `compact` 路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree 事件、skills、prompt templates 与 HTML export 相关能力，但仍需核对 RPC 暴露方式和运行样例。usage 仍未找到可靠 DTO。下一轮优先核验 PI-RPC-10、PI-RPC-12 至 PI-RPC-14。
 
 ## Pi 0.85.1 RPC 命令映射（静态核验）
 

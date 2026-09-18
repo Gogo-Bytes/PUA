@@ -15,7 +15,7 @@ beforeEach(() => {
   desktop = installDesktopFake({
     openExternal: vi.fn().mockResolvedValue(undefined), writeClipboard: vi.fn().mockResolvedValue(undefined), startSession: vi.fn().mockResolvedValue(undefined),
     onSessionEvent: vi.fn(callback => { emit = callback; return () => {}; }), sendChatMessage: vi.fn().mockResolvedValue(undefined), stopChat: vi.fn().mockResolvedValue(undefined), chooseChatAttachments: vi.fn().mockResolvedValue([]), respondToExtensionUI: vi.fn().mockResolvedValue(undefined),
-    forkChatSession: vi.fn().mockResolvedValue({ text: 'forked', cancelled: false }),
+    forkChatSession: vi.fn().mockResolvedValue({ text: 'forked', cancelled: false }), compactChatSession: vi.fn().mockResolvedValue(undefined),
   } as unknown as DesktopAPI);
 });
 
@@ -83,6 +83,12 @@ describe('native composer', () => {
     fireEvent.click(screen.getByRole('button', { name: '从此消息创建分支' }));
     await waitFor(() => expect(desktop.forkChatSession).toHaveBeenCalledExactlyOnceWith('s', 'entry-1'));
     expect(menu.isConnected).toBe(false);
+  });
+  it('exposes Pi-native compaction as an acknowledged action', async () => {
+    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: '压缩上下文' }));
+    await waitFor(() => expect(desktop.compactChatSession).toHaveBeenCalledExactlyOnceWith('s'));
   });
 });
 

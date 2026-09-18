@@ -20,6 +20,7 @@ export interface ConversationRuntimePort {
   getAvailableThinkingLevels(id: string): Promise<string[]>;
   setModel(id: string, provider: string, modelId: string): Promise<void>;
   setThinkingLevel(id: string, level: string): Promise<void>;
+  compact(id: string, customInstructions?: string): Promise<void>;
   /** Capture authorized payloads and issue the request before returning; resolve only on acknowledgement. */
   send(id: string, command: RuntimeSend): Promise<void>;
   /** Delegates to the worker-scoped runtime's clear -> recovery -> abort use case. */

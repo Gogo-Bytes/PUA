@@ -15,6 +15,7 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   forkChatSession: ['id', 'entry'],
   getChatAvailableModels: ['id'], getChatThinkingLevels: ['id'],
   setChatModel: ['id', 'provider', 'model'], setChatThinkingLevel: ['id', 'high'],
+  compactChatSession: ['id', undefined],
   sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
   write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
   openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
