@@ -64,7 +64,8 @@ export interface HistorySearchResult {
   query: string;
 }
 
-export interface ChatAutoSettings { autoCompaction: boolean; autoRetry: boolean }
+export type ChatQueueMode = 'all' | 'one-at-a-time';
+export interface ChatAutoSettings { autoCompaction: boolean; autoRetry: boolean; steeringMode?: ChatQueueMode; followUpMode?: ChatQueueMode }
 
 export interface CreateSessionOptions {
   cwd: string;
@@ -106,6 +107,8 @@ export interface DesktopAPI {
   setChatThinkingLevel(id: string, level: string): Promise<void>;
   getChatSessionStats(id: string): Promise<import('./conversation.js').ChatSessionStats>;
   getChatAutoSettings(id: string): Promise<ChatAutoSettings>;
+  setChatSteeringMode(id: string, mode: ChatQueueMode): Promise<void>;
+  setChatFollowUpMode(id: string, mode: ChatQueueMode): Promise<void>;
   compactChatSession(id: string, customInstructions?: string): Promise<void>;
   setChatAutoCompaction(id: string, enabled: boolean): Promise<void>;
   setChatAutoRetry(id: string, enabled: boolean): Promise<void>;

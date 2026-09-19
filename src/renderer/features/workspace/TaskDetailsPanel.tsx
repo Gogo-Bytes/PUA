@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { RuntimeInfo, SessionInfo } from '../../../shared/ipc/desktop-api';
+import type { ChatQueueMode, RuntimeInfo, SessionInfo } from '../../../shared/ipc/desktop-api';
 import { Button, Icon, StatusBadge, Tag } from '../../ui';
 import { desktopClient, isDesktopAvailable } from '../../app/desktop-client';
 
@@ -16,7 +16,7 @@ export interface TaskDetailsPanelProps {
 /** Read-only task projection. Pi transcript and credentials remain outside the renderer. */
 export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArchive, onTogglePinned, onClone }: TaskDetailsPanelProps) {
   const [busy, setBusy] = useState<'archive' | 'pin' | 'clone' | null>(null);
-  const [autoSettings, setAutoSettings] = useState<{ autoCompaction: boolean; autoRetry: boolean } | null>(null);
+  const [autoSettings, setAutoSettings] = useState<{ autoCompaction: boolean; autoRetry: boolean; steeringMode?: ChatQueueMode; followUpMode?: ChatQueueMode } | null>(null);
   const [autoBusy, setAutoBusy] = useState<'compaction' | 'retry' | null>(null);
   useEffect(() => {
     let active = true;
@@ -38,6 +38,15 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
       if (kind === 'compaction') await desktopClient.setChatAutoCompaction(task.id, enabled);
       else await desktopClient.setChatAutoRetry(task.id, enabled);
       setAutoSettings(current => current ? { ...current, [kind === 'compaction' ? 'autoCompaction' : 'autoRetry']: enabled } : current);
+    } finally { setAutoBusy(null); }
+  };
+  const setQueueMode = async (kind: 'steering' | 'followUp', mode: ChatQueueMode) => {
+    if (!autoSettings || autoBusy) return;
+    setAutoBusy(kind === 'steering' ? 'compaction' : 'retry');
+    try {
+      if (kind === 'steering') await desktopClient.setChatSteeringMode(task.id, mode);
+      else await desktopClient.setChatFollowUpMode(task.id, mode);
+      setAutoSettings(current => current ? { ...current, [kind === 'steering' ? 'steeringMode' : 'followUpMode']: mode } : current);
     } finally { setAutoBusy(null); }
   };
   const activity = task.activity === 'idle' ? '就绪' : task.activity === 'responding' ? '处理中' : task.activity === 'compacting' ? '压缩上下文' : task.activity === 'retrying' ? '重试中' : '等待输入';
@@ -62,6 +71,8 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
       {!autoSettings ? <p className="task-details-note">正在读取当前策略…</p> : <>
         <label className="task-details-toggle"><input type="checkbox" checked={autoSettings.autoCompaction} disabled={!!autoBusy} onChange={event => void toggleAuto('compaction', event.target.checked)}/><span><strong>自动压缩上下文</strong><small>上下文接近上限时自动压缩，保持长任务可继续。</small></span></label>
         <label className="task-details-toggle"><input type="checkbox" checked={autoSettings.autoRetry} disabled={!!autoBusy} onChange={event => void toggleAuto('retry', event.target.checked)}/><span><strong>自动重试临时错误</strong><small>遇到限流或服务暂时不可用时由 Pi 自动重试。</small></span></label>
+        <label className="task-details-toggle"><span><strong>引导队列策略</strong><small>Pi 处理运行中引导消息的批次策略。</small></span><select aria-label="引导队列策略" value={autoSettings.steeringMode ?? 'one-at-a-time'} disabled={!!autoBusy} onChange={event => void setQueueMode('steering', event.target.value as ChatQueueMode)}><option value="one-at-a-time">逐条处理</option><option value="all">一次处理全部</option></select></label>
+        <label className="task-details-toggle"><span><strong>后续队列策略</strong><small>Pi 完成当前工作后处理后续消息的批次策略。</small></span><select aria-label="后续队列策略" value={autoSettings.followUpMode ?? 'one-at-a-time'} disabled={!!autoBusy} onChange={event => void setQueueMode('followUp', event.target.value as ChatQueueMode)}><option value="one-at-a-time">逐条处理</option><option value="all">一次处理全部</option></select></label>
       </>}
     </section>}
     <p className="task-details-note">这里展示 PUA 当前持有的任务投影。消息历史、会话树、模型、Thinking Level 和扩展等待状态由 Pi 对话区按原生事件提供；不会复制或猜测 Pi 未提供的字段。</p>

@@ -12,7 +12,8 @@ export interface ConversationSessionStats {
 import type { ConversationQueue } from './domain/runtime.js';
 import type { ConversationObject } from './domain/stream.js';
 export interface ConversationModel { provider: string; id: string; name?: string; reasoning?: boolean }
-export interface ConversationAutoSettings { autoCompaction: boolean; autoRetry: boolean }
+export type ConversationQueueMode = 'all' | 'one-at-a-time';
+export interface ConversationAutoSettings { autoCompaction: boolean; autoRetry: boolean; steeringMode: ConversationQueueMode; followUpMode: ConversationQueueMode }
 
 /** Worker operations acknowledge once; unknown acceptance must never be replayed. */
 export interface RuntimeOperationsPort {
@@ -33,6 +34,8 @@ export interface ConversationRuntimePort {
   setThinkingLevel(id: string, level: string): Promise<void>;
   getSessionStats(id: string): Promise<ConversationSessionStats>;
   getAutoSettings(id: string): Promise<ConversationAutoSettings>;
+  setSteeringMode(id: string, mode: ConversationQueueMode): Promise<void>;
+  setFollowUpMode(id: string, mode: ConversationQueueMode): Promise<void>;
   compact(id: string, customInstructions?: string): Promise<void>;
   setAutoCompaction(id: string, enabled: boolean): Promise<void>;
   setAutoRetry(id: string, enabled: boolean): Promise<void>;

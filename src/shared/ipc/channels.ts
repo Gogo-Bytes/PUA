@@ -35,6 +35,8 @@ export const invokeChannels = {
   setChatThinkingLevel: 'desktop:chat-thinking-set',
   getChatSessionStats: 'desktop:chat-session-stats',
   getChatAutoSettings: 'desktop:chat-auto-settings',
+  setChatSteeringMode: 'desktop:chat-steering-mode-set',
+  setChatFollowUpMode: 'desktop:chat-follow-up-mode-set',
   compactChatSession: 'desktop:chat-compact',
   setChatAutoCompaction: 'desktop:chat-auto-compaction-set',
   setChatAutoRetry: 'desktop:chat-auto-retry-set',

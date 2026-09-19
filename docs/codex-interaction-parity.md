@@ -40,7 +40,7 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 | session history / terminal PTY | 历史恢复、兼容终端 | 跨设备历史 | 仅本机 |
 | Pi trust、model、skills、extensions | 在会话中展示/响应 | Codex 账户权限与用量 | 交由 Pi；账户能力不实现 |
 | Git status / diff（PUA Adapter） | 检查器、文件 diff、引用反馈 | Codex 自动 patch review | 只做可验证的本地 Git 闭环 |
-| Pi 原生自动策略与 Clone | 任务详情开关、克隆任务 | Codex 账户级恢复策略、云端任务复制 | 保留 Pi 语义；自动重试读取受 Pi RPC 限制，Clone 只通过 Pi 原生命令创建新任务 |
+| Pi 原生自动策略、队列策略与 Clone | 任务详情开关/策略选择、克隆任务 | Codex 账户级恢复策略、云端任务复制 | 保留 Pi 语义；自动重试读取受 Pi RPC 限制，队列策略只调用 Pi 原生模式 RPC，Clone 只通过 Pi 原生命令创建新任务 |
 
 已确认的 Pi RPC 事件/语义还包括：delta streaming、thinking、tool 生命周期、agent settled、compacting/retry、steer/followUp 队列、clear queue、history snapshot、session name、extension UI（select/confirm/input/editor/notify/status/widget/title/editor text）。这些能力应优先做 PUA 的完整可发现交互，而不是等待 Codex 对照；TUI custom renderer/header/footer/theme 与 custom editor 没有原生 RPC 等价，继续保留兼容终端入口。
 
@@ -129,3 +129,9 @@ Pi 0.85.1 的本地 session 是 JSONL 树文件，消息 entry 里包含用户�
 
 - `ResizableWorkspace` 在生产隐藏顶部工具栏时，将面板恢复/收起按钮放入主区边缘浮层；按钮继续复用同一宽度约束、`aria-expanded`、焦点恢复和不可用原因，不创建第二套面板状态。
 - 右侧检查器继续由任务栏入口控制，并在窄窗浮层提供同一入口；当容器暂时无法同时容纳两侧面板时，用户可以先收起项目栏再恢复检查器。低于中心最小宽度时，恢复按钮保持禁用并说明“空间足够时自动恢复”，不遮挡或挤压对话正文。
+
+### 阶段 H：Pi 队列处理策略（已接入）
+
+- 任务详情在既有自动压缩/自动重试开关旁提供“引导队列策略”和“后续队列策略”，分别映射 Pi `set_steering_mode` 与 `set_follow_up_mode`，不改写 prompt、steer、follow-up 的投递语义。
+- 策略读取复用 Pi `get_state` 的 `steeringMode` / `followUpMode`；旧版本或缺失字段兼容回退为逐条处理，避免把未知状态误判为“一次处理全部”。
+- 新增能力经过 shared DTO、IPC 参数校验、worker 白名单、Pi ACK 校验和任务详情 pending/失败路径；`abort_retry`、`get_entries`、RPC bash 仍保持各自登记状态，不因队列策略接入而扩大范围。

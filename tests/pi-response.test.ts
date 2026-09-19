@@ -15,10 +15,15 @@ describe('Pi capability response validation', () => {
     expect(parsePiResponse('export_html', { type: 'response', command: 'export_html', success: true, data: { path: '/tmp/session.html' } })).toEqual({ path: '/tmp/session.html' });
   });
 
+  it.each(['set_steering_mode', 'set_follow_up_mode'] as const)('accepts successful %s acknowledgements without assuming response data', command => {
+    expect(parsePiResponse(command, { type: 'response', command, success: true })).toBeUndefined();
+  });
+
   it('fails closed on wrong command, malformed success, and malformed query data', () => {
     expect(() => parsePiResponse('get_tree', { type: 'response', command: 'get_state', success: true, data: {} })).toThrow(/protocol error/);
     expect(() => parsePiResponse('get_tree', { type: 'response', command: 'get_tree', success: true, data: null })).toThrow(/protocol error/);
     expect(() => parsePiResponse('fork', { type: 'response', command: 'fork', success: false, data: null })).toThrow(/protocol error/);
     expect(() => parsePiResponse('fork', { type: 'response', command: 'fork', success: true, data: null })).toThrow(/protocol error/);
+    expect(() => parsePiResponse('set_steering_mode', { type: 'response', command: 'set_follow_up_mode', success: true })).toThrow(/protocol error/);
   });
 });

@@ -99,6 +99,8 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   compactChatSession: tuple<'compactChatSession'>(2, (id, customInstructions) => [text(id), customInstructions === undefined ? undefined : boundedText(customInstructions, 8 * 1024 * 1024, '压缩说明')]),
   setChatAutoCompaction: tuple<'setChatAutoCompaction'>(2, (id, enabled) => [text(id), typeof enabled === 'boolean' ? enabled : (() => { throw new Error('无效自动压缩设置'); })()]),
   setChatAutoRetry: tuple<'setChatAutoRetry'>(2, (id, enabled) => [text(id), typeof enabled === 'boolean' ? enabled : (() => { throw new Error('无效自动重试设置'); })()]),
+  setChatSteeringMode: tuple<'setChatSteeringMode'>(2, (id, mode) => [text(id), mode === 'all' || mode === 'one-at-a-time' ? mode : (() => { throw new Error('无效引导队列策略'); })()]),
+  setChatFollowUpMode: tuple<'setChatFollowUpMode'>(2, (id, mode) => [text(id), mode === 'all' || mode === 'one-at-a-time' ? mode : (() => { throw new Error('无效后续队列策略'); })()]),
   respondToExtensionUI: tuple<'respondToExtensionUI'>(2, (id, response) => [text(id), extensionResponse(response)]),
   sendChatMessage: tuple<'sendChatMessage'>(2, (id, input) => {
     const value = input && typeof input === 'object' ? input as Record<string, unknown> : {};

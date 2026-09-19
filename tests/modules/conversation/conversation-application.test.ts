@@ -54,9 +54,11 @@ function setup() {
     fork: vi.fn<(id: string, entryId: string) => Promise<{ text: string; cancelled: boolean }>>().mockResolvedValue({ text: 'forked', cancelled: false }),
     compact: vi.fn<(id: string, customInstructions?: string) => Promise<void>>().mockResolvedValue(undefined),
     getSessionStats: vi.fn().mockResolvedValue({ userMessages: 1, assistantMessages: 1, toolCalls: 0, toolResults: 0, totalMessages: 2, tokens: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, total: 2 }, cost: 0 }),
-    getAutoSettings: vi.fn().mockResolvedValue({ autoCompaction: true, autoRetry: true }),
+    getAutoSettings: vi.fn().mockResolvedValue({ autoCompaction: true, autoRetry: true, steeringMode: 'one-at-a-time', followUpMode: 'one-at-a-time' }),
     setAutoCompaction: vi.fn().mockResolvedValue(undefined),
     setAutoRetry: vi.fn().mockResolvedValue(undefined),
+    setSteeringMode: vi.fn().mockResolvedValue(undefined),
+    setFollowUpMode: vi.fn().mockResolvedValue(undefined),
   } satisfies ConversationRuntimePort;
   const core = new ConversationApplication(runtime, resources);
   core.open('a'); core.open('b');
@@ -74,7 +76,7 @@ describe('ConversationApplication send and attachment Interface', () => {
   });
 
   it('has a closed typed runtime surface rather than an arbitrary command bag', () => {
-    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'clone' | 'compact' | 'getSessionStats' | 'getAutoSettings' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry'>();
+    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'clone' | 'compact' | 'getSessionStats' | 'getAutoSettings' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry' | 'setSteeringMode' | 'setFollowUpMode'>();
     expectTypeOf<keyof RuntimeSend>().toEqualTypeOf<'text' | 'attachmentIds' | 'queuePreference'>();
     expectTypeOf<ReturnType<ConversationRuntimePort['stop']>>().toEqualTypeOf<Promise<void>>();
     expectTypeOf<{ id: string; command: string }>().not.toExtend<ExtensionResponse>();

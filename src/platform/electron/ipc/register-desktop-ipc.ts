@@ -84,6 +84,8 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('setChatThinkingLevel', (id, level) => requireCurrent().capabilities.conversation.setThinkingLevel(id, level));
   handle('getChatSessionStats', id => requireCurrent().capabilities.conversation.getSessionStats(id));
   handle('getChatAutoSettings', id => requireCurrent().capabilities.conversation.getAutoSettings(id));
+  handle('setChatSteeringMode', (id, mode) => requireCurrent().capabilities.conversation.setSteeringMode(id, mode));
+  handle('setChatFollowUpMode', (id, mode) => requireCurrent().capabilities.conversation.setFollowUpMode(id, mode));
   handle('compactChatSession', (id, customInstructions) => requireCurrent().capabilities.conversation.compact(id, customInstructions));
   handle('setChatAutoCompaction', (id, enabled) => requireCurrent().capabilities.conversation.setAutoCompaction(id, enabled));
   handle('setChatAutoRetry', (id, enabled) => requireCurrent().capabilities.conversation.setAutoRetry(id, enabled));

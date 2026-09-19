@@ -1,6 +1,6 @@
 import { admitImage, ConversationFailure, MAX_ATTACHMENTS, selectAttachments } from '../domain/conversation.js';
 import type { Attachment, AttachmentSourceId, AttachmentToken, ExtensionResponse, SendIntent } from '../domain/conversation.js';
-import type { AttachmentResourcesPort, ConversationRuntimePort } from '../ports.js';
+import type { AttachmentResourcesPort, ConversationQueueMode, ConversationRuntimePort } from '../ports.js';
 import type { ConversationModel } from '../ports.js';
 
 interface OperationContext {
@@ -21,6 +21,8 @@ export class ConversationApplication {
   compact(id: string, customInstructions?: string): Promise<void> { this.current(id, 'send'); return this.runtime.compact(id, customInstructions); }
   setAutoCompaction(id: string, enabled: boolean): Promise<void> { this.current(id); return this.runtime.setAutoCompaction(id, enabled); }
   setAutoRetry(id: string, enabled: boolean): Promise<void> { this.current(id); return this.runtime.setAutoRetry(id, enabled); }
+  setSteeringMode(id: string, mode: ConversationQueueMode): Promise<void> { this.current(id); return this.runtime.setSteeringMode(id, mode); }
+  setFollowUpMode(id: string, mode: ConversationQueueMode): Promise<void> { this.current(id); return this.runtime.setFollowUpMode(id, mode); }
   private readonly contexts = new Map<string, OperationContext>();
   constructor(private readonly runtime: ConversationRuntimePort, private readonly resources: AttachmentResourcesPort) {}
 

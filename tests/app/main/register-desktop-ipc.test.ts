@@ -17,7 +17,7 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   getChatAvailableModels: ['id'], getChatThinkingLevels: ['id'],
   getChatSessionStats: ['id'], getChatAutoSettings: ['id'],
   setChatModel: ['id', 'provider', 'model'], setChatThinkingLevel: ['id', 'high'],
-  compactChatSession: ['id', undefined], setChatAutoCompaction: ['id', true], setChatAutoRetry: ['id', false],
+  compactChatSession: ['id', undefined], setChatAutoCompaction: ['id', true], setChatAutoRetry: ['id', false], setChatSteeringMode: ['id', 'one-at-a-time'], setChatFollowUpMode: ['id', 'all'],
   sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
   write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
   openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
@@ -46,6 +46,8 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.capabilities.conversation.setThinkingLevel).toHaveBeenCalledExactlyOnceWith('id', 'high');
     expect(h.capabilities.conversation.setAutoCompaction).toHaveBeenCalledExactlyOnceWith('id', true);
     expect(h.capabilities.conversation.setAutoRetry).toHaveBeenCalledExactlyOnceWith('id', false);
+    expect(h.capabilities.conversation.setSteeringMode).toHaveBeenCalledExactlyOnceWith('id', 'one-at-a-time');
+    expect(h.capabilities.conversation.setFollowUpMode).toHaveBeenCalledExactlyOnceWith('id', 'all');
     expect(h.capabilities.conversation.removeAttachment).toHaveBeenCalledExactlyOnceWith('id', 'token'); expect(h.capabilities.conversation.rename).toHaveBeenCalledExactlyOnceWith('id', 'title');
     expect(h.capabilities.terminal.write).toHaveBeenCalledExactlyOnceWith('id', '\0\x1b[31m\r\n'); expect(h.capabilities.terminal.resize).toHaveBeenCalledExactlyOnceWith('id', 100, 30); expect(h.capabilities.terminal.acknowledge).toHaveBeenCalledExactlyOnceWith('id', 1);
     expect(h.shell.openExternal).toHaveBeenCalledExactlyOnceWith('https://example.com/'); expect(h.shell.openPath).toHaveBeenCalledExactlyOnceWith('/fake/project');

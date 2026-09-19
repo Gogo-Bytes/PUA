@@ -15,7 +15,7 @@ export interface PiCapabilityRecord {
 export const piCapabilities: readonly PiCapabilityRecord[] = [
   { id: 'conversation.stream', rpcCommands: ['prompt'], status: 'integrated' },
   { id: 'conversation.queue', rpcCommands: ['steer', 'follow_up', 'clear_queue'], status: 'integrated' },
-  { id: 'conversation.queueModes', rpcCommands: ['set_steering_mode', 'set_follow_up_mode'], status: 'protocol-ready' },
+  { id: 'conversation.queueModes', rpcCommands: ['set_steering_mode', 'set_follow_up_mode'], status: 'integrated' },
   { id: 'conversation.compact', rpcCommands: ['compact', 'set_auto_compaction'], status: 'integrated' },
   { id: 'conversation.retry', rpcCommands: ['set_auto_retry'], status: 'integrated' },
   { id: 'conversation.retryAbort', rpcCommands: ['abort_retry'], status: 'protocol-ready' },

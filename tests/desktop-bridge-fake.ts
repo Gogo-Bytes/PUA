@@ -15,8 +15,8 @@ export function desktopBridgeFake(api: DesktopAPI): DesktopBridge {
     const pending = typeof implementation === 'function'
       ? (implementation as (...args: unknown[]) => Promise<unknown>).apply(api, args)
       : method === 'getChatAutoSettings'
-        ? Promise.resolve({ autoCompaction: true, autoRetry: true })
-        : method === 'setChatAutoCompaction' || method === 'setChatAutoRetry'
+      ? Promise.resolve({ autoCompaction: true, autoRetry: true, steeringMode: 'one-at-a-time', followUpMode: 'one-at-a-time' })
+        : method === 'setChatAutoCompaction' || method === 'setChatAutoRetry' || method === 'setChatSteeringMode' || method === 'setChatFollowUpMode'
           ? Promise.resolve(undefined)
           : Promise.reject(new Error(`Fake Desktop method missing: ${method}`));
     return pending.then(value => ({ ok: true, value: value === undefined && Object.prototype.hasOwnProperty.call(desktopVoidMethods, method) ? null : value }), error => {

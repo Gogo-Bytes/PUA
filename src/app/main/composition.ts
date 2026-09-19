@@ -56,7 +56,7 @@ export function composeMain(emit: (event: SessionEvent) => void, dependencies: C
   const preparation = { session: coordinator, adapter, conversation, prepareProject: dependencies.prepareProject ?? prepareProject, createId: dependencies.createId ?? randomUUID };
   return {
     session: coordinator as Pick<SessionCoordinator, 'get' | 'list' | 'start' | 'close' | 'closeAll'>,
-    conversation: conversation as Pick<ConversationApplication, 'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'getSessionStats' | 'getAutoSettings' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry' | 'compact' | 'removeAttachment'> & Partial<Pick<ConversationApplication, 'clone'>>,
+    conversation: conversation as Pick<ConversationApplication, 'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'getSessionStats' | 'getAutoSettings' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry' | 'setSteeringMode' | 'setFollowUpMode' | 'compact' | 'removeAttachment'> & Partial<Pick<ConversationApplication, 'clone'>>,
     terminal: adapter as Terminal,
     activity: (id: string) => adapter.activity(id),
     createSession: (runtime: RuntimeInfo, options: CreateSessionOptions) => createSession(preparation, runtime, options),

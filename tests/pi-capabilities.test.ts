@@ -15,7 +15,7 @@ describe('Pi capability registry', () => {
     for (const id of ['conversation.stream', 'conversation.queue', 'conversation.compact', 'conversation.retry', 'conversation.stats', 'session.fork', 'session.tree', 'session.clone', 'session.rename', 'model.list', 'model.select', 'thinking.select', 'resources.skills', 'resources.promptTemplates', 'extensions.ui'] as const) {
       expect(piCapabilities.find(item => item.id === id)?.status, id).toBe('integrated');
     }
-    for (const id of ['conversation.queueModes', 'conversation.retryAbort', 'session.entries'] as const) {
+    for (const id of ['conversation.retryAbort', 'session.entries'] as const) {
       expect(piCapabilities.find(item => item.id === id)?.status, id).toBe('protocol-ready');
     }
     expect(piCapabilities.find(item => item.id === 'session.switch')?.status).toBe('needs-runtime-verification');
