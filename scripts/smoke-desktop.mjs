@@ -169,7 +169,7 @@ try {
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/exited-chat.png') });
   await window.getByRole('button', { name: '兼容终端', exact: true }).click();
   await window.getByRole('radio', { name: /兼容终端/ }).check();
-  await window.getByRole('button', { name: '打开兼容终端' }).click();
+  await window.getByRole('dialog').getByRole('button', { name: '打开兼容终端 ↗', exact: true }).click();
   await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes('MOCK_PI_READY')));
   const terminalId = await window.locator('.terminal-pane.active').getAttribute('data-session-id'); assert.notEqual(firstId, terminalId);
   const terminalOutput = await window.evaluate(() => window.__events.filter(event => event.type === 'terminal-data').map(event => event.data).join(''));

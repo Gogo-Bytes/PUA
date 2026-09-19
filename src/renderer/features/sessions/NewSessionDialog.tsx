@@ -11,6 +11,7 @@ export interface NewSessionDialogProps extends SessionLaunchOptions {
 export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }: NewSessionDialogProps) {
   const initialFocus = useRef<HTMLInputElement>(null);
   const { cwd, setCwd, kind, setKind, mode, setMode, trust, setTrust, resources, inspecting, inspection, busy, error, submit, chooseDirectory } = useNewSessionLaunch(options);
+  const kinds = ([['chat', '原生对话', '默认 · RPC 消息与工具卡片'], ['terminal', '兼容终端', '登录、设置和 TUI 专属扩展']] as const);
   return <Dialog initialFocusRef={initialFocus} open title="打开项目" closeLabel="关闭对话框" onClose={onClose}>
     <form onSubmit={event => { event.preventDefault(); submit(); }}>
       <label>项目文件夹</label>
@@ -20,8 +21,8 @@ export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }
       </div>
       <label>界面</label>
       <div className="mode-options">
-        {([['chat', '原生对话', '默认 · RPC 消息与工具卡片'], ['terminal', '兼容终端', '登录、设置和 TUI 专属扩展']] as const).map(([value, label, hint]) => <label key={value} className={kind === value ? 'chosen' : ''}>
-          <input type="radio" name="kind" checked={kind === value} onChange={() => setKind(value)} />
+        {kinds.filter(([value]) => !options.fixedKind || value === options.fixedKind).map(([value, label, hint]) => <label key={value} className={kind === value ? 'chosen' : ''}>
+          <input type="radio" name="kind" checked={kind === value} disabled={!!options.fixedKind} onChange={() => setKind(value)} />
           <span>{label}<small>{hint}</small></span>
         </label>)}
       </div>

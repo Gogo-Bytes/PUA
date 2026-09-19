@@ -87,7 +87,7 @@ async function runScenario(root, fixture, mode) {
   let appPid;
   let failure;
   try {
-    await writeFile(path.join(temporary, 'desktop-settings.json'), JSON.stringify({ piPath: fixture, nodePath: process.execPath, args: [], fontSize: 13, recentProjects: [] }));
+    await writeFile(path.join(temporary, 'desktop-settings.json'), JSON.stringify({ piPath: fixture, nodePath: process.execPath, args: [], fontSize: 13, recentProjects: [temporary] }));
     app = await electron.launch({
       executablePath: path.join(root, 'node_modules/electron/dist/Electron.app/Contents/MacOS/Electron'),
       args: ['.', `--user-data-dir=${temporary}`], cwd: root, timeout: 10000,
@@ -98,13 +98,18 @@ async function runScenario(root, fixture, mode) {
       const page = await app.firstWindow({ timeout: 5000 });
       signal.throwIfAborted();
       page.setDefaultTimeout(5000);
-      await page.getByRole('button', { name: '打开项目', exact: false }).first().click();
-      await page.getByRole('textbox', { name: '项目文件夹', exact: true }).fill(temporary);
+      await page.getByTitle(temporary, { exact: true }).waitFor();
       if (mode === 'terminal-close') {
-        await page.getByRole('radio', { name: /兼容终端/ }).check();
-        await page.getByRole('button', { name: '打开兼容终端' }).click();
+        await page.getByRole('button', { name: /中打开兼容终端/ }).click();
+        await page.getByRole('dialog').getByRole('button', { name: /打开兼容终端/ }).click();
         await app.evaluate(({ dialog }) => { dialog.showMessageBoxSync = () => 1; });
-      } else await page.getByRole('button', { name: '开始对话' }).click();
+      } else {
+        await page.getByTitle(temporary, { exact: true }).click();
+        const draft = page.getByRole('textbox', { name: '发送消息', exact: true });
+        await page.locator('.pending-trust-status').waitFor({ state: 'hidden' });
+        await draft.fill('start lifecycle');
+        await draft.press('Enter');
+      }
       const deadline = Date.now() + 10000;
       let records = [];
       do {

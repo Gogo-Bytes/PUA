@@ -55,7 +55,7 @@ export function useSessionLaunchController({ boot, project, onCreated, afterCrea
     createChatAnd,
     openInProject: () => void newConversation(project),
     initialPath: context?.cwd || project || boot?.preferences.recentProjects[0] || boot?.home || '',
-    initialKind: context?.kind, initialMode: context?.mode,
+    initialKind: context?.kind, fixedKind: context?.kind, initialMode: context?.mode,
     // The original settings jump hides launch without resetting its context.
     showSettings: () => { setOpen(false); onSettings(); },
   };

@@ -21,17 +21,18 @@ await writeFile(timeoutExtension, `export default function(pi) {
   pi.registerCommand('pua-zero', { handler: async (_args, ctx) => { const answer = await ctx.ui.input('Offline zero timeout', 'still answerable', { timeout: 0 }); ctx.ui.notify('Offline zero: ' + answer, 'info'); } });
   pi.registerCommand('pua-confirm', { handler: async (_args, ctx) => { const answer = await ctx.ui.confirm('Offline confirm', 'No model call'); ctx.ui.notify('Offline confirm: ' + answer, 'info'); } });
 }`);
-await writeFile(path.join(profile, 'desktop-settings.json'), JSON.stringify({ piPath: runtime.source, nodePath: runtime.executable, args: ['--offline', '--no-session', '-e', modal, '-e', rpcDemo, '-e', timeoutExtension], fontSize: 14, recentProjects: [] }));
+await writeFile(path.join(profile, 'desktop-settings.json'), JSON.stringify({ piPath: runtime.source, nodePath: runtime.executable, args: ['--offline', '--no-session', '-e', modal, '-e', rpcDemo, '-e', timeoutExtension], fontSize: 14, recentProjects: [project] }));
 const app = await electron.launch({ args: [root, `--user-data-dir=${profile}`], cwd: root, timeout: 20000, env: { ...process.env, PI_CODING_AGENT_DIR: agentDir, PI_OFFLINE: '1' } });
 try {
   const window = await app.firstWindow({ timeout: 15000 }); window.setDefaultTimeout(20000); const errors = []; window.on('pageerror', error => errors.push(String(error)));
-  await window.getByRole('button', { name: '打开一个项目' }).waitFor();
+  await window.getByTitle(project, { exact: true }).waitFor();
   await window.evaluate(() => { window.__events = []; window.desktop.onSessionEvent(event => window.__events.push(event)); });
 
   // Native RPC path: capability handshake plus official extension UI, with no model request.
-  await window.getByRole('button', { name: '打开一个项目' }).click(); await window.getByRole('textbox', { name: '项目文件夹', exact: true }).fill(project); await window.getByRole('button', { name: '开始对话' }).click();
-  await window.getByRole('heading', { name: '从需求开始' }).waitFor();
-  await window.getByRole('textbox', { name: '发送消息' }).fill('/rpc-input'); await window.getByRole('button', { name: '发送', exact: false }).click();
+  await window.getByTitle(project, { exact: true }).click();
+  await window.getByRole('region', { name: '新对话' }).waitFor();
+  await window.locator('.pending-trust-status').waitFor({ state: 'hidden' });
+  await window.getByRole('textbox', { name: '发送消息' }).fill('/rpc-input'); await window.getByRole('button', { name: '发送消息', exact: true }).click();
   await window.getByRole('dialog').waitFor();
   await window.getByRole('dialog').getByRole('textbox').fill('offline value');
   await window.getByRole('dialog').getByRole('button', { name: '提交' }).click();
@@ -63,14 +64,16 @@ try {
   await window.getByText('Pi 已就绪', { exact: true }).waitFor();
   await window.getByRole('textbox', { name: '发送消息' }).fill('/rpc-prefill'); await window.getByRole('button', { name: '发送', exact: false }).click();
   await window.waitForFunction(() => document.querySelector('textarea[aria-label="发送消息"]')?.value === 'This text was set by the rpc-demo extension.');
-  await window.waitForFunction(() => document.querySelector('.send-button')?.disabled === false);
+  await window.waitForFunction(() => document.querySelector('.ui-composer-submit')?.disabled === false);
   await mkdir(path.join(root, '.agent-work/native-chat/evidence'), { recursive: true });
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/real-pi-idle-prefill.png') });
-  await window.locator('.close-session').click();
+  await window.getByRole('button', { name: '更多任务操作', exact: true }).click();
+  await window.getByRole('menuitem', { name: '归档并关闭任务', exact: true }).click();
   await window.locator('.chat-pane').waitFor({ state: 'detached' });
 
   // Explicit compatibility terminal: TUI-only custom editor remains functional.
-  await window.getByRole('button', { name: '打开项目', exact: false }).first().click(); await window.getByRole('textbox', { name: '项目文件夹', exact: true }).fill(project); await window.getByRole('radio', { name: /兼容终端/ }).check(); await window.getByRole('button', { name: '打开兼容终端' }).click();
+  await window.getByRole('button', { name: /中打开兼容终端/ }).click();
+  await window.getByRole('dialog').getByRole('button', { name: /打开兼容终端/ }).click();
   await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes(' INSERT ')), undefined, { timeout: 30000 });
   const id = await window.locator('.terminal-pane.active').getAttribute('data-session-id');
   await window.evaluate(() => { window.__events = []; }); await window.locator('.terminal-pane.active .xterm-helper-textarea').press('Escape'); await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes(' NORMAL ')));

@@ -17,20 +17,24 @@ try {
   await page.evaluate(() => { window.desktop.writeClipboard = async () => { throw new Error('TEST ONLY: clipboard rejected'); }; });
   const projects = page.getByRole('navigation', { name: '项目', exact: true });
   await projects.getByTitle('/test/workspace/PUA', { exact: true }).click();
-  async function create() {
-    await page.getByRole('button', { name: '新建会话', exact: true }).click();
-    await page.getByRole('button', { name: '开始对话 ↗', exact: true }).click();
-    await page.getByRole('dialog').waitFor({ state: 'detached' });
-    await page.getByRole('textbox', { name: '发送消息', exact: true }).waitFor();
+  await page.keyboard.press('Escape');
+  async function create(message) {
+    await page.getByRole('region', { name: '新对话', exact: true }).waitFor();
+    await page.locator('.pending-trust-status').waitFor({ state: 'hidden' });
+    const pending = page.getByRole('textbox', { name: '发送消息', exact: true });
+    await pending.fill(message);
+    await pending.press('Enter');
+    await page.locator('.chat-pane.active').waitFor();
   }
-  await create();
+  await create('建立第一个验收会话');
   const editor = page.getByRole('textbox', { name: '发送消息', exact: true });
   assert.equal(await page.locator('.ui-composer').count(), 1);
   assert.equal(await page.locator('.composer,.chat-message,.tool-card,details.tool-card').count(), 0);
-  await page.getByRole('tab', { name: '检查上下文 1', exact: true }).dblclick();
+  const firstProject = projects.locator('.workspace-project-group').filter({ has: page.locator('button[title="/test/workspace/PUA"]') });
+  await firstProject.locator('.workspace-session-row .ui-rename-display').filter({ hasText: '检查上下文 1' }).dblclick();
   await page.getByRole('textbox', { name: '重命名 检查上下文 1' }).fill('设计基准 A');
   await page.getByRole('button', { name: '保存', exact: true }).click();
-  await page.getByRole('tab', { name: '设计基准 A', exact: true }).waitFor();
+  await firstProject.locator('.workspace-session-row .ui-rename-display').filter({ hasText: '设计基准 A' }).waitFor();
   const tool = page.getByRole('button', { name: /读取 · docs\/context.md/ });
   await tool.click();
   assert.equal(await tool.getAttribute('aria-expanded'), 'true');
@@ -50,9 +54,10 @@ try {
   await remove.first().waitFor({ state: 'detached' });
   assert.equal(await remove.count(), 0);
   await projects.getByTitle('/test/other/PUA', { exact: true }).click();
-  await create();
+  await page.keyboard.press('Escape');
+  await create('建立第二个验收会话');
   await editor.fill('B 草稿');
-  await projects.getByTitle('/test/workspace/PUA', { exact: true }).click();
+  await firstProject.locator('.workspace-session-row .ui-rename-display').filter({ hasText: '设计基准 A' }).click();
   assert.equal(await editor.inputValue(), 'A 草稿');
   assert.equal(await page.locator('.chat-pane').count(), 2);
   await editor.press('Shift+Enter');
@@ -100,8 +105,8 @@ try {
     }
     await page.setViewportSize({ width: 740, height: 800 });
     await page.waitForTimeout(300);
-    assert.equal(await page.getByRole('button', { name: '显示 检查器', exact: true }).getAttribute('aria-disabled'), 'true');
-    await page.getByRole('button', { name: '收起 项目', exact: true }).click();
+    const taskToolbar = page.getByLabel('当前任务操作栏');
+    assert.equal(await taskToolbar.getByRole('button', { name: '收起 检查器', exact: true }).getAttribute('aria-expanded'), 'true');
     await page.getByRole('button', { name: '关闭变更面板' }).waitFor();
     await page.getByRole('button', { name: 'docs/context.md ?', exact: true }).click();
     await page.getByRole('tab', { name: '预览', exact: true }).click();
@@ -109,10 +114,9 @@ try {
     await page.getByRole('button', { name: '引用文件到草稿' }).click();
     assert.match(await editor.inputValue(), /docs\/context.md/);
     await page.getByRole('button', { name: '关闭变更面板' }).click();
-    assert(await page.getByRole('button', { name: '显示 检查器', exact: true }).evaluate(node => node === document.activeElement));
-    await page.getByRole('button', { name: '显示 项目', exact: true }).click();
+    assert(await page.getByRole('button', { name: '显示 检查器', exact: true }).evaluateAll(nodes => nodes.some(node => node === document.activeElement)));
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.getByRole('button', { name: '显示 检查器', exact: true }).click();
+    await taskToolbar.getByRole('button', { name: '显示 检查器', exact: true }).click();
     await page.getByRole('button', { name: '关闭变更面板' }).waitFor();
   }
   assert.deepEqual(results.errors, []);

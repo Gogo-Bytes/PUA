@@ -342,12 +342,22 @@ describe('Session launch through real App and direct sidebar controller', () => 
   it('opens a remembered project and creates a chat directly without a dialog', async () => {
     vi.mocked(desktop.createSession).mockResolvedValue({ id: 'chosen', title: 'Chosen session', cwd: '/one/app', kind: 'chat', processStatus: 'running', activity: 'idle' });
     const { container } = render(<App />); await screen.findByTitle('/one/app');
-    const opener = within(screen.getAllByRole('region', { name: 'app' })[0]).getByRole('button', { name: '在 app 中新建对话' }); opener.focus(); fireEvent.click(opener);
+    const opener = within(screen.getAllByRole('region', { name: 'app' })[0]).getByRole('button', { name: '在 app 中新建对话（/one/app）' }); opener.focus(); fireEvent.click(opener);
     const draft = await screen.findByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'start work' } });
     await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
     await waitFor(() => expect(desktop.createSession).toHaveBeenCalledWith(expect.objectContaining({ cwd: '/one/app', kind: 'chat', startMode: 'new' })));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy();
+  });
+  it('keeps the Pi-compatible terminal reachable from a project without creating a chat first', async () => {
+    render(<App />); await screen.findByTitle('/one/app');
+    fireEvent.click(screen.getByRole('button', { name: '在 app 中打开兼容终端（/one/app）' }));
+    const dialog = screen.getByRole('dialog', { name: '打开项目' });
+    const terminal = within(dialog).getByRole('radio', { name: /兼容终端/ }) as HTMLInputElement;
+    expect(terminal.checked).toBe(true); expect(terminal.disabled).toBe(true);
+    expect(within(dialog).queryByRole('radio', { name: /原生对话/ })).toBeNull();
+    expect((within(dialog).getByRole('textbox', { name: '项目文件夹' }) as HTMLInputElement).value).toBe('/one/app');
+    expect(desktop.createSession).not.toHaveBeenCalled();
   });
   it('keeps project drafts usable while Pi is unconfigured and routes to settings', async () => {
     boot = { ...boot, preferences: { ...boot.preferences, recentProjects: [] }, runtime: null };

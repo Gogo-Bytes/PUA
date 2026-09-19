@@ -4,15 +4,19 @@ import type { ProjectTrust, SessionKind } from '../../../shared/ipc/conversation
 
 export interface SessionLaunchOptions {
   initialKind?: SessionKind;
+  /** Fixes entry-specific launchers (for example Pi TUI fallback) to one session kind. */
+  fixedKind?: SessionKind;
   initialMode?: 'new' | 'continue';
   initialPath: string;
   onCreate(cwd: string, kind: SessionKind, mode: 'new' | 'continue' | 'resume', trust: ProjectTrust): Promise<void>;
 }
 
 /** Mount-local form state and advisory inspection; the host remains Session/trust authority. */
-export function useNewSessionLaunch({ initialKind = 'chat', initialMode = 'new', initialPath, onCreate }: SessionLaunchOptions) {
+export function useNewSessionLaunch({ initialKind = 'chat', fixedKind, initialMode = 'new', initialPath, onCreate }: SessionLaunchOptions) {
   const [cwd, setCwd] = useState(initialPath);
-  const [kind, setKind] = useState<SessionKind>(initialKind);
+  const [selectedKind, setSelectedKind] = useState<SessionKind>(fixedKind ?? initialKind);
+  const kind = fixedKind ?? selectedKind;
+  const setKind = (next: SessionKind) => { if (!fixedKind) setSelectedKind(next); };
   const [mode, setMode] = useState<'new' | 'continue' | 'resume'>(initialMode);
   const [trust, setTrust] = useState<ProjectTrust>('default');
   const [inspection, setInspection] = useState<{ cwd: string; paths: string[]; error?: string }>();
@@ -33,7 +37,7 @@ export function useNewSessionLaunch({ initialKind = 'chat', initialMode = 'new',
   const submit = () => {
     if (busy || (kind === 'chat' && (inspecting || inspection?.error))) return;
     setBusy(true);
-    void onCreate(cwd, kind, mode, trust).catch(error => { setError(String(error)); setBusy(false); });
+    void onCreate(cwd, fixedKind ?? kind, mode, trust).catch(error => { setError(String(error)); setBusy(false); });
   };
   const chooseDirectory = () => void desktopClient.chooseDirectory().then(value => { if (value) setCwd(value); }).catch(error => setError(String(error)));
 

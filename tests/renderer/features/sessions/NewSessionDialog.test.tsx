@@ -100,6 +100,12 @@ describe('NewSessionDialog production view/controller characterization (only Fak
     expect(screen.getByRole('alert').textContent).toBe('Error: inspection denied'); expect(button().disabled).toBe(false);
     fireEvent.click(radio(/^选择历史/)); submit(); expect(props.onCreate).toHaveBeenCalledWith('/a', 'terminal', 'resume', 'default');
   });
+  it('locks an entry-specific terminal launcher so it cannot create an empty chat', () => {
+    render(<NewSessionDialog {...props} initialKind="terminal" fixedKind="terminal" />);
+    expect(screen.queryByRole('radio', { name: /^原生对话/ })).toBeNull();
+    expect(radio(/^兼容终端/).disabled).toBe(true);
+    submit(); expect(props.onCreate).toHaveBeenCalledExactlyOnceWith('/a', 'terminal', 'new', 'default');
+  });
   it('passes the current trust to terminal too, without taking ownership of actual Pi trust or Session admission', async () => {
     vi.mocked(desktop.inspectProjectResources).mockResolvedValue(resources(['/a/.pi']));
     render(<NewSessionDialog {...props} />); await tick(); fireEvent.click(radio(/^本次不加载/)); fireEvent.click(radio(/^兼容终端/));
