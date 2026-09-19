@@ -96,6 +96,7 @@ const stream = new ConversationStreamApplication({
 const runtime = new ConversationRuntimeApplication({
   clearQueue: () => send({ type: 'clear_queue' }),
   abort: async () => { await send({ type: 'abort' }); },
+  abortRetry: async () => { await send({ type: 'abort_retry' }, 1_500).catch(() => undefined); },
   writeAnswer: async response => {
     if (!writer) throw new Error('Pi RPC process is not running');
     try { await writer.write({ ...response, type: 'extension_ui_response' }); }
@@ -372,7 +373,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }
-  if (data.type === 'get-available-models' || data.type === 'get-available-thinking-levels' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'set-auto-compaction' || data.type === 'set-auto-retry' || data.type === 'set-steering-mode' || data.type === 'set-follow-up-mode' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats' || data.type === 'get-auto-settings') {
+  if (data.type === 'get-available-models' || data.type === 'get-available-thinking-levels' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'set-auto-compaction' || data.type === 'set-auto-retry' || data.type === 'abort-retry' || data.type === 'set-steering-mode' || data.type === 'set-follow-up-mode' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats' || data.type === 'get-auto-settings') {
     const command: PiCommand = data.type === 'get-available-models' ? { type: 'get_available_models' }
       : data.type === 'get-available-thinking-levels' ? { type: 'get_available_thinking_levels' }
       : data.type === 'compact' ? { type: 'compact', ...(data.customInstructions === undefined ? {} : { customInstructions: data.customInstructions }) }
@@ -380,6 +381,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       : data.type === 'set-thinking-level' ? { type: 'set_thinking_level', level: data.level }
       : data.type === 'set-auto-compaction' ? { type: 'set_auto_compaction', enabled: data.enabled }
       : data.type === 'set-auto-retry' ? { type: 'set_auto_retry', enabled: data.enabled }
+      : data.type === 'abort-retry' ? { type: 'abort_retry' }
       : data.type === 'set-steering-mode' ? { type: 'set_steering_mode', mode: data.mode }
       : data.type === 'set-follow-up-mode' ? { type: 'set_follow_up_mode', mode: data.mode }
       : data.type === 'switch-session' ? { type: 'switch_session', sessionPath: data.sessionPath }

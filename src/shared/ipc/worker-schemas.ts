@@ -58,6 +58,7 @@ export function parseRpcWorkerInput(value: unknown): WorkerParse<RpcWorkerInput>
     case 'set-model': return text(value.provider) && text(value.modelId) ? { ok: true, message: { type: 'set-model', requestId, provider: value.provider, modelId: value.modelId } } : invalid();
     case 'set-thinking-level': return text(value.level) ? { ok: true, message: { type: 'set-thinking-level', requestId, level: value.level } } : invalid();
     case 'set-auto-compaction': case 'set-auto-retry': return typeof value.enabled === 'boolean' ? { ok: true, message: { type: value.type, requestId, enabled: value.enabled } } : invalid();
+    case 'abort-retry': return { ok: true, message: { type: 'abort-retry', requestId } };
     case 'set-steering-mode': case 'set-follow-up-mode': return value.mode === 'all' || value.mode === 'one-at-a-time' ? { ok: true, message: { type: value.type, requestId, mode: value.mode } } : invalid();
     case 'compact': return (value.customInstructions === undefined || text(value.customInstructions)) ? { ok: true, message: { type: 'compact', requestId, ...(value.customInstructions === undefined ? {} : { customInstructions: value.customInstructions }) } } : invalid();
     case 'export-html': return text(value.outputPath) ? { ok: true, message: { type: 'export-html', requestId, outputPath: value.outputPath } } : invalid();

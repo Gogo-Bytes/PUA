@@ -19,6 +19,8 @@ export interface ConversationAutoSettings { autoCompaction: boolean; autoRetry: 
 export interface RuntimeOperationsPort {
   clearQueue(): Promise<ConversationQueue>;
   abort(): Promise<void>;
+  /** Best-effort cancellation of Pi's retry backoff; unsupported runtimes are ignored by the worker. */
+  abortRetry?(): Promise<void>;
   writeAnswer(response: ExtensionResponse): Promise<void>;
 }
 export interface DialogClockPort {

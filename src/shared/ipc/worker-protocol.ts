@@ -24,6 +24,7 @@ export type RpcCapabilityOperation =
   | { type: 'set-thinking-level'; level: string }
   | { type: 'set-auto-compaction'; enabled: boolean }
   | { type: 'set-auto-retry'; enabled: boolean }
+  | { type: 'abort-retry' }
   | { type: 'set-steering-mode'; mode: 'all' | 'one-at-a-time' }
   | { type: 'set-follow-up-mode'; mode: 'all' | 'one-at-a-time' }
   | { type: 'compact'; customInstructions?: string }

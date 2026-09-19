@@ -122,6 +122,7 @@ Pi 0.85.1 的本地 session 是 JSONL 树文件，消息 entry 里包含用户�
 ### 阶段 F：Pi 原生策略与任务 Clone（已接入）
 
 - 任务详情读取并展示 Pi 自动上下文压缩、自动重试策略；切换前后均保留 pending、失败反馈和当前任务上下文。写入仅发生在用户显式切换时，不以 Codex 对照覆盖 Pi 默认值。
+- 停止处于 Pi `retrying` 状态的任务时，先调用 Pi 原生 `abort_retry` 取消退避，再执行普通 `abort`；旧版或未响应 Pi 在短超时后继续停止，不阻塞任务关闭。
 - Clone 通过 Pi RPC 白名单命令执行。主进程在隔离的短生命周期探针会话中等待新的 native identity，再创建并持久化新任务；探针关闭，不污染原任务进程或历史索引。
 - 新 Clone 任务继承源任务项目目录和当前 Pi 活动分支语义，加入侧栏任务二级列表并自动选中；原任务保持不变。若 Pi 未提供 identity、`--no-session` 生效或原生命令取消，则返回可解释错误且不创建空白历史。
 
@@ -134,4 +135,4 @@ Pi 0.85.1 的本地 session 是 JSONL 树文件，消息 entry 里包含用户�
 
 - 任务详情在既有自动压缩/自动重试开关旁提供“引导队列策略”和“后续队列策略”，分别映射 Pi `set_steering_mode` 与 `set_follow_up_mode`，不改写 prompt、steer、follow-up 的投递语义。
 - 策略读取复用 Pi `get_state` 的 `steeringMode` / `followUpMode`；旧版本或缺失字段兼容回退为逐条处理，避免把未知状态误判为“一次处理全部”。
-- 新增能力经过 shared DTO、IPC 参数校验、worker 白名单、Pi ACK 校验和任务详情 pending/失败路径；`abort_retry`、`get_entries`、RPC bash 仍保持各自登记状态，不因队列策略接入而扩大范围。
+- 新增能力经过 shared DTO、IPC 参数校验、worker 白名单、Pi ACK 校验和任务详情 pending/失败路径；`get_entries`、RPC bash 仍保持各自登记状态，不因队列策略接入而扩大范围。

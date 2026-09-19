@@ -10,6 +10,7 @@ export type PiCommand =
   | { type: 'set_thinking_level'; level: string }
   | { type: 'set_auto_compaction'; enabled: boolean }
   | { type: 'set_auto_retry'; enabled: boolean }
+  | { type: 'abort_retry' }
   | { type: 'set_steering_mode'; mode: 'all' | 'one-at-a-time' }
   | { type: 'set_follow_up_mode'; mode: 'all' | 'one-at-a-time' }
   | { type: 'compact'; customInstructions?: string }
@@ -31,7 +32,7 @@ export interface PiResponseData {
   prompt: unknown;
   abort: unknown;
   set_session_name: unknown;
-  fork: { text: string; cancelled: boolean }; clone: { cancelled: boolean }; switch_session: { cancelled: boolean }; set_model: unknown; set_thinking_level: unknown; set_auto_compaction: unknown; set_auto_retry: unknown; set_steering_mode: unknown; set_follow_up_mode: unknown; compact: unknown; export_html: { path: string };
+  fork: { text: string; cancelled: boolean }; clone: { cancelled: boolean }; switch_session: { cancelled: boolean }; set_model: unknown; set_thinking_level: unknown; set_auto_compaction: unknown; set_auto_retry: unknown; abort_retry: unknown; set_steering_mode: unknown; set_follow_up_mode: unknown; compact: unknown; export_html: { path: string };
 }
 export interface PiModel { provider: string; id: string; name?: string; reasoning?: boolean }
 
@@ -55,7 +56,7 @@ function validData<C extends PiCommand['type']>(command: C, data: unknown): data
     case 'clone': return isRecord(data) && typeof data.cancelled === 'boolean';
     case 'switch_session': return isRecord(data) && typeof data.cancelled === 'boolean';
     case 'export_html': return isRecord(data) && typeof data.path === 'string';
-    case 'prompt': case 'abort': case 'set_session_name': case 'set_model': case 'set_thinking_level': case 'set_auto_compaction': case 'set_auto_retry': case 'set_steering_mode': case 'set_follow_up_mode': case 'compact': return true;
+    case 'prompt': case 'abort': case 'set_session_name': case 'set_model': case 'set_thinking_level': case 'set_auto_compaction': case 'set_auto_retry': case 'abort_retry': case 'set_steering_mode': case 'set_follow_up_mode': case 'compact': return true;
   }
 }
 

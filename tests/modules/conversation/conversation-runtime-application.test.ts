@@ -31,6 +31,7 @@ function setup(observer?: (event: RuntimeNotification) => void) {
   const operations = {
     clearQueue: vi.fn<RuntimeOperationsPort['clearQueue']>().mockResolvedValue(empty),
     abort: vi.fn<RuntimeOperationsPort['abort']>().mockResolvedValue(),
+    abortRetry: vi.fn<NonNullable<RuntimeOperationsPort['abortRetry']>>().mockResolvedValue(),
     writeAnswer: vi.fn<RuntimeOperationsPort['writeAnswer']>().mockResolvedValue(),
   };
   const clock = new FakeClock();
@@ -65,6 +66,22 @@ describe('ConversationRuntimeApplication stop ordering', () => {
     await expect(runtime.stop(recovered)).rejects.toThrow('abort failed');
     expect(recovered).toHaveBeenCalledExactlyOnceWith(empty);
     expect(operations.clearQueue).toHaveBeenCalledTimes(2); expect(operations.abort).toHaveBeenCalledTimes(1);
+  });
+  it('cancels Pi retry backoff before aborting when the observed activity is retrying', async () => {
+    const { runtime, operations } = setup(); const order: string[] = [];
+    operations.abortRetry.mockImplementation(async () => { order.push('abort-retry'); });
+    operations.abort.mockImplementation(async () => { order.push('abort'); });
+    runtime.accept({ type: 'activity', activity: 'retrying' });
+    await runtime.stop(() => { order.push('recover'); });
+    expect(order).toEqual(['recover', 'abort-retry', 'abort']);
+    expect(operations.abortRetry).toHaveBeenCalledTimes(1);
+  });
+  it('continues ordinary abort when retry cancellation is unsupported or fails', async () => {
+    const { runtime, operations } = setup();
+    operations.abortRetry.mockRejectedValueOnce(new Error('unsupported'));
+    runtime.accept({ type: 'activity', activity: 'retrying' });
+    await expect(runtime.stop(vi.fn())).resolves.toBeUndefined();
+    expect(operations.abort).toHaveBeenCalledTimes(1);
   });
   it('concurrent and repeated stops keep independent recovery outlets without replay, locking or coalescing', async () => {
     const { runtime, operations } = setup(); const a = deferred<ConversationQueue>(); const b = deferred<ConversationQueue>();

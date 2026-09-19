@@ -104,6 +104,11 @@ export class ConversationRuntimeApplication {
     this.assertActive();
     publishRecovered(copyQueue(queue));
     this.assertActive();
+    if (this.underlyingActivity === 'retrying') {
+      try { await this.operations.abortRetry?.(); }
+      catch { /* Retry cancellation is best effort; ordinary abort remains authoritative. */ }
+    }
+    this.assertActive();
     await this.operations.abort();
     this.assertActive();
   }
