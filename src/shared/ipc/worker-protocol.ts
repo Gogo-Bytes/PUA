@@ -18,8 +18,11 @@ export type RpcCapabilityOperation =
   | { type: 'switch-session'; sessionPath: string }
   | { type: 'get-state' }
   | { type: 'get-session-stats' }
+  | { type: 'get-auto-settings' }
   | { type: 'set-model'; provider: string; modelId: string }
   | { type: 'set-thinking-level'; level: string }
+  | { type: 'set-auto-compaction'; enabled: boolean }
+  | { type: 'set-auto-retry'; enabled: boolean }
   | { type: 'compact'; customInstructions?: string }
   | { type: 'export-html'; outputPath: string };
 export type RpcOperation =

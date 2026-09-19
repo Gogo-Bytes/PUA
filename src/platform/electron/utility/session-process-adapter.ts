@@ -14,7 +14,7 @@ import type { ChatAttachment, SessionEvent, SessionActivity } from '../../../sha
 import type { CreateSessionOptions, RuntimeInfo } from '../../../shared/ipc/desktop-api.js';
 import type { ChatSessionIdentity, NativePiSessionIdentity } from '../../../shared/ipc/pi-session.js';
 import type { SessionProcessPort, SessionProcessEvent, SessionSnapshot } from '../../../modules/sessions/index.js';
-import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationRuntimePort, ConversationSessionStats, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
+import type { Attachment, AttachmentMetadata, AttachmentResourcesPort, AttachmentSourceId, AttachmentToken, ConversationAutoSettings, ConversationRuntimePort, ConversationSessionStats, ExtensionResponse, RuntimeSend } from '../../../modules/conversation/index.js';
 import type { ChatModel } from '../../../shared/ipc/conversation.js';
 
 type ProcessHost = Omit<UtilityProcess, 'postMessage'> & WorkerInputPort<RpcWorkerInput | PtyWorkerInput>;
@@ -366,7 +366,16 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
   async getAvailableThinkingLevels(id: string): Promise<string[]> { const result = await this.request<{ levels: string[] }>(this.resource(id), { type: 'get-available-thinking-levels' }); return result.levels; }
   async setThinkingLevel(id: string, level: string): Promise<void> { await this.request(this.resource(id), { type: 'set-thinking-level', level }); }
   async getSessionStats(id: string): Promise<ConversationSessionStats> { return sessionStats(await this.request<unknown>(this.resource(id), { type: 'get-session-stats' })); }
+  async getAutoSettings(id: string): Promise<ConversationAutoSettings> {
+    const state = await this.request<Record<string, unknown>>(this.resource(id), { type: 'get-auto-settings' });
+    // Pi exposes auto-compaction in get_state. Auto-retry has no read RPC in the
+    // supported protocol, whose documented default is enabled; the toggle still
+    // delegates the write to Pi and remains session-scoped in the UI.
+    return { autoCompaction: state.autoCompactionEnabled !== false, autoRetry: true };
+  }
   async compact(id: string, customInstructions?: string): Promise<void> { await this.request(this.resource(id), { type: 'compact', ...(customInstructions === undefined ? {} : { customInstructions }) }); }
+  async setAutoCompaction(id: string, enabled: boolean): Promise<void> { await this.request(this.resource(id), { type: 'set-auto-compaction', enabled }); }
+  async setAutoRetry(id: string, enabled: boolean): Promise<void> { await this.request(this.resource(id), { type: 'set-auto-retry', enabled }); }
 
   async stop(id: string): Promise<void> { await this.request(this.resource(id), { type: 'stop' }); }
   async respond(id: string, response: ExtensionResponse): Promise<void> { await this.request(this.resource(id), { type: 'extension-response', response }); }

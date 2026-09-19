@@ -7,6 +7,8 @@ export type PiCommand =
   | { type: 'switch_session'; sessionPath: string }
   | { type: 'set_model'; provider: string; modelId: string }
   | { type: 'set_thinking_level'; level: string }
+  | { type: 'set_auto_compaction'; enabled: boolean }
+  | { type: 'set_auto_retry'; enabled: boolean }
   | { type: 'compact'; customInstructions?: string }
   | { type: 'export_html'; outputPath: string }
   | { type: 'set_session_name'; name: string }
@@ -26,7 +28,7 @@ export interface PiResponseData {
   prompt: unknown;
   abort: unknown;
   set_session_name: unknown;
-  fork: { text: string; cancelled: boolean }; switch_session: { cancelled: boolean }; set_model: unknown; set_thinking_level: unknown; compact: unknown; export_html: { path: string };
+  fork: { text: string; cancelled: boolean }; switch_session: { cancelled: boolean }; set_model: unknown; set_thinking_level: unknown; set_auto_compaction: unknown; set_auto_retry: unknown; compact: unknown; export_html: { path: string };
 }
 export interface PiModel { provider: string; id: string; name?: string; reasoning?: boolean }
 
@@ -49,7 +51,7 @@ function validData<C extends PiCommand['type']>(command: C, data: unknown): data
     case 'fork': return isRecord(data) && typeof data.text === 'string' && typeof data.cancelled === 'boolean';
     case 'switch_session': return isRecord(data) && typeof data.cancelled === 'boolean';
     case 'export_html': return isRecord(data) && typeof data.path === 'string';
-    case 'prompt': case 'abort': case 'set_session_name': case 'set_model': case 'set_thinking_level': case 'compact': return true;
+    case 'prompt': case 'abort': case 'set_session_name': case 'set_model': case 'set_thinking_level': case 'set_auto_compaction': case 'set_auto_retry': case 'compact': return true;
   }
 }
 

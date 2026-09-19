@@ -1,7 +1,7 @@
 export { ConversationApplication } from './application/conversation-application.js';
 export { ConversationFailure } from './domain/conversation.js';
 export type { Attachment, AttachmentMetadata, AttachmentSourceId, AttachmentToken, ConversationFailureCode, Delivery, ExtensionResponse, RuntimeSend, SendIntent } from './domain/conversation.js';
-export type { AttachmentResourcesPort, ConversationModel, ConversationRuntimePort, ConversationSessionStats, DialogClockPort, RuntimeOperationsPort } from './ports.js';
+export type { AttachmentResourcesPort, ConversationAutoSettings, ConversationModel, ConversationRuntimePort, ConversationSessionStats, DialogClockPort, RuntimeOperationsPort } from './ports.js';
 export { ConversationRuntimeApplication } from './application/conversation-runtime-application.js';
 export { RuntimeFailure } from './domain/runtime.js';
 export type { AgentActivity, RuntimeActivity, ConversationQueue, ConversationWidget, ConversationDialog, RuntimeSeed, RuntimeView, RuntimeInput, RuntimeChange, RuntimeNotification, RuntimeFailureCode } from './domain/runtime.js';

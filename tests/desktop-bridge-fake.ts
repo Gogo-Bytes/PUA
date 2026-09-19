@@ -8,7 +8,17 @@ import { desktopVoidMethods, safeErrorMessage } from '../src/shared/ipc/desktop-
  */
 export function desktopBridgeFake(api: DesktopAPI): DesktopBridge {
   const invokes = Object.fromEntries((Object.keys(invokeChannels) as InvokeMethod[]).map(method => [method, (...args: unknown[]) => {
-    const pending = (api[method] as (...args: unknown[]) => Promise<unknown>).apply(api, args);
+    const implementation = api[method] as unknown;
+    // Older renderer fakes intentionally omit newly-added optional Pi controls.
+    // Keep those compatibility seams inert while preserving strict behavior for
+    // every pre-existing method.
+    const pending = typeof implementation === 'function'
+      ? (implementation as (...args: unknown[]) => Promise<unknown>).apply(api, args)
+      : method === 'getChatAutoSettings'
+        ? Promise.resolve({ autoCompaction: true, autoRetry: true })
+        : method === 'setChatAutoCompaction' || method === 'setChatAutoRetry'
+          ? Promise.resolve(undefined)
+          : Promise.reject(new Error(`Fake Desktop method missing: ${method}`));
     return pending.then(value => ({ ok: true, value: value === undefined && Object.prototype.hasOwnProperty.call(desktopVoidMethods, method) ? null : value }), error => {
       const message = safeErrorMessage(error);
       return { ok: false, error: message === undefined

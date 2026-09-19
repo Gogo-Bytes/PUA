@@ -14,9 +14,9 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
   forkChatSession: ['id', 'entry'],
   getChatAvailableModels: ['id'], getChatThinkingLevels: ['id'],
-  getChatSessionStats: ['id'],
+  getChatSessionStats: ['id'], getChatAutoSettings: ['id'],
   setChatModel: ['id', 'provider', 'model'], setChatThinkingLevel: ['id', 'high'],
-  compactChatSession: ['id', undefined],
+  compactChatSession: ['id', undefined], setChatAutoCompaction: ['id', true], setChatAutoRetry: ['id', false],
   sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
   write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
   openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
@@ -40,8 +40,11 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.capabilities.conversation.getAvailableModels).toHaveBeenCalledExactlyOnceWith('id');
     expect(h.capabilities.conversation.getAvailableThinkingLevels).toHaveBeenCalledExactlyOnceWith('id');
     expect(h.capabilities.conversation.getSessionStats).toHaveBeenCalledExactlyOnceWith('id');
+    expect(h.capabilities.conversation.getAutoSettings).toHaveBeenCalledExactlyOnceWith('id');
     expect(h.capabilities.conversation.setModel).toHaveBeenCalledExactlyOnceWith('id', 'provider', 'model');
     expect(h.capabilities.conversation.setThinkingLevel).toHaveBeenCalledExactlyOnceWith('id', 'high');
+    expect(h.capabilities.conversation.setAutoCompaction).toHaveBeenCalledExactlyOnceWith('id', true);
+    expect(h.capabilities.conversation.setAutoRetry).toHaveBeenCalledExactlyOnceWith('id', false);
     expect(h.capabilities.conversation.removeAttachment).toHaveBeenCalledExactlyOnceWith('id', 'token'); expect(h.capabilities.conversation.rename).toHaveBeenCalledExactlyOnceWith('id', 'title');
     expect(h.capabilities.terminal.write).toHaveBeenCalledExactlyOnceWith('id', '\0\x1b[31m\r\n'); expect(h.capabilities.terminal.resize).toHaveBeenCalledExactlyOnceWith('id', 100, 30); expect(h.capabilities.terminal.acknowledge).toHaveBeenCalledExactlyOnceWith('id', 1);
     expect(h.shell.openExternal).toHaveBeenCalledExactlyOnceWith('https://example.com/'); expect(h.shell.openPath).toHaveBeenCalledExactlyOnceWith('/fake/project');

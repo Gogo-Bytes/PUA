@@ -12,6 +12,7 @@ export interface ConversationSessionStats {
 import type { ConversationQueue } from './domain/runtime.js';
 import type { ConversationObject } from './domain/stream.js';
 export interface ConversationModel { provider: string; id: string; name?: string; reasoning?: boolean }
+export interface ConversationAutoSettings { autoCompaction: boolean; autoRetry: boolean }
 
 /** Worker operations acknowledge once; unknown acceptance must never be replayed. */
 export interface RuntimeOperationsPort {
@@ -31,7 +32,10 @@ export interface ConversationRuntimePort {
   setModel(id: string, provider: string, modelId: string): Promise<void>;
   setThinkingLevel(id: string, level: string): Promise<void>;
   getSessionStats(id: string): Promise<ConversationSessionStats>;
+  getAutoSettings(id: string): Promise<ConversationAutoSettings>;
   compact(id: string, customInstructions?: string): Promise<void>;
+  setAutoCompaction(id: string, enabled: boolean): Promise<void>;
+  setAutoRetry(id: string, enabled: boolean): Promise<void>;
   /** Capture authorized payloads and issue the request before returning; resolve only on acknowledgement. */
   send(id: string, command: RuntimeSend): Promise<void>;
   /** Delegates to the worker-scoped runtime's clear -> recovery -> abort use case. */

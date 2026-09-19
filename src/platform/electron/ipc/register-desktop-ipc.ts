@@ -82,7 +82,10 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('setChatModel', (id, provider, modelId) => requireCurrent().capabilities.conversation.setModel(id, provider, modelId));
   handle('setChatThinkingLevel', (id, level) => requireCurrent().capabilities.conversation.setThinkingLevel(id, level));
   handle('getChatSessionStats', id => requireCurrent().capabilities.conversation.getSessionStats(id));
+  handle('getChatAutoSettings', id => requireCurrent().capabilities.conversation.getAutoSettings(id));
   handle('compactChatSession', (id, customInstructions) => requireCurrent().capabilities.conversation.compact(id, customInstructions));
+  handle('setChatAutoCompaction', (id, enabled) => requireCurrent().capabilities.conversation.setAutoCompaction(id, enabled));
+  handle('setChatAutoRetry', (id, enabled) => requireCurrent().capabilities.conversation.setAutoRetry(id, enabled));
   listen('write', (id, data) => requireCurrent().capabilities.terminal.write(id, data));
   listen('resize', (id, cols, rows) => requireCurrent().capabilities.terminal.resize(id, cols, rows));
   listen('acknowledge', (id, size) => requireCurrent().capabilities.terminal.acknowledge(id, size));

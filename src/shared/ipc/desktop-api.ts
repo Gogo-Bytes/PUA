@@ -64,6 +64,8 @@ export interface HistorySearchResult {
   query: string;
 }
 
+export interface ChatAutoSettings { autoCompaction: boolean; autoRetry: boolean }
+
 export interface CreateSessionOptions {
   cwd: string;
   kind: SessionKind;
@@ -102,7 +104,10 @@ export interface DesktopAPI {
   setChatModel(id: string, provider: string, modelId: string): Promise<void>;
   setChatThinkingLevel(id: string, level: string): Promise<void>;
   getChatSessionStats(id: string): Promise<import('./conversation.js').ChatSessionStats>;
+  getChatAutoSettings(id: string): Promise<ChatAutoSettings>;
   compactChatSession(id: string, customInstructions?: string): Promise<void>;
+  setChatAutoCompaction(id: string, enabled: boolean): Promise<void>;
+  setChatAutoRetry(id: string, enabled: boolean): Promise<void>;
   write(id: string, data: string): void;
   resize(id: string, cols: number, rows: number): void;
   acknowledge(id: string, size: number): void;

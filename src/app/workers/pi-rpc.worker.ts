@@ -352,15 +352,17 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }
-  if (data.type === 'get-available-models' || data.type === 'get-available-thinking-levels' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats') {
+  if (data.type === 'get-available-models' || data.type === 'get-available-thinking-levels' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'set-auto-compaction' || data.type === 'set-auto-retry' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats' || data.type === 'get-auto-settings') {
     const command: PiCommand = data.type === 'get-available-models' ? { type: 'get_available_models' }
       : data.type === 'get-available-thinking-levels' ? { type: 'get_available_thinking_levels' }
       : data.type === 'compact' ? { type: 'compact', ...(data.customInstructions === undefined ? {} : { customInstructions: data.customInstructions }) }
       : data.type === 'set-model' ? { type: 'set_model', provider: data.provider, modelId: data.modelId }
       : data.type === 'set-thinking-level' ? { type: 'set_thinking_level', level: data.level }
+      : data.type === 'set-auto-compaction' ? { type: 'set_auto_compaction', enabled: data.enabled }
+      : data.type === 'set-auto-retry' ? { type: 'set_auto_retry', enabled: data.enabled }
       : data.type === 'switch-session' ? { type: 'switch_session', sessionPath: data.sessionPath }
       : data.type === 'export-html' ? { type: 'export_html', outputPath: data.outputPath }
-      : { type: data.type.replaceAll('-', '_') as never };
+      : { type: (data.type === 'get-auto-settings' ? 'get_state' : data.type.replaceAll('-', '_')) as never };
     void send(command).then(result => { if (!closing) post({ type: 'response', requestId: data.requestId, success: true, data: result }); }).catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }

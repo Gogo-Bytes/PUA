@@ -17,7 +17,10 @@ export class ConversationApplication {
   setModel(id: string, provider: string, modelId: string): Promise<void> { this.current(id); return this.runtime.setModel(id, provider, modelId); }
   setThinkingLevel(id: string, level: string): Promise<void> { this.current(id); return this.runtime.setThinkingLevel(id, level); }
   getSessionStats(id: string) { this.current(id); return this.runtime.getSessionStats(id); }
+  getAutoSettings(id: string) { this.current(id); return this.runtime.getAutoSettings(id); }
   compact(id: string, customInstructions?: string): Promise<void> { this.current(id, 'send'); return this.runtime.compact(id, customInstructions); }
+  setAutoCompaction(id: string, enabled: boolean): Promise<void> { this.current(id); return this.runtime.setAutoCompaction(id, enabled); }
+  setAutoRetry(id: string, enabled: boolean): Promise<void> { this.current(id); return this.runtime.setAutoRetry(id, enabled); }
   private readonly contexts = new Map<string, OperationContext>();
   constructor(private readonly runtime: ConversationRuntimePort, private readonly resources: AttachmentResourcesPort) {}
 
