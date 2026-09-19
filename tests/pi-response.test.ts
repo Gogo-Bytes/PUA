@@ -15,7 +15,7 @@ describe('Pi capability response validation', () => {
     expect(parsePiResponse('export_html', { type: 'response', command: 'export_html', success: true, data: { path: '/tmp/session.html' } })).toEqual({ path: '/tmp/session.html' });
   });
 
-  it.each(['set_steering_mode', 'set_follow_up_mode', 'abort_retry'] as const)('accepts successful %s acknowledgements without assuming response data', command => {
+  it.each(['set_steering_mode', 'set_follow_up_mode', 'abort_retry', 'abort_bash'] as const)('accepts successful %s acknowledgements without assuming response data', command => {
     expect(parsePiResponse(command, { type: 'response', command, success: true })).toBeUndefined();
   });
 

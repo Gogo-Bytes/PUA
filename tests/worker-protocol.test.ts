@@ -43,6 +43,7 @@ describe('worker-protocol input capability parsers', () => {
     { type: 'set-model', requestId: 'r', provider: 'openai', modelId: 'gpt' }, { type: 'set-thinking-level', requestId: 'r', level: 'high' },
     { type: 'set-steering-mode', requestId: 'r', mode: 'one-at-a-time' }, { type: 'set-follow-up-mode', requestId: 'r', mode: 'all' },
     { type: 'abort-retry', requestId: 'r' },
+    { type: 'abort-bash', requestId: 'r' },
     { type: 'compact', requestId: 'r' }, { type: 'compact', requestId: 'r', customInstructions: 'keep tests' },
     { type: 'export-html', requestId: 'r', outputPath: '/tmp/out.html' },
   ])('accepts and rebuilds RPC $type', message => {

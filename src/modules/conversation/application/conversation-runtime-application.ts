@@ -104,6 +104,10 @@ export class ConversationRuntimeApplication {
     this.assertActive();
     publishRecovered(copyQueue(queue));
     this.assertActive();
+    if (this.underlyingActivity === 'responding') {
+      try { await this.operations.abortBash?.(); }
+      catch { /* Bash cancellation is best effort; ordinary abort remains authoritative. */ }
+    }
     if (this.underlyingActivity === 'retrying') {
       try { await this.operations.abortRetry?.(); }
       catch { /* Retry cancellation is best effort; ordinary abort remains authoritative. */ }

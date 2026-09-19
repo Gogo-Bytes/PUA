@@ -44,7 +44,7 @@
 | PI-RPC-19 | 队列策略切换 | Pi 0.85.1 `set_steering_mode` / `set_follow_up_mode`，`get_state` 返回 `steeringMode` / `followUpMode` | 已接入（边界明确） | 任务详情提供引导队列与后续队列策略；只发送 Pi 白名单 RPC，读取缺失字段时兼容回退为逐条处理 |
 | PI-RPC-20 | 取消自动重试 | Pi 0.85.1 `abort_retry`；成功 ACK 无 data | 已接入（兼容边界） | 仅当当前活动为 retrying 时由停止流程调用；1.5 秒短超时后继续普通 abort，兼容旧版或不响应的 Pi |
 | PI-RPC-21 | 增量历史条目 | Pi 0.85.1 `get_entries(since?)` | 待接入 | 仅用于恢复/重连增量同步；不在 renderer 解析 JSONL，不替换现有安全快照路径 |
-| PI-RPC-22 | RPC bash 与取消 | Pi 0.85.1 `bash` / `abort_bash` | 待讨论 | 受本地安全、终端兼容与已有 Pi 工具边界影响；不新增任意 shell IPC，待单独产品决策 |
+| PI-RPC-22 | RPC bash 与取消 | Pi 0.85.1 `bash` / `abort_bash` | 待讨论（取消已接入） | `abort_bash` 仅作为处于 responding 状态时的停止前最佳努力取消，不新增用户直接执行命令入口；`bash` GUI 入口仍待产品决策 |
 
 ## 每项能力的完成条件
 
@@ -60,7 +60,7 @@
 
 从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
 
-当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、clone、模型/Thinking 查询与切换、compact、自动策略设置、队列策略设置、重试取消和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、`export_html`、`bash` 和 `abort_bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
+当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、clone、模型/Thinking 查询与切换、compact、自动策略设置、队列策略设置、重试取消、bash 取消和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、`export_html` 和用户主动 `bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
 
 ### 已提取的参数契约（Pi 0.85.1）
 

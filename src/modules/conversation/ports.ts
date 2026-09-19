@@ -21,6 +21,8 @@ export interface RuntimeOperationsPort {
   abort(): Promise<void>;
   /** Best-effort cancellation of Pi's retry backoff; unsupported runtimes are ignored by the worker. */
   abortRetry?(): Promise<void>;
+  /** Best-effort cancellation of an active Pi bash tool before ordinary abort. */
+  abortBash?(): Promise<void>;
   writeAnswer(response: ExtensionResponse): Promise<void>;
 }
 export interface DialogClockPort {

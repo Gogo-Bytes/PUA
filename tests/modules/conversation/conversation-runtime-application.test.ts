@@ -32,6 +32,7 @@ function setup(observer?: (event: RuntimeNotification) => void) {
     clearQueue: vi.fn<RuntimeOperationsPort['clearQueue']>().mockResolvedValue(empty),
     abort: vi.fn<RuntimeOperationsPort['abort']>().mockResolvedValue(),
     abortRetry: vi.fn<NonNullable<RuntimeOperationsPort['abortRetry']>>().mockResolvedValue(),
+    abortBash: vi.fn<NonNullable<RuntimeOperationsPort['abortBash']>>().mockResolvedValue(),
     writeAnswer: vi.fn<RuntimeOperationsPort['writeAnswer']>().mockResolvedValue(),
   };
   const clock = new FakeClock();
@@ -75,6 +76,15 @@ describe('ConversationRuntimeApplication stop ordering', () => {
     await runtime.stop(() => { order.push('recover'); });
     expect(order).toEqual(['recover', 'abort-retry', 'abort']);
     expect(operations.abortRetry).toHaveBeenCalledTimes(1);
+  });
+  it('best-effort cancels an active Pi bash tool before ordinary abort', async () => {
+    const { runtime, operations } = setup(); const order: string[] = [];
+    operations.abortBash.mockImplementation(async () => { order.push('abort-bash'); });
+    operations.abort.mockImplementation(async () => { order.push('abort'); });
+    runtime.accept({ type: 'activity', activity: 'responding' });
+    await runtime.stop(() => { order.push('recover'); });
+    expect(order).toEqual(['recover', 'abort-bash', 'abort']);
+    expect(operations.abortBash).toHaveBeenCalledTimes(1);
   });
   it('continues ordinary abort when retry cancellation is unsupported or fails', async () => {
     const { runtime, operations } = setup();
