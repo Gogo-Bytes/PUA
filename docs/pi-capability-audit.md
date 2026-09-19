@@ -41,6 +41,10 @@
 | PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
 | PI-RPC-17 | 自动上下文压缩与自动重试开关 | Pi 0.85.1 `set_auto_compaction` / `set_auto_retry` RPC，`docs/rpc.md` 436–461；改变运行中的失败恢复与上下文策略 | 已接入（边界明确） | 任务详情提供受控开关；读取 `autoCompaction` 使用 Pi `get_state`，`autoRetry` 当前按 Pi 默认值 `true` 初始化（Pi RPC 未提供对应读取字段），只有用户显式切换才发送写 RPC |
 | PI-RPC-18 | `clone` 当前会话为新 session 文件 | Pi 0.85.1 RPC `clone` 与 Sessions 文档 `/clone`；复制当前活动分支并创建新的 Pi session identity | 已接入（边界明确） | 任务详情执行 Pi 原生 clone；通过短生命周期探针会话承载命令，成功后创建同项目的新 PUA 任务，继承 cwd/活动分支语义，标题默认为“原任务名 · 副本”，与消息级 Fork 不混用 |
+| PI-RPC-19 | 队列策略切换 | Pi 0.85.1 `set_steering_mode` / `set_follow_up_mode` | 待接入 | 登记为 Pi 原生能力；后续在不改变 prompt/steer/follow-up 语义的前提下增加任务级入口与读取字段 |
+| PI-RPC-20 | 取消自动重试 | Pi 0.85.1 `abort_retry` | 待接入 | 停止运行流程需在协议确认后补充重试延迟取消，不把普通 `abort` 猜测为等价行为 |
+| PI-RPC-21 | 增量历史条目 | Pi 0.85.1 `get_entries(since?)` | 待接入 | 仅用于恢复/重连增量同步；不在 renderer 解析 JSONL，不替换现有安全快照路径 |
+| PI-RPC-22 | RPC bash 与取消 | Pi 0.85.1 `bash` / `abort_bash` | 待讨论 | 受本地安全、终端兼容与已有 Pi 工具边界影响；不新增任意 shell IPC，待单独产品决策 |
 
 ## 每项能力的完成条件
 
@@ -54,7 +58,7 @@
 
 从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
 
-当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、clone、模型/Thinking 查询与切换、compact、自动策略设置和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、`export_html`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
+当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、clone、模型/Thinking 查询与切换、compact、自动策略设置和部分会话查询；明确协议缺口仍包括 `set_steering_mode`、`set_follow_up_mode`、`abort_retry`、`switch_session`、`get_entries`、`export_html`、`bash` 和 `abort_bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
 
 ### 已提取的参数契约（Pi 0.85.1）
 
