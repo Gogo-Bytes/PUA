@@ -15,7 +15,8 @@ describe('Pi capability registry', () => {
     for (const id of ['conversation.stream', 'conversation.queue', 'conversation.compact', 'conversation.retry', 'conversation.retryAbort', 'conversation.stats', 'session.fork', 'session.tree', 'session.clone', 'session.entries', 'session.rename', 'model.list', 'model.select', 'thinking.select', 'resources.skills', 'resources.promptTemplates', 'extensions.ui'] as const) {
       expect(piCapabilities.find(item => item.id === id)?.status, id).toBe('integrated');
     }
-    expect(piCapabilities.find(item => item.id === 'session.switch')?.status).toBe('needs-runtime-verification');
+    expect(piCapabilities.find(item => item.id === 'session.resume')?.status).toBe('verified-not-exposed');
+    expect(piCapabilities.find(item => item.id === 'session.switch')?.status).toBe('verified-not-exposed');
     expect(piCapabilities.find(item => item.id === 'session.bash')?.status).toBe('product-discussion');
     expect(piCapabilities.find(item => item.id === 'session.export')?.status).toBe('product-discussion');
   });

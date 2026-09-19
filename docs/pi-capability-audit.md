@@ -2,7 +2,7 @@
 
 基线：仓库记录的 Pi 0.85.1 RPC 接入（见 `docs/native-chat-design.md`）。本表不是对 Pi 未公开能力的推断；升级 Pi 后重新核验。
 
-状态含义：已接入（PUA 已有完整路径）；待接入（Pi 证据明确，PUA 尚未提供入口）；待验证（代码有迹象但需要运行验证）；待讨论（能力或交互会改变产品决策）。
+状态含义：已接入（PUA 已有完整路径）；待接入（Pi 证据明确，PUA 尚未提供入口）；待验证（代码有迹象但需要运行验证）；已核验但未暴露（运行时已确认，当前因任务身份边界不提供独立入口）；待讨论（能力或交互会改变产品决策）。
 
 ## 已确认产品决策（2026-09-14）
 
@@ -32,7 +32,7 @@
 | PI-RPC-07 | session name | rename command、session-info | 已接入 | 任务标题编辑与自动更新 |
 | PI-RPC-08 | extension UI select/confirm/input/editor | Extension UI schema、Dialog | 已接入 | 任务上下文内等待态、焦点恢复 |
 | PI-RPC-09 | extension UI notify/status/widget/title/editor text | runtime widgets/statuses | 已接入 | 全局通知中心与任务状态摘要 |
-| PI-RPC-10 | `--resume` 历史选择器 | Pi 0.85.1 CLI `--resume, -r`；当前 `NewSessionDialog` 仅允许兼容终端使用 `startMode=resume`，主进程会原样追加 `--resume` | 部分接入 | 兼容终端入口可进入 Pi 原生历史选择器；RPC 原生对话使用已验证的持久化 identity，不伪造选择器 |
+| PI-RPC-10 | `--resume` 历史选择器 | Pi 0.85.1 CLI `--resume, -r`；当前 `NewSessionDialog` 仅允许兼容终端使用 `startMode=resume`，主进程会原样追加 `--resume` | 部分接入（运行时已核验） | 兼容终端入口可进入 Pi 原生历史选择器；RPC 原生对话使用已验证的持久化 identity，不伪造选择器 |
 | PI-RPC-11 | fork / session tree / 分支历史 | Pi 0.85.1 rpc-client 明确发送 `fork`、`get_fork_messages`、`get_tree`；SessionManager 实现树遍历与 fork | 已接入（边界明确） | 消息级 Fork、用户 entry 白名单、侧栏入口与 `agent_settled` 后实时树元数据刷新已接入；不把 `entryId` 冒充 PUA Session id |
 | PI-RPC-12 | 自定义 skill / prompt template 管理 | Pi CLI runtime 解析 `--skills`、`--prompt-templates`，resource loader 可加载 | 部分接入 | `@` Skill tooltip、命令面板和项目启动前资源/信任检查已接入；资源实际执行仍由 Pi 持有 |
 | PI-RPC-13 | 自定义 extension command 与 custom UI | Pi extensions 文档确认 `registerCommand` 在 RPC 可通过 `get_commands` 暴露；`ctx.ui.custom()`、自定义 renderer/editor 依赖 TUI，在 RPC 中 `custom()` 返回 `undefined`（`docs/extensions.md` 970、2933） | 部分接入（边界明确） | RPC 命令继续进入命令面板；select/confirm/input/editor/notify/status/widget/title/editor text 已接入；TUI custom renderer/editor 继续由兼容终端承载，不伪造等价 DOM |
@@ -54,13 +54,13 @@
 
 当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新、原生 `compact`、自动策略开关、队列策略、`abort_retry`、原生 Clone、`get_session_stats` 和 session identity 恢复路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree、skills、prompt templates、HTML export 与 session stats 能力。usage 已按稳定 DTO 接入并做主进程边界校验。机器可读的 `src/shared/ipc/pi-capabilities.ts` 已同步这些已接入状态；HTML export 保持产品不纳入。`--no-session` 明确保留为 Pi 原生内存能力，不进入 durable task index。
 
-本轮本机 Pi RPC 核验（2026-09-19，`pi --mode rpc --offline --no-extensions --no-skills --no-prompt-templates`，临时 `--session-dir`）确认：`get_state` 返回稳定的 `sessionFile/sessionId/steeringMode/followUpMode`；`set_steering_mode`、`set_follow_up_mode`、`abort_retry` 返回无 data 的成功 ACK；`get_entries` 返回 `{ entries, leafId }`；对当前 `sessionFile` 调用 `switch_session` 返回 `{ cancelled: false }`。PUA 暂不把 `get_entries` 的原始 `SessionEntry` 直接穿透到 renderer，也不把 `switch_session` 冒充任务切换；两项继续等待安全 DTO/任务身份边界的独立接入设计。
+本轮本机 Pi RPC 核验（2026-09-19，`pi --mode rpc --offline --no-extensions --no-skills --no-prompt-templates`，临时 `--session-dir`）确认：`get_state` 返回稳定的 `sessionFile/sessionId/steeringMode/followUpMode`；`set_steering_mode`、`set_follow_up_mode`、`abort_retry` 返回无 data 的成功 ACK；`get_entries` 返回 `{ entries, leafId }`；对当前 `sessionFile` 调用 `switch_session` 返回 `{ cancelled: false }`。`get_entries` 已通过安全 DTO 接入树元数据；`switch_session` 不冒充任务切换，仍由每个 PUA 任务的独立 Pi identity/进程负责恢复，因此登记为“已核验但未暴露”。
 
 ## Pi 0.85.1 RPC 命令映射（静态核验）
 
 从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
 
-当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、clone、模型/Thinking 查询与切换、compact、自动策略设置、队列策略设置、重试取消、bash 取消、增量条目查询和部分会话查询；明确协议缺口仍包括 `switch_session`、`export_html` 和用户主动 `bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
+当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、clone、模型/Thinking 查询与切换、compact、自动策略设置、队列策略设置、重试取消、bash 取消、增量条目查询和部分会话查询；`switch_session` 已完成运行时核验但不作为跨任务入口，明确的产品缺口仍包括 `export_html` 和用户主动 `bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
 
 ### 已提取的参数契约（Pi 0.85.1）
 

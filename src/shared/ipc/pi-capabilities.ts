@@ -9,7 +9,7 @@ export type PiCapabilityId =
 export interface PiCapabilityRecord {
   id: PiCapabilityId;
   rpcCommands: readonly string[];
-  status: 'integrated' | 'protocol-ready' | 'needs-runtime-verification' | 'product-discussion';
+  status: 'integrated' | 'protocol-ready' | 'needs-runtime-verification' | 'verified-not-exposed' | 'product-discussion';
 }
 
 export const piCapabilities: readonly PiCapabilityRecord[] = [
@@ -20,11 +20,11 @@ export const piCapabilities: readonly PiCapabilityRecord[] = [
   { id: 'conversation.retry', rpcCommands: ['set_auto_retry'], status: 'integrated' },
   { id: 'conversation.retryAbort', rpcCommands: ['abort_retry'], status: 'integrated' },
   { id: 'conversation.stats', rpcCommands: ['get_session_stats'], status: 'integrated' },
-  { id: 'session.resume', rpcCommands: ['new_session', 'switch_session'], status: 'needs-runtime-verification' },
+  { id: 'session.resume', rpcCommands: ['new_session', 'switch_session'], status: 'verified-not-exposed' },
   { id: 'session.fork', rpcCommands: ['fork', 'get_fork_messages'], status: 'integrated' },
   { id: 'session.tree', rpcCommands: ['get_tree'], status: 'integrated' },
   { id: 'session.clone', rpcCommands: ['clone'], status: 'integrated' },
-  { id: 'session.switch', rpcCommands: ['switch_session'], status: 'needs-runtime-verification' },
+  { id: 'session.switch', rpcCommands: ['switch_session'], status: 'verified-not-exposed' },
   { id: 'session.entries', rpcCommands: ['get_entries'], status: 'integrated' },
   { id: 'session.bash', rpcCommands: ['bash', 'abort_bash'], status: 'product-discussion' },
   { id: 'session.rename', rpcCommands: ['set_session_name'], status: 'integrated' },
