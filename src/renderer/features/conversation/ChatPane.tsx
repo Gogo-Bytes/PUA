@@ -223,7 +223,7 @@ function SessionStatsDialog({ stats, onClose }: { stats: ChatSessionStats; onClo
 }
 
 function TreeNodes({ nodes, onFork, depth = 0 }: { nodes: readonly import('../../../shared/ipc/conversation').ChatTreeNode[]; onFork(entryId: string): void; depth?: number }) {
-  return <ul style={{ marginLeft: depth * 12 }}>{nodes.map(node => <li key={node.entryId}>{node.forkable === false ? <span className="chat-tree-label">{node.label || node.entryId}</span> : <Button variant="ghost" onClick={() => onFork(node.entryId)} title="从此历史节点创建分支">↗ {node.label || node.entryId}</Button>}{node.children.length ? <TreeNodes nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}</li>)}</ul>;
+  return <ul style={{ marginLeft: depth * 12 }}>{nodes.map(node => <li key={node.entryId}>{node.forkable === false ? <span className="chat-tree-label" aria-current={node.active ? 'true' : undefined} style={node.active ? { fontWeight: 600 } : undefined}>{node.label || node.entryId}</span> : <Button variant="ghost" aria-current={node.active ? 'true' : undefined} onClick={() => onFork(node.entryId)} title={node.active ? '当前活动分支；从此历史节点创建分支' : '从此历史节点创建分支'}>↗ {node.label || node.entryId}{node.active ? ' · 当前' : ''}</Button>}{node.children.length ? <TreeNodes nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}</li>)}</ul>;
 }
 
 const MessageView = memo(function MessageView({ message, onFork }: { message: ChatMessage; onFork(entryId: string): void }) {

@@ -37,7 +37,7 @@ const sessionStats = (v: unknown) => {
 const arrayOf = (v: unknown, guard: (v: unknown) => boolean) => Array.isArray(v) && Array.from(v).every(guard);
 const empty = (v: unknown) => v === null;
 const picker = (v: unknown) => v === null || text(v);
-const chatTree = (v: unknown, depth = 0): boolean => depth < 64 && arrayOf(v, node => record(node) && text(node.entryId) && optional(node.label, text) && optional(node.forkable, bool) && chatTree(node.children, depth + 1));
+const chatTree = (v: unknown, depth = 0): boolean => depth < 64 && arrayOf(v, node => record(node) && text(node.entryId) && optional(node.label, text) && optional(node.forkable, bool) && optional(node.active, bool) && chatTree(node.children, depth + 1));
 
 /** Exhaustive method-specific outer DTO checks; no cloning or recursive transcript schema. */
 export const desktopValueGuards = {

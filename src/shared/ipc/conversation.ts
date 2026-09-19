@@ -69,6 +69,8 @@ export interface ChatTreeNode {
   label?: string;
   /** Pi's native fork command accepts user message entries only. */
   forkable?: boolean;
+  /** Pi's current leaf entry; only one node in a tree can be active. */
+  active?: boolean;
   children: ChatTreeNode[];
 }
 

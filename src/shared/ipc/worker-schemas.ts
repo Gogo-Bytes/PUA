@@ -14,7 +14,7 @@ const oneOf = (value: unknown, choices: readonly string[]) => text(value) && cho
 const activity = (value: unknown) => oneOf(value, ['idle', 'responding', 'compacting', 'retrying', 'waiting-input']);
 const optional = (value: unknown, check: (value: unknown) => boolean) => value === undefined || check(value);
 const queue = (value: unknown) => record(value) && strings(value.steering) && strings(value.followUp);
-const tree = (value: unknown, depth = 0): boolean => depth < 64 && Array.isArray(value) && value.every(item => record(item) && text(item.entryId) && optional(item.label, text) && optional(item.forkable, value => typeof value === 'boolean') && tree(item.children, depth + 1));
+const tree = (value: unknown, depth = 0): boolean => depth < 64 && Array.isArray(value) && value.every(item => record(item) && text(item.entryId) && optional(item.label, text) && optional(item.forkable, value => typeof value === 'boolean') && optional(item.active, value => typeof value === 'boolean') && tree(item.children, depth + 1));
 
 export type WorkerParse<T> = { ok: true; message: T } | { ok: false; requestId?: string; error: string };
 /** Correlation is usable even when a request/response body is malformed. Never creates pending work. */

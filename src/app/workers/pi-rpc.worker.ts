@@ -57,14 +57,14 @@ function commandsDTO(value: unknown): ChatCommand[] {
   return value.flatMap(item => isRecord(item) && typeof item.name === 'string' && (item.source === 'extension' || item.source === 'prompt' || item.source === 'skill')
     ? [{ name: item.name, description: typeof item.description === 'string' ? item.description : undefined, source: item.source }] : []);
 }
-function treeDTO(value: unknown): ChatTreeNode[] {
+function treeDTO(value: unknown, activeEntryId?: string): ChatTreeNode[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap(item => {
     if (!isRecord(item) || !isRecord(item.entry) || typeof item.entry.id !== 'string') return [];
     const entry = item.entry;
     const entryId = entry.id as string;
     const forkable = entry.type === 'message' && isRecord(entry.message) && entry.message.role === 'user';
-    return [{ entryId, label: typeof item.label === 'string' ? item.label : undefined, forkable, children: treeDTO(item.children) }];
+    return [{ entryId, label: typeof item.label === 'string' ? item.label : undefined, forkable, active: entryId === activeEntryId, children: treeDTO(item.children, activeEntryId) }];
   });
 }
 function withForkEntries(messages: readonly ConversationMessage[], value: unknown): ConversationMessage[] {
@@ -229,7 +229,7 @@ async function refreshForkMetadata(): Promise<void> {
       isRecord(item) && typeof item.entryId === 'string' && typeof item.text === 'string'
         ? [{ entryId: item.entryId, text: item.text }] : []) : [];
     // Enrichment must never replace live transcript identities or reset stream/tool correlation.
-    event({ type: 'chat-fork-metadata', entries, sessionTree: treeDTO(treeValue.tree) });
+    event({ type: 'chat-fork-metadata', entries, sessionTree: treeDTO(treeValue.tree, typeof treeValue.leafId === 'string' ? treeValue.leafId : undefined) });
   } catch (error) {
     diagnostics.append(`Fork metadata refresh failed: ${String(error)}\n`);
   }
