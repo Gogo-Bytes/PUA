@@ -18,6 +18,6 @@ describe('Pi capability registry', () => {
     expect(piCapabilities.find(item => item.id === 'session.resume')?.status).toBe('verified-not-exposed');
     expect(piCapabilities.find(item => item.id === 'session.switch')?.status).toBe('verified-not-exposed');
     expect(piCapabilities.find(item => item.id === 'session.bash')?.status).toBe('product-discussion');
-    expect(piCapabilities.find(item => item.id === 'session.export')?.status).toBe('product-discussion');
+    expect(piCapabilities.find(item => item.id === 'session.export')?.status).toBe('verified-not-exposed');
   });
 });
