@@ -3,6 +3,7 @@ import { isRecord } from './chat-normalize.js';
 // Pi-only spellings and consumed payloads; never part of the utility/Desktop wire.
 export type PiCommand =
   | { type: 'get_state' | 'get_messages' | 'get_commands' | 'get_tree' | 'get_fork_messages' | 'get_session_stats' | 'get_available_models' | 'get_available_thinking_levels' | 'clear_queue' | 'abort' }
+  | { type: 'get_entries'; since?: string }
   | { type: 'fork'; entryId: string }
   | { type: 'clone' }
   | { type: 'switch_session'; sessionPath: string }
@@ -27,6 +28,7 @@ export interface PiResponseData {
   get_commands: { commands: unknown[] };
   get_tree: Record<string, unknown>;
   get_fork_messages: Record<string, unknown>;
+  get_entries: { entries: unknown[]; leafId: string | null };
   get_session_stats: Record<string, unknown>;
   clear_queue: { steering: string[]; followUp: string[] };
   // These commands consume only the ACK; extra data is deliberately not constrained.
@@ -52,6 +54,7 @@ function validData<C extends PiCommand['type']>(command: C, data: unknown): data
     case 'get_messages': return isRecord(data) && Array.isArray(data.messages);
     case 'get_commands': return isRecord(data) && Array.isArray(data.commands);
     case 'get_tree': case 'get_fork_messages': case 'get_session_stats': return isRecord(data);
+    case 'get_entries': return isRecord(data) && Array.isArray(data.entries) && (data.leafId === null || typeof data.leafId === 'string');
     case 'clear_queue': return isRecord(data) && stringArray(data.steering) && stringArray(data.followUp);
     case 'fork': return isRecord(data) && typeof data.text === 'string' && typeof data.cancelled === 'boolean';
     case 'clone': return isRecord(data) && typeof data.cancelled === 'boolean';

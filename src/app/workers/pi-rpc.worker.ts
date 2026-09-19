@@ -57,14 +57,35 @@ function commandsDTO(value: unknown): ChatCommand[] {
   return value.flatMap(item => isRecord(item) && typeof item.name === 'string' && (item.source === 'extension' || item.source === 'prompt' || item.source === 'skill')
     ? [{ name: item.name, description: typeof item.description === 'string' ? item.description : undefined, source: item.source }] : []);
 }
-function treeDTO(value: unknown, activeEntryId?: string): ChatTreeNode[] {
+function entryLabels(value: PiResponseData['get_entries']): Map<string, string> {
+  const labels = new Map<string, string>();
+  for (const item of value.entries) {
+    if (!isRecord(item) || typeof item.id !== 'string' || !isRecord(item.message) || item.message.role !== 'user') continue;
+    const content = item.message.content;
+    const text = typeof content === 'string' ? content : Array.isArray(content)
+      ? content.flatMap(block => isRecord(block) && typeof block.text === 'string' ? [block.text] : []).join('\n') : '';
+    const compact = text.replace(/\s+/g, ' ').trim();
+    if (compact) labels.set(item.id, compact.slice(0, 120));
+  }
+  return labels;
+}
+function treeNeedsEntryLabels(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  return value.some(item => {
+    if (!isRecord(item) || !isRecord(item.entry)) return false;
+    const entry = item.entry;
+    const forkable = entry.type === 'message' && isRecord(entry.message) && entry.message.role === 'user';
+    return (forkable && typeof item.label !== 'string') || treeNeedsEntryLabels(item.children);
+  });
+}
+function treeDTO(value: unknown, activeEntryId?: string, labels = new Map<string, string>()): ChatTreeNode[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap(item => {
     if (!isRecord(item) || !isRecord(item.entry) || typeof item.entry.id !== 'string') return [];
     const entry = item.entry;
     const entryId = entry.id as string;
     const forkable = entry.type === 'message' && isRecord(entry.message) && entry.message.role === 'user';
-    return [{ entryId, label: typeof item.label === 'string' ? item.label : undefined, forkable, active: entryId === activeEntryId, children: treeDTO(item.children, activeEntryId) }];
+    return [{ entryId, label: typeof item.label === 'string' ? item.label : labels.get(entryId), forkable, active: entryId === activeEntryId, children: treeDTO(item.children, activeEntryId, labels) }];
   });
 }
 function withForkEntries(messages: readonly ConversationMessage[], value: unknown): ConversationMessage[] {
@@ -224,12 +245,21 @@ async function refreshForkMetadata(): Promise<void> {
   const generation = ++forkMetadataGeneration;
   try {
     const [forkValue, treeValue] = await Promise.all([send({ type: 'get_fork_messages' }, 15_000), send({ type: 'get_tree' }, 15_000)]);
+    let labels = new Map<string, string>();
+    if (treeNeedsEntryLabels(treeValue.tree)) {
+      try {
+        labels = entryLabels(await send({ type: 'get_entries' }, 15_000));
+      } catch (error) {
+        // Older Pi versions may expose get_tree but not get_entries; tree labels remain optional.
+        diagnostics.append(`Entry label enrichment unavailable: ${String(error)}\n`);
+      }
+    }
     if (closing || generation !== forkMetadataGeneration) return;
     const entries = Array.isArray(forkValue.messages) ? forkValue.messages.flatMap(item =>
       isRecord(item) && typeof item.entryId === 'string' && typeof item.text === 'string'
         ? [{ entryId: item.entryId, text: item.text }] : []) : [];
     // Enrichment must never replace live transcript identities or reset stream/tool correlation.
-    event({ type: 'chat-fork-metadata', entries, sessionTree: treeDTO(treeValue.tree, typeof treeValue.leafId === 'string' ? treeValue.leafId : undefined) });
+    event({ type: 'chat-fork-metadata', entries, sessionTree: treeDTO(treeValue.tree, typeof treeValue.leafId === 'string' ? treeValue.leafId : undefined, labels) });
   } catch (error) {
     diagnostics.append(`Fork metadata refresh failed: ${String(error)}\n`);
   }
@@ -374,7 +404,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }
-  if (data.type === 'get-available-models' || data.type === 'get-available-thinking-levels' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'set-auto-compaction' || data.type === 'set-auto-retry' || data.type === 'abort-retry' || data.type === 'abort-bash' || data.type === 'set-steering-mode' || data.type === 'set-follow-up-mode' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats' || data.type === 'get-auto-settings') {
+  if (data.type === 'get-available-models' || data.type === 'get-available-thinking-levels' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'set-auto-compaction' || data.type === 'set-auto-retry' || data.type === 'abort-retry' || data.type === 'abort-bash' || data.type === 'set-steering-mode' || data.type === 'set-follow-up-mode' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-entries' || data.type === 'get-state' || data.type === 'get-session-stats' || data.type === 'get-auto-settings') {
     const command: PiCommand = data.type === 'get-available-models' ? { type: 'get_available_models' }
       : data.type === 'get-available-thinking-levels' ? { type: 'get_available_thinking_levels' }
       : data.type === 'compact' ? { type: 'compact', ...(data.customInstructions === undefined ? {} : { customInstructions: data.customInstructions }) }
@@ -388,6 +418,7 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       : data.type === 'set-follow-up-mode' ? { type: 'set_follow_up_mode', mode: data.mode }
       : data.type === 'switch-session' ? { type: 'switch_session', sessionPath: data.sessionPath }
       : data.type === 'export-html' ? { type: 'export_html', outputPath: data.outputPath }
+      : data.type === 'get-entries' ? { type: 'get_entries', ...(data.since === undefined ? {} : { since: data.since }) }
       : { type: (data.type === 'get-auto-settings' ? 'get_state' : data.type.replaceAll('-', '_')) as never };
     void send(command).then(result => { if (!closing) post({ type: 'response', requestId: data.requestId, success: true, data: result }); }).catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;

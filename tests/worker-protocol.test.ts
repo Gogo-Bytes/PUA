@@ -37,7 +37,7 @@ describe('worker-protocol input capability parsers', () => {
     { type: 'extension-response', requestId: 'r', response: { id: 'd', value: '' } },
     { type: 'extension-response', requestId: 'r', response: { id: 'd', confirmed: false } },
     { type: 'extension-response', requestId: 'r', response: { id: 'd', cancelled: true } },
-    { type: 'get-tree', requestId: 'r' }, { type: 'get-fork-messages', requestId: 'r' },
+    { type: 'get-tree', requestId: 'r' }, { type: 'get-fork-messages', requestId: 'r' }, { type: 'get-entries', requestId: 'r' }, { type: 'get-entries', requestId: 'r', since: 'entry-1' },
     { type: 'get-state', requestId: 'r' }, { type: 'get-session-stats', requestId: 'r' },
     { type: 'fork', requestId: 'r', entryId: 'e' }, { type: 'switch-session', requestId: 'r', sessionPath: '/tmp/s' },
     { type: 'set-model', requestId: 'r', provider: 'openai', modelId: 'gpt' }, { type: 'set-thinking-level', requestId: 'r', level: 'high' },
@@ -62,6 +62,7 @@ describe('worker-protocol input capability parsers', () => {
     { ...send, images: [{ data: 'aA==', mimeType: 1 }] }, { ...send, queuePreference: 'prompt' },
     { type: 'rename', requestId: 'r', name: 1 },
     { type: 'set-steering-mode', requestId: 'r', mode: 'prompt' }, { type: 'set-follow-up-mode', requestId: 'r', mode: null },
+    { type: 'get-entries', requestId: 'r', since: 1 },
   ])('rejects malformed or wrong-direction RPC %j', raw => { expect(parseRpcWorkerInput(raw).ok).toBe(false); });
   it.each([null, [], {}, send, { type: 'data', data: 'wrong direction' },
     { type: 'write', data: 1 }, { type: 'resize', cols: 1, rows: 24 }, { type: 'resize', cols: 80, rows: Infinity },

@@ -14,6 +14,7 @@ export type RpcCapabilityOperation =
   | { type: 'get-available-thinking-levels' }
   | { type: 'get-tree' }
   | { type: 'get-fork-messages' }
+  | { type: 'get-entries'; since?: string }
   | { type: 'fork'; entryId: string }
   | { type: 'clone' }
   | { type: 'switch-session'; sessionPath: string }

@@ -137,3 +137,9 @@ Pi 0.85.1 的本地 session 是 JSONL 树文件，消息 entry 里包含用户�
 - 任务详情在既有自动压缩/自动重试开关旁提供“引导队列策略”和“后续队列策略”，分别映射 Pi `set_steering_mode` 与 `set_follow_up_mode`，不改写 prompt、steer、follow-up 的投递语义。
 - 策略读取复用 Pi `get_state` 的 `steeringMode` / `followUpMode`；旧版本或缺失字段兼容回退为逐条处理，避免把未知状态误判为“一次处理全部”。
 - 新增能力经过 shared DTO、IPC 参数校验、worker 白名单、Pi ACK 校验和任务详情 pending/失败路径；`get_entries`、RPC bash 仍保持各自登记状态，不因队列策略接入而扩大范围。
+
+### 阶段 I：增量历史条目与分支标签（已接入）
+
+- worker 通过 Pi 原生 `get_entries(since?)` 读取会话条目，并只提取用户消息的有限长度文本作为分支树的可选标签；原始 SessionEntry、工具参数和内容块不会进入 renderer。
+- `get_entries` 走独立的 shared DTO、响应校验和 Pi 命令白名单；旧版 Pi 不支持或调用失败时，保留既有 `get_tree` / `get_fork_messages` 数据，树仍可用但不显示补充标签。
+- 该能力服务于恢复/重连后的树元数据可读性，不替换 transcript 快照、不创建新任务，也不改变 Pi 原生 Fork identity 语义。

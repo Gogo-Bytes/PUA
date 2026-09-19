@@ -5,6 +5,11 @@ describe('Pi capability response validation', () => {
   it.each(['get_tree', 'get_fork_messages', 'get_session_stats'] as const)('accepts structured %s data', command => {
     expect(parsePiResponse(command, { type: 'response', command, success: true, data: {} })).toEqual({});
   });
+  it('validates incremental session entries without exposing a loose payload contract', () => {
+    expect(parsePiResponse('get_entries', { type: 'response', command: 'get_entries', success: true, data: { entries: [{ id: 'e' }], leafId: null } })).toEqual({ entries: [{ id: 'e' }], leafId: null });
+    expect(parsePiResponse('get_entries', { type: 'response', command: 'get_entries', success: true, data: { entries: [], leafId: 'e' } })).toEqual({ entries: [], leafId: 'e' });
+    expect(() => parsePiResponse('get_entries', { type: 'response', command: 'get_entries', success: true, data: { entries: {}, leafId: null } })).toThrow(/protocol error/);
+  });
   it('validates available model identities before exposing them', () => {
     expect(parsePiResponse('get_available_models', { type: 'response', command: 'get_available_models', success: true, data: { models: [{ provider: 'openai', id: 'gpt', name: 'GPT' }] } })).toEqual({ models: [{ provider: 'openai', id: 'gpt', name: 'GPT' }] });
     expect(() => parsePiResponse('get_available_models', { type: 'response', command: 'get_available_models', success: true, data: { models: [{ provider: 'openai' }] } })).toThrow(/protocol error/);
