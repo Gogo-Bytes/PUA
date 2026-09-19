@@ -26,7 +26,7 @@ export const piCapabilities: readonly PiCapabilityRecord[] = [
   { id: 'session.clone', rpcCommands: ['clone'], status: 'integrated' },
   { id: 'session.switch', rpcCommands: ['switch_session'], status: 'verified-not-exposed' },
   { id: 'session.entries', rpcCommands: ['get_entries'], status: 'integrated' },
-  { id: 'session.bash', rpcCommands: ['bash', 'abort_bash'], status: 'product-discussion' },
+  { id: 'session.bash', rpcCommands: ['bash', 'abort_bash'], status: 'verified-not-exposed' },
   { id: 'session.rename', rpcCommands: ['set_session_name'], status: 'integrated' },
   { id: 'session.export', rpcCommands: ['export_html'], status: 'verified-not-exposed' },
   { id: 'model.list', rpcCommands: ['get_available_models'], status: 'integrated' },

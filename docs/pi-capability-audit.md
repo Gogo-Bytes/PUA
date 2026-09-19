@@ -11,6 +11,7 @@
 - 模型与 Thinking Level：提供 PUA 任务级切换入口。
 - Skills / Prompt Templates：采用 Codex 式 `@` 触发；输入时显示 tooltip 候选，用户可点击选择并插入引用。
 - Pi 特有能力：保留，完成能力说明后分别设计 PUA 入口。
+- RPC bash：保留 Pi 模型工具语义，不新增用户直接执行命令入口；停止流程可通过 `abort_bash` 最佳努力取消正在运行的 bash 工具。
 - 项目点击与历史创建：项目点击只创建本地未提交草稿；首次发送/开始工作时才调用 Pi 新会话并写入历史，避免重复点击产生空白历史。
 - 任务生命周期：关闭默认归档；详情设置可恢复或二次确认永久删除。当前永久删除先清理对应 Pi 会话文件，再移除 PUA 索引，失败时保留记录。
 - 归档自动清理：暂不启用；后续 7/30 天倒计时需要再次确认时区、提示、撤销窗口及 Pi 文件清理范围。
@@ -44,7 +45,7 @@
 | PI-RPC-19 | 队列策略切换 | Pi 0.85.1 `set_steering_mode` / `set_follow_up_mode`，`get_state` 返回 `steeringMode` / `followUpMode` | 已接入（边界明确） | 任务详情提供引导队列与后续队列策略；只发送 Pi 白名单 RPC，读取缺失字段时兼容回退为逐条处理 |
 | PI-RPC-20 | 取消自动重试 | Pi 0.85.1 `abort_retry`；成功 ACK 无 data | 已接入（兼容边界） | 仅当当前活动为 retrying 时由停止流程调用；1.5 秒短超时后继续普通 abort，兼容旧版或不响应的 Pi |
 | PI-RPC-21 | 增量历史条目 | Pi 0.85.1 `get_entries(since?)` | 已接入（边界明确） | worker 仅在会话树元数据刷新时读取并提取受限用户消息标签；`since` 已纳入白名单 DTO，原始 SessionEntry 不穿透 renderer，旧版不支持时安全回退到无标签树 |
-| PI-RPC-22 | RPC bash 与取消 | Pi 0.85.1 `bash` / `abort_bash` | 待讨论（取消已接入） | `abort_bash` 仅作为处于 responding 状态时的停止前最佳努力取消，不新增用户直接执行命令入口；`bash` GUI 入口仍待产品决策 |
+| PI-RPC-22 | RPC bash 与取消 | Pi 0.85.1 `bash` / `abort_bash` | 已接入（边界明确） | 保留模型工具调用语义；`abort_bash` 仅作为处于 responding 状态时的停止前最佳努力取消，不新增用户直接执行命令入口 |
 
 ## 每项能力的完成条件
 
