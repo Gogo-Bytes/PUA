@@ -1,6 +1,6 @@
 /** Capability inventory for the installed Pi RPC surface. Keep this explicit: it is not an arbitrary command escape hatch. */
 export type PiCapabilityId =
-  | 'conversation.stream' | 'conversation.queue' | 'conversation.compact' | 'conversation.stats'
+  | 'conversation.stream' | 'conversation.queue' | 'conversation.compact' | 'conversation.retry' | 'conversation.stats'
   | 'session.resume' | 'session.fork' | 'session.tree' | 'session.clone'
   | 'session.switch' | 'session.rename' | 'session.export'
   | 'model.list' | 'model.select' | 'thinking.select'
@@ -16,11 +16,12 @@ export const piCapabilities: readonly PiCapabilityRecord[] = [
   { id: 'conversation.stream', rpcCommands: ['prompt'], status: 'integrated' },
   { id: 'conversation.queue', rpcCommands: ['steer', 'follow_up', 'clear_queue'], status: 'integrated' },
   { id: 'conversation.compact', rpcCommands: ['compact', 'set_auto_compaction'], status: 'integrated' },
+  { id: 'conversation.retry', rpcCommands: ['set_auto_retry'], status: 'integrated' },
   { id: 'conversation.stats', rpcCommands: ['get_session_stats'], status: 'integrated' },
   { id: 'session.resume', rpcCommands: ['new_session', 'switch_session'], status: 'needs-runtime-verification' },
-  { id: 'session.fork', rpcCommands: ['fork', 'get_fork_messages'], status: 'protocol-ready' },
-  { id: 'session.tree', rpcCommands: ['get_tree'], status: 'protocol-ready' },
-  { id: 'session.clone', rpcCommands: ['clone'], status: 'needs-runtime-verification' },
+  { id: 'session.fork', rpcCommands: ['fork', 'get_fork_messages'], status: 'integrated' },
+  { id: 'session.tree', rpcCommands: ['get_tree'], status: 'integrated' },
+  { id: 'session.clone', rpcCommands: ['clone'], status: 'integrated' },
   { id: 'session.switch', rpcCommands: ['switch_session'], status: 'needs-runtime-verification' },
   { id: 'session.rename', rpcCommands: ['set_session_name'], status: 'integrated' },
   { id: 'session.export', rpcCommands: ['export_html'], status: 'product-discussion' },

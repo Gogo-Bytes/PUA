@@ -48,7 +48,7 @@
 
 ## 本轮核验结果
 
-当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新、原生 `compact`、`get_session_stats` 和 session identity 恢复路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree、skills、prompt templates、HTML export 与 session stats 能力。usage 已按稳定 DTO 接入并做主进程边界校验。`--no-session` 明确保留为 Pi 原生内存能力，不进入 durable task index。
+当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新、原生 `compact`、自动策略开关、原生 Clone、`get_session_stats` 和 session identity 恢复路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree、skills、prompt templates、HTML export 与 session stats 能力。usage 已按稳定 DTO 接入并做主进程边界校验。机器可读的 `src/shared/ipc/pi-capabilities.ts` 已同步这些已接入状态；`switch_session` 仍保持待运行核验，HTML export 保持产品不纳入。`--no-session` 明确保留为 Pi 原生内存能力，不进入 durable task index。
 
 ## Pi 0.85.1 RPC 命令映射（静态核验）
 

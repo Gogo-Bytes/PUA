@@ -50,7 +50,7 @@ try {
   assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'const ready = true;\n');
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/native-chat.png') });
 
-  if (!await window.getByRole('complementary', { name: '文件与 Git 检查区' }).count()) await window.getByRole('button', { name: '显示 检查器' }).click();
+  if (!await window.getByRole('complementary', { name: '文件与 Git 检查区' }).count()) await window.getByLabel('当前任务操作栏').getByRole('button', { name: '显示 检查器' }).click();
   await window.locator('.changed-files button').filter({ hasText: 'editor.ts' }).click();
   await window.getByRole('button', { name: '引用文件到草稿' }).click();
   assert((await window.getByRole('textbox', { name: '发送消息' }).inputValue()).includes('editor.ts'));
@@ -62,12 +62,14 @@ try {
   const chatInput = window.getByRole('textbox', { name: '发送消息' });
   await chatInput.press('Escape');
   assert(await chatInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal chat Escape focus');
-  const inspectorToggle = window.getByRole('button', { name: /检查器/ }).last();
+  const inspectorToggle = window.locator('.ui-workspace-toolbar button').filter({ hasText: '检查器' }).first();
+  await inspectorToggle.waitFor({ state: 'visible' });
   await inspectorToggle.click();
   await chatInput.press('Escape');
   assert.equal(await inspectorToggle.getAttribute('aria-expanded'), 'true', 'input Escape must not close inspector');
   await window.getByRole('button', { name: '关闭变更面板' }).press('Escape');
   assert.equal(await inspectorToggle.getAttribute('aria-expanded'), 'false');
+  await window.waitForFunction(() => [...document.querySelectorAll('button')].some(node => getComputedStyle(node).display !== 'none' && node.textContent?.includes('检查器') && node === document.activeElement));
   assert(await inspectorToggle.evaluate(node => node === document.activeElement), 'inspector Escape returns focus to toggle');
   await app.evaluate(({ BrowserWindow }, bounds) => BrowserWindow.getAllWindows()[0].setBounds(bounds), originalBounds);
 
@@ -174,7 +176,7 @@ try {
   assert(terminalOutput.includes('spaces;$(not-a-shell)'));
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1000, 800));
   await window.waitForFunction(() => window.innerWidth <= 1100);
-  assert.equal(await window.getByRole('button', { name: '显示 检查器' }).getAttribute('aria-expanded'), 'false');
+  assert.equal(await window.getByLabel('当前任务操作栏').getByRole('button', { name: '显示 检查器' }).getAttribute('aria-expanded'), 'false');
   const terminalInput = window.locator('.terminal-pane.active .xterm-helper-textarea');
   await terminalInput.press('Escape');
   assert(await terminalInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal real xterm Escape focus');

@@ -1,7 +1,11 @@
 /* Production supplies viewport allocation; shared components own appearance and panel fitting. */
 .workspace{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 .ui-provider .workspace>.ui-workspace{flex:1;min-height:0;display:flex;flex-direction:column}
-.ui-provider .workspace>.ui-workspace>.ui-workspace-toolbar{display:none}
+.ui-provider .workspace>.ui-workspace{position:relative}
+.ui-provider .workspace>.ui-workspace>.ui-workspace-toolbar{position:absolute;z-index:20;inset:0 auto auto 0;width:1px;height:1px;overflow:hidden;display:flex;opacity:0;pointer-events:none}
+.ui-provider .workspace>.ui-workspace:has(.ui-workspace-side[aria-hidden='true'])>.ui-workspace-toolbar{inset:8px 8px auto;width:auto;height:auto;overflow:visible;display:flex;opacity:1;justify-content:space-between;padding:0;border:0;pointer-events:none}
+.ui-provider .workspace>.ui-workspace:has(.ui-workspace-side[aria-hidden='true'])>.ui-workspace-toolbar>.ui-button{pointer-events:auto;box-shadow:var(--ui-shadow)}
+.ui-provider .workspace>.ui-workspace:has(.ui-workspace-side[aria-hidden='true'])>.ui-workspace-toolbar>.ui-meta{display:none}
 .ui-provider .workspace .ui-workspace-grid{flex:1;min-height:0}
 .ui-provider .workspace .ui-workspace-main{display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .ui-provider .workspace .ui-workspace-side{min-height:0;overflow:auto}

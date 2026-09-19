@@ -34,6 +34,7 @@ const list = () => screen.getByRole('dialog').querySelector('.command-list') as 
 const items = () => within(list()).queryAllByRole('button');
 const close = () => fireEvent.click(screen.getByRole('button', { name: '关闭对话框' }));
 const open = () => fireEvent.click(screen.getByRole('button', { name: /搜索与命令/ }));
+const inspectorToggle = () => screen.getAllByRole('button', { name: /(?:显示|收起) 检查器/ })[0]!;
 const selectProject = (path: string) => fireEvent.click(within(screen.getByRole('navigation', { name: '项目' })).getByTitle(path));
 const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) => {
   const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true, cancelable: true, ...init });
@@ -167,7 +168,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
   it.each(['chat', 'terminal'] as const)('Git %s reference preserves palette split, newline and narrow textarea focus without toggle focus', async kind => {
     await mount(kind); const draft = kind === 'chat' ? screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement : undefined;
     if (draft) fireEvent.change(draft, { target: { value: 'existing' } });
-    const toggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ }); fireEvent.click(await screen.findByRole('button', { name: 'a.ts M' })); await screen.findByRole('button', { name: '引用文件到草稿' });
+    const toggle = inspectorToggle(); fireEvent.click(await screen.findByRole('button', { name: 'a.ts M' })); await screen.findByRole('button', { name: '引用文件到草稿' });
     open(); filter('model'); const focus = vi.spyOn(toggle, 'focus'); fireEvent.click(screen.getByRole('button', { name: '引用文件到草稿' }));
     expect(toggle.getAttribute('aria-expanded')).toBe('true'); expect(focus).not.toHaveBeenCalled();
     const text = '请检查这个文件的变更：@"/one/a.ts" ';

@@ -11,9 +11,11 @@ describe('Pi capability registry', () => {
     }
   });
 
-  it('does not claim unsupported capabilities are integrated', () => {
-    for (const item of piCapabilities) {
-      if (item.status === 'integrated') expect(item.id).not.toBe('session.fork');
+  it('records the implemented Pi paths as integrated and leaves unresolved paths explicit', () => {
+    for (const id of ['conversation.stream', 'conversation.queue', 'conversation.compact', 'conversation.retry', 'conversation.stats', 'session.fork', 'session.tree', 'session.clone', 'session.rename', 'model.list', 'model.select', 'thinking.select', 'resources.skills', 'resources.promptTemplates', 'extensions.ui'] as const) {
+      expect(piCapabilities.find(item => item.id === id)?.status, id).toBe('integrated');
     }
+    expect(piCapabilities.find(item => item.id === 'session.switch')?.status).toBe('needs-runtime-verification');
+    expect(piCapabilities.find(item => item.id === 'session.export')?.status).toBe('product-discussion');
   });
 });

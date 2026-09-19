@@ -125,7 +125,7 @@ describe('production workspace navigation', () => {
   it('does not consume closed-inspector Escape or editable/IME/local-menu Escape while open', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
-    const draft = screen.getByRole('textbox', { name: '发送消息' }); const toggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
+    const draft = screen.getByRole('textbox', { name: '发送消息' }); const toggle = inspectorToggle();
     fireEvent.click(toggle); draft.focus(); fireEvent.keyDown(draft, { key: 'Escape' });
     expect(document.activeElement).toBe(draft); expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle); await screen.findByText('这个范围没有变更');
@@ -146,8 +146,8 @@ describe('production workspace navigation', () => {
     await waitFor(() => expect(document.activeElement).toBe(toggle));
     // Mounted background panes must not let their hidden suggestions block Escape.
     fireEvent.change(draft, { target: { value: '/rev' } }); await createSession();
-    fireEvent.click(screen.getByRole('button', { name: /(?:显示|收起) 检查器/ })); await screen.findByText('这个范围没有变更');
-    const currentToggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
+    fireEvent.click(inspectorToggle()); await screen.findByText('这个范围没有变更');
+    const currentToggle = inspectorToggle();
     fireEvent.keyDown(await screen.findByRole('button', { name: '关闭变更面板' }), { key: 'Escape' });
     await waitFor(() => expect(document.activeElement).toBe(currentToggle));
   });
@@ -183,10 +183,10 @@ describe('production workspace navigation', () => {
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension', description: 'Real extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
     const commands = screen.getByRole('button', { name: /搜索与命令/ }); commands.focus(); fireEvent.click(commands);
     fireEvent.click(screen.getByRole('button', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
-    const toggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
+    const toggle = inspectorToggle();
     await screen.findByText('这个范围没有变更'); expect(desktop.gitStatus).toHaveBeenCalledWith('s1');
     fireEvent.click(screen.getByRole('button', { name: '关闭变更面板' })); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull();
-    const currentToggle = screen.getByRole('button', { name: /(?:显示|收起) 检查器/ });
+    const currentToggle = inspectorToggle();
     fireEvent.click(currentToggle);
     // The inserted command has suggestions: dismiss that local menu before the inspector.
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Escape' });
@@ -202,6 +202,7 @@ function deferred<T>() {
 }
 const selected = (title: string) => expect(screen.getByRole('button', { name: title }).getAttribute('aria-current')).toBe('page');
 const closeTab = (title: string) => fireEvent.click(screen.getByRole('button', { name: `关闭 ${title}` }));
+const inspectorToggle = () => screen.getAllByRole('button', { name: /(?:显示|收起) 检查器/ })[0]!;
 async function seedProjects() {
   const view = render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
   await createSession(); await createSession(); await createSession();
