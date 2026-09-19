@@ -53,6 +53,7 @@ export function parseRpcWorkerInput(value: unknown): WorkerParse<RpcWorkerInput>
     case 'get-available-models': case 'get-available-thinking-levels': case 'get-tree': case 'get-fork-messages': case 'get-state': case 'get-session-stats': case 'get-auto-settings':
       return { ok: true, message: { type: value.type, requestId } };
     case 'fork': return text(value.entryId) ? { ok: true, message: { type: 'fork', requestId, entryId: value.entryId } } : invalid();
+    case 'clone': return { ok: true, message: { type: 'clone', requestId } };
     case 'switch-session': return text(value.sessionPath) ? { ok: true, message: { type: 'switch-session', requestId, sessionPath: value.sessionPath } } : invalid();
     case 'set-model': return text(value.provider) && text(value.modelId) ? { ok: true, message: { type: 'set-model', requestId, provider: value.provider, modelId: value.modelId } } : invalid();
     case 'set-thinking-level': return text(value.level) ? { ok: true, message: { type: 'set-thinking-level', requestId, level: value.level } } : invalid();

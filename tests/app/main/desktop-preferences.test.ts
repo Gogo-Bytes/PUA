@@ -37,6 +37,20 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     await ephemeral.recordChatMessage('id', identity);
     expect(store.upsert).toHaveBeenCalledTimes(2);
   });
+  it('creates a durable Pi-native clone as a distinct task without duplicating an empty source', async () => {
+    const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+    const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+    const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+    const capabilities = fakeCapabilities();
+    const clone = (capabilities.conversation as unknown as { clone: ReturnType<typeof vi.fn> }).clone;
+    const restored = await preferences.cloneSession('id', capabilities);
+    expect(clone).toHaveBeenCalledWith(expect.any(String));
+    expect(capabilities.session.start).toHaveBeenCalledTimes(2);
+    expect(capabilities.session.close).toHaveBeenCalledWith(expect.any(String));
+    expect(restored).toEqual(expect.objectContaining({ kind: 'chat', title: 'project · 副本', archived: false, pinned: false }));
+    expect(store.upsert).toHaveBeenCalledWith(expect.objectContaining({ title: 'project · 副本', piSessionId: 'pi-clone', sessionFile: '/fake/pi-clone.jsonl', archived: false, pinned: false }));
+    expect(preferences.getBootstrap().restoredSessions).toEqual([expect.objectContaining({ id: restored.id, title: 'project · 副本' })]);
+  });
   it('archives by default, restores from Pi identity, pins metadata, and permanently deletes only after Pi cleanup succeeds', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'pua-preferences-'));
     try {

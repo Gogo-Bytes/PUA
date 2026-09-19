@@ -99,6 +99,7 @@ export interface DesktopAPI {
   respondToExtensionUI(id: string, response: ExtensionUIResponse): Promise<void>;
   renameChatSession(id: string, name: string): Promise<void>;
   forkChatSession(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }>;
+  cloneChatSession(id: string): Promise<SessionInfo>;
   getChatAvailableModels(id: string): Promise<import('./conversation.js').ChatModel[]>;
   getChatThinkingLevels(id: string): Promise<string[]>;
   setChatModel(id: string, provider: string, modelId: string): Promise<void>;

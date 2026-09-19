@@ -15,6 +15,7 @@ export type RpcCapabilityOperation =
   | { type: 'get-tree' }
   | { type: 'get-fork-messages' }
   | { type: 'fork'; entryId: string }
+  | { type: 'clone' }
   | { type: 'switch-session'; sessionPath: string }
   | { type: 'get-state' }
   | { type: 'get-session-stats' }

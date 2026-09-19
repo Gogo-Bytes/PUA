@@ -13,6 +13,7 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   savePreferences: [initial], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
   forkChatSession: ['id', 'entry'],
+  cloneChatSession: ['id'],
   getChatAvailableModels: ['id'], getChatThinkingLevels: ['id'],
   getChatSessionStats: ['id'], getChatAutoSettings: ['id'],
   setChatModel: ['id', 'provider', 'model'], setChatThinkingLevel: ['id', 'high'],
@@ -34,7 +35,7 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.dialog.showOpenDialog.mock.calls.every(call => call[0] === h.window)).toBe(true);
     expect(h.capabilities.registerChatAttachments).toHaveBeenCalledExactlyOnceWith('id', ['/fake/file']); expect(results.chooseChatAttachments).toEqual([]);
     expect(h.capabilities.createSession).toHaveBeenCalledExactlyOnceWith(h.runtime, create); expect(results.createSession).toEqual(sessionInfo);
-    expect(h.capabilities.session.start).toHaveBeenCalledExactlyOnceWith('id'); expect(h.capabilities.session.close).toHaveBeenCalledExactlyOnceWith('id'); expect(results.closeSession).toBe(true);
+    expect(h.capabilities.session.start).toHaveBeenCalledWith('id'); expect(h.capabilities.session.close).toHaveBeenCalledWith('id'); expect(results.closeSession).toBe(true);
     expect(h.capabilities.conversation.send).toHaveBeenCalledExactlyOnceWith('id', { text: 'message', attachmentIds: [], delivery: 'prompt' });
     expect(h.capabilities.conversation.stop).toHaveBeenCalledExactlyOnceWith('id'); expect(h.capabilities.conversation.respond).toHaveBeenCalledExactlyOnceWith('id', { id: 'request', confirmed: true });
     expect(h.capabilities.conversation.getAvailableModels).toHaveBeenCalledExactlyOnceWith('id');

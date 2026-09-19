@@ -39,8 +39,8 @@
 | PI-RPC-14 | token / usage 统计 | Pi 0.85.1 `AgentSession.getSessionStats()` / RPC `get_session_stats` 返回消息与工具计数、input/output/cache token、cost 和可选 contextUsage（tokens/contextWindow/percent） | 已接入 | 会话工具栏提供只读“会话统计”；明确标注为当前 Pi 会话统计，不伪装账户级用量 |
 | PI-RPC-15 | 导出/复制历史 | RPC client 明确支持 `export_html`；包含 HTML export template 与 share viewer helper | 明确不做 | 不提供 HTML 导出入口；保留复制消息 |
 | PI-RPC-16 | 跨设备/云端同步 | 本地 Pi 架构不提供 | 明确不做 | 不伪造 Codex 云能力 |
-| PI-RPC-17 | 自动上下文压缩与自动重试开关 | Pi 0.85.1 `set_auto_compaction` / `set_auto_retry` RPC，`docs/rpc.md` 436–461；改变运行中的失败恢复与上下文策略 | 待讨论 | 保留 Pi 原生默认值；是否在任务详情或会话设置暴露受控开关，需要单独决定，不在 Codex 对标阶段擅自改变 |
-| PI-RPC-18 | `clone` 当前会话为新 session 文件 | Pi 0.85.1 RPC `clone` 与 Sessions 文档 `/clone`；复制当前活动分支并创建新的 Pi session identity | 待讨论 | 不把 clone 冒充消息级 fork；需要决定是否创建新的 PUA 任务、标题和项目树归属后再接入 |
+| PI-RPC-17 | 自动上下文压缩与自动重试开关 | Pi 0.85.1 `set_auto_compaction` / `set_auto_retry` RPC，`docs/rpc.md` 436–461；改变运行中的失败恢复与上下文策略 | 已接入（边界明确） | 任务详情提供受控开关；读取 `autoCompaction` 使用 Pi `get_state`，`autoRetry` 当前按 Pi 默认值 `true` 初始化（Pi RPC 未提供对应读取字段），只有用户显式切换才发送写 RPC |
+| PI-RPC-18 | `clone` 当前会话为新 session 文件 | Pi 0.85.1 RPC `clone` 与 Sessions 文档 `/clone`；复制当前活动分支并创建新的 Pi session identity | 已接入（边界明确） | 任务详情执行 Pi 原生 clone；通过短生命周期探针会话承载命令，成功后创建同项目的新 PUA 任务，继承 cwd/活动分支语义，标题默认为“原任务名 · 副本”，与消息级 Fork 不混用 |
 
 ## 每项能力的完成条件
 
@@ -54,7 +54,7 @@
 
 从安装包 `dist/modes/rpc/rpc-client.js` 解析到的命令集合：`prompt`、`steer`、`follow_up`、`abort`、`abort_bash`、`abort_retry`、`clear_queue`、`new_session`、`clone`、`fork`、`get_fork_messages`、`get_tree`、`switch_session`、`get_entries`、`get_messages`、`get_state`、`get_session_stats`、`get_last_assistant_text`、`get_available_models`、`set_model`、`cycle_model`、`get_available_thinking_levels`、`set_thinking_level`、`cycle_thinking_level`、`set_steering_mode`、`set_follow_up_mode`、`set_auto_compaction`、`set_auto_retry`、`compact`、`export_html`、`set_session_name`、`get_commands`、`bash`。
 
-当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、模型/Thinking 查询与切换、compact 和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、自动 compact/retry 设置、`export_html`、`clone`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。`clone` 与自动策略已登记为待讨论项，不因 Codex 对照直接实现。
+当前 PUA worker protocol 已覆盖 prompt/steer/followUp、stop、clear queue、extension response、rename、fork、clone、模型/Thinking 查询与切换、compact、自动策略设置和部分会话查询；明确协议缺口仍包括 `switch_session`、`get_entries`、`export_html`、`bash`。这些命令不应通过任意字符串透传，必须逐项加入白名单 DTO、响应校验、超时和生命周期测试。
 
 ### 已提取的参数契约（Pi 0.85.1）
 
@@ -70,7 +70,8 @@
 - **Model / Thinking Level**：Pi 支持按会话查询和切换，PUA 不接管凭据或配置文件；模型与 Thinking Level 已通过真实 RPC 查询/切换，UI 菜单按需加载 Pi 返回的列表。
 - **TUI custom 能力**：自定义主题、header/footer、renderer、editor 依赖终端绘制生命周期，RPC 没有等价 UI。
 - **Session stats**：Pi 的 `/session` 统计属于当前本地会话的消息、工具、token、成本与上下文估算；PUA 只读展示该会话数据，不扩展为 Codex 账户用量、计费或跨设备统计。
-- **自动策略**：Pi 可通过 `set_auto_compaction` 与 `set_auto_retry` 在当前 RPC 会话切换自动压缩/重试。它们不是只读状态，而是会改变任务失败恢复和上下文生命周期；PUA 暂不发送这两个命令，避免改变 Pi 原生默认值，入口与默认策略需产品单独确认。
+- **自动策略**：Pi 可通过 `set_auto_compaction` 与 `set_auto_retry` 在当前 RPC 会话切换自动压缩/重试。PUA 在任务详情提供显式开关，默认沿用 Pi 当前值；`autoCompaction` 从 `get_state` 读取，`autoRetry` 因 Pi 没有对应只读字段，按已核验的 Pi 默认值 `true` 初始化，并在用户显式切换后发送设置 RPC。该限制必须保留在后续重构与版本升级核验中。
+- **原生 Clone**：Pi `clone` 会复制当前活动分支并切换运行时 identity。PUA 先在短生命周期探针会话中执行原生命令，等待新的 `sessionId/sessionFile` 握手后，创建一个持久化的新任务；这不是消息级 Fork，也不手工复制 JSONL。没有已保存 Pi identity、启用 `--no-session` 或 Pi 取消操作时，PUA 不创建空任务。
 
 ## Fork 交互保留项
 

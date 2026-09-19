@@ -28,6 +28,7 @@ export const invokeChannels = {
   respondToExtensionUI: 'desktop:extension-response',
   renameChatSession: 'desktop:chat-rename',
   forkChatSession: 'desktop:chat-fork',
+  cloneChatSession: 'desktop:chat-clone',
   getChatAvailableModels: 'desktop:chat-models',
   getChatThinkingLevels: 'desktop:chat-thinking-levels',
   setChatModel: 'desktop:chat-model-set',

@@ -3,7 +3,7 @@ import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { desktopClient } from '../../app/desktop-client';
 
 /** Session label/dialog presentation, not host Session lifecycle or Pi persistence policy. */
-export function useSessionPresentation(active: SessionInfo | undefined, setSessionTitle: (id: string, title: string) => void, reportError: (message: string) => void) {
+export function useSessionPresentation(active: SessionInfo | undefined, setSessionTitle: (id: string, title: string) => void, reportError: (message: string) => void, onCloned?: (session: SessionInfo) => void) {
   const [renaming, setRenaming] = useState(false);
   const renameSession = async (session: SessionInfo, title: string) => {
     if (session.kind === 'chat') await desktopClient.renameChatSession(session.id, title);
@@ -15,8 +15,16 @@ export function useSessionPresentation(active: SessionInfo | undefined, setSessi
     if (active.kind === 'chat') await desktopClient.renameChatSession(active.id, title);
     setSessionTitle(active.id, title); setRenaming(false);
   };
+  const cloneTask = async (id: string) => {
+    try {
+      const cloned = await desktopClient.cloneChatSession(id);
+      onCloned?.(cloned);
+    } catch (error) {
+      reportError(String(error));
+    }
+  };
   return {
-    renameSession, renaming, beginRename: () => setRenaming(true), closeRename: () => setRenaming(false), saveRename,
+    renameSession, cloneTask, renaming, beginRename: () => setRenaming(true), closeRename: () => setRenaming(false), saveRename,
     openProject: (id: string) => { void desktopClient.openProject(id).catch(error => reportError(String(error))); },
   };
 }

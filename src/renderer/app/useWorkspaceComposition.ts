@@ -22,7 +22,11 @@ export function useWorkspaceComposition(afterReference: () => void) {
     onPrepare: workspace.prepareConversation,
     onError: desktopPresentation.reportError,
   });
-  const sessionActions = useSessionPresentation(workspace.active, workspace.setSessionTitle, desktopPresentation.reportError);
+  const sessionActions = useSessionPresentation(workspace.active, workspace.setSessionTitle, desktopPresentation.reportError, cloned => {
+    workspace.addCreatedSession(cloned);
+    workspace.selectSession(cloned.id);
+    input.hideSearch();
+  });
   const navigation = {
     renameSession: (id: string, title: string) => {
       const session = workspace.sessions.find(item => item.id === id);

@@ -389,6 +389,24 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
     if (!result.cancelled && this.accepts(this.resource(id))) this.emit({ type: 'chat-notice', id, level: 'info', message: '已从此消息创建对话分支' });
     return result;
   }
+  async clone(id: string): Promise<{ cancelled: boolean }> {
+    const result = await this.request<{ cancelled: boolean }>(this.resource(id), { type: 'clone' });
+    if (!result.cancelled && this.accepts(this.resource(id))) this.emit({ type: 'chat-notice', id, level: 'info', message: '已从当前活动分支创建 Pi 原生副本' });
+    return result;
+  }
+  chatIdentity(id: string): NativePiSessionIdentity | undefined {
+    const identity = this.resources.get(id)?.nativeIdentity;
+    return identity ? { ...identity } : undefined;
+  }
+  async waitForChatIdentity(id: string, timeoutMs = 15_000, previous?: NativePiSessionIdentity): Promise<NativePiSessionIdentity> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const identity = this.chatIdentity(id);
+      if (identity && (!previous || identity.sessionId !== previous.sessionId || identity.sessionFile !== previous.sessionFile)) return identity;
+      if (Date.now() >= deadline) throw new Error('Pi 会话 identity 未就绪');
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+  }
 
   write(id: string, data: string): void {
     const resource = this.resource(id);

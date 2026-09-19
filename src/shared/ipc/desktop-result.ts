@@ -49,7 +49,7 @@ export const desktopValueGuards = {
   searchHistory: v => arrayOf(v, x => record(x) && text(x.taskId) && text(x.title) && text(x.cwd) && text(x.entryId) && oneOf(x.role, ['user', 'assistant', 'custom', 'summary', 'bashExecution']) && text(x.snippet) && finite(x.timestamp) && bool(x.archived) && text(x.query)),
   closeSession: bool, archiveSession: empty, restoreArchivedSession: sessionInfo, deleteArchivedSession: empty, setSessionPinned: empty,
   startSession: empty, removeChatAttachment: empty, sendChatMessage: empty, stopChat: empty,
-  respondToExtensionUI: empty, renameChatSession: empty, forkChatSession: v => record(v) && text(v.text) && bool(v.cancelled), getChatAvailableModels: v => arrayOf(v, x => record(x) && text(x.provider) && text(x.id)), openExternal: empty, openProject: empty, writeClipboard: empty,
+  respondToExtensionUI: empty, renameChatSession: empty, forkChatSession: v => record(v) && text(v.text) && bool(v.cancelled), cloneChatSession: sessionInfo, getChatAvailableModels: v => arrayOf(v, x => record(x) && text(x.provider) && text(x.id)), openExternal: empty, openProject: empty, writeClipboard: empty,
   setChatModel: empty, setChatThinkingLevel: empty, getChatSessionStats: sessionStats, getChatAutoSettings: v => record(v) && bool(v.autoCompaction) && bool(v.autoRetry), compactChatSession: empty,
   setChatAutoCompaction: empty, setChatAutoRetry: empty,
   getChatThinkingLevels: v => arrayOf(v, text),

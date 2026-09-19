@@ -89,6 +89,7 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   removeChatAttachment: tuple<'removeChatAttachment'>(2, (id, attachmentId) => [text(id), boundedText(attachmentId, 128, '附件 id')]),
   renameChatSession: tuple<'renameChatSession'>(2, (id, name) => [text(id), boundedText(name, 200, '会话名称')]),
   forkChatSession: tuple<'forkChatSession'>(2, (id, entryId) => [text(id), boundedText(entryId, 256, '分支消息 id')]),
+  cloneChatSession: idArgs,
   getChatAvailableModels: idArgs,
   getChatThinkingLevels: idArgs,
   getChatSessionStats: idArgs,

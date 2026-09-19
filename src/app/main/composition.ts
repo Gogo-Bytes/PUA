@@ -15,7 +15,7 @@ import { registerChatAttachments, type ChatAttachmentStagingPort } from './chat-
 
 // One physical owner implements the injected Ports; only this composition root knows its concrete class.
 type ProcessAdapter = SessionProcessPort & ConversationRuntimePort & AttachmentResourcesPort & Terminal
-  & SessionResourceRegistrationPort & ChatAttachmentStagingPort & { forget(id: string): void };
+  & SessionResourceRegistrationPort & ChatAttachmentStagingPort & { forget(id: string): void; chatIdentity?(id: string): NativePiSessionIdentity | undefined; waitForChatIdentity?(id: string, timeoutMs?: number, previous?: NativePiSessionIdentity): Promise<NativePiSessionIdentity> };
 export interface CompositionDependencies {
   prepareProject?(cwd: string): Promise<{ cwd: string; title: string }>;
   createId?(): string;
@@ -56,13 +56,15 @@ export function composeMain(emit: (event: SessionEvent) => void, dependencies: C
   const preparation = { session: coordinator, adapter, conversation, prepareProject: dependencies.prepareProject ?? prepareProject, createId: dependencies.createId ?? randomUUID };
   return {
     session: coordinator as Pick<SessionCoordinator, 'get' | 'list' | 'start' | 'close' | 'closeAll'>,
-    conversation: conversation as Pick<ConversationApplication, 'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'getSessionStats' | 'getAutoSettings' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry' | 'compact' | 'removeAttachment'>,
+    conversation: conversation as Pick<ConversationApplication, 'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'getSessionStats' | 'getAutoSettings' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry' | 'compact' | 'removeAttachment'> & Partial<Pick<ConversationApplication, 'clone'>>,
     terminal: adapter as Terminal,
     activity: (id: string) => adapter.activity(id),
     createSession: (runtime: RuntimeInfo, options: CreateSessionOptions) => createSession(preparation, runtime, options),
     restoreChatSession: (runtime: RuntimeInfo, persisted: PersistedChatSession) => createSession(preparation, runtime, {
       cwd: persisted.cwd, kind: 'chat', startMode: 'new', projectTrust: 'default', cols: 100, rows: 30,
     }, { id: persisted.id, title: persisted.title, dormant: true, chat: { piSessionId: persisted.piSessionId, sessionFile: persisted.sessionFile, mode: 'restore' } }),
+    chatIdentity: (id: string) => adapter.chatIdentity?.(id),
+    waitForChatIdentity: (id: string, timeoutMs?: number, previous?: NativePiSessionIdentity) => adapter.waitForChatIdentity ? adapter.waitForChatIdentity(id, timeoutMs, previous) : Promise.reject(new Error('Pi identity capability unavailable')),
     registerChatAttachments: (id: string, paths: string[]) => registerChatAttachments(conversation, adapter, id, paths),
   };
 }

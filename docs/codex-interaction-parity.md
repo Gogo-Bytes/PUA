@@ -12,7 +12,7 @@ PUA 的一级对象是任务（Task），项目（Project）用于分组，Pi �
 |---|---|---|
 | 全局导航 | 新任务、搜索、最近、归档、项目分组、折叠与恢复 | 已使用项目侧栏二级任务树、项目筛选、折叠恢复、最近任务折叠视图和窗口内前进/后退选择历史；归档仍在设置中管理 |
 | 项目树 | 项目展开后显示全部任务，当前项目与当前任务独立高亮 | 已使用项目下二级会话列表；分支树仍按 Pi entry 投影 |
-| 任务生命周期 | 创建、恢复、关闭、归档、取消归档、置顶、重命名 | 已支持创建、精确恢复、默认归档、详情取消归档/永久删除、置顶排序与重命名 |
+| 任务生命周期 | 创建、恢复、关闭、归档、取消归档、置顶、重命名、从当前任务创建副本 | 已支持创建、精确恢复、默认归档、详情取消归档/永久删除、置顶排序、重命名和 Pi 原生 Clone；Clone 创建同项目独立任务，不等同消息级 Fork |
 | 任务栏 | 标题、项目、分支、运行状态、分享、更多操作 | 已接入当前任务标题/项目/类型/Process 与 Pi activity 状态、打开目录、检查器、重命名、置顶和归档操作；不伪造 Codex 分享或任务级 Fork，消息级 Fork 仍遵循 Pi 原生入口 |
 | 对话 | 消息操作、工具过程、重试/继续/停止/排队、附件与命令 | Pi 能力分散在 ChatPane；压缩上下文与当前会话统计已通过 Pi 原生 RPC 接入 |
 | 检查器 | 变更、文件、分支、终端与任务上下文联动 | 已接入“任务详情 / Git·环境”双模式；GitPanel 仍独占 Git snapshot、scope、selected path 与 diff 状态，详情只展示安全任务投影 |
@@ -40,6 +40,7 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 | session history / terminal PTY | 历史恢复、兼容终端 | 跨设备历史 | 仅本机 |
 | Pi trust、model、skills、extensions | 在会话中展示/响应 | Codex 账户权限与用量 | 交由 Pi；账户能力不实现 |
 | Git status / diff（PUA Adapter） | 检查器、文件 diff、引用反馈 | Codex 自动 patch review | 只做可验证的本地 Git 闭环 |
+| Pi 原生自动策略与 Clone | 任务详情开关、克隆任务 | Codex 账户级恢复策略、云端任务复制 | 保留 Pi 语义；自动重试读取受 Pi RPC 限制，Clone 只通过 Pi 原生命令创建新任务 |
 
 已确认的 Pi RPC 事件/语义还包括：delta streaming、thinking、tool 生命周期、agent settled、compacting/retry、steer/followUp 队列、clear queue、history snapshot、session name、extension UI（select/confirm/input/editor/notify/status/widget/title/editor text）。这些能力应优先做 PUA 的完整可发现交互，而不是等待 Codex 对照；TUI custom renderer/header/footer/theme 与 custom editor 没有原生 RPC 等价，继续保留兼容终端入口。
 
@@ -55,6 +56,8 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 - 置顶任务固定排在普通任务之前，再按最近活动时间倒序；同一时间以任务 ID 稳定排序。
 - 允许后台驻留：关闭窗口只隐藏到系统托盘，Pi 任务继续由当前单窗口托管；系统菜单“退出”或托盘“退出并停止任务”才执行集中清理并退出。多窗口不实现。
 - 如果 Pi 后续提供 Codex 未覆盖的原生能力，保留 Pi 语义并另设 PUA 入口；不为视觉对齐修改 `fork`、`switch_session`、`--no-session` 等原生行为。
+- 自动上下文压缩/自动重试在任务详情中提供显式开关；默认不主动改写 Pi 值，`autoRetry` 的初始值受 Pi 缺少只读查询限制，保持文档记录的 Pi 默认值。
+- Clone 采用 Pi 原生 `clone`：只有已有 Pi 历史且未启用 `--no-session` 时可用；成功后创建同项目的新 PUA 任务并持久化新的 `sessionId/sessionFile`，默认标题为“原任务名 · 副本”。不通过复制 JSONL 或伪造 Fork 实现。
 
 ## 已确认的 Pi-specific 约束
 
@@ -115,3 +118,9 @@ Pi 0.85.1 的本地 session 是 JSONL 树文件，消息 entry 里包含用户�
 - 任务详情只读取 `SessionInfo` 与 `Bootstrap.runtime` 的已有投影：项目目录、任务类型、Process Status、Pi Agent Activity、最近活动和运行时来源。
 - 不从 renderer 反读 Pi transcript/sessionFile/auth/trust，也不把模型、Thinking、队列、扩展 UI 或 Session Tree 复制成第二份状态；这些仍由 Conversation/Pi 原生事件负责。
 - 任务详情中的归档、置顶、重命名和打开目录复用现有 callbacks；Settings 继续承载归档恢复与永久删除。
+
+### 阶段 F：Pi 原生策略与任务 Clone（已接入）
+
+- 任务详情读取并展示 Pi 自动上下文压缩、自动重试策略；切换前后均保留 pending、失败反馈和当前任务上下文。写入仅发生在用户显式切换时，不以 Codex 对照覆盖 Pi 默认值。
+- Clone 通过 Pi RPC 白名单命令执行。主进程在隔离的短生命周期探针会话中等待新的 native identity，再创建并持久化新任务；探针关闭，不污染原任务进程或历史索引。
+- 新 Clone 任务继承源任务项目目录和当前 Pi 活动分支语义，加入侧栏任务二级列表并自动选中；原任务保持不变。若 Pi 未提供 identity、`--no-session` 生效或原生命令取消，则返回可解释错误且不创建空白历史。

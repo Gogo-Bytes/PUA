@@ -7,11 +7,19 @@ import type { PersistedChatSession, WorkspaceSessionStore } from './workspace-se
 import type { NativePiSessionIdentity } from '../../shared/ipc/pi-session.js';
 
 type SessionCreation = Pick<ReturnType<typeof composeMain>, 'createSession'> & {
-  session: Pick<ReturnType<typeof composeMain>['session'], 'close'>;
+  session: Pick<ReturnType<typeof composeMain>['session'], 'get' | 'start' | 'close'>;
+  restoreChatSession?: ReturnType<typeof composeMain>['restoreChatSession'];
+  chatIdentity?(id: string): NativePiSessionIdentity | undefined;
+  waitForChatIdentity?(id: string, timeoutMs?: number, previous?: NativePiSessionIdentity): Promise<NativePiSessionIdentity>;
+  conversation: { send?: unknown; clone?: (id: string) => Promise<{ cancelled: boolean }> };
 };
 type SessionRestoration = {
   restoreChatSession(runtime: import('../../shared/ipc/desktop-api.js').RuntimeInfo, persisted: PersistedChatSession): Promise<SessionInfo>;
 };
+
+// Keep this policy module evaluable by the runtime-discovery VM used in tests; the
+// main process still gets cryptographically strong IDs from Node's global Web Crypto.
+const newSessionId = (): string => globalThis.crypto?.randomUUID?.() ?? `clone-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 interface DesktopPreferencesDependencies {
   application: Pick<PreferencesApplication, 'read' | 'save' | 'recordRecent'>;
@@ -59,6 +67,52 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         throw error;
       });
       return session;
+    },
+    async cloneSession(id: string, capabilities: SessionCreation): Promise<SessionInfo> {
+      await restoreReady;
+      const source = capabilities.session.get(id);
+      if (!source || source.kind !== 'chat') throw new Error('只有 Pi 对话可以创建原生副本');
+      if (!capabilities.chatIdentity || !capabilities.waitForChatIdentity) throw new Error('Pi 克隆能力尚未就绪');
+      const sourceIdentity = capabilities.chatIdentity(id);
+      if (!sourceIdentity) throw new Error('当前会话尚未保存 Pi 历史，无法创建副本');
+      const preferences = application.read();
+      validateChatArguments(preferences.args);
+      const runtime = resolveRuntime(preferences);
+      if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session='))) throw new Error('当前 Pi 配置为 --no-session，无法创建副本');
+      const probeId = newSessionId();
+      if (!capabilities.restoreChatSession) throw new Error('Pi 克隆能力尚未就绪');
+      const probe = await capabilities.restoreChatSession(runtime, {
+        id: probeId, cwd: source.cwd, title: source.title, piSessionId: sourceIdentity.sessionId, sessionFile: sourceIdentity.sessionFile,
+        archived: false, pinned: false, lastActivityAt: Date.now(),
+      });
+      try {
+        unwrapSessionResult(capabilities.session.start(probe.id));
+        await capabilities.waitForChatIdentity(probe.id, 15_000);
+        const clone = capabilities.conversation.clone;
+        if (!clone) throw new Error('Pi 克隆能力尚未就绪');
+        const result = await clone(probe.id);
+        if (result.cancelled) throw new Error('Pi 扩展取消了副本创建');
+        const clonedIdentity = await capabilities.waitForChatIdentity(probe.id, 15_000, sourceIdentity);
+        const cloned: PersistedChatSession = {
+          id: newSessionId(), cwd: source.cwd, title: `${source.title} · 副本`, piSessionId: clonedIdentity.sessionId, sessionFile: clonedIdentity.sessionFile,
+          archived: false, pinned: false, lastActivityAt: Date.now(),
+        };
+        const session = await capabilities.restoreChatSession(runtime, cloned);
+        try {
+          unwrapSessionResult(capabilities.session.start(session.id));
+          if (sessionStore) {
+            await sessionStore.upsert(cloned);
+            persisted.set(cloned.id, cloned);
+            restoredSessions = [...restoredSessions.filter(item => item.id !== cloned.id), { ...session, archived: false, pinned: false, lastActivityAt: cloned.lastActivityAt }];
+          }
+          return { ...session, archived: false, pinned: false, lastActivityAt: cloned.lastActivityAt };
+        } catch (error) {
+          unwrapSessionResult(await capabilities.session.close(session.id));
+          throw error;
+        }
+      } finally {
+        unwrapSessionResult(await capabilities.session.close(probe.id));
+      }
     },
     async recordChatMessage(id: string, identity: NativePiSessionIdentity): Promise<void> {
       const entry = pending.get(id);

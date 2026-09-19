@@ -74,7 +74,7 @@ describe('ConversationApplication send and attachment Interface', () => {
   });
 
   it('has a closed typed runtime surface rather than an arbitrary command bag', () => {
-    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'compact' | 'getSessionStats' | 'getAutoSettings' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry'>();
+    expectTypeOf<keyof ConversationRuntimePort>().toEqualTypeOf<'send' | 'stop' | 'respond' | 'rename' | 'fork' | 'clone' | 'compact' | 'getSessionStats' | 'getAutoSettings' | 'getAvailableModels' | 'getAvailableThinkingLevels' | 'setModel' | 'setThinkingLevel' | 'setAutoCompaction' | 'setAutoRetry'>();
     expectTypeOf<keyof RuntimeSend>().toEqualTypeOf<'text' | 'attachmentIds' | 'queuePreference'>();
     expectTypeOf<ReturnType<ConversationRuntimePort['stop']>>().toEqualTypeOf<Promise<void>>();
     expectTypeOf<{ id: string; command: string }>().not.toExtend<ExtensionResponse>();

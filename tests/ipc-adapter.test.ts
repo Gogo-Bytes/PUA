@@ -103,8 +103,8 @@ describe('main IPC registrar', () => {
         ts.forEachChild(node, visit);
       };
       visit(source);
-      expect(closes).toHaveLength(1);
-      expect(closes[0].parent.parent.getText(source)).toMatch(/^unwrapSessionResult\(await capabilities\.session\.close\(/);
+      expect(closes.length).toBeGreaterThanOrEqual(1);
+      for (const close of closes) expect(close.parent.parent.getText(source)).toMatch(/^unwrapSessionResult\(await capabilities\.session\.close\(/);
     }
     const create = preferences.slice(preferences.indexOf('async createSession'));
     expect(create.indexOf('validateChatArguments')).toBeLessThan(create.indexOf('resolveRuntime'));

@@ -116,4 +116,5 @@ export class ConversationApplication {
   respond(id: string, response: ExtensionResponse): Promise<void> { return this.runtime.respond(id, response); }
   rename(id: string, name: string): Promise<void> { return this.runtime.rename(id, name); }
   fork(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }> { return this.runtime.fork(id, entryId); }
+  clone(id: string): Promise<{ cancelled: boolean }> { if (!this.runtime.clone) return Promise.reject(new Error('Pi 原生克隆不可用')); return this.runtime.clone(id); }
 }

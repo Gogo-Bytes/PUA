@@ -352,6 +352,26 @@ port.on('message', ({ data: raw }: { data: unknown }) => {
       .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
     return;
   }
+  if (data.type === 'clone') {
+    ++forkMetadataGeneration;
+    void send({ type: 'clone' })
+      .then(async result => {
+        if (!result.cancelled && !closing) {
+          const [stateValue, messagesValue, commandsValue, forkValue] = await Promise.all([
+            send({ type: 'get_state' }, 15_000), send({ type: 'get_messages' }, 15_000), send({ type: 'get_commands' }, 15_000), send({ type: 'get_fork_messages' }, 15_000),
+          ]);
+          postSessionIdentity(stateValue);
+          const state = runtimeViewDTO(runtime.initialize(normalizeRuntimeSeed(stateValue)));
+          stream.reset();
+          const history = stream.initializeHistory(normalizeHistoryItems(messagesValue.messages));
+          const mapped = withForkEntries(history, forkValue.messages).map(messageDTO);
+          event({ type: 'chat-snapshot', snapshot: { ...state, messages: mapped, commands: commandsDTO(commandsValue.commands) } });
+        }
+        if (!closing) post({ type: 'response', requestId: data.requestId, success: true, data: result });
+      })
+      .catch(error => { if (!closing) post({ type: 'response', requestId: data.requestId, success: false, error: String(error) }); });
+    return;
+  }
   if (data.type === 'get-available-models' || data.type === 'get-available-thinking-levels' || data.type === 'compact' || data.type === 'set-model' || data.type === 'set-thinking-level' || data.type === 'set-auto-compaction' || data.type === 'set-auto-retry' || data.type === 'switch-session' || data.type === 'export-html' || data.type === 'get-tree' || data.type === 'get-fork-messages' || data.type === 'get-state' || data.type === 'get-session-stats' || data.type === 'get-auto-settings') {
     const command: PiCommand = data.type === 'get-available-models' ? { type: 'get_available_models' }
       : data.type === 'get-available-thinking-levels' ? { type: 'get_available_thinking_levels' }

@@ -10,11 +10,12 @@ export interface TaskDetailsPanelProps {
   onRename(): void;
   onArchive(): void | Promise<void>;
   onTogglePinned?(): void | Promise<void>;
+  onClone?(): void | Promise<void>;
 }
 
 /** Read-only task projection. Pi transcript and credentials remain outside the renderer. */
-export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArchive, onTogglePinned }: TaskDetailsPanelProps) {
-  const [busy, setBusy] = useState<'archive' | 'pin' | null>(null);
+export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArchive, onTogglePinned, onClone }: TaskDetailsPanelProps) {
+  const [busy, setBusy] = useState<'archive' | 'pin' | 'clone' | null>(null);
   const [autoSettings, setAutoSettings] = useState<{ autoCompaction: boolean; autoRetry: boolean } | null>(null);
   const [autoBusy, setAutoBusy] = useState<'compaction' | 'retry' | null>(null);
   useEffect(() => {
@@ -25,7 +26,7 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
     catch { /* A test/legacy bridge may not expose the optional Pi policy RPC yet. */ }
     return () => { active = false; };
   }, [task.id, task.kind, task.processStatus]);
-  const run = async (kind: 'archive' | 'pin', action: () => void | Promise<void>) => {
+  const run = async (kind: 'archive' | 'pin' | 'clone', action: () => void | Promise<void>) => {
     if (busy) return;
     setBusy(kind);
     try { await action(); } finally { setBusy(null); }
@@ -45,6 +46,7 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
     <div className="task-details-heading"><div><span className="ui-meta">当前任务</span><h2>{task.title}</h2></div><Tag><Icon name={task.kind === 'terminal' ? 'terminal' : 'chat'}/>{task.kind === 'terminal' ? '兼容终端' : 'Pi 对话'}</Tag></div>
     <div className="task-details-actions">
       <Button variant="ghost" onClick={onRename}>重命名</Button>
+      {onClone && task.kind === 'chat' && <Button variant="ghost" busy={busy === 'clone'} disabled={!!busy && busy !== 'clone'} onClick={() => void run('clone', onClone)}>克隆任务</Button>}
       {onTogglePinned && <Button variant="ghost" busy={busy === 'pin'} disabled={!!busy && busy !== 'pin'} onClick={() => void run('pin', onTogglePinned)}>{task.pinned ? '取消置顶' : '置顶'}</Button>}
       <Button variant="danger" busy={busy === 'archive'} disabled={!!busy && busy !== 'archive'} onClick={() => void run('archive', onArchive)}>归档并关闭</Button>
     </div>

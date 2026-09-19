@@ -63,5 +63,9 @@ export function fakeCapabilities() {
     createSession: vi.fn<WindowContext['capabilities']['createSession']>().mockResolvedValue(sessionInfo),
     registerChatAttachments: vi.fn<WindowContext['capabilities']['registerChatAttachments']>().mockResolvedValue([]),
   } satisfies WindowContext['capabilities'];
+  (capabilities.conversation as unknown as { clone: () => Promise<{ cancelled: boolean }> }).clone = vi.fn().mockResolvedValue({ cancelled: false });
+  (capabilities as unknown as { restoreChatSession: unknown }).restoreChatSession = vi.fn(async (_runtime: unknown, persisted: { id: string; cwd: string; title: string }) => ({ id: persisted.id, cwd: persisted.cwd, title: persisted.title, kind: 'chat' as const, processStatus: 'starting' as const, activity: 'idle' as const }));
+  (capabilities as unknown as { chatIdentity: unknown }).chatIdentity = vi.fn(() => ({ sessionId: 'pi-id', sessionFile: '/fake/pi.jsonl' }));
+  (capabilities as unknown as { waitForChatIdentity: unknown }).waitForChatIdentity = vi.fn(async (_id: string, _timeout?: number, previous?: { sessionId: string; sessionFile: string }) => previous ? { sessionId: 'pi-clone', sessionFile: '/fake/pi-clone.jsonl' } : { sessionId: 'pi-id', sessionFile: '/fake/pi.jsonl' });
   return capabilities;
 }

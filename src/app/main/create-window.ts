@@ -6,7 +6,7 @@ import type { composeMain } from './composition.js';
 export interface WindowContext {
   window: BrowserWindow;
   /** Renderer/lifecycle capabilities; restoreChatSession is bootstrap-only and never crosses this holder. */
-  capabilities: Omit<ReturnType<typeof composeMain>, 'restoreChatSession'>;
+  capabilities: Omit<ReturnType<typeof composeMain>, 'restoreChatSession' | 'chatIdentity' | 'waitForChatIdentity'> & Partial<Pick<ReturnType<typeof composeMain>, 'chatIdentity' | 'waitForChatIdentity'>>;
 }
 
 /** IPC reads one paired identity; bound lifecycle/events never read this holder. */
