@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronRight, PanelLeft, ArrowUp, Square, Check,
   File, CodeXml, Copy, Link, RotateCw, Clock, LoaderCircle,
   Pause, Info, CircleAlert, CircleX, CircleCheck, Terminal, PencilLine, GitFork, ArrowLeft, ArrowRight,
+  MoreHorizontal,
 } from 'lucide-react';
 
 // One icon family for the preview library; production keeps its existing seam.
@@ -15,6 +16,7 @@ const icons = {
   refresh: RotateCw, clock: Clock, running: LoaderCircle, pause: Pause,
   info: Info, warning: CircleAlert, error: CircleX, success: CircleCheck,
   terminal: Terminal, edit: PencilLine, fork: GitFork, back: ArrowLeft, forward: ArrowRight,
+  more: MoreHorizontal,
 } as const;
 
 export type IconName = keyof typeof icons;

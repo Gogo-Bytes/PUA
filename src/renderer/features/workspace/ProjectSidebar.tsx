@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
-import { Button, Icon, IconButton, InlineRename, Tooltip } from '../../ui';
+import { Button, Icon, IconButton, InlineRename } from '../../ui';
 import { groupProjects, projectName } from './selection';
 import type { WorkspaceSessionInfo } from './useWorkspace';
 
@@ -47,10 +47,6 @@ export function ProjectSidebar({
   const visible = projects.filter(project => `${project.name}\n${project.cwd}\n${project.sessions.map(session => session.title).join('\n')}`.toLowerCase().includes(query.trim().toLowerCase()));
   return <nav className="workspace-sidebar" aria-label="项目">
     <div className="workspace-sidebar-brand">
-      <span className="workspace-sidebar-history" aria-label="工作区导航">
-        <IconButton icon="back" label="后退" variant="ghost" disabled={!canNavigateBack} onClick={onNavigateBack}/>
-        <IconButton icon="forward" label="前进" variant="ghost" disabled={!canNavigateForward} onClick={onNavigateForward}/>
-      </span>
       <strong>PUA</strong>
       <span className="workspace-sidebar-actions">
         <IconButton icon="search" label="搜索与命令" variant="ghost" onClick={onSearch}/>
@@ -70,9 +66,9 @@ export function ProjectSidebar({
       {visible.length === 0 ? <p className="ui-meta">暂无匹配项目</p> : visible.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line">
           {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => toggleProject(project.cwd)}>{collapsed.has(project.cwd) ? '▸' : '▾'}</Button>}
-          <Tooltip content={project.cwd}><Button variant="ghost" className="workspace-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
+          <Button variant="ghost" className="workspace-project-button" aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
             <Icon name="folder"/><span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
-          </Button></Tooltip>
+          </Button>
           <IconButton icon="plus" label={`在 ${project.name} 中新建对话（${project.cwd}）`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
           {onOpenTerminal && <IconButton icon="code" label={`在 ${project.name} 中打开兼容终端（${project.cwd}）`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onOpenTerminal(project.cwd)}/>}
         </div>

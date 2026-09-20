@@ -32,7 +32,8 @@ it('production sidebar nests sessions below their project without tab semantics'
   render(<UIProvider><ProjectSidebar sessions={[{ id: 's1', cwd: '/one/app', title: '调查交互', kind: 'chat', processStatus: 'running', activity: 'idle' }]} recentProjects={['/one/app', '/two/empty']} activeId="s1" activeProject="/one/app" runtimeAvailable onNewConversation={create} onSelectSession={select} onCloseSession={vi.fn()} onRenameSession={vi.fn()} onSearch={vi.fn()} onSettings={vi.fn()}/></UIProvider>);
   expect(screen.queryByRole('tablist')).toBeNull(); expect(screen.queryByRole('tab')).toBeNull();
   expect(screen.getByRole('list', { name: 'app 的会话' }).contains(screen.getByRole('button', { name: '调查交互' }))).toBe(true);
-  fireEvent.click(screen.getAllByTitle('/two/empty')[0]); expect(create).toHaveBeenCalledWith('/two/empty');
+  expect(screen.queryByTitle('/two/empty')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'empty' })); expect(create).toHaveBeenCalledWith('/two/empty');
   fireEvent.click(screen.getByRole('button', { name: '调查交互' })); expect(select).toHaveBeenCalledWith('s1');
 });
 it('task toolbar exposes task-scoped actions without inventing a session-level fork', () => {

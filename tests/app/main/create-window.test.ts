@@ -8,7 +8,7 @@ describe('createWindow security and identity (Fake only)', () => {
   it('keeps exact settings, deny-new-window/navigation/permissions and does not load before composition', () => {
     const { fake, window } = fakeWindow(); const construct = vi.fn((_options: BrowserWindowConstructorOptions) => window);
     expect(createWindow(construct, '/fake/dist/app/preload/preload.cjs')).toBe(window);
-    expect(construct).toHaveBeenCalledExactlyOnceWith({ width: 1320, height: 880, minWidth: 900, minHeight: 600, backgroundColor: '#101114', title: 'PUA — Pi Universal App', webPreferences: { preload: '/fake/dist/app/preload/preload.cjs', contextIsolation: true, nodeIntegration: false, sandbox: true } });
+    expect(construct).toHaveBeenCalledExactlyOnceWith({ width: 1320, height: 880, minWidth: 900, minHeight: 600, backgroundColor: '#101114', title: 'PUA — Pi Universal App', ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : {}), webPreferences: { preload: '/fake/dist/app/preload/preload.cjs', contextIsolation: true, nodeIntegration: false, sandbox: true } });
     expect(fake.webContents.setWindowOpenHandler.mock.calls[0][0]()).toEqual({ action: 'deny' });
     const event = { preventDefault: vi.fn() }; fake.webContents.emit('will-navigate', event); expect(event.preventDefault).toHaveBeenCalledOnce();
     const callback = vi.fn(); fake.webContents.session.setPermissionRequestHandler.mock.calls[0][0]({}, 'media', callback); expect(callback).toHaveBeenCalledExactlyOnceWith(false);

@@ -4,6 +4,7 @@ export type { WorkspaceSession, SessionWorkspace } from './selection';
 export { useSessionInput } from './useSessionInput';
 export { ProjectNav, ProjectNavigation, type ProjectNavItem, type ProjectNavLabels, type ProjectNavProps } from './ProjectNav';
 export { ProjectSidebar } from './ProjectSidebar';
+export { WorkspaceChrome, type WorkspaceChromeProps } from './WorkspaceChrome';
 export { HistorySearchDialog } from './HistorySearchDialog';
 export { TaskToolbar, type TaskToolbarProps } from './TaskToolbar';
 export { TaskDetailsPanel, type TaskDetailsPanelProps } from './TaskDetailsPanel';

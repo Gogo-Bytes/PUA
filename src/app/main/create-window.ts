@@ -26,6 +26,9 @@ export function createWindow(construct: (options: BrowserWindowConstructorOption
   const window = construct({
     width: 1320, height: 880, minWidth: 900, minHeight: 600,
     backgroundColor: '#101114', title: 'PUA — Pi Universal App',
+    // Keep the native traffic lights, but let the renderer own the titlebar
+    // surface so the window chrome follows the workspace design on macOS.
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
     webPreferences: { preload: preloadPath, contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));

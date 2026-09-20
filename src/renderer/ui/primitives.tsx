@@ -6,9 +6,9 @@ export { Icon };
 export const Button = forwardRef<HTMLButtonElement, ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; busy?: boolean }>(function Button({ variant = 'secondary', busy = false, className = '', children, disabled, ...props }, ref) {
   return <button ref={ref} type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</button>;
 });
-export function IconButton({ label, icon, ...props }: Omit<Parameters<typeof Button>[0], 'children'> & { label: string; icon: Parameters<typeof Icon>[0]['name'] }) {
-  return <Button {...props} className={`ui-icon-button ${props.className ?? ''}`} aria-label={label}><Icon name={icon}/></Button>;
-}
+export const IconButton = forwardRef<HTMLButtonElement, Omit<Parameters<typeof Button>[0], 'children'> & { label: string; icon: Parameters<typeof Icon>[0]['name'] }>(function IconButton({ label, icon, ...props }, ref) {
+  return <Button ref={ref} {...props} className={`ui-icon-button ${props.className ?? ''}`} aria-label={label}><Icon name={icon}/></Button>;
+});
 export function TextField({ label, error, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
   const id = useId();
   return <label className="ui-field"><span>{label}</span><input {...props} id={props.id ?? id} className="ui-input" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : props['aria-describedby']}/>{error && <span id={`${id}-error`} role="alert" className="ui-error">{error}</span>}</label>;

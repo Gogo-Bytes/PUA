@@ -57,13 +57,26 @@ async function createSession() {
   await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith(session?.id, expect.objectContaining({ delivery: 'prompt' })));
   vi.mocked(desktop.sendChatMessage).mockClear();
 }
-const selectProject = (path: string) => fireEvent.click(within(screen.getByRole('navigation', { name: '项目' })).getByTitle(path));
+const projectNameForPath = (path: string) => path.split('/').filter(Boolean).at(-1) ?? path;
+const projectButton = (path: string) => {
+  const name = projectNameForPath(path);
+  const nav = screen.getByRole('navigation', { name: '项目' });
+  const opener = within(nav).getByRole('button', { name: `在 ${name} 中新建对话（${path}）` });
+  return within(opener.closest('section')!).getByRole('button', { name: new RegExp(`^${name}$`) });
+};
+const findProject = async (path: string) => {
+  const name = projectNameForPath(path);
+  const nav = screen.getByRole('navigation', { name: '项目' });
+  const opener = await within(nav).findByRole('button', { name: `在 ${name} 中新建对话（${path}）` });
+  return within(opener.closest('section')!).findByRole('button', { name: new RegExp(`^${name}$`) });
+};
+const selectProject = (path: string) => fireEvent.click(projectButton(path));
 const selectSession = (title: string) => fireEvent.click(screen.getByRole('button', { name: title }));
 
 describe('production workspace navigation', () => {
   it('keeps actual ChatPane draft, attachments and stream subscriptions across sidebar sessions/projects; closes through host', async () => {
     const { container } = render(<App />);
-    await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    await findProject('/one/app'); selectProject('/one/app'); await createSession();
     const firstPane = container.querySelector('[data-session-id="s1"]');
     const firstDraft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(firstDraft, { target: { value: 'unfinished first' } });
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
@@ -91,7 +104,7 @@ describe('production workspace navigation', () => {
   });
   it('collapses project children without unmounting the active conversation or losing its draft', async () => {
     const { container } = render(<App />);
-    await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
+    await findProject('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
     const pane = container.querySelector('[data-session-id="s2"]');
     const draft = screen.getByRole('textbox', { name: '发送消息' });
     fireEvent.change(draft, { target: { value: 'retained while collapsed' } });
@@ -109,7 +122,7 @@ describe('production workspace navigation', () => {
   });
   it('filters sidebar session names without changing selection or disposing hidden panes', async () => {
     const { container } = render(<App />);
-    await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    await findProject('/one/app'); selectProject('/one/app'); await createSession();
     selectProject('/two/app'); await createSession();
     const pane = container.querySelector('[data-session-id="s2"]');
     const draft = screen.getByRole('textbox', { name: '发送消息' });
@@ -124,7 +137,7 @@ describe('production workspace navigation', () => {
     expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
   it('orders recent tasks by the latest Pi-accepted activity in the current window', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
+    render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
     emit({ id: 's1', type: 'session-info', lastActivityAt: 100 });
     emit({ id: 's2', type: 'session-info', lastActivityAt: 200 });
     fireEvent.click(screen.getByRole('button', { name: /最近/ }));
@@ -134,7 +147,7 @@ describe('production workspace navigation', () => {
     expect(within(recent).getAllByRole('button').map(button => button.textContent)).toEqual(['会话 1app', '会话 2app']);
   });
   it('does not consume closed-inspector Escape or editable/IME/local-menu Escape while open', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
     const draft = screen.getByRole('textbox', { name: '发送消息' }); const toggle = inspectorToggle();
     fireEvent.click(toggle); draft.focus(); fireEvent.keyDown(draft, { key: 'Escape' });
@@ -163,7 +176,7 @@ describe('production workspace navigation', () => {
     await waitFor(() => expect(document.activeElement).toBe(currentToggle));
   });
   it('uses default system changes and saved themes without recreating sessions or losing draft', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'theme draft' } });
     expect(document.documentElement.dataset.theme).toBe('light');
     act(() => mediaListeners.forEach(listener => listener({ matches: true } as MediaQueryListEvent)));
@@ -178,7 +191,7 @@ describe('production workspace navigation', () => {
     fireEvent.click(settings); fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true })); expect(screen.queryByRole('dialog')).toBeNull(); expect(document.activeElement).toBe(settings);
   });
   it('keeps composition Enter safe, stops the real runtime and reports rename errors beside the inline editor', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: '中文输入' } });
     fireEvent.compositionStart(draft); fireEvent.keyDown(draft, { key: 'Enter' }); fireEvent.compositionEnd(draft);
     fireEvent.keyDown(draft, { key: 'Enter', keyCode: 229 }); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
@@ -190,7 +203,7 @@ describe('production workspace navigation', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('rename refused');
   });
   it('routes only Pi-provided commands into draft, and closes the narrow inspector with focus return', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension', description: 'Real extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
     const commands = screen.getByRole('button', { name: /搜索与命令/ }); commands.focus(); fireEvent.click(commands);
     fireEvent.click(screen.getByRole('button', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
@@ -213,9 +226,9 @@ function deferred<T>() {
 }
 const selected = (title: string) => expect(screen.getByRole('button', { name: title }).getAttribute('aria-current')).toBe('page');
 const closeTab = (title: string) => fireEvent.click(screen.getByRole('button', { name: `关闭 ${title}` }));
-const inspectorToggle = () => screen.getAllByRole('button', { name: /(?:显示|收起) 检查器/ })[0]!;
+const inspectorToggle = () => screen.getAllByRole('button', { name: /检查器/ })[0]!;
 async function seedProjects() {
-  const view = render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
+  const view = render(<App />); await findProject('/one/app'); selectProject('/one/app');
   await createSession(); await createSession(); await createSession();
   selectProject('/two/app'); await createSession(); selectProject('/one/app'); selectSession('会话 3');
   return view;
@@ -236,7 +249,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     if (scenario === 'empty') selectProject('/empty'); else { selectProject('/two/app'); selectSession('会话 4'); }
     await act(async () => pending.resolve(true));
     expect(container.querySelector('[data-session-id="s3"]')).toBeNull();
-    if (scenario === 'empty') { expect(screen.queryByRole('tab')).toBeNull(); expect(within(screen.getByRole('navigation', { name: '项目' })).getByTitle('/empty').getAttribute('aria-current')).toBe('page'); }
+    if (scenario === 'empty') { expect(screen.queryByRole('tab')).toBeNull(); expect(projectButton('/empty').getAttribute('aria-current')).toBe('page'); }
     else selected('会话 4');
     selectProject('/one/app'); selectSession(scenario === 'remembered' ? '会话 1' : '会话 2'); selected(scenario === 'remembered' ? '会话 1' : '会话 2');
     expect(desktop.startSession).toHaveBeenCalledTimes(4); expect(listeners.size).toBe(4);
@@ -273,7 +286,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     selectProject('/two/app'); selectProject('/one/app'); selectSession('会话 5'); selected('会话 5');
   });
   it('creates and selects a chat after a project draft is submitted', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
+    render(<App />); await findProject('/one/app'); selectProject('/one/app');
     const first = deferred<Awaited<ReturnType<DesktopAPI['createSession']>>>();
     vi.mocked(desktop.createSession).mockReturnValueOnce(first.promise);
     await submitPendingCreate(); expect(desktop.createSession).toHaveBeenCalledTimes(1);
@@ -284,7 +297,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     expect(desktop.startSession).toHaveBeenCalledTimes(1);
   });
   it('keeps both real drafts/attachments and background events; send completion owns only its submission', async () => {
-    const { container, unmount } = render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
+    const { container, unmount } = render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
     const a = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
     fireEvent.change(a, { target: { value: 'A submitted' } });
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
@@ -339,9 +352,9 @@ describe('Workspace edge ownership with actual App', () => {
 
 describe('Session launch through real App and direct sidebar controller', () => {
   it('opens a project draft without creating history until the first message', async () => {
-    render(<App />); await screen.findByTitle('/one/app');
-    fireEvent.click(screen.getByTitle('/one/app'));
-    fireEvent.click(screen.getByTitle('/one/app'));
+    render(<App />); await findProject('/one/app');
+    fireEvent.click(projectButton('/one/app'));
+    fireEvent.click(projectButton('/one/app'));
     expect(desktop.createSession).not.toHaveBeenCalled();
     const draft = await screen.findByRole('textbox', { name: '发送消息' });
     fireEvent.change(draft, { target: { value: 'first real task' } });
@@ -351,7 +364,7 @@ describe('Session launch through real App and direct sidebar controller', () => 
     expect(desktop.createSession).toHaveBeenCalledTimes(1);
   });
   it('keeps staged project attachments when switching between unsent project drafts', async () => {
-    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
+    render(<App />); await findProject('/one/app'); selectProject('/one/app');
     vi.mocked(desktop.chooseAttachments).mockResolvedValue(['/context.txt']);
     fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
     selectProject('/two/app'); expect(screen.queryByText('context.txt')).toBeNull();
@@ -360,7 +373,7 @@ describe('Session launch through real App and direct sidebar controller', () => 
   });
   it('opens a remembered project and creates a chat directly without a dialog', async () => {
     vi.mocked(desktop.createSession).mockResolvedValue({ id: 'chosen', title: 'Chosen session', cwd: '/one/app', kind: 'chat', processStatus: 'running', activity: 'idle' });
-    const { container } = render(<App />); await screen.findByTitle('/one/app');
+    const { container } = render(<App />); await findProject('/one/app');
     const opener = within(screen.getAllByRole('region', { name: 'app' })[0]).getByRole('button', { name: '在 app 中新建对话（/one/app）' }); opener.focus(); fireEvent.click(opener);
     const draft = await screen.findByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'start work' } });
     await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
@@ -369,7 +382,7 @@ describe('Session launch through real App and direct sidebar controller', () => 
     expect(container.querySelector('[data-session-id="chosen"]')).toBeTruthy();
   });
   it('keeps the Pi-compatible terminal reachable from a project without creating a chat first', async () => {
-    render(<App />); await screen.findByTitle('/one/app');
+    render(<App />); await findProject('/one/app');
     fireEvent.click(screen.getByRole('button', { name: '在 app 中打开兼容终端（/one/app）' }));
     const dialog = screen.getByRole('dialog', { name: '打开项目' });
     const terminal = within(dialog).getByRole('radio', { name: /兼容终端/ }) as HTMLInputElement;
@@ -381,7 +394,7 @@ describe('Session launch through real App and direct sidebar controller', () => 
   it('keeps project drafts usable while Pi is unconfigured and routes to settings', async () => {
     boot = { ...boot, preferences: { ...boot.preferences, recentProjects: [] }, runtime: null };
     boot = { ...boot, preferences: { ...boot.preferences, recentProjects: ['/empty'] } };
-    render(<App />); await screen.findByTitle('/empty'); selectProject('/empty');
+    render(<App />); await findProject('/empty'); selectProject('/empty');
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBeTruthy();
     expect(screen.getByRole('status').textContent).toContain('尚未配置 Pi');
     fireEvent.click(screen.getByRole('button', { name: '打开设置' }));
