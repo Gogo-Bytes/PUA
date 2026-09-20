@@ -29,6 +29,7 @@ beforeEach(() => {
     inspectProjectResources: vi.fn().mockResolvedValue({ hasResources: false, paths: [] }),
     createSession: vi.fn(async options => ({ id: `s${++count}`, title: `会话 ${count}`, cwd: options.cwd, kind: options.kind, processStatus: 'running', activity: 'idle' })),
     startSession: vi.fn().mockResolvedValue(undefined), closeSession: vi.fn().mockResolvedValue(true), renameChatSession: vi.fn().mockResolvedValue(undefined),
+    chooseAttachments: vi.fn().mockResolvedValue([]),
     chooseChatAttachments: vi.fn().mockResolvedValue([{ id: 'attachment-1', name: 'context.txt', path: '/context.txt', size: 7, kind: 'file' }]),
     removeChatAttachment: vi.fn().mockResolvedValue(undefined), sendChatMessage: vi.fn().mockResolvedValue(undefined), stopChat: vi.fn().mockResolvedValue(undefined),
     savePreferences: vi.fn(async (preferences: Preferences) => { boot = { ...boot, preferences }; return boot; }),
@@ -348,6 +349,14 @@ describe('Session launch through real App and direct sidebar controller', () => 
     fireEvent.keyDown(draft, { key: 'Enter' });
     await waitFor(() => expect(desktop.createSession).toHaveBeenCalledWith(expect.objectContaining({ cwd: '/one/app', kind: 'chat', startMode: 'new' })));
     expect(desktop.createSession).toHaveBeenCalledTimes(1);
+  });
+  it('keeps staged project attachments when switching between unsent project drafts', async () => {
+    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app');
+    vi.mocked(desktop.chooseAttachments).mockResolvedValue(['/context.txt']);
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
+    selectProject('/two/app'); expect(screen.queryByText('context.txt')).toBeNull();
+    selectProject('/one/app'); expect(screen.getByText('context.txt')).toBeTruthy();
+    expect(desktop.createSession).not.toHaveBeenCalled();
   });
   it('opens a remembered project and creates a chat directly without a dialog', async () => {
     vi.mocked(desktop.createSession).mockResolvedValue({ id: 'chosen', title: 'Chosen session', cwd: '/one/app', kind: 'chat', processStatus: 'running', activity: 'idle' });

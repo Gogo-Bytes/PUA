@@ -17,6 +17,7 @@ interface SessionInputOptions {
 export function useSessionInput({ active, activeId, dismissAfterInsert, reportError, afterReference }: SessionInputOptions) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [projectDrafts, setProjectDrafts] = useState<Record<string, string>>({});
+  const [projectAttachmentPaths, setProjectAttachmentPaths] = useState<Record<string, string[]>>({});
   const [initialSends, setInitialSends] = useState<Record<string, string>>({});
   const [initialAttachments, setInitialAttachments] = useState<Record<string, ChatAttachment[]>>({});
   const handles = useRef(new Map<string, TerminalHandle>());
@@ -27,11 +28,14 @@ export function useSessionInput({ active, activeId, dismissAfterInsert, reportEr
   const replaceDraft = (id: string, text: string) => setDrafts(current => ({ ...current, [id]: text }));
   const readProjectDraft = (cwd: string) => projectDrafts[cwd] || '';
   const replaceProjectDraft = (cwd: string, text: string) => setProjectDrafts(current => ({ ...current, [cwd]: text }));
+  const readProjectAttachmentPaths = (cwd: string) => projectAttachmentPaths[cwd] ?? [];
+  const replaceProjectAttachmentPaths = (cwd: string, paths: string[]) => setProjectAttachmentPaths(current => ({ ...current, [cwd]: [...new Set(paths)].slice(0, 20) }));
   const beginProjectSession = (cwd: string, id: string, text: string, attachments: ChatAttachment[] = []) => {
     setDrafts(current => ({ ...current, [id]: text }));
     setInitialSends(current => ({ ...current, [id]: text }));
     setInitialAttachments(current => ({ ...current, [id]: attachments }));
     setProjectDrafts(current => { const next = { ...current }; delete next[cwd]; return next; });
+    setProjectAttachmentPaths(current => { const next = { ...current }; delete next[cwd]; return next; });
   };
   const readInitialSend = (id: string) => initialSends[id];
   const readInitialAttachments = (id: string) => initialAttachments[id] ?? [];
@@ -81,7 +85,7 @@ export function useSessionInput({ active, activeId, dismissAfterInsert, reportEr
   const toggleSearch = useCallback(() => setSearchOpen(value => !value), []);
   const hideSearch = useCallback(() => setSearchOpen(false), []);
   return {
-    readDraft, replaceDraft, readProjectDraft, replaceProjectDraft, beginProjectSession, stageProjectAttachments, readInitialSend, readInitialAttachments, clearInitialSend, forgetDraft, seedDraft, onTerminalReady, insertCommand, chooseTerminalReferences, reference,
+    readDraft, replaceDraft, readProjectDraft, replaceProjectDraft, readProjectAttachmentPaths, replaceProjectAttachmentPaths, beginProjectSession, stageProjectAttachments, readInitialSend, readInitialAttachments, clearInitialSend, forgetDraft, seedDraft, onTerminalReady, insertCommand, chooseTerminalReferences, reference,
     searchOpen, searchText, found, toggleSearch, hideSearch,
     editSearch: (text: string) => { setSearchText(text); setFound(true); },
     find: (backwards?: boolean) => setFound(handle()?.search(searchText, backwards) ?? false),

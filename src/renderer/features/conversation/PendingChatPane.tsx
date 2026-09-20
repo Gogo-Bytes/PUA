@@ -10,12 +10,14 @@ interface Props {
   runtimeAvailable: boolean;
   value: string;
   onValueChange(value: string): void;
+  stagedAttachmentPaths?: string[];
+  onStagedAttachmentPathsChange?(paths: string[]): void;
   onStart(value: string, trust: ProjectTrust, attachmentPaths: string[]): void | Promise<void>;
   onSettings(): void;
 }
 
 /** A project-scoped composer that has no Pi/session identity until its first send. */
-export function PendingChatPane({ cwd, runtimeAvailable, value, onValueChange, onStart, onSettings }: Props) {
+export function PendingChatPane({ cwd, runtimeAvailable, value, onValueChange, stagedAttachmentPaths = [], onStagedAttachmentPathsChange, onStart, onSettings }: Props) {
   const [inspection, setInspection] = useState<{ cwd: string; info?: ProjectResourceInfo; error?: string }>();
   const [trust, setTrust] = useState<ProjectTrust>('default');
   const [attachmentPaths, setAttachmentPaths] = useState<string[]>([]);
@@ -24,7 +26,7 @@ export function PendingChatPane({ cwd, runtimeAvailable, value, onValueChange, o
   const editor = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     let current = true;
-    setInspection(undefined); setTrust('default'); setAttachmentPaths([]); setSkillDismissed(false); setPromptDismissed(false);
+    setInspection(undefined); setTrust('default'); setAttachmentPaths(stagedAttachmentPaths); setSkillDismissed(false); setPromptDismissed(false);
     const timer = setTimeout(() => {
       void desktopClient.inspectProjectResources(cwd).then(info => { if (current) setInspection({ cwd, info }); }).catch(error => { if (current) setInspection({ cwd, error: String(error) }); });
     }, 150);
@@ -45,7 +47,7 @@ export function PendingChatPane({ cwd, runtimeAvailable, value, onValueChange, o
   const addAttachments = async () => {
     try {
       const selected = await desktopClient.chooseAttachments();
-      if (selected.length) setAttachmentPaths(current => [...new Set([...current, ...selected])].slice(0, 20));
+      if (selected.length) setAttachmentPaths(current => { const next = [...new Set([...current, ...selected])].slice(0, 20); onStagedAttachmentPathsChange?.(next); return next; });
     } catch (error) { /* Composer owns submission failures; picker cancellation is quiet. */ }
   };
   return <section className="pending-chat-pane" aria-label="新对话">
@@ -61,7 +63,7 @@ export function PendingChatPane({ cwd, runtimeAvailable, value, onValueChange, o
     <div className="pending-composer-wrap">
       {!!skillSuggestions.length && <div className="skill-menu" role="listbox" aria-label="技能建议">{skillSuggestions.map(skill => <Button key={skill.name} role="option" aria-selected="false" onClick={() => { const before = value.slice(0, value.length - (skillMatch?.[1].length ?? 0)); onValueChange(`${before.replace(/@$/, '')}@${skill.name} `); setSkillDismissed(true); editor.current?.focus(); }}><code>@{skill.name}</code><span>{skill.description || '项目技能'}</span></Button>)}</div>}
       {!!promptSuggestions.length && <div className="skill-menu" role="listbox" aria-label="提示模板建议">{promptSuggestions.map(prompt => <Button key={prompt.name} role="option" aria-selected="false" onClick={() => { const before = value.slice(0, value.length - (promptMatch?.[1].length ?? 0)); onValueChange(`${before.replace(/\/$/, '')}/${prompt.name} `); setPromptDismissed(true); editor.current?.focus(); }}><code>/{prompt.name}</code><span>项目提示模板</span></Button>)}</div>}
-      <Composer conversationKey={`draft:${cwd}`} editorRef={editor} value={value} onValueChange={text => { onValueChange(text); setSkillDismissed(false); setPromptDismissed(false); }} attachments={attachments} onAddAttachments={() => void addAttachments()} onRemoveAttachment={id => setAttachmentPaths(current => current.filter(path => path !== id))} onSend={async submission => { if (inspecting) throw new Error('正在检查项目资源，请稍后再发送'); if (inspectionError) throw new Error(inspectionError); await onStart(submission.value, trust, attachmentPaths); setAttachmentPaths([]); }} onEditorKeyDown={event => { if (event.key === 'Escape') { setSkillDismissed(true); setPromptDismissed(true); } if (event.key === 'ArrowDown' && (skillSuggestions.length || promptSuggestions.length)) { event.preventDefault(); event.currentTarget.closest('.pending-composer-wrap')?.querySelector<HTMLButtonElement>('.skill-menu [role=option]')?.focus(); } }} labels={{ message: '发送消息', placeholder: '描述任务、粘贴内容或添加文件…', hint: 'Enter 发送 · ⇧Enter 换行', send: '发送消息', addAttachments: '添加附件', attachments: '附件', removeAttachment: name => `移除 ${name}`, queued: count => `${count} 已排队`, failed: '无法开始对话', error: '操作失败' }}/>
+      <Composer conversationKey={`draft:${cwd}`} editorRef={editor} value={value} onValueChange={text => { onValueChange(text); setSkillDismissed(false); setPromptDismissed(false); }} attachments={attachments} onAddAttachments={() => void addAttachments()} onRemoveAttachment={id => setAttachmentPaths(current => { const next = current.filter(path => path !== id); onStagedAttachmentPathsChange?.(next); return next; })} onSend={async submission => { if (inspecting) throw new Error('正在检查项目资源，请稍后再发送'); if (inspectionError) throw new Error(inspectionError); await onStart(submission.value, trust, attachmentPaths); setAttachmentPaths([]); onStagedAttachmentPathsChange?.([]); }} onEditorKeyDown={event => { if (event.key === 'Escape') { setSkillDismissed(true); setPromptDismissed(true); } if (event.key === 'ArrowDown' && (skillSuggestions.length || promptSuggestions.length)) { event.preventDefault(); event.currentTarget.closest('.pending-composer-wrap')?.querySelector<HTMLButtonElement>('.skill-menu [role=option]')?.focus(); } }} labels={{ message: '发送消息', placeholder: '描述任务、粘贴内容或添加文件…', hint: 'Enter 发送 · ⇧Enter 换行', send: '发送消息', addAttachments: '添加附件', attachments: '附件', removeAttachment: name => `移除 ${name}`, queued: count => `${count} 已排队`, failed: '无法开始对话', error: '操作失败' }}/>
     </div>
   </section>;
 }
