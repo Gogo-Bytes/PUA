@@ -47,7 +47,7 @@ export const desktopValueGuards = {
   inspectProjectResources: (v: unknown) => record(v) && bool(v.hasResources) && strings(v.paths),
   createSession: sessionInfo,
   searchHistory: v => arrayOf(v, x => record(x) && text(x.taskId) && text(x.title) && text(x.cwd) && text(x.entryId) && oneOf(x.role, ['user', 'assistant', 'custom', 'summary', 'bashExecution']) && text(x.snippet) && finite(x.timestamp) && bool(x.archived) && text(x.query)),
-  closeSession: bool, archiveSession: empty, restoreArchivedSession: sessionInfo, deleteArchivedSession: empty, setSessionPinned: empty,
+  closeSession: bool, restoreArchivedSession: sessionInfo, deleteArchivedSession: empty, setSessionPinned: empty,
   startSession: empty, removeChatAttachment: empty, sendChatMessage: empty, stopChat: empty,
   respondToExtensionUI: empty, renameChatSession: empty, forkChatSession: v => record(v) && text(v.text) && bool(v.cancelled), cloneChatSession: sessionInfo, getChatAvailableModels: v => arrayOf(v, x => record(x) && text(x.provider) && text(x.id)), openExternal: empty, openProject: empty, writeClipboard: empty,
   setChatModel: empty, setChatThinkingLevel: empty, getChatSessionStats: sessionStats, getChatAutoSettings: v => record(v) && bool(v.autoCompaction) && bool(v.autoRetry) && (v.steeringMode === undefined || v.steeringMode === 'all' || v.steeringMode === 'one-at-a-time') && (v.followUpMode === undefined || v.followUpMode === 'all' || v.followUpMode === 'one-at-a-time'), compactChatSession: empty,
@@ -79,7 +79,7 @@ export function parseDesktopResult<K extends InvokeMethod>(method: K, raw: unkno
 
 type VoidMethod = { [K in InvokeMethod]: RequestResult<K> extends void ? K : never }[InvokeMethod];
 export const desktopVoidMethods = {
-  removeChatAttachment: true, startSession: true, sendChatMessage: true, stopChat: true, archiveSession: true, deleteArchivedSession: true, setSessionPinned: true,
+  removeChatAttachment: true, startSession: true, sendChatMessage: true, stopChat: true, deleteArchivedSession: true, setSessionPinned: true,
   respondToExtensionUI: true, renameChatSession: true, setChatModel: true, setChatThinkingLevel: true, setChatAutoCompaction: true, setChatAutoRetry: true, setChatSteeringMode: true, setChatFollowUpMode: true, compactChatSession: true, openExternal: true, openProject: true, writeClipboard: true,
 } satisfies Record<VoidMethod, true>;
 
@@ -113,7 +113,7 @@ export function isDesktopSessionEvent(v: unknown): v is import('./conversation.j
     switch (v.type) {
       case 'chat-fork-metadata': return chatTree(v.sessionTree) && Array.isArray(v.entries) && v.entries.every(entry => record(entry) && text(entry.entryId) && text(entry.text));
       case 'terminal-data': return text(v.data);
-      case 'session-info': return optional(v.title, text) && optional(v.processStatus, processStatus) && optional(v.activity, activity);
+      case 'session-info': return optional(v.title, text) && optional(v.processStatus, processStatus) && optional(v.activity, activity) && optional(v.lastActivityAt, finite);
       case 'chat-state': return state(v.state);
       case 'chat-snapshot': return record(v.snapshot) && state(v.snapshot) && activity(v.snapshot.activity) && queue(v.snapshot.queue) && dictionary(v.snapshot.statuses) && Array.isArray(v.snapshot.widgets) && Array.isArray(v.snapshot.messages) && Array.isArray(v.snapshot.commands) && optional(v.snapshot.sessionTree, chatTree);
       case 'chat-message-start': case 'chat-message-end': return message(v.message);

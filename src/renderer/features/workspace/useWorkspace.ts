@@ -90,7 +90,7 @@ export function useWorkspace(
     if (event.type === 'session-info') {
       const previous = sessionsRef.current.find(session => session.id === event.id);
       updateSessions(sessions => sessions.map(session => session.id === event.id
-        ? { ...session, title: event.title ?? session.title, processStatus: event.processStatus ?? session.processStatus, activity: event.activity ?? session.activity } : session));
+        ? { ...session, title: event.title ?? session.title, processStatus: event.processStatus ?? session.processStatus, activity: event.activity ?? session.activity, lastActivityAt: event.lastActivityAt ?? session.lastActivityAt } : session));
       if (previous && previous.activity !== 'idle' && event.activity === 'idle') queueAttention(event.id, 'completed', 'info', '任务已完成');
       if (event.processStatus === 'exited' && previous?.processStatus !== 'exited') markSessionExited(event.id, previous?.exitCode ?? 0);
     }

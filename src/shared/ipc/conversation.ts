@@ -109,5 +109,5 @@ export type SessionEvent =
   | { type: 'chat-notice'; id: string; level: 'info' | 'warning' | 'error'; message: string }
   | { type: 'chat-queue-recovered'; id: string; requestId: string; queue: ChatQueue }
   | { type: 'chat-editor-text'; id: string; text: string }
-  | { type: 'session-info'; id: string; title?: string; processStatus?: SessionProcessStatus; activity?: SessionActivity }
+  | { type: 'session-info'; id: string; title?: string; processStatus?: SessionProcessStatus; activity?: SessionActivity; lastActivityAt?: number }
   | { type: 'exit'; id: string; exitCode: number };

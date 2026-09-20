@@ -36,7 +36,6 @@ interface ProcessResource {
   activity: SessionActivity;
   nativeIdentity?: NativePiSessionIdentity;
   expectedIdentity?: ChatSessionIdentity;
-  firstMessageAccepted: boolean;
   pending: Map<string, { resolve(value?: unknown): void; reject(error: Error): void; command: RpcOperation['type'] }>;
   payloads: Map<AttachmentToken, AttachmentPayload>;
   sources: Map<AttachmentSourceId, string>;
@@ -85,7 +84,7 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
     if (options.kind === 'chat' && options.projectTrust === 'decline') args.push('--no-approve');
     let resolveHostExit!: () => void;
     const hostExit = new Promise<void>(resolve => { resolveHostExit = resolve; });
-    this.resources.set(id, { id, runtime: { ...runtime, args }, ...(managedIdentity ? { expectedIdentity: managedIdentity } : {}), cols: options.cols ?? 100, rows: options.rows ?? 30, hostEnded: false, hostExit, resolveHostExit, exitCode: 0, invalidated: false, activity: 'idle', firstMessageAccepted: false, pending: new Map(), payloads: new Map(), sources: new Map() });
+    this.resources.set(id, { id, runtime: { ...runtime, args }, ...(managedIdentity ? { expectedIdentity: managedIdentity } : {}), cols: options.cols ?? 100, rows: options.rows ?? 30, hostEnded: false, hostExit, resolveHostExit, exitCode: 0, invalidated: false, activity: 'idle', pending: new Map(), payloads: new Map(), sources: new Map() });
     this.diagnostics.register(id, options.kind);
   }
   forget(id: string): void { this.resources.delete(id); }
@@ -351,11 +350,12 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
       return { data: item.imageData, mimeType: item.mimeType };
     });
     await this.request(resource, { type: 'send', text: input.text, filePaths, images, queuePreference: input.queuePreference });
-    if (!resource.firstMessageAccepted && resource.nativeIdentity) {
+    this.emit({ type: 'session-info', id, lastActivityAt: Date.now() });
+    if (resource.nativeIdentity) {
       try {
-        await this.context.onChatMessageAccepted?.(id, resource.nativeIdentity);
-        resource.firstMessageAccepted = true;
-      } catch { /* Message acceptance already belongs to Pi; a later prompt retries indexing. */ }
+        void Promise.resolve(this.context.onChatMessageAccepted?.(id, resource.nativeIdentity))
+          .catch(error => this.notice(id, `消息已发送，但任务历史暂时无法保存：${String(error)}`));
+      } catch (error) { this.notice(id, `消息已发送，但任务历史暂时无法保存：${String(error)}`); }
     }
   }
   async getAvailableModels(id: string): Promise<ChatModel[]> {

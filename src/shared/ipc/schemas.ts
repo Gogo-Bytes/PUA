@@ -67,7 +67,6 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   inspectProjectResources: idArgs,
   startSession: idArgs,
   closeSession: idArgs,
-  archiveSession: idArgs,
   restoreArchivedSession: idArgs,
   deleteArchivedSession: idArgs,
   setSessionPinned: tuple<'setSessionPinned'>(2, (id, pinned) => [text(id), typeof pinned === 'boolean' ? pinned : (() => { throw new Error('无效置顶状态'); })()]),

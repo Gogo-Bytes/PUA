@@ -51,7 +51,7 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 ### 已确认的产品决定（2026-09-18）
 
 - 关闭任务默认归档，不从任务索引或 Pi 历史中立即删除；归档记录在详情设置中可恢复。
-- 详情设置提供二次确认的永久删除；当前实现会先删除对应 Pi 会话文件，再删除 PUA 索引，任一步失败都保留记录并报告错误。该操作不可逆。
+- 详情设置提供二次确认的永久删除；实现会验证 Pi identity/cwd 与普通文件边界，将文件在同文件系统 rename 为 tombstone，再提交 PUA 索引删除和最终 unlink。中途失败会独立补偿原路径与索引；只有两者都成功才视为不可逆删除。
 - 自动永久删除暂不启用；后续可在详情设置增加 7 天/30 天倒计时策略，必须在实现前单独确认提示文案、时区、撤销窗口和 Pi 文件清理范围。
 - 置顶任务固定排在普通任务之前，再按最近活动时间倒序；同一时间以任务 ID 稳定排序。
 - 允许后台驻留：关闭窗口只隐藏到系统托盘，Pi 任务继续由当前单窗口托管；系统菜单“退出”或托盘“退出并停止任务”才执行集中清理并退出。多窗口不实现。
@@ -63,7 +63,7 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 ## 已确认的 Pi-specific 约束
 
 - PUA 不用 `--continue` 猜测重启任务。新建任务使用 Pi 原生 `--session-id`；首次消息被 Pi RPC 接受后，主进程才把实际 `sessionId/sessionFile` 写入本地任务索引。
-- 恢复前先校验索引条目的绝对 `sessionFile` 存在；启动使用 Pi 原生 session selector，并校验握手返回的 `sessionId/sessionFile` 与索引一致。失效条目不自动创建空历史。
+- 恢复登记和 dormant 任务真正启动前都校验索引条目的绝对 `sessionFile`：必须是非符号链接的普通文件，文件头 identity/cwd 必须与索引一致。启动使用 Pi 原生 session selector，并再校验握手返回的 `sessionId/sessionFile`。由于 Pi 跨进程自行打开路径，校验与打开之间仍有无法原子绑定 inode 的残余竞态；失效条目不自动创建空历史。
 - `--no-session` 仍保留给 Pi/兼容终端；它表示内存会话，不进入 PUA 的可恢复任务索引。
 - `--continue`、自定义 `--session-id` 等 Pi 参数仍可用于兼容终端入口；原生 RPC 对话由 PUA 负责会话 selector，只有未指定原生 selector 时才注入自己的 identity。
 - Pi 的 Session Tree/Fork、steer/follow-up、skills、compact、session stats、扩展 UI 和本地工具能力继续由 Pi/RPC 提供；Codex 没有的能力不为追求视觉一致而删除或改写语义。

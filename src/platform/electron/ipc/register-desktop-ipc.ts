@@ -45,22 +45,26 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('savePreferences', next => preferences.savePreferences(next));
   handle('inspectProjectResources', cwd => inspectProjectResources(cwd));
   handle('createSession', options => preferences.createSession(options, requireCurrent().capabilities));
-  handle('startSession', (id) => applySessionStartResult(requireCurrent().capabilities.session.start(id)));
+  handle('startSession', async (id) => {
+    const { capabilities } = requireCurrent();
+    await preferences.verifySessionForStart(id);
+    return applySessionStartResult(capabilities.session.start(id));
+  });
   handle('closeSession', async (id) => {
     const { window, capabilities } = requireCurrent();
-    const session = requireSessionSnapshot(capabilities.session.get(id));
-    if (isSessionBusy(session, capabilities.activity(id))) {
+    const session = capabilities.session.get(id);
+    if (session && isSessionBusy(session, capabilities.activity(id))) {
       const { response } = await dialog.showMessageBox(window, {
         type: 'question', buttons: ['保留会话', '关闭进程'], defaultId: 0, cancelId: 0,
         message: '关闭这个 Pi 会话？', detail: '正在进行的任务会被中断。已保存的历史仍由 Pi 管理，可继续最近会话或在兼容终端中恢复。',
       });
       if (response !== 1) return false;
     }
-    unwrapSessionResult(await capabilities.session.close(id));
-    try { await preferences.archiveSession(id); } catch (error) { console.warn(`无法归档已关闭会话 ${id}: ${String(error)}`); }
+    if (session) unwrapSessionResult(await capabilities.session.close(id));
+    try { await preferences.archiveSession(id); }
+    catch (error) { throw new Error(`Pi 进程已关闭，但归档失败；任务仍保留，可重试归档。${String(error)}`); }
     return true;
   });
-  handle('archiveSession', async id => { await preferences.archiveSession(id); });
   handle('restoreArchivedSession', id => preferences.restoreArchivedSession(id));
   handle('deleteArchivedSession', id => preferences.deleteArchivedSession(id));
   handle('setSessionPinned', (id, pinned) => preferences.setSessionPinned(id, pinned));

@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { ReviewFailure } from '../../../src/modules/change-review/index';
 import { invokeChannels, sendChannels, type RequestArgs, type RequestMethod } from '../../../src/shared/ipc/channels';
 import { requestParsers } from '../../../src/shared/ipc/schemas';
-import { deferred, failure, fakeCapabilities, fakeWindow, sessionInfo } from './main-fakes';
+import { deferred, failure, fakeCapabilities, fakeWindow, sessionInfo, snapshot } from './main-fakes';
 
 const initial = { piPath: '', nodePath: '', args: [], fontSize: 14, recentProjects: ['/old'] };
 const create = { cwd: '/fake/project', kind: 'chat', startMode: 'new', projectTrust: 'default' } as const;
 const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   bootstrap: [], chooseDirectory: [], chooseFile: [], chooseAttachments: [], readClipboard: [],
-  chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], archiveSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true], searchHistory: [{ query: 'message', limit: 10 }],
+  chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true], searchHistory: [{ query: 'message', limit: 10 }],
   stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], writeClipboard: ['clipboard'],
   savePreferences: [initial], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
@@ -34,7 +34,7 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.dialog.showOpenDialog.mock.calls.map(call => call[1].properties)).toEqual([['openDirectory'], ['openFile'], ['openFile', 'multiSelections'], ['openFile', 'multiSelections']]);
     expect(h.dialog.showOpenDialog.mock.calls.every(call => call[0] === h.window)).toBe(true);
     expect(h.capabilities.registerChatAttachments).toHaveBeenCalledExactlyOnceWith('id', ['/fake/file']); expect(results.chooseChatAttachments).toEqual([]);
-    expect(h.capabilities.createSession).toHaveBeenCalledExactlyOnceWith(h.runtime, create); expect(results.createSession).toEqual(sessionInfo);
+    expect(h.capabilities.createSession).toHaveBeenCalledExactlyOnceWith(h.runtime, create); expect(results.createSession).toEqual(expect.objectContaining({ ...sessionInfo, lastActivityAt: expect.any(Number) }));
     expect(h.capabilities.session.start).toHaveBeenCalledWith('id'); expect(h.capabilities.session.close).toHaveBeenCalledWith('id'); expect(results.closeSession).toBe(true);
     expect(h.capabilities.conversation.send).toHaveBeenCalledExactlyOnceWith('id', { text: 'message', attachmentIds: [], delivery: 'prompt' });
     expect(h.capabilities.conversation.stop).toHaveBeenCalledExactlyOnceWith('id'); expect(h.capabilities.conversation.respond).toHaveBeenCalledExactlyOnceWith('id', { id: 'request', confirmed: true });
@@ -91,6 +91,22 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.capabilities.registerChatAttachments).toHaveBeenCalledWith('id', ['/old/file']); expect(h.capabilities.session.close).toHaveBeenCalledOnce(); expect(nextCore.registerChatAttachments).not.toHaveBeenCalled(); expect(nextCore.session.close).not.toHaveBeenCalled();
     h.holder.set({ window: h.window, capabilities: h.capabilities }); h.dialog.showMessageBox.mockResolvedValueOnce({ response: 0 }); expect(await h.call('closeSession', 'id')).toBe(false); expect(h.capabilities.session.close).toHaveBeenCalledOnce();
     h.capabilities.session.close.mockResolvedValueOnce(failure); await expect(h.call('closeSession', 'id')).rejects.toThrow('仍保留会话占用');
+  });
+  it('keeps a closed task visible when archive commit fails and retries metadata without closing twice', async () => {
+    const h = harness();
+    vi.spyOn(h.preferences, 'archiveSession').mockRejectedValueOnce(new Error('index denied')).mockResolvedValueOnce(undefined);
+    h.capabilities.session.get.mockReturnValueOnce(snapshot).mockReturnValueOnce(undefined);
+    await expect(h.call('closeSession', 'id')).rejects.toThrow('任务仍保留，可重试归档');
+    expect(h.capabilities.session.close).toHaveBeenCalledTimes(1);
+    await expect(h.call('closeSession', 'id')).resolves.toBe(true);
+    expect(h.capabilities.session.close).toHaveBeenCalledTimes(1);
+    expect(h.preferences.archiveSession).toHaveBeenCalledTimes(2);
+  });
+  it('revalidates durable Pi history before starting a dormant task', async () => {
+    const h = harness();
+    vi.spyOn(h.preferences, 'verifySessionForStart').mockRejectedValueOnce(new Error('history replaced'));
+    await expect(h.call('startSession', 'id')).rejects.toThrow('history replaced');
+    expect(h.capabilities.session.start).not.toHaveBeenCalled();
   });
   it('create and write-failure compensation retain the original core across holder replacement; client cannot edit recents', async () => {
     const h = harness();

@@ -18,7 +18,6 @@ export const invokeChannels = {
   createSession: 'desktop:create',
   startSession: 'desktop:start',
   closeSession: 'desktop:close',
-  archiveSession: 'desktop:archive',
   restoreArchivedSession: 'desktop:archive-restore',
   deleteArchivedSession: 'desktop:archive-delete',
   setSessionPinned: 'desktop:session-pin',

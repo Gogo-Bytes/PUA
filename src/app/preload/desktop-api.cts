@@ -14,7 +14,6 @@ const api: DesktopBridge = {
   createSession: options => ipcRenderer.invoke(invokeChannels.createSession, options),
   startSession: id => ipcRenderer.invoke(invokeChannels.startSession, id),
   closeSession: id => ipcRenderer.invoke(invokeChannels.closeSession, id),
-  archiveSession: id => ipcRenderer.invoke(invokeChannels.archiveSession, id),
   restoreArchivedSession: id => ipcRenderer.invoke(invokeChannels.restoreArchivedSession, id),
   deleteArchivedSession: id => ipcRenderer.invoke(invokeChannels.deleteArchivedSession, id),
   setSessionPinned: (id, pinned) => ipcRenderer.invoke(invokeChannels.setSessionPinned, id, pinned),

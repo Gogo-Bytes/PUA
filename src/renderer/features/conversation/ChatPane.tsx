@@ -105,16 +105,16 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
 
   const busy = state.activity !== 'idle';
   const unavailable = state.exited || session.processStatus !== 'running';
-  const send = async (delivery?: 'prompt' | 'steer' | 'followUp'): Promise<boolean> => {
+  const send = async (delivery?: 'prompt' | 'steer' | 'followUp', explicitText?: string): Promise<boolean> => {
     if (sendingRef.current || unavailable) return false;
-    const submitted = { ...draftRef.current };
+    const submitted = { ...draftRef.current, ...(explicitText === undefined ? {} : { text: explicitText }) };
     const submittedIds = attachments.map(item => item.id);
     const value = submitted.text.trim(); if (!value && !attachments.length) return false;
     const mode = delivery ?? (busy ? 'steer' : 'prompt');
     sendingRef.current = true;
     try {
       await desktopClient.sendChatMessage(session.id, { text: expandSkillReference(submitted.text, state.commands), attachmentIds: submittedIds, delivery: mode });
-      if (draftRef.current.revision === submitted.revision) changeDraft('');
+      if (draftRef.current.revision === submitted.revision && (explicitText === undefined || draftRef.current.text === explicitText)) changeDraft('');
       setAttachments(current => current.filter(item => !submittedIds.includes(item.id)));
     } catch (error) { onError(String(error)); return false; }
     finally { sendingRef.current = false; }
@@ -160,7 +160,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   useEffect(() => {
     if (!active || !state.ready || !initialMessage || initialSentRef.current) return;
     initialSentRef.current = true;
-    void send('prompt').then(sent => {
+    void send('prompt', initialMessage).then(sent => {
       if (sent) onInitialMessageSent?.();
       else initialSentRef.current = false;
     });
@@ -195,7 +195,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
         onAddAttachments={() => void chooseAttachments()}
         onRemoveAttachment={id => void desktopClient.removeChatAttachment(session.id, id).then(() => setAttachments(current => current.filter(item => item.id !== id))).catch(error => onError(String(error)))}
         onValueChange={value => { changeDraft(value); setSlashDismissed(false); setSkillDismissed(false); }}
-        busy={busy} onSend={() => { void send(); }} onQueue={() => { void send('steer'); }} onFollowUp={() => { void send('followUp'); }} onStop={stop}
+        busy={busy} onSend={async () => { await send(); }} onQueue={async () => { await send('steer'); }} onFollowUp={async () => { await send('followUp'); }} onStop={stop}
         labels={{ message: '发送消息', placeholder: busy ? '输入可在当前工具完成后引导 Pi…' : '描述任务、粘贴内容或添加文件…', hint: busy ? 'Enter 引导 · ⌥Enter 后续 · ⇧Enter 换行' : 'Enter 发送 · ⇧Enter 换行', send: '发送消息', queue: '引导 Pi', stop: '停止运行', addAttachments: '添加附件', attachments: '附件', removeAttachment: name => `移除 ${name}`, failed: '操作失败', error: '操作失败' }}
         onEditorKeyDown={event => {
           if (event.key === 'Escape') { setSlashDismissed(true); setSkillDismissed(true); return; }

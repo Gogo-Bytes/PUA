@@ -35,4 +35,13 @@ describe('main-owned Pi workspace session index', () => {
     await writeFile(file, JSON.stringify([session(), { ...session('bad/id'), sessionFile: 'relative.jsonl' }, { id: 'missing' }]));
     expect(await new JsonWorkspaceSessionStore(file).read()).toEqual([session()]);
   });
+
+  it('does not silently discard the 257th durable task', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'pua-session-store-')); directories.push(directory);
+    const store = new JsonWorkspaceSessionStore(path.join(directory, 'sessions.json'));
+    for (let index = 0; index < 257; index++) await store.upsert(session(`pua-${index}`));
+    const records = await store.read();
+    expect(records).toHaveLength(257);
+    expect(records.map(record => record.id)).toContain('pua-0');
+  });
 });

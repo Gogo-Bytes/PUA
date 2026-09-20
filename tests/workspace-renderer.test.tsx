@@ -122,6 +122,16 @@ describe('production workspace navigation', () => {
     expect(screen.getByRole('button', { name: '会话 2' }).getAttribute('aria-current')).toBe('page');
     expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
+  it('orders recent tasks by the latest Pi-accepted activity in the current window', async () => {
+    render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
+    emit({ id: 's1', type: 'session-info', lastActivityAt: 100 });
+    emit({ id: 's2', type: 'session-info', lastActivityAt: 200 });
+    fireEvent.click(screen.getByRole('button', { name: /最近/ }));
+    const recent = screen.getByRole('list', { name: '最近任务列表' });
+    expect(within(recent).getAllByRole('button').map(button => button.textContent)).toEqual(['会话 2app', '会话 1app']);
+    emit({ id: 's1', type: 'session-info', lastActivityAt: 300 });
+    expect(within(recent).getAllByRole('button').map(button => button.textContent)).toEqual(['会话 1app', '会话 2app']);
+  });
   it('does not consume closed-inspector Escape or editable/IME/local-menu Escape while open', async () => {
     render(<App />); await screen.findByTitle('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });

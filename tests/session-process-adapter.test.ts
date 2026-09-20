@@ -37,7 +37,7 @@ async function running(emit: (event: SessionEvent) => void = () => {}) {
 function reply(host: typeof fake.hosts[number]) { const request = host.postMessage.mock.calls.at(-1)![0]; host.emit('message', { type: 'response', requestId: request.requestId, success: true }); }
 
 describe('SessionProcessAdapter resource contract through main composition', () => {
-  it('uses a Pi session identity for new chats and persists the first accepted prompt identity', async () => {
+  it('uses a Pi session identity for new chats and records every accepted prompt activity', async () => {
     const accepted = vi.fn();
     const sessions = composeMain(() => {}, { prepareProject, onChatMessageAccepted: accepted });
     const chat = await sessions.createSession(runtime, options); applySessionStartResult(sessions.session.start(chat.id));
@@ -46,6 +46,24 @@ describe('SessionProcessAdapter resource contract through main composition', () 
     expect(host.postMessage.mock.calls[0][0]).toMatchObject({ type: 'start', args: ['--session-id', chat.id] });
     const sending = sessions.conversation.send(chat.id, sendIntent('first', [], 'prompt')); reply(host); await sending;
     expect(accepted).toHaveBeenCalledExactlyOnceWith(chat.id, { sessionId: chat.id, sessionFile: '/home/pi/created.jsonl' });
+    const second = sessions.conversation.send(chat.id, sendIntent('second', [], 'prompt')); reply(host); await second;
+    expect(accepted).toHaveBeenCalledTimes(2);
+    const closed = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
+  });
+
+  it('does not keep Conversation sending while durable activity metadata is still writing', async () => {
+    const persistence = deferred<void>();
+    const accepted = vi.fn().mockReturnValue(persistence.promise);
+    const sessions = composeMain(() => {}, { prepareProject, onChatMessageAccepted: accepted });
+    const chat = await sessions.createSession(runtime, options); applySessionStartResult(sessions.session.start(chat.id));
+    const host = fake.hosts[0]; host.emit('spawn');
+    host.emit('message', { type: 'event', event: { type: 'session-info', id: chat.id, processStatus: 'running' } });
+    host.emit('message', { type: 'session-identity', sessionId: chat.id, sessionFile: '/home/pi/created.jsonl' });
+    const first = sessions.conversation.send(chat.id, sendIntent('first', [], 'prompt')); reply(host); await first;
+    expect(accepted).toHaveBeenCalledOnce();
+    const second = sessions.conversation.send(chat.id, sendIntent('second', [], 'prompt')); reply(host); await second;
+    expect(accepted).toHaveBeenCalledTimes(2);
+    persistence.resolve(); await Promise.resolve();
     const closed = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
   });
 

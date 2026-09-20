@@ -43,7 +43,7 @@ export class JsonWorkspaceSessionStore implements WorkspaceSessionStore {
   async read(): Promise<PersistedChatSession[]> {
     try {
       const value: unknown = JSON.parse(await readFile(this.file, 'utf8'));
-      return Array.isArray(value) ? value.filter(valid).slice(0, 256).map(item => normalize({ ...item })) : [];
+      return Array.isArray(value) ? value.filter(valid).map(item => normalize({ ...item })) : [];
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
       throw new Error(`无法读取任务索引 ${this.file}: ${String(error)}`);
@@ -64,7 +64,7 @@ export class JsonWorkspaceSessionStore implements WorkspaceSessionStore {
     const next = this.queue.catch(() => {}).then(async () => {
       const current = await this.read();
       const seen = new Set<string>();
-      const value = update(current).reverse().filter(item => !seen.has(item.id) && seen.add(item.id)).reverse().slice(-256);
+      const value = update(current).reverse().filter(item => !seen.has(item.id) && seen.add(item.id)).reverse();
       await mkdir(path.dirname(this.file), { recursive: true });
       await writeFile(`${this.file}.tmp`, JSON.stringify(value, null, 2), { mode: 0o600 });
       await rename(`${this.file}.tmp`, this.file);

@@ -90,7 +90,6 @@ export interface DesktopAPI {
   createSession(options: CreateSessionOptions): Promise<SessionInfo>;
   startSession(id: string): Promise<void>;
   closeSession(id: string): Promise<boolean>;
-  archiveSession(id: string): Promise<void>;
   restoreArchivedSession(id: string): Promise<SessionInfo>;
   deleteArchivedSession(id: string): Promise<void>;
   setSessionPinned(id: string, pinned: boolean): Promise<void>;

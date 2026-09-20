@@ -5,7 +5,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createDesktopPreferences, validateChatArguments } from '../../../src/app/main/desktop-preferences';
 import type { Preferences, SessionInfo } from '../../../src/shared/ipc/desktop-api';
-import { deferred, failure, fakeCapabilities, sessionInfo, success } from './main-fakes';
+import { deferred, failure, fakeCapabilities, sessionInfo, snapshot, success } from './main-fakes';
 import type { NativePiSessionIdentity } from '../../../src/shared/ipc/pi-session';
 import { JsonWorkspaceSessionStore } from '../../../src/app/main/workspace-session-store';
 
@@ -45,7 +45,7 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     const clone = (capabilities.conversation as unknown as { clone: ReturnType<typeof vi.fn> }).clone;
     const restored = await preferences.cloneSession('id', capabilities);
     expect(clone).toHaveBeenCalledWith(expect.any(String));
-    expect(capabilities.session.start).toHaveBeenCalledTimes(2);
+    expect(capabilities.session.start).toHaveBeenCalledTimes(1);
     expect(capabilities.session.close).toHaveBeenCalledWith(expect.any(String));
     expect(restored).toEqual(expect.objectContaining({ kind: 'chat', title: 'project · 副本', archived: false, pinned: false }));
     expect(store.upsert).toHaveBeenCalledWith(expect.objectContaining({ title: 'project · 副本', piSessionId: 'pi-clone', sessionFile: '/fake/pi-clone.jsonl', archived: false, pinned: false }));
@@ -68,7 +68,7 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
       await expect(preferences.searchHistory({ query: '归档' })).resolves.toEqual([expect.objectContaining({ taskId: 'id', entryId: 'entry-1', query: '归档', archived: false })]);
       await preferences.setSessionPinned('id', true);
       const restored = { ...sessionInfo, processStatus: 'exited' as const, activity: 'idle' as const };
-      await preferences.restoreSessions({ restoreChatSession: vi.fn().mockResolvedValue(restored) });
+      await preferences.restoreSessions({ restoreChatSession: vi.fn().mockResolvedValue(restored), session: { close: capabilities.session.close } });
       await preferences.archiveSession('id');
       expect(preferences.getBootstrap().restoredSessions).toBeUndefined();
       expect(preferences.getBootstrap().archivedSessions).toEqual([expect.objectContaining({ id: 'id', archived: true, pinned: true })]);
@@ -81,6 +81,117 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
+  });
+  it('waits for first-message indexing before archiving the just-closed task', async () => {
+    const persisted = deferred<void>();
+    const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockReturnValue(persisted.promise), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+    const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+    const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+    await preferences.createSession(options, fakeCapabilities());
+    const indexing = preferences.recordChatMessage('id', { sessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' });
+    const archiving = preferences.archiveSession('id');
+    await Promise.resolve(); expect(store.archive).not.toHaveBeenCalled();
+    persisted.resolve(); await indexing; await archiving;
+    expect(store.archive).toHaveBeenCalledExactlyOnceWith('id', true);
+    expect(preferences.getBootstrap().archivedSessions).toEqual([expect.objectContaining({ id: 'id', archived: true })]);
+  });
+
+  it('retries first-message indexing in the background without requiring a second prompt', async () => {
+    vi.useFakeTimers();
+    try {
+      const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockRejectedValueOnce(new Error('temporary')).mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+      const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+      const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+      await preferences.createSession(options, fakeCapabilities());
+      await expect(preferences.recordChatMessage('id', { sessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' })).rejects.toThrow('temporary');
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(store.upsert).toHaveBeenCalledTimes(2);
+      await preferences.archiveSession('id');
+      expect(store.archive).toHaveBeenCalledWith('id', true);
+    } finally { vi.useRealTimers(); }
+  });
+  it('bounds persistent first-message indexing failures with exponential background retries', async () => {
+    vi.useFakeTimers();
+    const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockRejectedValue(new Error('disk offline')), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+      const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => ({ executable: '/fake/pi', args: [], source: '/fake/pi' }), validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+      await preferences.createSession(options, fakeCapabilities());
+      await expect(preferences.recordChatMessage('id', { sessionId: 'pi-1', sessionFile: '/home/pi/session.jsonl' })).rejects.toThrow('disk offline');
+      await vi.runAllTimersAsync();
+      expect(store.upsert).toHaveBeenCalledTimes(9);
+      expect(vi.getTimerCount()).toBe(0);
+      expect(report).toHaveBeenCalledWith(expect.stringContaining('连续 8 次'));
+    } finally { report.mockRestore(); vi.useRealTimers(); }
+  });
+  it('serializes overlapping accepted-message indexing without a stale completion deleting the newest record', async () => {
+    const first = deferred<void>(); const second = deferred<void>();
+    const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+    const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+    const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+    await preferences.createSession(options, fakeCapabilities());
+    const older = preferences.recordChatMessage('id', { sessionId: 'pi-1', sessionFile: '/home/pi/one.jsonl' });
+    const newer = preferences.recordChatMessage('id', { sessionId: 'pi-2', sessionFile: '/home/pi/two.jsonl' });
+    await Promise.resolve();
+    expect(store.upsert).toHaveBeenCalledTimes(1);
+    first.resolve(); await older; await Promise.resolve();
+    expect(store.upsert).toHaveBeenCalledTimes(2);
+    expect(store.upsert).toHaveBeenLastCalledWith(expect.objectContaining({ piSessionId: 'pi-2', sessionFile: '/home/pi/two.jsonl' }));
+    second.resolve(); await newer;
+    expect(store.remove).not.toHaveBeenCalled();
+    await preferences.archiveSession('id');
+    expect(store.archive).toHaveBeenCalledExactlyOnceWith('id', true);
+  });
+
+  it('serializes activity, pin, and automatic title writes without restoring stale metadata', async () => {
+    const activity = deferred<void>();
+    const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+    const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+    const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+    await preferences.createSession(options, fakeCapabilities());
+    await preferences.recordChatMessage('id', { sessionId: 'pi-1', sessionFile: '/home/pi/one.jsonl' });
+    store.upsert.mockReturnValueOnce(activity.promise);
+    const recording = preferences.recordChatMessage('id', { sessionId: 'pi-2', sessionFile: '/home/pi/two.jsonl' });
+    const pinning = preferences.setSessionPinned('id', true);
+    preferences.syncSession({ ...snapshot, id: 'id', title: 'renamed', kind: 'chat' });
+    await Promise.resolve();
+    expect(store.setPinned).not.toHaveBeenCalled();
+    expect(store.rename).not.toHaveBeenCalled();
+    activity.resolve(); await recording; await pinning;
+    await vi.waitFor(() => expect(store.rename).toHaveBeenCalledWith('id', 'renamed'));
+    await preferences.recordChatMessage('id', { sessionId: 'pi-3', sessionFile: '/home/pi/three.jsonl' });
+    expect(store.upsert).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'renamed', pinned: true, piSessionId: 'pi-3' }));
+  });
+
+  it('revalidates a dormant Pi session file immediately before start', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'pua-start-verify-'));
+    try {
+      const sessionFile = path.join(directory, 'session.jsonl');
+      await writeFile(sessionFile, `${JSON.stringify({ type: 'session', id: 'pi-1', cwd: '/fake/project' })}\n`);
+      const record = { id: 'dormant', cwd: '/fake/project', title: 'Dormant', piSessionId: 'pi-1', sessionFile, archived: false, pinned: false, lastActivityAt: 1 };
+      const store = { read: vi.fn().mockResolvedValue([record]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+      const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => ({ executable: '/fake/pi', args: [], source: '/fake/pi' }), validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+      await preferences.restoreSessions(fakeCapabilities() as never);
+      await writeFile(sessionFile, `${JSON.stringify({ type: 'session', id: 'replaced', cwd: '/fake/project' })}\n`);
+      await expect(preferences.verifySessionForStart('dormant')).rejects.toThrow('任务索引不匹配');
+    } finally { await rm(directory, { recursive: true, force: true }); }
+  });
+
+  it('closes a restored dormant resource when unarchive metadata cannot commit', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'pua-restore-'));
+    try {
+      const sessionFile = path.join(directory, 'session.jsonl');
+      await writeFile(sessionFile, `${JSON.stringify({ type: 'session', id: 'pi-1', cwd: '/fake/project' })}\n`);
+      const record = { id: 'archived', cwd: '/fake/project', title: '已归档', piSessionId: 'pi-1', sessionFile, archived: true, pinned: false, lastActivityAt: 1 };
+      const store = { read: vi.fn().mockResolvedValue([record]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockRejectedValue(new Error('index denied')), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+      const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
+      const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => runtime, validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+      const capabilities = fakeCapabilities();
+      await preferences.restoreSessions(capabilities as never);
+      await expect(preferences.restoreArchivedSession('archived')).rejects.toThrow('index denied');
+      expect(capabilities.session.close).toHaveBeenCalledWith('archived');
+      expect(preferences.getBootstrap().archivedSessions).toEqual([expect.objectContaining({ id: 'archived' })]);
+    } finally { await rm(directory, { recursive: true, force: true }); }
   });
   it('publishes and resolves bootstrap in the write continuation, preserving returned references', async () => {
     const h = harness(); const write = deferred<void>(); const trace: string[] = [];
