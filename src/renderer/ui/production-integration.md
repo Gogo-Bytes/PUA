@@ -6,7 +6,7 @@
 
 用户已明确批准以当前 Component Preview 的组合交互页为生产设计基准，并要求实际替换与后续交互统一。此前“保留旧 DOM / 只换皮”的迁移约束已结束；不能再增加 transcript/nativeDetails 等生产视觉分支来恢复旧界面。Demo 的测试控制、模拟请求与 fixture 仍不得进入生产。
 
-生产 App 使用 ResizableWorkspace、ProjectNav、带 InlineRename 的 SessionTabs、Breadcrumbs 与 InspectorHeader。面板按容器空间收缩、先隐藏右侧再隐藏左侧，宽度偏好恢复；不再使用 1100px 的旧 Inspector overlay。检查器内 Escape 与关闭按钮恢复 toggle，输入框和本地菜单保留 Escape。Git scope 与 Markdown source/preview 使用共享 Tabs 的方向键导航。
+生产 App 使用 ResizableWorkspace、带 InlineRename 的 ProjectSidebar 二级任务树、Breadcrumbs 与 InspectorHeader。项目行只打开项目级懒草稿，已有任务必须点击二级任务行；不存在生产会话 tabs。面板按容器空间收缩、先隐藏右侧再隐藏左侧，宽度偏好恢复；不再使用 1100px 的旧 Inspector overlay。检查器内 Escape 与关闭按钮恢复 toggle，输入框和本地菜单保留 Escape。Git scope 与 Markdown source/preview 使用共享 Tabs 的方向键导航。
 
 会话 pane 仍以 session.id 常驻；Session/Conversation/Git/backend/IPC 所有权不变。视觉与交互允许调整，异步提交身份、草稿 revision、附件 token、安全 Content 渲染与 xterm 生命周期仍是回归约束。后续 UI 改动先在同一组件体系中实现，再供生产与预览共同消费。
 
@@ -36,7 +36,7 @@
 
 ## 生产组件与状态边界
 
-- ProjectNav 以 cwd 为身份，生产保留筛选，路径退到 Tooltip/title，使用与 demo 相同的名称行。SessionTabs 的双击/F2 改名绑定被编辑 tab 的 id；切换当前会话不改变提交目标。Chat 改名等待 host；Terminal 名称仍仅更新本地。关闭、overflow、方向键导航和 activity 状态继续可用。
+- ProjectSidebar 以 cwd 为项目身份，生产保留筛选、折叠和最近任务视图，路径退到 Tooltip/title；项目下二级任务行使用 InlineRename 的双击/F2 改名绑定。项目行不会创建 Pi 历史，只有首次发送才把懒草稿升级为真实任务。Chat 改名等待 host；Terminal 名称仍仅更新本地。关闭、置顶、分支树和 activity 状态继续可用。
 - GitPanel 继续持有 Git status、scope、selected path、刷新 generation 和 diff 请求。InspectorHeader 与 FileRow 只报告用户意图；参数快照、非原子读取说明、冲突 patch 与引用语义保留。
 - ToolExecutionCard 统一使用受控 Collapsible/GSAP，成功默认收起，失败自动展开，用户展开状态跨更新保留。参数、图片、输出快照与复制仍来自原 Tool owner。旧 nativeDetails 分支已移除。
 - ChatMessage 统一使用作者可访问但视觉隐藏、用户右侧 bubble、助手裸正文与 actions。Content Feature 继续负责 Markdown、流式修补、复制、external-link 与远程图片阻断；不向通用 UI 下沉 Desktop 能力。

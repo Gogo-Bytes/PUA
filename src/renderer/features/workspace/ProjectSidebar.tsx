@@ -12,7 +12,6 @@ interface ProjectSidebarProps {
   activeProject?: string;
   creatingProject?: string;
   runtimeAvailable: boolean;
-  onSelectProject?(cwd: string): void;
   canNavigateBack?: boolean;
   canNavigateForward?: boolean;
   onNavigateBack?(): void;
@@ -33,7 +32,7 @@ interface ProjectSidebarProps {
 /** Production navigation: projects own nested task rows; existing sessions are never represented as tabs. */
 export function ProjectSidebar({
   sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable, collapsedProjects: persistedCollapsed, onCollapsedProjectsChange,
-  onSelectProject, canNavigateBack = false, canNavigateForward = false, onNavigateBack, onNavigateForward, onNewConversation, onOpenTerminal, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
+  canNavigateBack = false, canNavigateForward = false, onNavigateBack, onNavigateForward, onNewConversation, onOpenTerminal, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
   const [query, setQuery] = useState('');
   const [recentOpen, setRecentOpen] = useState(false);
