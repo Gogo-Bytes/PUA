@@ -80,6 +80,7 @@
 - **Session stats**：Pi 的 `/session` 统计属于当前本地会话的消息、工具、token、成本与上下文估算；PUA 只读展示该会话数据，不扩展为 Codex 账户用量、计费或跨设备统计。
 - **自动策略**：Pi 可通过 `set_auto_compaction` 与 `set_auto_retry` 在当前 RPC 会话切换自动压缩/重试。PUA 在任务详情提供显式开关，默认沿用 Pi 当前值；`autoCompaction` 从 `get_state` 读取，`autoRetry` 因 Pi 没有对应只读字段，按已核验的 Pi 默认值 `true` 初始化，并在用户显式切换后发送设置 RPC。该限制必须保留在后续重构与版本升级核验中。
 - **原生 Clone**：Pi `clone` 会复制当前活动分支并切换运行时 identity。PUA 先在短生命周期探针会话中执行原生命令，等待新的 `sessionId/sessionFile` 握手后，创建一个持久化的新任务；这不是消息级 Fork，也不手工复制 JSONL。没有已保存 Pi identity、启用 `--no-session` 或 Pi 取消操作时，PUA 不创建空任务。
+- **归档恢复/永久删除并发边界**：Pi session 文件与 PUA 索引的恢复、归档和 tombstone 删除按任务 ID 串行化；Pi 文件仍是历史权威，索引提交失败不会伪造恢复成功或静默丢失文件。
 
 ## Fork 交互保留项
 

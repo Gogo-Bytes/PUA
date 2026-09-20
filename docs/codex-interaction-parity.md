@@ -119,6 +119,7 @@ Pi 0.85.1 的本地 session 是 JSONL 树文件，消息 entry 里包含用户�
 - 任务详情只读取 `SessionInfo` 与 `Bootstrap.runtime` 的已有投影：项目目录、任务类型、Process Status、Pi Agent Activity、最近活动和运行时来源。
 - 不从 renderer 反读 Pi transcript/sessionFile/auth/trust，也不把模型、Thinking、队列、扩展 UI 或 Session Tree 复制成第二份状态；这些仍由 Conversation/Pi 原生事件负责。
 - 任务详情中的归档、置顶、重命名和打开目录复用现有 callbacks；Settings 继续承载归档恢复与永久删除。
+- 归档恢复与永久删除也按任务 ID 进入主进程 mutation chain；并发恢复/删除不会交叉提交索引或重复操作 Pi 文件，失败仍保留可重试状态。
 
 ### 阶段 F：Pi 原生策略与任务 Clone（已接入）
 

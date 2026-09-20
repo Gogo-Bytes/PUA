@@ -300,33 +300,39 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     },
     async restoreArchivedSession(id: string): Promise<SessionInfo> {
       if (!sessionStore || !restorer) throw new Error('会话恢复尚未就绪');
-      const record = persisted.get(id);
-      if (!record || !record.archived) throw new Error('归档会话不存在');
-      const preferences = application.read();
-      validateChatArguments(preferences.args);
-      const runtime = resolveRuntime(preferences);
-      if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session='))) throw new Error('当前 Pi 配置为 --no-session，无法恢复归档历史');
-      await (await import('./pi-session-file.js')).verifyPiSessionFile(record);
-      const session = await restorer.restoreChatSession(runtime, { ...record, archived: false });
-      const next = { ...record, archived: false };
-      try { await sessionStore.archive(id, false); }
-      catch (error) {
-        unwrapSessionResult(await restorer.session.close(session.id));
-        throw error;
-      }
-      persisted.set(id, next);
-      archivedSessions = archivedSessions.filter(item => item.id !== id);
-      const restored = { ...session, archived: false, pinned: next.pinned, lastActivityAt: next.lastActivityAt };
-      restoredSessions = [...restoredSessions.filter(item => item.id !== id), restored];
+      let restored: SessionInfo | undefined;
+      await enqueueMutation(id, async () => {
+        const record = persisted.get(id);
+        if (!record || !record.archived) throw new Error('归档会话不存在');
+        const preferences = application.read();
+        validateChatArguments(preferences.args);
+        const runtime = resolveRuntime(preferences);
+        if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session='))) throw new Error('当前 Pi 配置为 --no-session，无法恢复归档历史');
+        await (await import('./pi-session-file.js')).verifyPiSessionFile(record);
+        const session = await restorer!.restoreChatSession(runtime, { ...record, archived: false });
+        const next = { ...record, archived: false };
+        try { await sessionStore!.archive(id, false); }
+        catch (error) {
+          unwrapSessionResult(await restorer!.session.close(session.id));
+          throw error;
+        }
+        persisted.set(id, next);
+        archivedSessions = archivedSessions.filter(item => item.id !== id);
+        restored = { ...session, archived: false, pinned: next.pinned, lastActivityAt: next.lastActivityAt };
+        restoredSessions = [...restoredSessions.filter(item => item.id !== id), restored];
+      });
+      if (!restored) throw new Error('归档会话恢复未返回任务');
       return restored;
     },
     async deleteArchivedSession(id: string): Promise<void> {
       if (!sessionStore) return;
-      const record = persisted.get(id);
-      if (!record || !record.archived) throw new Error('只有归档会话可以永久删除');
-      await (await import('./pi-session-file.js')).permanentlyDeleteVerifiedPiSession(record, () => sessionStore.remove(id), () => sessionStore.upsert(record));
-      persisted.delete(id);
-      archivedSessions = archivedSessions.filter(item => item.id !== id);
+      await enqueueMutation(id, async () => {
+        const record = persisted.get(id);
+        if (!record || !record.archived) throw new Error('只有归档会话可以永久删除');
+        await (await import('./pi-session-file.js')).permanentlyDeleteVerifiedPiSession(record, () => sessionStore!.remove(id), () => sessionStore!.upsert(record));
+        persisted.delete(id);
+        archivedSessions = archivedSessions.filter(item => item.id !== id);
+      });
     },
     async setSessionPinned(id: string, pinned: boolean): Promise<void> {
       await enqueueMutation(id, async () => {
