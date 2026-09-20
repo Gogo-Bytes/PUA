@@ -22,13 +22,14 @@ interface Props {
   onTerminalRecovery?(): void;
   onCommands(commands: ChatCommand[]): void;
   initialMessage?: string;
+  initialAttachments?: ChatAttachment[];
   onInitialMessageSent?(): void;
   historyTarget?: { entryId: string; query: string };
 }
 
-export function ChatPane({ session, active, draft, onDraftChange, onError, onCommands, onTerminalRecovery, initialMessage, onInitialMessageSent, historyTarget }: Props) {
+export function ChatPane({ session, active, draft, onDraftChange, onError, onCommands, onTerminalRecovery, initialMessage, initialAttachments = [], onInitialMessageSent, historyTarget }: Props) {
   const [state, dispatch] = useReducer(reduceChatEvent, undefined, emptyChatState);
-  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [attachments, setAttachments] = useState<ChatAttachment[]>(initialAttachments);
   const [models, setModels] = useState<import('../../../shared/ipc/conversation').ChatModel[]>([]);
   const [thinkingLevels, setThinkingLevels] = useState<string[]>([]);
   const [sessionStats, setSessionStats] = useState<ChatSessionStats>();
@@ -158,7 +159,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   };
 
   useEffect(() => {
-    if (!active || !state.ready || !initialMessage || initialSentRef.current) return;
+    if (!active || !state.ready || initialMessage === undefined || initialSentRef.current) return;
     initialSentRef.current = true;
     void send('prompt', initialMessage).then(sent => {
       if (sent) onInitialMessageSent?.();

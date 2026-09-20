@@ -92,6 +92,12 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     h.holder.set({ window: h.window, capabilities: h.capabilities }); h.dialog.showMessageBox.mockResolvedValueOnce({ response: 0 }); expect(await h.call('closeSession', 'id')).toBe(false); expect(h.capabilities.session.close).toHaveBeenCalledOnce();
     h.capabilities.session.close.mockResolvedValueOnce(failure); await expect(h.call('closeSession', 'id')).rejects.toThrow('仍保留会话占用');
   });
+  it('registers staged project-draft attachments without reopening the native picker', async () => {
+    const h = harness();
+    await h.call('chooseChatAttachments', 'id', ['/draft/context.txt', '/draft/screenshot.png']);
+    expect(h.dialog.showOpenDialog).not.toHaveBeenCalled();
+    expect(h.capabilities.registerChatAttachments).toHaveBeenCalledExactlyOnceWith('id', ['/draft/context.txt', '/draft/screenshot.png']);
+  });
   it('keeps a closed task visible when archive commit fails and retries metadata without closing twice', async () => {
     const h = harness();
     vi.spyOn(h.preferences, 'archiveSession').mockRejectedValueOnce(new Error('index denied')).mockResolvedValueOnce(undefined);

@@ -36,11 +36,11 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
     const result = await dialog.showOpenDialog(requireCurrent().window, { properties: ['openFile', 'multiSelections'] });
     return result.canceled ? [] : result.filePaths;
   });
-  handle('chooseChatAttachments', async (sessionId) => {
+  handle('chooseChatAttachments', async (sessionId, stagedPaths) => {
     const { window, capabilities } = requireCurrent();
     if (requireSessionSnapshot(capabilities.session.get(sessionId)).kind !== 'chat') throw new Error('附件只支持原生对话');
-    const result = await dialog.showOpenDialog(window, { properties: ['openFile', 'multiSelections'] });
-    return result.canceled ? [] : capabilities.registerChatAttachments(sessionId, result.filePaths);
+    const paths = stagedPaths ?? (await dialog.showOpenDialog(window, { properties: ['openFile', 'multiSelections'] })).filePaths;
+    return paths.length ? capabilities.registerChatAttachments(sessionId, paths) : [];
   });
   handle('savePreferences', next => preferences.savePreferences(next));
   handle('inspectProjectResources', cwd => inspectProjectResources(cwd));

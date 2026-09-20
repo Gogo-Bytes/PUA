@@ -63,7 +63,14 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   chooseFile: noArgs,
   chooseAttachments: noArgs,
   readClipboard: noArgs,
-  chooseChatAttachments: idArgs,
+  chooseChatAttachments: args => {
+    if (args.length !== 1 && args.length !== 2) throw new Error('无效 IPC 参数数量');
+    const [id, paths] = args;
+    if (paths === undefined) return [text(id)];
+    if (!Array.isArray(paths)) throw new Error('无效 IPC 参数数量');
+    if (paths.length > 20 || !paths.every(path => typeof path === 'string' && !path.includes('\0'))) throw new Error('无效附件路径');
+    return [text(id), paths.map(path => boundedText(path, 4096, '附件路径'))];
+  },
   inspectProjectResources: idArgs,
   startSession: idArgs,
   closeSession: idArgs,

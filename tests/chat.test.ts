@@ -50,9 +50,9 @@ describe('chat attachment policy', () => {
 });
 
 describe('project resource trust detection', () => {
-  it('detects ancestor Pi/agent resources without reading trust state', async () => {
+  it('detects ancestor Pi/agent resources and exposes safe skill names for pre-session @ suggestions', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'pua-resources-')); const child = path.join(root, 'src');
-    try { await mkdir(path.join(root, '.agents/skills'), { recursive: true }); await mkdir(child); const result = await inspectProjectResources(child); expect(result.hasResources).toBe(true); expect(result.paths.some(value => value.endsWith('.agents/skills'))).toBe(true); }
+    try { await mkdir(path.join(root, '.agents/skills/review-code'), { recursive: true }); await mkdir(child); const result = await inspectProjectResources(child); expect(result.hasResources).toBe(true); expect(result.paths.some(value => value.endsWith('.agents/skills'))).toBe(true); expect(result.skills).toEqual([{ name: 'review-code', source: 'skill' }]); }
     finally { await rm(root, { recursive: true, force: true }); }
   });
 });

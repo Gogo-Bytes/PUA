@@ -21,6 +21,7 @@ const finite = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 const strings = (v: unknown) => Array.isArray(v) && Array.from(v).every(text);
 const oneOf = (v: unknown, values: readonly string[]) => text(v) && values.includes(v);
 const optional = (v: unknown, guard: (v: unknown) => boolean) => v === undefined || guard(v);
+const command = (v: unknown) => record(v) && text(v.name) && oneOf(v.source, ['extension', 'prompt', 'skill']) && optional(v.description, text);
 const activity = (v: unknown) => oneOf(v, ['idle', 'responding', 'compacting', 'retrying', 'waiting-input']);
 const processStatus = (v: unknown) => oneOf(v, ['starting', 'running', 'exited']);
 const preferences = (v: unknown) => record(v) && optional(v.theme, x => oneOf(x, ['system', 'light', 'dark'])) && text(v.piPath) && text(v.nodePath) && strings(v.args) && finite(v.fontSize) && strings(v.recentProjects);
@@ -44,7 +45,7 @@ export const desktopValueGuards = {
   bootstrap, savePreferences: bootstrap,
   chooseDirectory: picker, chooseFile: picker, chooseAttachments: strings,
   chooseChatAttachments: (v: unknown) => arrayOf(v, attachment),
-  inspectProjectResources: (v: unknown) => record(v) && bool(v.hasResources) && strings(v.paths),
+  inspectProjectResources: (v: unknown) => record(v) && bool(v.hasResources) && strings(v.paths) && optional(v.skills, value => arrayOf(value, command)),
   createSession: sessionInfo,
   searchHistory: v => arrayOf(v, x => record(x) && text(x.taskId) && text(x.title) && text(x.cwd) && text(x.entryId) && oneOf(x.role, ['user', 'assistant', 'custom', 'summary', 'bashExecution']) && text(x.snippet) && finite(x.timestamp) && bool(x.archived) && text(x.query)),
   closeSession: bool, restoreArchivedSession: sessionInfo, deleteArchivedSession: empty, setSessionPinned: empty,

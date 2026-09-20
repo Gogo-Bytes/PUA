@@ -40,8 +40,9 @@ export function useSessionLaunchController({ boot, project, onCreated, afterCrea
     } catch (error) { onError(String(error)); throw error; }
     finally { pending.current.delete(normalized); setCreatingProject(current => current === normalized ? undefined : current); }
   };
-  const createChatAnd = (cwd: string, projectTrust: ProjectTrust, onReady: (session: SessionInfo) => void): Promise<void> => {
-    return createChat(cwd, projectTrust).then(session => { onReady(session); }).catch(() => undefined);
+  const createChatAnd = async (cwd: string, projectTrust: ProjectTrust, onReady: (session: SessionInfo) => void | Promise<void>): Promise<void> => {
+    const session = await createChat(cwd, projectTrust);
+    await onReady(session);
   };
   const newConversation = async (cwd?: string) => {
     if (cwd) { onPrepare(cwd); return; }

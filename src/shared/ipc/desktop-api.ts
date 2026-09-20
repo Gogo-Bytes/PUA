@@ -1,7 +1,7 @@
 import type { DesktopResult, WireValue } from './desktop-result.js';
 import type { DiffScope, FileDiff, GitStatus } from './change-review.js';
 import type {
-  ChatAttachment, ChatDelivery, ExtensionUIResponse, ProjectTrust, SessionActivity,
+  ChatAttachment, ChatCommand, ChatDelivery, ExtensionUIResponse, ProjectTrust, SessionActivity,
   SessionEvent, SessionKind, SessionProcessStatus,
 } from './conversation.js';
 
@@ -76,7 +76,7 @@ export interface CreateSessionOptions {
   rows?: number;
 }
 
-export interface ProjectResourceInfo { hasResources: boolean; paths: string[] }
+export interface ProjectResourceInfo { hasResources: boolean; paths: string[]; skills?: ChatCommand[] }
 
 export interface DesktopAPI {
   bootstrap(): Promise<Bootstrap>;
@@ -84,7 +84,8 @@ export interface DesktopAPI {
   chooseFile(): Promise<string | null>;
   chooseAttachments(): Promise<string[]>;
   removeChatAttachment(id: string, attachmentId: string): Promise<void>;
-  chooseChatAttachments(sessionId: string): Promise<ChatAttachment[]>;
+  /** With paths, register a pre-session draft's staged files after its Pi session exists. */
+  chooseChatAttachments(sessionId: string, paths?: string[]): Promise<ChatAttachment[]>;
   savePreferences(preferences: Preferences): Promise<Bootstrap>;
   inspectProjectResources(cwd: string): Promise<ProjectResourceInfo>;
   createSession(options: CreateSessionOptions): Promise<SessionInfo>;
