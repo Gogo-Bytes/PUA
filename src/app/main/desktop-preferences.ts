@@ -42,6 +42,8 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
   const mutations = new Map<string, Promise<void>>();
   const persistenceRetries = new Map<string, ReturnType<typeof setTimeout>>();
   const persistenceRetryAttempts = new Map<string, number>();
+  type PersistenceRetry = { record: PersistedChatSession; kind: 'activity' | 'title' };
+  const retryRecords = new Map<string, PersistenceRetry>();
   let restoreReady: Promise<void> = Promise.resolve();
   const bootstrapSessions = () => ({
     ...(restoredSessions.length ? { restoredSessions: restoredSessions.map(session => ({ ...session })) } : {}),
@@ -67,6 +69,31 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     pending.delete(id);
     clearPersistenceRetry(id);
   }
+  async function retryPersistedRecord(id: string, retry: PersistenceRetry): Promise<void> {
+    if (!sessionStore) return;
+    const { record, kind } = retry;
+    const current = persisted.get(id);
+    // The indexed record can still contain the previous Pi identity when the
+    // failed activity write is retried; the retry record is the newer owner.
+    // A newer activity timestamp is the only stale-write guard needed here.
+    if (!current || (current.lastActivityAt ?? 0) > (record.lastActivityAt ?? 0)) return;
+    if (kind === 'title') {
+      await sessionStore.rename(id, record.title);
+      const merged = { ...current, title: record.title };
+      if (persisted.get(id) === current) {
+        persisted.set(id, merged);
+        restoredSessions = restoredSessions.map(item => item.id === id ? { ...item, title: record.title } : item);
+        archivedSessions = archivedSessions.map(item => item.id === id ? { ...item, title: record.title } : item);
+      }
+    } else {
+      // Retry only the failed identity/activity fields; title, pin, and archive
+      // metadata may have committed while the activity write was waiting.
+      const merged = { ...current, piSessionId: record.piSessionId, sessionFile: record.sessionFile, lastActivityAt: record.lastActivityAt };
+      await sessionStore.upsert(merged);
+      if (persisted.get(id) === current) persisted.set(id, merged);
+    }
+    clearPersistenceRetry(id);
+  }
   function enqueueMutation(id: string, work: () => Promise<void>): Promise<void> {
     const previous = mutations.get(id);
     const operation = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(work);
@@ -83,8 +110,10 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     if (timer) clearTimeout(timer);
     persistenceRetries.delete(id);
     persistenceRetryAttempts.delete(id);
+    retryRecords.delete(id);
   }
-  function schedulePersistenceRetry(id: string): void {
+  function schedulePersistenceRetry(id: string, record?: PersistedChatSession, kind: PersistenceRetry['kind'] = 'activity'): void {
+    if (record) retryRecords.set(id, { record, kind });
     if (persistenceRetries.has(id)) return;
     const attempt = persistenceRetryAttempts.get(id) ?? 0;
     if (attempt >= 8) {
@@ -95,8 +124,12 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     const timer = setTimeout(() => {
       persistenceRetries.delete(id);
       const entry = pending.get(id);
-      if (!entry?.identity || !entry.durable) return;
-      void enqueuePendingPersistence(id, entry).catch(error => {
+      const retryRecord = retryRecords.get(id);
+      if ((!entry?.identity || !entry.durable) && !retryRecord) return;
+      const operation = retryRecord
+        ? enqueueMutation(id, () => retryPersistedRecord(id, retryRecord))
+        : enqueuePendingPersistence(id, entry!);
+      void operation.catch(error => {
         console.warn(`重试保存 Pi 会话 ${id} 失败: ${String(error)}`);
         schedulePersistenceRetry(id);
       });
@@ -170,13 +203,16 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     },
     async recordChatMessage(id: string, identity: NativePiSessionIdentity): Promise<void> {
       if (!sessionStore) return;
+      let failedRecord: PersistedChatSession | undefined;
       const operation = enqueueMutation(id, async () => {
         if (persisted.has(id)) {
           const current = persisted.get(id);
           if (!current) return;
           const next = { ...current, piSessionId: identity.sessionId, sessionFile: identity.sessionFile, lastActivityAt: Date.now() };
-          await sessionStore.upsert(next);
+          failedRecord = next;
+          try { await sessionStore.upsert(next); } catch (error) { schedulePersistenceRetry(id, next); throw error; }
           persisted.set(id, next);
+          clearPersistenceRetry(id);
           restoredSessions = restoredSessions.map(item => item.id === id ? { ...item, lastActivityAt: next.lastActivityAt } : item);
           return;
         }
@@ -190,7 +226,7 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         await operation;
       } catch (error) {
         console.warn(`无法保存 Pi 会话 ${id}: ${String(error)}`);
-        schedulePersistenceRetry(id);
+        schedulePersistenceRetry(id, failedRecord);
         throw error;
       }
     },
@@ -200,8 +236,9 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         const record = persisted.get(id);
         if (!record) return;
         const next = { ...record, piSessionId: identity.sessionId, sessionFile: identity.sessionFile, lastActivityAt: Date.now() };
-        await sessionStore.upsert(next);
+        try { await sessionStore.upsert(next); } catch (error) { schedulePersistenceRetry(id, next); throw error; }
         persisted.set(id, next);
+        clearPersistenceRetry(id);
       });
     },
     restoreSessions(capabilities: SessionRestoration): Promise<SessionInfo[]> {
@@ -331,8 +368,13 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     async renameSession(id: string, title: string): Promise<void> {
       await enqueueMutation(id, async () => {
         if (!sessionStore || !persisted.has(id)) { const entry = pending.get(id); if (entry) pending.set(id, { ...entry, session: { ...entry.session, title } }); return; }
-        await sessionStore.rename(id, title);
         const record = persisted.get(id);
+        if (!record) return;
+        try { await sessionStore.rename(id, title); }
+        catch (error) {
+          schedulePersistenceRetry(id, { ...record, title }, 'title');
+          throw error;
+        }
         if (record) persisted.set(id, { ...record, title });
         restoredSessions = restoredSessions.map(session => session.id === id ? { ...session, title } : session);
         archivedSessions = archivedSessions.map(session => session.id === id ? { ...session, title } : session);
@@ -352,7 +394,11 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
           return;
         }
         if (current.title === title) return;
-        await sessionStore.rename(session.id, title);
+        try { await sessionStore.rename(session.id, title); }
+        catch (error) {
+          schedulePersistenceRetry(session.id, { ...current, title }, 'title');
+          throw error;
+        }
         persisted.set(session.id, { ...current, title });
         restoredSessions = restoredSessions.map(item => item.id === session.id ? { ...item, title } : item);
         archivedSessions = archivedSessions.map(item => item.id === session.id ? { ...item, title } : item);

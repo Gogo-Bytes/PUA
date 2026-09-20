@@ -143,6 +143,21 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     expect(store.archive).toHaveBeenCalledExactlyOnceWith('id', true);
   });
 
+  it('retries activity updates for an already-indexed task after a transient write failure', async () => {
+    vi.useFakeTimers();
+    try {
+      const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
+      const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), { write: vi.fn().mockResolvedValue(undefined) }), resolveRuntime: () => ({ executable: '/fake/pi', args: [], source: '/fake/pi' }), validateChatArguments: vi.fn(), home: '/fake', platform: 'fake', sessionStore: store });
+      await preferences.createSession(options, fakeCapabilities());
+      await preferences.recordChatMessage('id', { sessionId: 'pi-1', sessionFile: '/home/pi/one.jsonl' });
+      store.upsert.mockRejectedValueOnce(new Error('temporary activity failure')).mockResolvedValue(undefined);
+      await expect(preferences.recordChatMessage('id', { sessionId: 'pi-2', sessionFile: '/home/pi/two.jsonl' })).rejects.toThrow('temporary activity failure');
+      await preferences.setSessionPinned('id', true);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(store.upsert).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'id', piSessionId: 'pi-2', sessionFile: '/home/pi/two.jsonl', pinned: true }));
+    } finally { vi.useRealTimers(); }
+  });
+
   it('serializes activity, pin, and automatic title writes without restoring stale metadata', async () => {
     const activity = deferred<void>();
     const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
