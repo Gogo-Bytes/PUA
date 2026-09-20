@@ -45,7 +45,7 @@ export const desktopValueGuards = {
   bootstrap, savePreferences: bootstrap,
   chooseDirectory: picker, chooseFile: picker, chooseAttachments: strings,
   chooseChatAttachments: (v: unknown) => arrayOf(v, attachment),
-  inspectProjectResources: (v: unknown) => record(v) && bool(v.hasResources) && strings(v.paths) && optional(v.skills, value => arrayOf(value, command)),
+  inspectProjectResources: (v: unknown) => record(v) && bool(v.hasResources) && strings(v.paths) && optional(v.skills, value => arrayOf(value, command)) && optional(v.prompts, value => arrayOf(value, command)),
   createSession: sessionInfo,
   searchHistory: v => arrayOf(v, x => record(x) && text(x.taskId) && text(x.title) && text(x.cwd) && text(x.entryId) && oneOf(x.role, ['user', 'assistant', 'custom', 'summary', 'bashExecution']) && text(x.snippet) && finite(x.timestamp) && bool(x.archived) && text(x.query)),
   closeSession: bool, restoreArchivedSession: sessionInfo, deleteArchivedSession: empty, setSessionPinned: empty,

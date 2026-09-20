@@ -76,7 +76,7 @@ export interface CreateSessionOptions {
   rows?: number;
 }
 
-export interface ProjectResourceInfo { hasResources: boolean; paths: string[]; skills?: ChatCommand[] }
+export interface ProjectResourceInfo { hasResources: boolean; paths: string[]; skills?: ChatCommand[]; prompts?: ChatCommand[] }
 
 export interface DesktopAPI {
   bootstrap(): Promise<Bootstrap>;

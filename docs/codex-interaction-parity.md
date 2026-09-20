@@ -67,7 +67,7 @@ Pi 不支持的云端分享链接、远程任务同步、模型账户与 Codex �
 - `--no-session` 仍保留给 Pi/兼容终端；它表示内存会话，不进入 PUA 的可恢复任务索引。
 - `--continue`、自定义 `--session-id` 等 Pi 参数仍可用于兼容终端入口；原生 RPC 对话由 PUA 负责会话 selector，只有未指定原生 selector 时才注入自己的 identity。
 - Pi 的 Session Tree/Fork、steer/follow-up、skills、compact、session stats、扩展 UI 和本地工具能力继续由 Pi/RPC 提供；Codex 没有的能力不为追求视觉一致而删除或改写语义。
-- 项目懒草稿中的附件只保存主进程选择器返回的路径，首次创建 Pi 会话后再转换为 Pi 原生附件 token；`@` 候选在会话启动前来自安全的项目 skill 目录名，启动后必须以 Pi `get_commands` 刷新，不能把目录扫描当成 Pi 执行能力。
+- 项目懒草稿中的附件只保存主进程选择器返回的路径，首次创建 Pi 会话后再转换为 Pi 原生附件 token；`@` 候选在会话启动前来自安全的项目 skill 目录名，`/` 候选来自项目 `.pi/prompts` 文件名，启动后必须以 Pi `get_commands` 刷新，不能把目录扫描当成 Pi 执行能力。
 - 项目树的项目行始终打开该项目的未提交新草稿；已有任务必须点击二级任务行进入。这样重复点击项目不会切换/创建历史任务，也不会弹出新建会话窗口。
 
 ### 证据来源

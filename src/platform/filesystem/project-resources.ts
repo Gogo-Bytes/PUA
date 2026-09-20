@@ -12,22 +12,40 @@ async function skillNames(directory: string): Promise<string[]> {
   } catch { return []; }
 }
 
+async function promptNames(directory: string): Promise<string[]> {
+  try {
+    const entries = await readdir(directory, { withFileTypes: true });
+    return entries
+      .filter(entry => entry.isFile() && entry.name.endsWith('.md'))
+      .map(entry => entry.name.slice(0, -3))
+      .filter(name => /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(name))
+      .slice(0, 128);
+  } catch { return []; }
+}
+
 /** Detect resources that make Pi's non-interactive project-trust choice meaningful. */
 export async function inspectProjectResources(cwd: string): Promise<ProjectResourceInfo> {
   let directory = path.resolve(expandHome(cwd));
   const paths: string[] = [];
   const skills = new Set<string>();
+  const prompts = new Set<string>();
   while (true) {
     for (const candidate of candidates) {
       const value = path.join(directory, candidate);
       if (await exists(value)) {
         paths.push(value);
         if (candidate.endsWith('/skills')) for (const name of await skillNames(value)) skills.add(name);
+        if (candidate === '.pi/prompts') for (const name of await promptNames(value)) prompts.add(name);
       }
     }
     const parent = path.dirname(directory);
     if (await exists(path.join(directory, '.git')) || parent === directory) break;
     directory = parent;
   }
-  return { hasResources: paths.length > 0, paths, ...(skills.size ? { skills: [...skills].sort().map(name => ({ name, source: 'skill' as const })) } : {}) };
+  return {
+    hasResources: paths.length > 0,
+    paths,
+    ...(skills.size ? { skills: [...skills].sort().map(name => ({ name, source: 'skill' as const })) } : {}),
+    ...(prompts.size ? { prompts: [...prompts].sort().map(name => ({ name, source: 'prompt' as const })) } : {}),
+  };
 }

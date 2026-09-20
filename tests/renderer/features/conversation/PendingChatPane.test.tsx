@@ -32,4 +32,18 @@ describe('project draft composer', () => {
     await act(async () => {});
     expect(onStart).toHaveBeenCalledWith('inspect', 'default', ['/work/context.txt']);
   });
+
+  it('offers native / prompt template candidates without changing their Pi syntax', async () => {
+    vi.useFakeTimers();
+    const onStart = vi.fn().mockResolvedValue(undefined);
+    installDesktopFake({
+      inspectProjectResources: vi.fn().mockResolvedValue({ hasResources: true, paths: ['/work/.pi/prompts'], prompts: [{ name: 'review', source: 'prompt' }] }),
+    } as unknown as DesktopAPI);
+    function Harness() { const [value, setValue] = useState('/rev'); return <PendingChatPane cwd="/work" runtimeAvailable value={value} onValueChange={setValue} onStart={onStart} onSettings={vi.fn()} />; }
+    render(<Harness />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    expect(screen.getByRole('option', { name: /\/review/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('option', { name: /\/review/ }));
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('/review ');
+  });
 });
