@@ -35,7 +35,9 @@ export function PendingChatPane({ cwd, runtimeAvailable, value, onValueChange, o
   const inspectionError = inspection?.cwd === cwd ? inspection.error : undefined;
   const skills = inspection?.cwd === cwd ? inspection.info?.skills ?? [] : [];
   const prompts = inspection?.cwd === cwd ? inspection.info?.prompts ?? [] : [];
-  const skillMatch = !skillDismissed ? value.match(/(?:^|\s)@([^\s]*)$/) : null;
+  // Pi expands /skill:name only when it is the command-leading token. Do not
+  // offer an inline @ affordance that would be sent literally by Pi.
+  const skillMatch = !skillDismissed ? value.match(/^\s*@([^\s]*)$/) : null;
   const skillSuggestions = skillMatch ? skills.filter(skill => skill.name.toLowerCase().includes(skillMatch[1].toLowerCase())).slice(0, 8) : [];
   const promptMatch = !promptDismissed ? value.match(/(?:^|\s)\/([^\s]*)$/) : null;
   const promptSuggestions = promptMatch ? prompts.filter(prompt => prompt.name.toLowerCase().includes(promptMatch[1].toLowerCase())).slice(0, 8) : [];

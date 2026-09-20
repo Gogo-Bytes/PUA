@@ -168,7 +168,9 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   }, [active, state.ready, initialMessage]);
 
   const slash = !slashDismissed && draft.startsWith('/') ? state.commands.filter(command => `/${command.name} ${command.description ?? ''}`.toLowerCase().includes(draft.toLowerCase())).slice(0, 8) : [];
-  const skillMatch = !skillDismissed ? draft.match(/(?:^|\s)@([^\s]*)$/) : null;
+  // Pi's native skill expansion is command-leading; an inline @ mention would
+  // not execute and must not be presented as an actionable suggestion.
+  const skillMatch = !skillDismissed ? draft.match(/^\s*@([^\s]*)$/) : null;
   const skills = skillMatch ? state.commands.filter(command => command.source === 'skill' && command.name.toLowerCase().includes(skillMatch[1].toLowerCase())).slice(0, 8) : [];
   return <section className={`chat-pane ${active ? 'active' : ''}`} aria-hidden={!active} data-session-id={session.id}>
     <div className="chat-exit-slot">

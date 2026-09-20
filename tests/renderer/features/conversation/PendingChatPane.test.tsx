@@ -46,4 +46,15 @@ describe('project draft composer', () => {
     fireEvent.click(screen.getByRole('option', { name: /\/review/ }));
     expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('/review ');
   });
+
+  it('does not advertise inline @ skills that Pi would send literally', async () => {
+    vi.useFakeTimers();
+    installDesktopFake({
+      inspectProjectResources: vi.fn().mockResolvedValue({ hasResources: true, paths: ['/work/.pi/skills'], skills: [{ name: 'review-code', source: 'skill' }] }),
+    } as unknown as DesktopAPI);
+    function Harness() { const [value, setValue] = useState('please @rev'); return <PendingChatPane cwd="/work" runtimeAvailable value={value} onValueChange={setValue} onStart={vi.fn()} onSettings={vi.fn()} />; }
+    render(<Harness />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    expect(screen.queryByRole('option', { name: /@review-code/ })).toBeNull();
+  });
 });
