@@ -27,7 +27,7 @@
 - `ui/index.ts`：UIProvider、Button/IconButton、TextField、Select/DropdownMenu、Tooltip、Tag/StatusBadge、Tabs、Dialog、Collapsible、InlineRename、ResizableWorkspace、Message、ToastHost、Breadcrumbs 与动效工具。
 - `tokens.css`、`theme.tsx`：语义颜色、明暗主题、排版、尺寸与外观上下文。`app/production.css` 是唯一生产样式入口，按 cascade 顺序装配 app 与 Feature stylesheets；组件预览保持显式、隔离引入，Workspace Preview 复用生产入口。
 - `motion.tsx`：统一结构动效参数；系统 reduced-motion 优先于 normal/slow，off 立即就位。
-- `features/*/index.ts`：生产领域展示组件入口。ProjectSidebar 是生产的项目/二级任务树；ProjectNav 与 SessionTabs 仅用于隔离预览和兼容组合，均位于 `features/workspace`。InspectorHeader、FileRow 与 production-only 的 change-review stylesheet 位于 `features/change-review`，ToolExecutionCard、ChatMessage 与 Composer 位于 `features/conversation`；Desktop-aware 的 CopyButton、MarkdownView 与 SourceView 位于 `features/content`。生产与历史迁移约束见 [接入契约](production-integration.md)。
+- `features/*/index.ts`：生产领域展示组件入口。ProjectNav 与 SessionTabs 位于 `features/workspace`，InspectorHeader、FileRow 与 production-only 的 change-review stylesheet 位于 `features/change-review`，ToolExecutionCard、ChatMessage 与 Composer 位于 `features/conversation`；Desktop-aware 的 CopyButton、MarkdownView 与 SourceView 位于 `features/content`。生产与历史迁移约束见 [接入契约](production-integration.md)。
 - `tests/component-preview/`：独立展示、内存 Adapter 与浏览器验证；不会进入生产入口。组合交互页是中文工作台场景，模块卡片展示安全正文与受控 Composer。
 
 ## 新通用接口
