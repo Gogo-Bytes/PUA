@@ -45,28 +45,24 @@ export function ProjectSidebar({
   };
   const projects = groupProjects([...sessions], [...recentProjects]);
   const visible = projects.filter(project => `${project.name}\n${project.cwd}\n${project.sessions.map(session => session.title).join('\n')}`.toLowerCase().includes(query.trim().toLowerCase()));
-  return <nav className="workspace-sidebar" aria-label="项目">
-    <div className="workspace-sidebar-brand">
-      <strong>PUA</strong>
-      <span className="workspace-sidebar-actions">
-        <IconButton icon="search" label="搜索与命令" variant="ghost" onClick={onSearch}/>
-        <IconButton icon="settings" label="桌面设置" variant="ghost" onClick={onSettings}/>
-      </span>
+  return <nav className="workspace-sidebar codex-sidebar" aria-label="项目">
+    <div className="codex-sidebar-brand">
+      <Button className="codex-brand-button" variant="ghost" aria-label="PUA 菜单" onClick={onSettings}><strong>PUA</strong><Icon name="down"/></Button>
+      <span className="codex-sidebar-actions"><IconButton icon="search" label="搜索与命令" variant="ghost" onClick={onSearch}/><IconButton icon="settings" label="桌面设置" variant="ghost" onClick={onSettings}/></span>
     </div>
-    <Button className="workspace-new-conversation" variant="ghost" aria-label="新建会话" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(activeProject)}>
-      <Icon name="edit"/><span>{creatingProject && creatingProject === activeProject ? '正在创建…' : '新对话'}</span><span aria-hidden="true">＋</span>
+    <Button className="codex-sidebar-new" variant="ghost" aria-label="新建会话" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(activeProject)}>
+      <Icon name="edit"/><span>{creatingProject && creatingProject === activeProject ? '正在创建…' : '新对话'}</span><Icon name="plus"/>
     </Button>
-    <label className="workspace-project-filter">
-      <span className="ui-visually-hidden">筛选项目和会话</span>
-      <Icon name="search"/>
+    <label className="codex-sidebar-search">
+      <span className="ui-visually-hidden">筛选项目和会话</span><Icon name="search"/>
       <input value={query} onChange={event => setQuery(event.target.value)} placeholder="查找项目或会话…"/>
     </label>
-    <div className="workspace-project-tree">
-      <div className="workspace-tree-heading"><span>项目</span><IconButton icon="plus" label="打开项目并新建对话" variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation()}/></div>
+    <div className="workspace-project-tree codex-project-tree">
+      <div className="codex-section-heading"><span>项目</span><IconButton icon="plus" label="打开项目并新建对话" variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation()}/></div>
       {visible.length === 0 ? <p className="ui-meta">暂无匹配项目</p> : visible.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
-        <div className="workspace-project-line">
-          {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => toggleProject(project.cwd)}>{collapsed.has(project.cwd) ? '▸' : '▾'}</Button>}
-          <Button variant="ghost" className="workspace-project-button" aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
+        <div className="workspace-project-line codex-project-line">
+          {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse codex-project-chevron" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => toggleProject(project.cwd)}><Icon name={collapsed.has(project.cwd) ? 'chevron' : 'down'}/></Button>}
+          <Button variant="ghost" className="workspace-project-button codex-project-button" aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
             <Icon name="folder"/><span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
           </Button>
           <IconButton icon="plus" label={`在 ${project.name} 中新建对话（${project.cwd}）`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
@@ -74,7 +70,7 @@ export function ProjectSidebar({
         </div>
         {project.sessions.length > 0 && !collapsed.has(project.cwd) && <ul className="workspace-session-list" aria-label={`${project.name} 的会话`}>
           {[...project.sessions].sort((a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false) || (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).map(session => <li key={session.id} className="workspace-session-item">
-            <div className="workspace-session-row" data-active={session.id === activeId || undefined}>
+            <div className="workspace-session-row codex-session-row" data-active={session.id === activeId || undefined}>
             <Icon name={session.kind === 'terminal' ? 'code' : 'chat'}/>
             <InlineRename value={session.title} selected={session.id === activeId} selectionRole="button" current={session.id === activeId} labels={{ hint: `${sessionDescription(session)} · 双击或 F2 重命名`, input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空', failed: '重命名失败' }} onSelect={() => onSelectSession(session.id)} onRename={title => onRenameSession(session.id, title)}/>
             {onTogglePinned && <Button className="workspace-session-pin" aria-label={session.pinned ? `取消置顶 ${session.title}` : `置顶 ${session.title}`} variant="ghost" onClick={() => void onTogglePinned(session.id, !session.pinned)}>{session.pinned ? '★' : '☆'}</Button>}
@@ -87,7 +83,7 @@ export function ProjectSidebar({
         </ul>}
       </section>)}
     </div>
-    <section className="workspace-recent" aria-label="最近任务">
+    <section className="workspace-recent codex-recent" aria-label="最近任务">
       <Button variant="ghost" className="workspace-recent-toggle" aria-expanded={recentOpen} onClick={() => setRecentOpen(open => !open)}><Icon name="clock"/><span>最近</span><span aria-hidden="true">{recentOpen ? '⌄' : '›'}</span></Button>
       {recentOpen && <ul className="workspace-recent-list" aria-label="最近任务列表">
         {sessions.filter(session => `${session.title}\n${session.cwd}`.toLowerCase().includes(query.trim().toLowerCase())).slice().sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).slice(0, 8).map(session => <li key={session.id} data-active={session.id === activeId || undefined}>
@@ -96,7 +92,7 @@ export function ProjectSidebar({
         {!sessions.length && <li className="ui-meta">暂无最近任务</li>}
       </ul>}
     </section>
-    <div className="sidebar-bottom"><span className="ui-meta">{runtimeAvailable ? '本机 Pi' : '尚未连接 Pi'}</span></div>
+    <div className="codex-sidebar-account"><span className="codex-account-avatar">PI</span><span><strong>本机 Pi</strong><small>{runtimeAvailable ? '已连接' : '尚未连接'}</small></span><IconButton icon="settings" label="账户设置" variant="ghost" onClick={onSettings}/></div>
   </nav>;
 }
 
