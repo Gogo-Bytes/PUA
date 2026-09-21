@@ -95,7 +95,7 @@ export function Tooltip({ content, children }: { content: ReactNode; children: R
 }
 export type Choice = { value: string; label: string; disabled?: boolean };
 /** Shared list behaviour for action menus and single-select choices. Tab leaves naturally; Escape returns focus. */
-function ChoicePopup({ label, choices, value, onChoose, kind, disabled }: { label: string; choices: Choice[]; value?: string; onChoose(value: string): void; kind: 'menu' | 'listbox'; disabled?: boolean }) {
+function ChoicePopup({ label, choices, value, onChoose, kind, disabled, triggerIcon }: { label: string; choices: Choice[]; value?: string; onChoose(value: string): void; kind: 'menu' | 'listbox'; disabled?: boolean; triggerIcon?: Parameters<typeof Icon>[0]['name'] }) {
   const root = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null), popup = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false); const id = useId(); const scale = useMotionScale();
   const close = (restore = true) => { setOpen(false); if (restore) trigger.current?.focus(); };
@@ -137,15 +137,15 @@ function ChoicePopup({ label, choices, value, onChoose, kind, disabled }: { labe
     event.preventDefault(); items[next]?.focus();
   }
   return <div ref={root} className="ui-popup-anchor" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) close(false); }}>
-    <Button ref={trigger} disabled={disabled || !choices.some(choice => !choice.disabled)} aria-label={label} aria-haspopup={kind} aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)} onKeyDown={event => { if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); setOpen(true); } }}>{kind === 'listbox' ? choices.find(choice => choice.value === value)?.label ?? label : label}<Icon name="down"/></Button>
+    <Button ref={trigger} disabled={disabled || !choices.some(choice => !choice.disabled)} aria-label={label} aria-haspopup={kind} aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)} onKeyDown={event => { if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); setOpen(true); } }}>{kind === 'listbox' ? choices.find(choice => choice.value === value)?.label ?? label : label}<Icon name={triggerIcon ?? 'down'}/></Button>
     {open && <div ref={popup} id={id} role={kind} aria-label={label} className="ui-popup" onKeyDown={keyDown}>{choices.map(choice => <button type="button" key={choice.value} role={kind === 'menu' ? 'menuitem' : 'option'} aria-selected={kind === 'listbox' ? value === choice.value : undefined} data-value={choice.value} tabIndex={-1} disabled={choice.disabled} onClick={() => { onChoose(choice.value); close(); }}>{choice.label}{value === choice.value && <Icon name="check"/>}</button>)}</div>}
   </div>;
 }
 export function Select({ label, options, value, onChange, disabled }: { label: string; options: Choice[]; value: string; onChange(value: string): void; disabled?: boolean }) {
   return <ChoicePopup kind="listbox" label={label} choices={options} value={value} onChoose={onChange} disabled={disabled}/>;
 }
-export function DropdownMenu({ label, items, onAction }: { label: string; items: Choice[]; onAction(value: string): void }) {
-  return <ChoicePopup kind="menu" label={label} choices={items} onChoose={onAction}/>;
+export function DropdownMenu({ label, items, onAction, icon }: { label: string; items: Choice[]; onAction(value: string): void; icon?: Parameters<typeof Icon>[0]['name'] }) {
+  return <ChoicePopup kind="menu" label={label} choices={items} onChoose={onAction} triggerIcon={icon}/>;
 }
 export function Tabs({ label, items, value, onChange }: { label: string; items: Choice[]; value: string; onChange(value: string): void }) {
   return <div className="ui-tabs" role="tablist" aria-label={label} onKeyDown={event => {

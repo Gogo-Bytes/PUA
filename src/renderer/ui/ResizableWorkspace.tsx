@@ -14,7 +14,7 @@ export function ResizableWorkspace({ left, right, children, leftOpen, onLeftOpen
   const [replayCount, setReplayCount] = useState(0);
   const previousReplay = useRef(0);
   const toggles = useRef<Partial<Record<Side, HTMLButtonElement | null>>>({});
-  const [containerWidth, setContainerWidth] = useState(1200), [widths, setWidths] = useState({ left: 224, right: 256 }), [localShown, setLocalShown] = useState({ left: true, right: true });
+  const [containerWidth, setContainerWidth] = useState(1200), [widths, setWidths] = useState({ left: 280, right: 300 }), [localShown, setLocalShown] = useState({ left: true, right: true });
   const shown = { left: leftOpen ?? localShown.left, right: rightOpen ?? localShown.right };
   const toggle = (side: Side, value: boolean) => { setLocalShown(previous => ({ ...previous, [side]: value })); if (side === 'left') onLeftOpenChange?.(value); else onRightOpenChange?.(value); };
   const drag = useRef<{ side: Side; x: number; width: number; target: HTMLElement; pointerId: number; cursor: string; select: string } | null>(null);

@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import {
   Pi, Folder, Plus, X, Search, Settings, MessageSquare,
-  ChevronDown, ChevronRight, PanelLeft, ArrowUp, Square, Check,
+  ChevronDown, ChevronRight, PanelLeft, PanelRight, ArrowUp, Square, Check,
   File, CodeXml, Copy, Link, RotateCw, Clock, LoaderCircle,
   Pause, Info, CircleAlert, CircleX, CircleCheck, Terminal, PencilLine, GitFork, ArrowLeft, ArrowRight,
   MoreHorizontal,
@@ -11,7 +11,7 @@ import {
 const icons = {
   pi: Pi, folder: Folder, plus: Plus, close: X, search: Search,
   settings: Settings, chat: MessageSquare, down: ChevronDown,
-  chevron: ChevronRight, panel: PanelLeft, up: ArrowUp, stop: Square,
+  chevron: ChevronRight, panel: PanelLeft, panelRight: PanelRight, up: ArrowUp, stop: Square,
   check: Check, file: File, code: CodeXml, copy: Copy, link: Link,
   refresh: RotateCw, clock: Clock, running: LoaderCircle, pause: Pause,
   info: Info, warning: CircleAlert, error: CircleX, success: CircleCheck,

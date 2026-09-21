@@ -41,7 +41,7 @@ export function App() {
     window.addEventListener('keydown', listener, true); return () => window.removeEventListener('keydown', listener, true);
   }, [boot?.platform, active?.kind, active?.cwd, project]);
   return <UIProvider theme={theme}><div className={`workspace ${boot?.platform === 'darwin' ? 'workspace-darwin' : ''}`}>
-    <WorkspaceChrome active={active} leftOpen={projectPanelOpen} rightOpen={reviewOpen} leftToggleRef={leftPanelToggle} rightToggleRef={panelToggle}
+    <WorkspaceChrome active={active} project={project} leftOpen={projectPanelOpen} rightOpen={reviewOpen} leftToggleRef={leftPanelToggle} rightToggleRef={panelToggle}
       canNavigateBack={workspace.canNavigateBack} canNavigateForward={workspace.canNavigateForward}
       onToggleLeft={() => setProjectPanelOpen(open => !open)} onToggleRight={() => setReviewOpen(open => !open)}
       onNavigateBack={workspace.navigateBack} onNavigateForward={workspace.navigateForward}
