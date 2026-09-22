@@ -3,6 +3,10 @@ import { Menu as Primitive } from '@base-ui/react/menu';
 import { cn, itemClass, popupClass, triggerClass } from './shadcn-utils';
 
 export const MenuRoot = Primitive.Root;
+export const MenuRadioGroup = Primitive.RadioGroup;
+export function MenuRadioItem({ className, ...props }: Primitive.RadioItem.Props) {
+  return <Primitive.RadioItem {...props} className={cn(itemClass, 'tw:data-checked:bg-accent', className)}/>;
+}
 export function MenuTrigger({ className, ...props }: Primitive.Trigger.Props) {
   return <Primitive.Trigger {...props} className={cn(triggerClass, className)}/>;
 }

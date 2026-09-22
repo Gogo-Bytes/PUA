@@ -14,7 +14,7 @@
 | 2 浮层与反馈 | Dialog、Tooltip、Toast、Message、Tag/StatusBadge | 焦点锁/恢复、嵌套菜单、长内容、关闭锁、时长/暂停/队列逐项迁移或记录保留理由 | 已实施；保留项见下 |
 | 3 表单与页面控件 | Button/IconButton、Input/Textarea、Checkbox/Radio/Switch/Slider；设置、新建/改名、任务详情、历史搜索、扩展表单 | 所有适用表单统一；保留原校验、提交/禁用/异步语义 | 已实施 |
 | 4 对话与命令 | 模型 Combobox、思考 Select、添加菜单、命令面板、共享 `/` 和 `@` 建议 | 光标 token/选区、IME、Escape、方向键/Enter、选择不误发、旧请求不串会话 | 已实施 |
-| 5 工作台领域组合 | Sidebar、SessionTabs、Breadcrumbs、工具详情、检查器/文件行、搜索/空错误状态 | 消费统一控件；保留文件夹/末端浮层设计；无旧重复交互 | 待实施 |
+| 5 工作台领域组合 | Sidebar、SessionTabs、Breadcrumbs、工具详情、检查器/文件行、搜索/空错误状态 | 消费统一控件；保留文件夹/末端浮层设计；删除重复菜单交互 | 已实施 |
 | 6 清理与验收 | 样式/旧实现/文档/测试门禁 | 迁移清单闭合、类型/构建/单测/隔离浏览器证据，列出剩余真实桌面验收 | 待实施 |
 
 不机械替换：xterm/PTY、Markdown/源码安全渲染、Virtuoso 流式列表、Git diff 内容、会话/草稿状态 owner。ResizableWorkspace 的尺寸持久化、拖拽和 GSAP 属于领域布局能力；无行为等价方案前保留，不因组件库有 Sidebar/Resizable 名称就重写。
@@ -54,3 +54,11 @@ Button/IconButton 使用 Base Button；Checkbox 使用 Base Checkbox。统一 In
 两类对话统一 completionToken，跟踪 selectionStart/End，替换当前完整词段并恢复精确光标，保留后文；选区/IME 不弹建议，Escape 不发送。技能候选仅限消息开头（Pi 只展开开头 /skill），文件引用仍按 JSON 引号协议插入。草稿快照、附件与调用身份不迁移。
 
 14 项 Composer/词段测试、3 项 Pending adapter 测试、类型/构建及 `composer-controls-check.mjs` 通过，截图 `/tmp/pua-composer-migration`。Pending 测试 stub 浮层 Interface，只检验资源/草稿/提交，不把 jsdom 的浮层布局结果当实际验收；真实弹层由浏览器脚本覆盖。系统真实中文输入法仍需人工验证。命令面板 App 旧测试仍先失败于迁移前的项目 title 查询，最终阶段列入统一基线校正。
+
+### 阶段 5 结果
+
+SessionTabs 溢出列表采用 Base Menu RadioGroup，移除手写 outside listener、菜单方向键和恢复焦点。Breadcrumbs 中间层改用共享 Menu，保留安全 href 检查与回调；删除原生 details 菜单路径。侧栏/工具卡/检查器/文件行已透过共同 Interface 消费 Base Button、Tabs、Collapsible 与新 Input；空态和静态错误仍为语义内容，不虚构库组件。项目名保留路径 title，恢复同名项目辨识。
+
+保留的领域特例：SessionTabs 的可改名 tab 在编辑时会移出 tab 集合，其 id 焦点恢复和切换逻辑保留；项目树折叠集合、分支身份与 ResizableWorkspace 尺寸仍归 owner，不迁到 UI 库。它们不是第二套菜单实现。
+
+17 项模块测试与 10 项通知/面包屑测试通过。面包屑浮层回调/安全链接/键盘与 SessionTabs Radio 菜单在 `navigation-controls-check.mjs` 真实浏览器验收；unit 仍检查常规链接安全与全文 Tooltip，不再用 jsdom 模拟菜单定位。侧栏专项明暗/窄窗/改名/折叠/透明按钮验收通过，证据 `/tmp/pua-sidebar-menu`。

@@ -63,7 +63,7 @@ export function ProjectSidebar({
       {visible.length === 0 ? <p className="ui-meta">暂无匹配项目</p> : visible.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line codex-project-line">
           {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse codex-project-folder-toggle" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => toggleProject(project.cwd)}><Icon name={collapsed.has(project.cwd) ? 'folder' : 'folderOpen'}/></Button>}
-          <Button variant="ghost" className="workspace-project-button codex-project-button" aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
+          <Button variant="ghost" className="workspace-project-button codex-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
             {project.sessions.length === 0 && <Icon name="folder"/>}<span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
           </Button>
           <span className="codex-menu-tail"><span className="codex-menu-actions" aria-label={`${project.name} 操作`}>

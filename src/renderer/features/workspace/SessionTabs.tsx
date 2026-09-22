@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useOverlayContainer } from '../../ui/theme';
+import { MenuRoot, MenuTrigger, MenuContent, MenuRadioGroup, MenuRadioItem } from '../../ui/shadcn-menu';
 import { Button, Icon, IconButton, InlineRename, type InlineRenameLabels } from '../../ui';
 
 export interface WorkspaceSessionTab {
@@ -33,19 +35,11 @@ export function SessionTabs({ sessions, activeId, onSelect, onClose, onRename, o
   const text = { title: 'Sessions', add: 'Add session', all: 'All sessions', menu: 'All sessions', close: (title: string) => `Close ${title}`, rename: {}, ...labels };
   const [menu, setMenu] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
-  const popup = useRef<HTMLDivElement>(null);
+  const container = useOverlayContainer();
   const tablist = useRef<HTMLDivElement>(null);
   const targets = useRef(new Map<string, HTMLDivElement>());
   const revealActiveTab = () => tablist.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   useEffect(() => { revealActiveTab(); }, [activeId]);
-  const closeMenu = () => { setMenu(false); trigger.current?.focus(); };
-  useEffect(() => {
-    if (!menu) return;
-    popup.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
-    const outside = (event: PointerEvent) => { if (!popup.current?.contains(event.target as Node) && !trigger.current?.contains(event.target as Node)) closeMenu(); };
-    document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
-  }, [menu]);
   useEffect(() => setMenu(false), [groupKey]);
   return <section className="ui-session-strip" aria-label={text.title} data-workspace-task-list="true">
     <div ref={tablist} role="tablist" aria-label={text.title} className="ui-session-tabs" onKeyDown={event => {
@@ -62,13 +56,14 @@ export function SessionTabs({ sessions, activeId, onSelect, onClose, onRename, o
       {onRename && session.activity && session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity" aria-hidden="true"/>}{onClose && <IconButton className="ui-session-close" label={text.close(session.title)} icon="close" variant="ghost" onClick={() => onClose(session.id)}/>}
     </div>)}</div>
     {onAdd && <IconButton icon="plus" label={text.add} disabled={addDisabled} variant="ghost" onClick={onAdd}/>}
-    {showOverflow && <div className="ui-session-overflow"><IconButton ref={trigger} icon="down" label={text.all} variant="ghost" disabled={!sessions.length} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(value => !value)}/>{menu && <div className="ui-popup ui-session-menu" ref={popup} role="menu" aria-label={text.menu} onKeyDown={event => {
-      if (event.key === 'Escape' || event.key === 'Tab') { if (event.key === 'Escape') event.preventDefault(); closeMenu(); }
-      if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
-        event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(document.activeElement as HTMLButtonElement);
-        items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
-      }
-    }}>{sessions.map(session => <Button variant="ghost" key={session.id} role="menuitemradio" aria-checked={session.id === activeId} onClick={() => { if (session.id === activeId) revealActiveTab(); onSelect(session.id); closeMenu(); }}><Icon name="chat"/><span>{session.title}</span>{session.id === activeId && <Icon name="check"/>}</Button>)}</div>}</div>}
+    {showOverflow && <div className="ui-session-overflow"><MenuRoot open={menu} onOpenChange={setMenu}>
+      <MenuTrigger render={<IconButton ref={trigger} icon="down" label={text.all} variant="ghost"/>} disabled={!sessions.length}/>
+      <MenuContent container={container} aria-label={text.menu}>
+        <MenuRadioGroup value={activeId ?? ''} onValueChange={id => { onSelect(id); setMenu(false); }}>
+          {sessions.map(session => <MenuRadioItem key={session.id} value={session.id} onClick={() => { if (session.id === activeId) revealActiveTab(); }}><Icon name={session.kind === 'terminal' ? 'terminal' : 'chat'}/><span>{session.title}</span>{session.id === activeId && <Icon name="check"/>}</MenuRadioItem>)}
+        </MenuRadioGroup>
+      </MenuContent>
+    </MenuRoot></div>}
   </section>;
 }
 

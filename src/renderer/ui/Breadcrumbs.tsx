@@ -1,3 +1,5 @@
+import { useOverlayContainer } from './theme';
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from './shadcn-menu';
 import { Button, Tooltip } from './primitives';
 export type BreadcrumbItem = { id: string; label: string } & ({ href?: string; onSelect?: never } | { href?: never; onSelect(): void });
 export interface BreadcrumbsProps { items: readonly BreadcrumbItem[]; label?: string }
@@ -15,17 +17,21 @@ function BreadcrumbLabel({ item, current = false, expanded = false }: { item: Br
     : <span tabIndex={expanded ? undefined : 0} className="ui-breadcrumb-label">{item.label}</span>;
   return expanded ? content : <Tooltip content={item.label}>{content}</Tooltip>;
 }
-/** Single-line hierarchy; middle levels remain operable in a native disclosure, full labels on focus. */
+/** Single-line hierarchy; middle levels use the shared menu, full labels on focus. */
 export function Breadcrumbs({ items, label = 'Breadcrumbs' }: BreadcrumbsProps) {
+  const container = useOverlayContainer();
   const collapsed = items.length > 3;
   const visible = collapsed ? [items[0], items[items.length - 1]] : items;
   return <nav className="ui-breadcrumbs" aria-label={label}><ol>{visible.map((item, index) => {
     const current = index === visible.length - 1;
     return <li key={item.id} className={current ? 'ui-breadcrumb-current' : undefined}>
       {index > 0 && <span aria-hidden="true" className="ui-breadcrumb-separator">/</span>}
-      {collapsed && index === 1 && <><details className="ui-breadcrumb-overflow" onKeyDown={event => {
-        if (event.key === 'Escape' && event.currentTarget.open) { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus(); }
-      }}><summary aria-label={`${label}: ${items.length - 2} hidden levels`}>…</summary><ol>{items.slice(1, -1).map(parent => <li key={parent.id}><BreadcrumbLabel item={parent} expanded/></li>)}</ol></details><span aria-hidden="true" className="ui-breadcrumb-separator">/</span></>}
+      {collapsed && index === 1 && <><MenuRoot><MenuTrigger className="ui-button ui-button-ghost" aria-label={`${label}: ${items.length - 2} hidden levels`}>…</MenuTrigger>
+        <MenuContent container={container} aria-label={label}>{items.slice(1, -1).map(parent => {
+          const href = parent.href ? safeHref(parent.href) : undefined;
+          return <MenuItem key={parent.id} render={href ? <a href={href}/> : undefined} disabled={!href && !parent.onSelect} onClick={parent.onSelect}>{parent.label}</MenuItem>;
+        })}</MenuContent>
+      </MenuRoot><span aria-hidden="true" className="ui-breadcrumb-separator">/</span></>}
       <BreadcrumbLabel item={item} current={current}/>
     </li>;
   })}</ol></nav>;
