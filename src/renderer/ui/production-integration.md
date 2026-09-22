@@ -48,4 +48,14 @@
 
 ## 隔离验证
 
+### Tailwind / shadcn 试接入（2026-09-22）
+
+用户已授权引入 Tailwind。Vite 已配置 Tailwind v4 插件，`components.json` 固定 base-nova、Lucide 与 `tw` 前缀。`tailwind.css` 只由独立 `shadcn.html` 预览引入，不进入 production.css；不启用全局 Preflight，局部控件 reset 限定在 `.ui-provider .shadcn-scope`。语义颜色、字体尺寸和圆角映射已有 `--ui-*`，不增加第二套主题权威。
+
+`shadcn-select.tsx`、`shadcn-combobox.tsx`、`shadcn-menu.tsx` 是 shadcn Base Nova 对应组件的裁剪适配（保留 MIT 通知），交互交给 `@base-ui/react`，使用 Tailwind 工具类。仅保留预览使用的组合部件；没有覆盖既有 Select/DropdownMenu，也尚未迁移 `/`、`@`。内容组件要求显式 portal `container`，调用方须提供所属 UIProvider 内、且在原生 Dialog 内的无裁切容器；预览包含原生 Dialog 用例。尚无结构动画，不自行添加另一套动效引擎。
+
+启动 `npm run dev:components` 后访问 `http://127.0.0.1:4182/shadcn.html`，运行 `node tests/component-preview/shadcn-check.mjs`。此阶段的模型/思考/添加操作均为内存示例；没有真实 IPC、模型请求、磁盘扫描或文件选择器调用。生产替换须待用户确认，中文输入法与 `/`、`@` 是后续专项验证，不由本轮预览证明。
+
+本阶段验证：production/preview build、production/preview/tests typecheck、28 项 primitive/module 测试及新浏览器脚本通过，截图在 `/tmp/pua-shadcn-evidence`。全量测试为 2660 passed / 36 failed（9 个文件），包含旧项目 title 查询和 App 结构断言，尚未逐项归因；不可宣称全量回归通过。边界检查通过；`check:protected` 仍对旧冻结清单报告本轮新增 UI 文件和此前 UI 改动，未修改清单以掩盖差异。npm audit 报 Vitest/mocker 两项 moderate，本轮未升级测试框架。
+
 Component Preview 四个浏览器脚本验证共同组件；Workspace Preview 复用完整生产 App/production.css 和 Fake Desktop。运行 `node tests/workspace-demo-check.mjs` 检查生产布局、改名、调宽、面板恢复、消息/工具/输入、主题与 Dialog；`node tests/workspace-dialog-check.mjs` 覆盖 pending 表单焦点。两者只访问 127.0.0.1:4181。Electron 验证使用临时 userData 和本地 mock runtime，只查看空壳与 Settings，不创建会话或访问真实外部能力。

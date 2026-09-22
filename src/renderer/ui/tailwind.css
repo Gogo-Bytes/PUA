@@ -1,0 +1,38 @@
+/* Opt-in only until preview approval. No global Preflight/reset. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(tw) source(none);
+@source "./shadcn-*.tsx";
+@source "./shadcn-utils.ts";
+@source "../../../tests/component-preview/ShadcnPreview.tsx";
+
+@theme inline {
+  --color-background: var(--ui-canvas);
+  --color-foreground: var(--ui-text);
+  --color-popover: var(--ui-surface);
+  --color-popover-foreground: var(--ui-text);
+  --color-muted: var(--ui-muted);
+  --color-muted-foreground: var(--ui-secondary);
+  --color-accent: var(--ui-selected);
+  --color-accent-foreground: var(--ui-text);
+  --color-border: var(--ui-border);
+  --color-ring: var(--ui-accent);
+  --radius-md: var(--ui-radius-control);
+  --radius-lg: var(--ui-radius-overlay);
+  --text-sm: var(--ui-type-body);
+  --text-xs: var(--ui-type-meta);
+}
+
+/* A narrow reset for opted-in controls; existing components are untouched. */
+@layer base {
+  .ui-provider .shadcn-scope, .ui-provider .shadcn-scope * {
+    box-sizing: border-box;
+  }
+  .ui-provider .shadcn-scope :where(button, input, textarea) {
+    font: inherit;
+    color: inherit;
+    border: 0 solid;
+    background: transparent;
+    margin: 0;
+  }
+}
