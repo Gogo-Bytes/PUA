@@ -1,10 +1,11 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import './component-preview/test-setup';
 import { Button, Dialog, Select, Tooltip, UIProvider } from '../src/renderer/ui';
-it('Dialog focuses the requested field after opening and restores the opener on cancel and reopen', () => {
+it('Dialog focuses the requested field after opening and restores the opener on Escape and reopen', async () => {
   function Example() {
     const [open, setOpen] = useState(false), input = useRef<HTMLInputElement>(null);
     return <UIProvider motion="off"><Button onClick={() => setOpen(true)}>Open</Button><Dialog open={open} title="Edit" initialFocusRef={input} onClose={() => setOpen(false)}><input ref={input} aria-label="Name"/></Dialog></UIProvider>;
@@ -13,19 +14,20 @@ it('Dialog focuses the requested field after opening and restores the opener on 
   const opener = screen.getByRole('button', { name: 'Open' });
   for (let attempt = 0; attempt < 2; attempt++) {
     opener.focus(); fireEvent.click(opener);
-    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Name' }));
-    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }));
-    expect(document.activeElement).toBe(opener);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Name' })));
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(document.activeElement).toBe(opener));
   }
 });
-it.each([true, false])('Dialog loops through radio group tab stops while submission is disabled (checked=%s)', checked => {
+it.each([true, false])('Dialog loops through radio group tab stops while submission is disabled (checked=%s)', async checked => {
   render(<UIProvider motion="off"><Dialog open title="Pending" onClose={() => {}}>
     <input type="radio" name="mode" aria-label="New" defaultChecked={checked}/><input type="radio" name="mode" aria-label="Continue"/>
     <Button disabled>Submit</Button><Button tabIndex={-1}>Excluded</Button><div style={{ display: 'none' }}><Button>Hidden</Button></div><fieldset disabled><Button>Busy</Button></fieldset>
   </Dialog></UIProvider>);
   const first = screen.getByRole('button', { name: 'Close dialog' }), last = screen.getByRole('radio', { name: 'New' });
-  last.focus(); fireEvent.keyDown(last, { key: 'Tab' }); expect(document.activeElement).toBe(first);
-  fireEvent.keyDown(first, { key: 'Tab', shiftKey: true }); expect(document.activeElement).toBe(last);
+  await waitFor(() => expect(document.activeElement).toBe(first));
+  last.focus(); await userEvent.tab(); await waitFor(() => expect(document.activeElement).toBe(first));
+  await userEvent.tab({ shift: true }); await waitFor(() => expect(document.activeElement).toBe(last));
 });
 // Keyboard, focus, outside press and disabled selection run in the real browser:
 // component-preview/choice-controls-check.mjs. jsdom has no popup layout.
@@ -76,9 +78,10 @@ it('Dialog loops Tab at either end and Escape requests closure', async () => {
   const { Dialog } = await import('../src/renderer/ui'); const close = vi.fn();
   render(<UIProvider motion="off"><Dialog open title="Review" onClose={close}><Button>Last action</Button></Dialog></UIProvider>);
   const last = screen.getByRole('button', { name: 'Last action' }), first = screen.getByRole('button', { name: 'Close dialog' });
-  last.focus(); fireEvent.keyDown(last, { key: 'Tab' }); expect(document.activeElement).toBe(first);
-  fireEvent.keyDown(first, { key: 'Tab', shiftKey: true }); expect(document.activeElement).toBe(last);
-  fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true })); expect(close).toHaveBeenCalledOnce();
+  await waitFor(() => expect(document.activeElement).toBe(first));
+  last.focus(); await userEvent.tab(); await waitFor(() => expect(document.activeElement).toBe(first));
+  await userEvent.tab({ shift: true }); await waitFor(() => expect(document.activeElement).toBe(last));
+  await userEvent.keyboard('{Escape}'); expect(close).toHaveBeenCalledOnce();
 });
 it('Dialog can preserve callers that do not close from backdrop clicks', async () => {
   const { Dialog } = await import('../src/renderer/ui'); const close = vi.fn();

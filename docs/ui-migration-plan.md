@@ -11,7 +11,7 @@
 | 阶段 | 覆盖 | 完成条件 | 状态 |
 | --- | --- | --- | --- |
 | 1 通用交互底座 | Select、DropdownMenu、Tabs、Collapsible；Tailwind 生产/两预览接入；Portal 主题归属 | 删除手写 ChoicePopup/焦点遍历，全部既有调用走同一实现，键盘/窄窗回归 | 已实施 |
-| 2 浮层与反馈 | Dialog、Tooltip、Toast、Message、Tag/StatusBadge | 焦点锁/恢复、嵌套菜单、长内容、关闭锁、时长/暂停/队列逐项迁移或记录保留理由 | 待实施 |
+| 2 浮层与反馈 | Dialog、Tooltip、Toast、Message、Tag/StatusBadge | 焦点锁/恢复、嵌套菜单、长内容、关闭锁、时长/暂停/队列逐项迁移或记录保留理由 | 已实施；保留项见下 |
 | 3 表单与页面控件 | Button/IconButton、Input/Textarea、Checkbox/Radio/Switch/Slider；设置、新建/改名、任务详情、历史搜索、扩展表单 | 所有适用表单统一；保留原校验、提交/禁用/异步语义 | 待实施 |
 | 4 对话与命令 | 模型 Combobox、思考 Select、添加菜单、命令面板、共享 `/` 和 `@` 建议 | 光标 token/选区、IME、Escape、方向键/Enter、选择不误发、旧请求不串会话 | 待实施 |
 | 5 工作台领域组合 | Sidebar、SessionTabs、Breadcrumbs、工具详情、检查器/文件行、搜索/空错误状态 | 消费统一控件；保留文件夹/末端浮层设计；无旧重复交互 | 待实施 |
@@ -32,3 +32,11 @@
 公共 Select / DropdownMenu / Tabs / Collapsible 已由 Base UI 管理导航、选择、定位与展开语义。Portal 使用所属 UIProvider 或 Dialog 容器；调用接口和业务状态 owner 不变。Tailwind 已进入生产与两类预览，无全局 Preflight。删除旧 ChoicePopup 和死样式。
 
 Base Select 允许键盘聚焦禁用选项以阅读，但不允许提交；与旧实现跳过禁用项的行为不同。真实浏览器验证 disabled、方向键、Home/End、Enter、Escape、Tab、外部点击、菜单回调、焦点恢复、明暗/窄窗，无页面错误。定位与焦点检查从无布局 jsdom 移至 `choice-controls-check.mjs`；26 项相关接口/业务测试、类型检查和构建通过，shadcn 嵌套 Dialog 预览通过。截图 `/tmp/pua-choice-controls`。迁移前全量基线 2660 passed / 36 failed，仍需最后比对；不宣称全量通过。
+
+### 阶段 2 结果与明确保留项
+
+Dialog 改为 Base UI Root/Portal/Backdrop/Popup/Title/Close；删除原生 showModal、手写 Tab 查询和手写关闭焦点管理。调用方 initialFocusRef、closeOnBackdrop 不变，closeDisabled 统一阻止按钮、Escape、外部关闭；本轮不为弹窗另外引入动效引擎。9 项 primitive 测试改用真实键盘语义与异步焦点断言，未删除焦点/禁用/radio 检查；shadcn 嵌套菜单和长 Tooltip 浏览器回归通过。
+
+- Tooltip 保留原生 top-layer Adapter：它是完整长标题阅读区，支持 Tab 进入滚动全文、独立 hover/focus 保持、祖先滚动重新定位。直接换普通 Base Tooltip 会丢失这些已验证能力。明暗/窄窗/全文 End/嵌套 Dialog Escape 专项验收通过。
+- Toast 保留已有受控队列与可见时间计时 Adapter。Base/Sonner 自有通知状态不能直接替代 items/onDismiss 的 owner 契约；等待项开始计时、暂停/恢复和一次性回调仍由已有测试覆盖，不增加第二套全局通知仓库。
+- Message、Tag、StatusBadge 是静态语义展示，沿用主题 token 与统一 Button，不包装没有交互价值的库原语。

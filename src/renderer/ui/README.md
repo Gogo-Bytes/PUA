@@ -67,7 +67,7 @@
 - 语义颜色：链接使用明显蓝色及 hover 色，成功/新增绿色、失败/删除红色、警告琥珀色、高亮淡紫色；代码关键字、字符串、数字各自使用 token。中性底色和主操作保持原层级。
 - Foundations 新增图标目录与完整文档样例，组合页复用同一静态样例；包含 mark、kbd、任务清单、代码着色、ins/del、状态表、术语、折叠内容、图注和脚注。代码着色为本地 React span，不是新增 Markdown 解析器。
 
-- Dialog 是生产与预览唯一的原生 modal 实现，Tab 循环、Escape 请求关闭、恢复 opener；可配置 closeLabel。需要输入初始焦点的调用方传入 `initialFocusRef`（不用 React `autoFocus`），Dialog 在 `showModal()` 后聚焦；Tab 循环排除隐藏、禁用和负 tabindex 控件，每个具名 radio 组只保留已选项（无选项时取首项）。生产 Fake Desktop 回归运行 `node tests/workspace-dialog-check.mjs`（需 4181 Workspace Preview）。`closeOnBackdrop={false}` 供原本不响应 backdrop 的调用方保留关闭语义，`closeDisabled` 让异步提交期间的关闭按钮与业务锁一致。确认、危险操作、异步失败的状态由调用方控制，示例在 `CompletionExamples.tsx / DialogExamples`，没有另造一套 Dialog。
+- Dialog 是生产与预览唯一的 modal 实现（`shadcn-dialog.tsx`，Base UI composition）。库负责 Tab 循环、Escape 请求关闭、恢复 opener；可配置 closeLabel。需要输入初始焦点的调用方传入 `initialFocusRef`；焦点初始化/恢复是异步的，测试应等待焦点结果。嵌套菜单 Portal 归属 Popup，第一次 Escape 只关菜单。`closeOnBackdrop={false}` 保留不响应 backdrop 的语义，`closeDisabled` 阻止所有关闭请求。确认、危险操作、异步失败仍由调用方控制；示例在 `CompletionExamples.tsx / DialogExamples`。
 - InlineRename 支持双击/F2，labels 可配置输入提示、保存/取消和失败文案；SessionTabs 按 id 恢复焦点，忙碌编辑器可作为焦点目标。未增加改名菜单入口。
 - ResizableWorkspace 支持 rightOpen/onRightOpenChange、rightToggleRef、labels 和 toolbarActions；motionControls 默认为 false，仅预览显式开启重播测试控制。窄窗先隐藏右侧再隐藏左侧，保存宽度恢复；separator 即将移除前把焦点移到永久 toggle。原有 GSAP 有界 context 与中途反转策略保持。
 

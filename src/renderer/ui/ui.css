@@ -39,7 +39,8 @@
 .ui-provider .ui-tabs .ui-button { border-radius: var(--ui-radius-control); padding: var(--ui-control-inset) var(--ui-space-3); border-color: transparent; }
 .ui-provider .ui-tabs [aria-selected='true'] { color: var(--ui-text); background: var(--ui-selected); font-weight: var(--ui-weight-medium); }
 .ui-provider .ui-dialog { color: var(--ui-text); background: var(--ui-surface); padding: var(--ui-space-4); overflow-wrap: anywhere; max-height: calc(100dvh - var(--ui-space-5)); overflow-y: auto; border: 1px solid var(--ui-border); border-radius: var(--ui-radius-overlay); box-shadow: var(--ui-shadow); width: min(440px, 90vw); }
-.ui-provider .ui-dialog::backdrop { background: #15152266; }
+.ui-provider .ui-dialog { position: fixed; z-index: 50; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; }
+.ui-provider .ui-dialog-backdrop { position: fixed; inset: 0; z-index: 49; background: #15152266; }
 .ui-provider .ui-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: var(--ui-space-2); margin-bottom: var(--ui-space-3); }
 .ui-provider .ui-collapsible > .ui-button { justify-content: flex-start; width: 100%; }
 .ui-provider .ui-reveal { overflow: hidden; }

@@ -1,8 +1,7 @@
-import { cloneElement, forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode, type RefObject } from 'react';
+import { cloneElement, forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Collapsible as CollapsiblePrimitive } from '@base-ui/react/collapsible';
 import { Icon } from './Icon';
-import { Reveal, gsap, useGSAP, motionTokens } from './motion';
-import { OverlayContainerContext, useMotionScale } from './theme';
+import { Reveal } from './motion';
 export { Icon };
 export const Button = forwardRef<HTMLButtonElement, ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; busy?: boolean }>(function Button({ variant = 'secondary', busy = false, className = '', children, disabled, ...props }, ref) {
   return <button ref={ref} type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</button>;
@@ -104,40 +103,4 @@ export function Collapsible({ title, children, defaultOpen = false, label, open:
     <CollapsiblePrimitive.Panel keepMounted><Reveal open={open}>{children}</Reveal></CollapsiblePrimitive.Panel>
   </CollapsiblePrimitive.Root>;
 }
-export function Dialog({ open, title, onClose, children, initialFocusRef, closeLabel = 'Close dialog', closeDisabled = false, closeOnBackdrop = true }: { open: boolean; title: string; onClose(): void; children: ReactNode; initialFocusRef?: RefObject<HTMLElement | null>; closeLabel?: string; closeDisabled?: boolean; closeOnBackdrop?: boolean }) {
-  const ref = useRef<HTMLDialogElement>(null); const id = useId(); const scale = useMotionScale();
-  useEffect(() => {
-    const dialog = ref.current!; const previous = document.activeElement as HTMLElement | null;
-    if (open && !dialog.open) {
-      dialog.showModal();
-      // React autoFocus runs while the native dialog is still closed. Focus only
-      // after showModal, retaining the actual opener for restoration.
-      initialFocusRef?.current?.focus();
-    }
-    if (!open && dialog.open) dialog.close();
-    return () => { if (dialog.open) dialog.close(); if (open) previous?.focus(); };
-  }, [open, initialFocusRef]);
-  useGSAP(() => {
-    if (open) gsap.fromTo(ref.current, { y: scale ? 8 : 0, opacity: scale ? 0 : 1 }, { y: 0, opacity: 1, duration: motionTokens.overlay * scale, ease: motionTokens.ease, overwrite: 'auto' });
-  }, { scope: ref, dependencies: [open, scale], revertOnUpdate: true });
-  return <dialog ref={ref} tabIndex={-1} className="ui-dialog" aria-labelledby={id} onKeyDown={event => {
-    if (event.key !== 'Tab') return;
-    const candidates = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button, input:not([type="hidden"]), textarea, select, a[href], [tabindex]')).filter(node => {
-      if (node.tabIndex < 0 || node.matches(':disabled') || node.closest('[inert], [hidden]')) return false;
-      for (let ancestor: HTMLElement | null = node; ancestor && ancestor !== event.currentTarget; ancestor = ancestor.parentElement) {
-        const style = getComputedStyle(ancestor);
-        if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false;
-      }
-      return true;
-    });
-    const items = candidates.filter(node => {
-      if (!(node instanceof HTMLInputElement) || node.type !== 'radio' || !node.name) return true;
-      const group = candidates.filter((other): other is HTMLInputElement => other instanceof HTMLInputElement && other.type === 'radio' && other.name === node.name && other.form === node.form);
-      return node === (group.find(radio => radio.checked) ?? group[0]);
-    });
-    const first = items[0], last = items[items.length - 1];
-    if (!first) { event.preventDefault(); event.currentTarget.focus(); }
-    else if (event.shiftKey && (document.activeElement === first || document.activeElement === event.currentTarget)) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-  }} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (closeOnBackdrop && event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose(); } }}><div className="ui-dialog-header"><h2 id={id}>{title}</h2><IconButton label={closeLabel} icon="close" variant="ghost" disabled={closeDisabled} onClick={onClose}/></div><OverlayContainerContext.Provider value={ref}>{children}</OverlayContainerContext.Provider></dialog>;
-}
+export { Dialog } from './shadcn-dialog';

@@ -16,7 +16,7 @@ try {
     await page.goto('http://127.0.0.1:4182/');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     if (theme === 'dark') {
-      await page.getByRole('button', { name: 'Theme', exact: true }).click();
+      await page.getByRole('combobox', { name: 'Theme', exact: true }).click();
       await page.getByRole('option', { name: 'Dark', exact: true }).click();
     }
     await page.getByRole('tab', { name: '组合交互', exact: true }).click();
