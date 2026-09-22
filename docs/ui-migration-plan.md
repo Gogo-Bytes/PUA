@@ -15,7 +15,7 @@
 | 3 表单与页面控件 | Button/IconButton、Input/Textarea、Checkbox/Radio/Switch/Slider；设置、新建/改名、任务详情、历史搜索、扩展表单 | 所有适用表单统一；保留原校验、提交/禁用/异步语义 | 已实施 |
 | 4 对话与命令 | 模型 Combobox、思考 Select、添加菜单、命令面板、共享 `/` 和 `@` 建议 | 光标 token/选区、IME、Escape、方向键/Enter、选择不误发、旧请求不串会话 | 已实施 |
 | 5 工作台领域组合 | Sidebar、SessionTabs、Breadcrumbs、工具详情、检查器/文件行、搜索/空错误状态 | 消费统一控件；保留文件夹/末端浮层设计；删除重复菜单交互 | 已实施 |
-| 6 清理与验收 | 样式/旧实现/文档/测试门禁 | 迁移清单闭合、类型/构建/单测/隔离浏览器证据，列出剩余真实桌面验收 | 待实施 |
+| 6 清理与验收 | 样式/旧实现/文档/测试门禁 | 迁移清单闭合、类型/构建/单测/隔离浏览器证据，列出剩余真实桌面验收 | 已实施；全量门禁仍有基线失败 |
 
 不机械替换：xterm/PTY、Markdown/源码安全渲染、Virtuoso 流式列表、Git diff 内容、会话/草稿状态 owner。ResizableWorkspace 的尺寸持久化、拖拽和 GSAP 属于领域布局能力；无行为等价方案前保留，不因组件库有 Sidebar/Resizable 名称就重写。
 
@@ -62,3 +62,19 @@ SessionTabs 溢出列表采用 Base Menu RadioGroup，移除手写 outside liste
 保留的领域特例：SessionTabs 的可改名 tab 在编辑时会移出 tab 集合，其 id 焦点恢复和切换逻辑保留；项目树折叠集合、分支身份与 ResizableWorkspace 尺寸仍归 owner，不迁到 UI 库。它们不是第二套菜单实现。
 
 17 项模块测试与 10 项通知/面包屑测试通过。面包屑浮层回调/安全链接/键盘与 SessionTabs Radio 菜单在 `navigation-controls-check.mjs` 真实浏览器验收；unit 仍检查常规链接安全与全文 Tooltip，不再用 jsdom 模拟菜单定位。侧栏专项明暗/窄窗/改名/折叠/透明按钮验收通过，证据 `/tmp/pua-sidebar-menu`。
+
+### 阶段 6 结果与未闭合验收
+
+清理旧 slash/skill 菜单、原生 select、Breadcrumb disclosure 和 SessionTabs 菜单样式；App 终端搜索也统一 Input。Feature/App 不再直接声明原生 input/textarea/select/button。补上后台对话浮层隔离和检查器 Escape 对 dialog/listbox 的边界。组件与生产契约同步为实际结构。
+
+类型检查、测试类型检查、生产构建、导入/通道边界通过。批准的全 UI 迁移将保护 manifest 从 35 个文件更新到 52 个；保留增删改名/内容/符号链接检测算法与测试，不跳过保护门禁。检查点为阶段 5 提交，具体字节由本阶段 manifest 锁定。
+
+全量单测最终 2672 passed / 24 failed，对比迁移前 2660 / 36，没有新增失败用例身份；不是全量通过，也不能据此声称剩余用例失败原因完全相同。剩余分布：App composition structure 1、App composition 7、ResizableWorkspace 6、renderer 3、App command palette 6、App settings 1。涉及旧标签/尺寸/同步焦点和原 DOM 断言，命令面板还存在订阅/投影断言待进一步校正。报告 `/tmp/pua-ui-before.json` 与 `/tmp/pua-ui-final.json` 为本机临时证据；未把这些失败删除或设为 skip。
+
+workspace-renderer、desktop-client-renderer、component-modules 共 43 项和 missing-assistant-replay 6 项专项全通过。传输/草稿测试通过 `attachment-menu-contract.tsx` 隔离 jsdom 浮层几何循环，只替换附件菜单与建议定位，保留原业务断言；实际浮层由真实浏览器专项验证。
+
+真实 Chrome 隔离验收覆盖 choice、shadcn、composer、navigation、tooltip、sidebar、workspace-dialog 与 workspace-demo；不连接 Electron/Pi/Git/真实磁盘。workspace-demo 明暗主题 1440–360px 无横向溢出、无页面错误/真实请求；通过附件两步菜单、A→B→A 草稿、发送/换行、命令面板焦点、键盘调宽。workspace-dialog 验证 Tab/Shift+Tab 循环及关闭恢复（等待 Base focus guard 下一帧完成）。截图 `/tmp/pua-demo-unification/workspace` 与各阶段上述路径。
+
+真实系统中文输入法、系统附件选择器和 Electron 原生窗口集成仍需人工验收。构建存在大 chunk 警告；本阶段不为 UI 迁移改变打包/进程边界。全量 `verify` 目前仍受上述 24 项失败阻挡。
+
+最终 `component-preview/browser-check.mjs` 综合验收亦通过：Select 键盘、Base Dialog 焦点、通知 hover/focus 暂停/卸载、异步提交草稿/附件保留、跨会话失败隔离、改名焦点、真实指针调宽、响应式焦点恢复、80 轮结构展开/重播资源有界、reduced-motion。菜单已不使用自定义 GSAP 入场，断言为完整可读；保留的 Toast/布局动画继续检查中间态和卸载清理。证据 `/tmp/pua-browser-final.log`、`/tmp/pua-component-completion-evidence`。

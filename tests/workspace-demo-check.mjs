@@ -48,6 +48,7 @@ try {
   await page.getByRole('button', { name: '复制回复' }).getByText('已复制', { exact: true }).waitFor();
   await editor.fill('A 草稿');
   await page.getByRole('button', { name: '添加附件', exact: true }).click();
+  await page.getByRole('menuitem', { name: '添加附件', exact: true }).click();
   const remove = page.getByRole('button', { name: /^移除 / });
   await remove.first().waitFor();
   await remove.first().click();
@@ -68,7 +69,7 @@ try {
   await commands.click();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Escape');
-  assert(await commands.evaluate(node => node === document.activeElement));
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === '搜索与命令');
   const separator = page.getByRole('separator', { name: '调整项目栏宽度' });
   const before = Number(await separator.getAttribute('aria-valuenow'));
   await separator.focus(); await separator.press('ArrowRight');
@@ -103,10 +104,11 @@ try {
       results.layouts.push({ theme, ...layout });
       if ([1440, 1024, 740].includes(width)) await page.screenshot({ path: `${output}/${width}-${theme}.png` });
     }
-    await page.setViewportSize({ width: 740, height: 800 });
+    // Narrow layouts intentionally auto-hide the inspector; restore room before interacting.
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.waitForTimeout(300);
-    const taskToolbar = page.getByLabel('当前任务操作栏');
-    assert.equal(await taskToolbar.getByRole('button', { name: '收起 检查器', exact: true }).getAttribute('aria-expanded'), 'true');
+    const taskToolbar = page.locator('.workspace-chrome');
+    assert.equal(await taskToolbar.getByRole('button', { name: '收起检查器', exact: true }).getAttribute('aria-expanded'), 'true');
     await page.getByRole('button', { name: '关闭变更面板' }).waitFor();
     await page.getByRole('button', { name: 'docs/context.md ?', exact: true }).click();
     await page.getByRole('tab', { name: '预览', exact: true }).click();
@@ -114,9 +116,9 @@ try {
     await page.getByRole('button', { name: '引用文件到草稿' }).click();
     assert.match(await editor.inputValue(), /docs\/context.md/);
     await page.getByRole('button', { name: '关闭变更面板' }).click();
-    assert(await page.getByRole('button', { name: '显示 检查器', exact: true }).evaluateAll(nodes => nodes.some(node => node === document.activeElement)));
+    assert(await page.getByRole('button', { name: '显示检查器', exact: true }).evaluateAll(nodes => nodes.some(node => node === document.activeElement)));
     await page.setViewportSize({ width: 1440, height: 900 });
-    await taskToolbar.getByRole('button', { name: '显示 检查器', exact: true }).click();
+    await taskToolbar.getByRole('button', { name: '显示检查器', exact: true }).click();
     await page.getByRole('button', { name: '关闭变更面板' }).waitFor();
   }
   assert.deepEqual(results.errors, []);

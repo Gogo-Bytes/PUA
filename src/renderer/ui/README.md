@@ -24,6 +24,8 @@
 
 ## 入口与覆盖
 
+2026-09-22 全界面迁移：选择/搜索选择/菜单/Dialog/Tabs/Collapsible/Button/Checkbox 使用 Base UI，shadcn 组合源码与 Tailwind 保留在本目录。Input/Textarea/Radio/Slider 使用统一原生原语；特殊长文 Tooltip、受控 Toast、可改名 tab 和尺寸布局保留既有能力。完整迁移清单、保留理由和验证范围见 `docs/ui-migration-plan.md`。Feature 不应再新写选择器或浮层焦点遍历。
+
 - `ui/index.ts`：UIProvider、Button/IconButton、TextField、Select/DropdownMenu、Tooltip、Tag/StatusBadge、Tabs、Dialog、Collapsible、InlineRename、ResizableWorkspace、Message、ToastHost、Breadcrumbs 与动效工具。
 - `tokens.css`、`theme.tsx`：语义颜色、明暗主题、排版、尺寸与外观上下文。`app/production.css` 是唯一生产样式入口，按 cascade 顺序装配 app 与 Feature stylesheets；组件预览保持显式、隔离引入，Workspace Preview 复用生产入口。
 - `motion.tsx`：统一结构动效参数；系统 reduced-motion 优先于 normal/slow，off 立即就位。
@@ -56,7 +58,7 @@
 
 `items: readonly BreadcrumbItem[]`，每项有 `id`、`label` 和互斥的 `onSelect` 或 `href`；最后一项为静态 aria-current=page。外层语义 nav，可配置 `label`。普通 href 支持相对路径、锚点、http(s)，拒绝可执行 scheme、控制字符、反斜线和协议相对地址。
 
-默认单行，末项优先占用剩余空间并截断，所有收起标签可通过 hover 或键盘 focus 的 Tooltip 获取全文（Escape 关闭）。超过三层时保留首尾，中间层通过可键盘操作的原生 disclosure 展示完整链接/操作，Escape 收起并恢复焦点；不以 overflow:hidden 吞掉层级。调用方只传有意义的项目/会话标签，不默认塞完整路径；路径详情通过用户主动操作展示。链接导航的业务去向由调用方审核。
+默认单行，末项优先占用剩余空间并截断，所有收起标签可通过 hover 或键盘 focus 的 Tooltip 获取全文（Escape 关闭）。超过三层时保留首尾，中间层通过共享 Base Menu 展示完整链接/操作，Escape 收起并恢复焦点；不以 overflow:hidden 吞掉层级。调用方只传有意义的项目/会话标签，不默认塞完整路径；路径详情通过用户主动操作展示。链接导航的业务去向由调用方审核。
 
 ## 既有行为保持
 

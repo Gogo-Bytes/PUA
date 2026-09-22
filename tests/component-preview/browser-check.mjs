@@ -42,13 +42,16 @@ try {
   await page.keyboard.press('End'); await page.keyboard.press('ArrowUp'); await page.keyboard.press('Enter'); assert.equal(await page.getByRole('combobox', { name: 'Detail level' }).innerText(), 'Detailed');
   await page.getByRole('combobox', { name: 'Detail level', exact: true }).click(); await page.keyboard.press('Escape');
   assert(await page.getByRole('combobox', { name: 'Detail level' }).evaluate(node => node === document.activeElement));
-  // Native modal dialog traps focus and restores its opener.
+  // Base modal focus guards wrap and restore focus on the next frame.
   const opener = page.getByRole('button', { name: 'Open dialog', exact: true }); await opener.click();
   assert(await page.getByRole('dialog').isVisible());
-  for (let i = 0; i < 6; i++) { await page.keyboard.press('Tab'); assert(await page.getByRole('dialog').evaluate(node => node.contains(document.activeElement))); }
-  await page.keyboard.press('Escape'); assert(await opener.evaluate(node => node === document.activeElement));
+  for (let i = 0; i < 6; i++) { await page.keyboard.press('Tab'); await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.contains(document.activeElement)); }
+  await page.keyboard.press('Escape'); await page.waitForFunction(() => document.activeElement?.textContent === 'Open dialog');
   // Real GSAP interpolation: slow mode produces measurable intermediate transform/opacity.
-  await page.getByRole('combobox', { name: 'Motion', exact: true }).click(); await noOverflow(); await page.keyboard.press('Escape');
+  await page.getByRole('combobox', { name: 'Motion', exact: true }).click(); await noOverflow();
+  await page.waitForFunction(() => document.activeElement?.getAttribute('role') === 'option' && document.activeElement.textContent.includes('Motion'));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Motion');
   await select('Motion', 'Motion · 3× slower');
   await page.getByText('测试控制 · 重播', { exact: true }).click();
   await page.getByRole('button', { name: 'Replay transition' }).click();
@@ -85,11 +88,11 @@ try {
   await page.getByRole('alert').filter({ hasText: 'Demo rejection' }).waitFor(); assert.equal(await rename.inputValue(), 'Preserved browser draft');
   await page.getByRole('button', { name: 'Simulate async failure: on' }).click(); await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.getByRole('button', { name: 'Preserved browser draft', exact: true }).waitFor();
-  // New notification seam: actual menu/Toast interpolation, pointer/focus pause and context cleanup.
+  // Library menu visibility; retained Toast interpolation, pause and cleanup.
   const notificationMenu = page.getByRole('button', { name: '显示通知', exact: true });
   await notificationMenu.click(); await page.waitForTimeout(80);
   const menuOpacity = await page.getByRole('menu', { name: '显示通知' }).evaluate(node => Number(getComputedStyle(node).opacity));
-  assert(menuOpacity > 0 && menuOpacity < 1, `menu interpolation ${menuOpacity}`);
+  assert.equal(menuOpacity, 1, 'library menu is fully readable without custom GSAP motion');
   await page.getByRole('menuitem', { name: '成功通知' }).click();
   const toast = page.locator('.ui-toast'); await page.waitForTimeout(90);
   const toastMotion = await toast.evaluate(node => ({ opacity: Number(getComputedStyle(node).opacity), transform: getComputedStyle(node).transform }));
@@ -135,7 +138,7 @@ try {
   // The Chinese composition actually consumes the controlled Composer interface, not an alternate form.
   await page.getByText('测试控制 · 发送', { exact: true }).click();
   const draft = page.getByRole('textbox', { name: '消息草稿' });
-  await draft.fill('失败后保留的草稿'); await page.getByRole('button', { name: '添加示例附件' }).click();
+  await draft.fill('失败后保留的草稿'); await page.getByRole('button', { name: '添加示例附件' }).click(); await page.getByRole('menuitem', { name: '添加示例附件' }).click();
   await page.getByRole('button', { name: '模拟发送失败：关' }).click();
   await page.getByRole('button', { name: '发送', exact: true }).click();
   await page.getByRole('alert').filter({ hasText: '示例拒绝' }).waitFor();
@@ -150,7 +153,7 @@ try {
   await draft.fill('停止不清空后续草稿'); await page.getByRole('button', { name: '停止', exact: true }).click();
   await page.getByRole('button', { name: '发送', exact: true }).waitFor(); assert.equal(await draft.inputValue(), '停止不清空后续草稿'); assert(await draft.isEnabled());
   // A pending failure cannot leak across a session switch; each session's attachments/draft remain controlled.
-  await page.getByRole('button', { name: '添加示例附件' }).click(); await page.getByRole('button', { name: '模拟发送失败：关' }).click();
+  await page.getByRole('button', { name: '添加示例附件' }).click(); await page.getByRole('menuitem', { name: '添加示例附件' }).click(); await page.getByRole('button', { name: '模拟发送失败：关' }).click();
   await page.getByRole('button', { name: '发送', exact: true }).click();
   await page.getByRole('tab', { name: '审阅组件', exact: true }).click(); await draft.fill('另一个会话的草稿');
   await page.waitForTimeout(750); assert.equal(await draft.inputValue(), '另一个会话的草稿'); assert.equal(await page.getByRole('alert').count(), 0);
@@ -257,5 +260,5 @@ try {
   assert.equal(evidence.contextDataEntries.unmountedGraphEntries, 0, 'all contexts owned by unmounted graph are empty');
   evidence.contextDataEntries.afterGraphUnmount = await retained();
   assert(evidence.contextDataEntries.afterGraphUnmount <= evidence.contextDataEntries.beforeDrag, 'unmounted graph releases owned context history');
-  assert.deepEqual(errors, []); console.log(JSON.stringify({ result: 'passed', browser: await browser.version(), screenshots: output, realMotionSample: during, realGridClosingWidth: closing, evidence, checks: '1280/1440/500 layouts; native dialog focus; Select keyboard; async rename; real pointer capture; min/max; hide/restore; GSAP intermediate values, rapid toggle, unmount; live reduced motion' }, null, 2));
+  assert.deepEqual(errors, []); console.log(JSON.stringify({ result: 'passed', browser: await browser.version(), screenshots: output, realMotionSample: during, realGridClosingWidth: closing, evidence, checks: '1280/1440/500 layouts; Base dialog focus; Select keyboard; async rename; real pointer capture; min/max; hide/restore; GSAP intermediate values, rapid toggle, unmount; live reduced motion' }, null, 2));
 } finally { await browser.close(); }

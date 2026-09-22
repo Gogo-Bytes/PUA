@@ -1,4 +1,5 @@
 /** @vitest-environment jsdom */
+import './attachment-menu-contract';
 import { installDesktopFake } from './desktop-bridge-fake';
 import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
 let desktop: DesktopAPI;
@@ -180,8 +181,8 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await mount(); const draft = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
     fireEvent.change(draft, { target: { value: 'same' } }); const pending = deferred<void>(); vi.mocked(desktop.sendChatMessage).mockReturnValueOnce(pending.promise);
     vi.mocked(desktop.chooseChatAttachments).mockResolvedValueOnce([{ id: 'a', name: 'old.txt', path: '/old', size: 1, kind: 'file' }]).mockResolvedValueOnce([{ id: 'b', name: 'new.txt', path: '/new', size: 1, kind: 'file' }]);
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('old.txt'); fireEvent.click(screen.getByRole('button', { name: '发送消息' }));
-    fireEvent.change(draft, { target: { value: 'different' } }); fireEvent.change(draft, { target: { value: 'same' } }); fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('new.txt');
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('old.txt'); fireEvent.click(screen.getByRole('button', { name: '发送消息' }));
+    fireEvent.change(draft, { target: { value: 'different' } }); fireEvent.change(draft, { target: { value: 'same' } }); fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('new.txt');
     await create(); emit({ id: 's2', type: 'chat-editor-text', text: 'background identity' }); await act(async () => pending.resolve());
     expect(draft.value).toBe('same'); expect(screen.queryByText('old.txt')).toBeNull(); expect(screen.getByText('new.txt')).toBeTruthy(); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('background identity');
   });

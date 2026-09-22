@@ -17,7 +17,7 @@ try {
     await page.goto('http://127.0.0.1:4182/');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     if (theme === 'dark') {
-      await page.getByRole('button', { name: 'Theme', exact: true }).click();
+      await page.getByRole('combobox', { name: 'Theme', exact: true }).click();
       await page.getByRole('option', { name: 'Dark', exact: true }).click();
     }
     const notification = page.locator('.preview-card').filter({ has: page.getByRole('heading', { name: '通知与导航', exact: true }) });
@@ -113,7 +113,7 @@ try {
     }
     await page.setViewportSize({ width: 500, height: 900 });
     await page.getByRole('tab', { name: '模块组件', exact: true }).click();
-    for (let i = 0; i < 6; i++) await page.getByRole('button', { name: '添加示例附件', exact: true }).click();
+    for (let i = 0; i < 6; i++) { await page.getByRole('button', { name: '添加示例附件', exact: true }).click(); await page.getByRole('menuitem', { name: '添加示例附件', exact: true }).click(); }
     const attachments = page.getByRole('list', { name: '草稿附件' });
     assert(await attachments.evaluate(el => el.scrollHeight > el.clientHeight && el.clientHeight <= 120), 'attachments have a bounded scroll strip');
     await page.getByRole('button', { name: '移除 示例笔记-6.txt', exact: true }).focus();

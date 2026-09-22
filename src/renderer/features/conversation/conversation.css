@@ -79,6 +79,3 @@
 .ui-provider .ui-composer-attachments small { display: block; color: var(--ui-secondary); }
 .ui-provider .ui-composer-attachments :focus-visible { outline-offset: -2px; }
 .ui-provider .ui-composer > .ui-message { margin-top: var(--ui-space-2); }
-.ui-provider .skill-menu,.ui-provider .slash-menu { display:grid; gap:2px; max-height:240px; overflow:auto; margin:0 0 var(--ui-space-2); padding:var(--ui-space-1); border:1px solid var(--ui-border); border-radius:var(--ui-radius-overlay); background:var(--ui-surface); box-shadow:var(--ui-shadow); }
-.ui-provider .skill-menu .ui-button,.ui-provider .slash-menu .ui-button { justify-content:flex-start; gap:var(--ui-space-2); min-width:0; text-align:left; }
-.ui-provider .skill-menu .ui-button span,.ui-provider .slash-menu .ui-button span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ui-secondary); }

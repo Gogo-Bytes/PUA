@@ -15,7 +15,7 @@ try {
     await page.goto('http://127.0.0.1:4182/');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     if (theme === 'dark') {
-      await page.getByRole('button', { name: 'Theme', exact: true }).click();
+      await page.getByRole('combobox', { name: 'Theme', exact: true }).click();
       await page.getByRole('option', { name: 'Dark', exact: true }).click();
     }
     await page.getByRole('tab', { name: '组合交互', exact: true }).click();
@@ -119,7 +119,7 @@ try {
     measurements.push({ width, theme, ...metrics, fontSampleText: await page.locator('.preview-transcript .ui-chat-body ul li').first().textContent(), platformFonts: platformFonts.fonts, codeFonts: codeFonts.fonts });
     await page.getByRole('tab', { name: '通用组件', exact: true }).click();
     await page.screenshot({ path: `${output}/primitives-${width}-${theme}.png`, fullPage: true });
-    const detail = page.getByRole('button', { name: 'Detail level', exact: true });
+    const detail = page.getByRole('combobox', { name: 'Detail level', exact: true });
     const originalChoice = await detail.textContent();
     await detail.click();
     const unavailable = page.getByRole('option', { name: 'Unavailable', exact: true });

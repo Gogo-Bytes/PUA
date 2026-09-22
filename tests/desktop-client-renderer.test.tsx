@@ -1,4 +1,5 @@
 /** @vitest-environment jsdom */
+import './attachment-menu-contract';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { VirtuosoMockContext } from 'react-virtuoso';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -42,7 +43,7 @@ it('real registrar -> source preload -> client -> App/ChatPane retains submitted
   const firstPane = view.container.querySelector('[data-session-id="s1"]');
   const draft = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
   fireEvent.change(draft, { target: { value: 'submitted draft' } });
-  fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('submitted.txt');
+  fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('submitted.txt');
   const pending = deferred<void>(); h.capabilities.conversation.send.mockReturnValueOnce(pending.promise);
   fireEvent.keyDown(draft, { key: 'Enter' });
   await waitFor(() => expect(h.capabilities.conversation.send).toHaveBeenCalledWith('s1', { text: 'submitted draft', attachmentIds: ['token'], delivery: 'prompt' }));

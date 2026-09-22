@@ -91,7 +91,7 @@ export function ResizableWorkspace({ left, right, children, leftOpen, onLeftOpen
   return <div ref={root} className="ui-workspace" onKeyDown={event => {
     if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing || event.keyCode === 229 || !visible.right) return;
     const target = event.target as Element;
-    if (target.closest('input, textarea, select, [contenteditable], dialog, [role="menu"]')) return;
+    if (target.closest('input, textarea, select, [contenteditable], dialog, [role="dialog"], [role="menu"], [role="listbox"]')) return;
     if (!rightRef.current?.contains(target) && target !== toggles.current.right && target !== (rightToggleRef && 'current' in rightToggleRef ? rightToggleRef.current : null)) return;
     event.preventDefault(); (toggles.current.right ?? (rightToggleRef && 'current' in rightToggleRef ? rightToggleRef.current : null))?.focus(); toggle('right', false);
   }}>

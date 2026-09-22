@@ -1,4 +1,5 @@
 /** @vitest-environment jsdom */
+import './attachment-menu-contract';
 import { installDesktopFake } from './desktop-bridge-fake';
 import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
 let desktop: DesktopAPI;
@@ -79,7 +80,7 @@ describe('production workspace navigation', () => {
     await findProject('/one/app'); selectProject('/one/app'); await createSession();
     const firstPane = container.querySelector('[data-session-id="s1"]');
     const firstDraft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(firstDraft, { target: { value: 'unfinished first' } });
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('context.txt');
     await createSession(); fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: 'second draft' } });
     selectProject('/two/app'); await createSession();
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -188,7 +189,7 @@ describe('production workspace navigation', () => {
     act(() => mediaListeners.forEach(listener => listener({ matches: true } as MediaQueryListEvent)));
     expect(document.documentElement.dataset.theme).toBe('light'); expect(desktop.savePreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'light', args: ['--extension', '/global.ts'] }));
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(draft); expect((draft as HTMLTextAreaElement).value).toBe('theme draft'); expect(desktop.startSession).toHaveBeenCalledTimes(1);
-    fireEvent.click(settings); fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true })); expect(screen.queryByRole('dialog')).toBeNull(); expect(document.activeElement).toBe(settings);
+    fireEvent.click(settings); fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' }); await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull()); await waitFor(() => expect(document.activeElement).toBe(settings));
   });
   it('keeps composition Enter safe, stops the real runtime and reports rename errors beside the inline editor', async () => {
     render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
@@ -206,7 +207,7 @@ describe('production workspace navigation', () => {
     render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
     emit({ id: 's1', type: 'chat-snapshot', snapshot: { messages: [], commands: [{ name: 'review-real', source: 'extension', description: 'Real extension' }], activity: 'idle', queue: { steering: [], followUp: [] }, statuses: {}, widgets: [] } });
     const commands = screen.getByRole('button', { name: /搜索与命令/ }); commands.focus(); fireEvent.click(commands);
-    fireEvent.click(screen.getByRole('button', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('option', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
     const toggle = inspectorToggle();
     await screen.findByText('这个范围没有变更'); expect(desktop.gitStatus).toHaveBeenCalledWith('s1');
     fireEvent.click(screen.getByRole('button', { name: '关闭变更面板' })); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull();
@@ -258,7 +259,7 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
   it('does not lose pane, draft or attachments on false/reject, and allows explicit retry', async () => {
     const { container } = await seedProjects(); const pane = container.querySelector('[data-session-id="s3"]');
     const draft = screen.getByRole('textbox', { name: '发送消息' }); fireEvent.change(draft, { target: { value: 'keep me' } });
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('context.txt');
     const cancelled = deferred<boolean>(); vi.mocked(desktop.closeSession).mockReturnValueOnce(cancelled.promise);
     closeTab('会话 3'); await act(async () => cancelled.resolve(false));
     const rejected = deferred<boolean>(); vi.mocked(desktop.closeSession).mockReturnValueOnce(rejected.promise);
@@ -300,14 +301,14 @@ describe('Workspace real App with in-memory Desktop deferred completions (not El
     const { container, unmount } = render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
     const a = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
     fireEvent.change(a, { target: { value: 'A submitted' } });
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('context.txt');
     const send = deferred<void>(); vi.mocked(desktop.sendChatMessage).mockReturnValueOnce(send.promise);
     fireEvent.click(screen.getByRole('button', { name: '发送消息' })); fireEvent.change(a, { target: { value: 'A newer' } });
     selectProject('/two/app'); await createSession();
     const b = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
     fireEvent.change(b, { target: { value: 'B newer' } });
     vi.mocked(desktop.chooseChatAttachments).mockResolvedValueOnce([{ id: 'attachment-2', name: 'b.txt', path: '/b.txt', size: 1, kind: 'file' }]);
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('b.txt');
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('b.txt');
     emit({ id: 's1', type: 'chat-message-start', message: { id: 'background', role: 'assistant', blocks: [{ type: 'text', text: 'only A background' }], timestamp: 1 } });
     emit({ id: 's1', type: 'session-info', title: 'A renamed', activity: 'responding' });
     emit({ id: 'unknown', type: 'session-info', title: 'not a new session' });
@@ -366,7 +367,7 @@ describe('Session launch through real App and direct sidebar controller', () => 
   it('keeps staged project attachments when switching between unsent project drafts', async () => {
     render(<App />); await findProject('/one/app'); selectProject('/one/app');
     vi.mocked(desktop.chooseAttachments).mockResolvedValue(['/context.txt']);
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); await screen.findByText('context.txt');
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' })); fireEvent.click(screen.getByRole('menuitem', { name: '添加附件' })); await screen.findByText('context.txt');
     selectProject('/two/app'); expect(screen.queryByText('context.txt')).toBeNull();
     selectProject('/one/app'); expect(screen.getByText('context.txt')).toBeTruthy();
     expect(desktop.createSession).not.toHaveBeenCalled();

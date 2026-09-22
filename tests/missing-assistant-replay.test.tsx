@@ -1,4 +1,5 @@
 /** @vitest-environment jsdom */
+import './attachment-menu-contract';
 import { installDesktopFake } from './desktop-bridge-fake';
 import type { DesktopAPI } from '../src/shared/ipc/desktop-api';
 let desktop: DesktopAPI;
@@ -227,7 +228,8 @@ it.each([
     worker.host.emit('spawn'); worker.child.emit('spawn'); await turns();
     worker.response('get_state', {}); worker.response('get_messages', { messages: [] }); worker.response('get_commands', { commands: [] }); await turns();
   });
-  await act(async () => { fireEvent.click(view.getByRole('button', { name: '添加附件' })); await turns(); });
+  fireEvent.click(view.getByRole('button', { name: '添加附件' }));
+  await act(async () => { fireEvent.click(view.getByRole('menuitem', { name: '添加附件' })); await turns(); });
   const textbox = view.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
   fireEvent.keyDown(textbox, { key: 'Enter' });
   await act(async () => {

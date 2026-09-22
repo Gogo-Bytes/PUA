@@ -3,10 +3,10 @@ import { lstatSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const foundationCommit = 'a4fb717fb387f5931bf69bf661e1b55aeadcaf12';
+export const foundationCommit = '6788fc550d36bed9dc4f9ad86aa5c6892524d541';
 const protectedDirectories = ['src/renderer/ui', 'tests/component-preview'];
 
-/** This slice's explicit UI freeze: compare both file membership and bytes. */
+/** Approved 2026-09-22 UI migration baseline: compare both membership and bytes. */
 export function checkProtectedFiles(root: string, manifest: Record<string, string>): string[] {
   const errors: string[] = [];
   const walk = (relative: string): string[] => {
@@ -36,5 +36,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const manifest: Record<string, string> = JSON.parse(readFileSync(new URL('./refactor-protected-hashes.json', import.meta.url), 'utf8'));
   const errors = checkProtectedFiles(process.cwd(), manifest);
   if (errors.length) { console.error(errors.join('\n')); process.exitCode = 1; }
-  else console.log(`PASS frozen file set + SHA256: ${Object.keys(manifest).length}/${Object.keys(manifest).length}; baseline HEAD ${foundationCommit}`);
+  else console.log(`PASS frozen file set + SHA256: ${Object.keys(manifest).length}/${Object.keys(manifest).length}; migration checkpoint ${foundationCommit}`);
 }

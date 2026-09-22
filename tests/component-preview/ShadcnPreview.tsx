@@ -37,11 +37,11 @@ function Preview() {
   return <UIProvider theme={theme}><main className="shadcn-scope tw:min-h-screen tw:p-6">
     <div className="tw:mx-auto tw:max-w-2xl">
       <header className="tw:flex tw:flex-wrap tw:items-center tw:gap-3"><h1 className="tw:text-base tw:font-semibold">输入控件 · shadcn/ui + Base UI</h1><Button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>切换主题</Button><Button onClick={() => setDialog(true)}>Dialog 内测试</Button></header>
-      <p className="tw:text-sm tw:text-muted-foreground">Tailwind 独立前缀 · 复用 PUA tokens · 生产未替换</p>
+      <p className="tw:text-sm tw:text-muted-foreground">Tailwind 独立前缀 · 复用 PUA tokens · 已用于生产控件</p>
       <div className="tw:mt-40"><Controls/></div>
-      <p className="tw:mt-8 tw:text-xs tw:text-muted-foreground">可测试搜索、方向键、Escape、焦点返回，以及缩窄窗口后的浮层位置。/ 和 @ 尚未迁移。</p>
+      <p className="tw:mt-8 tw:text-xs tw:text-muted-foreground">可测试搜索、方向键、Escape、焦点返回，以及缩窄窗口后的浮层位置。/ 和 @ 在主预览的 Composer 中验证。</p>
     </div>
-    <Dialog open={dialog} onClose={() => setDialog(false)} title="原生 Dialog 中的浮层"><Controls/></Dialog>
+    <Dialog open={dialog} onClose={() => setDialog(false)} title="Dialog 中的浮层"><Controls/></Dialog>
   </main></UIProvider>;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><Preview/></StrictMode>);

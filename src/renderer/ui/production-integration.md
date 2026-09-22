@@ -6,7 +6,7 @@
 
 用户已明确批准以当前 Component Preview 的组合交互页为生产设计基准，并要求实际替换与后续交互统一。此前“保留旧 DOM / 只换皮”的迁移约束已结束；不能再增加 transcript/nativeDetails 等生产视觉分支来恢复旧界面。Demo 的测试控制、模拟请求与 fixture 仍不得进入生产。
 
-生产 App 使用 ResizableWorkspace、ProjectNav、带 InlineRename 的 SessionTabs、Breadcrumbs 与 InspectorHeader。面板按容器空间收缩、先隐藏右侧再隐藏左侧，宽度偏好恢复；不再使用 1100px 的旧 Inspector overlay。检查器内 Escape 与关闭按钮恢复 toggle，输入框和本地菜单保留 Escape。Git scope 与 Markdown source/preview 使用共享 Tabs 的方向键导航。
+生产 App 使用 ResizableWorkspace、带 InlineRename 的 ProjectSidebar、Breadcrumbs 与 InspectorHeader；ProjectNav/SessionTabs 仍作为预览与可复用组合保留。面板按容器空间收缩、先隐藏右侧再隐藏左侧，宽度偏好恢复；不再使用 1100px 的旧 Inspector overlay。检查器内 Escape 与关闭按钮恢复 toggle，输入框和本地菜单保留 Escape。Git scope 与 Markdown source/preview 使用共享 Tabs 的方向键导航。
 
 会话 pane 仍以 session.id 常驻；Session/Conversation/Git/backend/IPC 所有权不变。视觉与交互允许调整，异步提交身份、草稿 revision、附件 token、安全 Content 渲染与 xterm 生命周期仍是回归约束。后续 UI 改动先在同一组件体系中实现，再供生产与预览共同消费。
 
@@ -50,7 +50,9 @@
 
 ### Tailwind / shadcn 生产迁移（2026-09-22）
 
-用户已进一步授权全界面分阶段实施，计划见 `docs/ui-migration-plan.md`。阶段 1 已接入生产：`ChoiceControls.tsx` 在既有 Select/DropdownMenu/Tabs 接口后使用 Base UI；Collapsible 使用 Base Root/Trigger/Panel，保持 Reveal seam。`tailwind.css` 已由 production.css 和两类预览共同引入，不开启全局 Preflight。UIProvider 提供 Portal 容器，Dialog 覆盖该容器，保留主题及原生 top layer 归属。Base Select 可聚焦禁用项但不能提交。真实键盘/定位回归运行 `node tests/component-preview/choice-controls-check.mjs`。
+用户已进一步授权全界面分阶段实施，计划见 `docs/ui-migration-plan.md`。阶段 1 已接入生产：`ChoiceControls.tsx` 在既有 Select/DropdownMenu/Tabs 接口后使用 Base UI；Collapsible 使用 Base Root/Trigger/Panel，保持 Reveal seam。`tailwind.css` 已由 production.css 和两类预览共同引入，不开启全局 Preflight。UIProvider 提供 Portal 容器，Dialog 覆盖该容器，保留主题及嵌套浮层归属。Base Select 可聚焦禁用项但不能提交。真实键盘/定位回归运行 `node tests/component-preview/choice-controls-check.mjs`。
+
+阶段 2–5 已接入 Dialog、表单、模型 SearchSelect、思考 Select、添加 Menu、统一词段建议与导航 Menu。Dialog 使用 Base focus guard，Tab 边界与 finalFocus 在下一帧完成，测试应等待最终焦点；closeDisabled 阻止所有关闭请求。后台 ChatPane 不渲染 Portal 建议；ResizableWorkspace 的 Escape 忽略 dialog/menu/listbox，避免本地菜单关闭连带关闭检查器。输入建议只替换当前词段，技能候选受 Pi 开头展开协议限制。专项浏览器脚本为 `composer-controls-check.mjs`、`navigation-controls-check.mjs`、`workspace-dialog-check.mjs` 和 `sidebar-menu-check.mjs`。
 
 以下为初始隔离试接入的历史记录，不代表当前仍处于等待确认阶段：
 

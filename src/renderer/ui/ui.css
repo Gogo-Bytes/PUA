@@ -92,13 +92,4 @@
 .ui-provider .ui-breadcrumb-label[aria-current] { color: var(--ui-text); }
 .ui-provider a.ui-breadcrumb-label:hover { background: var(--ui-muted); text-decoration: underline; }
 .ui-provider .ui-breadcrumb-separator { color: var(--ui-secondary); opacity: .6; flex-shrink: 0; }
-.ui-provider .ui-breadcrumb-overflow { position: relative; flex-shrink: 0; }
-.ui-provider .ui-breadcrumb-overflow summary { display: grid; place-items: center; list-style: none; cursor: pointer; min-width: var(--ui-control-height); min-height: var(--ui-control-height); border-radius: var(--ui-radius-control); }
-.ui-provider .ui-breadcrumb-overflow summary::-webkit-details-marker { display: none; }
-.ui-provider .ui-breadcrumb-overflow summary:hover { background: var(--ui-muted); }
-.ui-provider .ui-breadcrumb-overflow > ol { position: absolute; z-index: 30; top: calc(100% + var(--ui-space-1)); left: 0; display: grid; width: min(var(--ui-detail-width), 45vw); max-height: 240px; overflow: auto; padding: var(--ui-space-1); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-overlay); background: var(--ui-surface); box-shadow: var(--ui-shadow); }
-.ui-provider .ui-breadcrumb-overflow:not([open]) > ol { display: none; }
-.ui-provider .ui-breadcrumb-overflow li { max-width: 100%; }
-.ui-provider .ui-breadcrumb-overflow .ui-breadcrumb-label { white-space: normal; overflow-wrap: anywhere; width: 100%; }
-.ui-provider .ui-breadcrumb-overflow :focus-visible { outline-offset: -2px; }
 .ui-provider .ui-workspace-test-controls > summary { cursor: pointer; min-height: var(--ui-control-height); padding: var(--ui-space-1); font: var(--ui-font-meta); color: var(--ui-tertiary); }

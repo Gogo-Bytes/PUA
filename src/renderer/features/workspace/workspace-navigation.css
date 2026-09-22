@@ -21,8 +21,4 @@
 .ui-provider .ui-session-close { width: var(--ui-target-small); min-height: var(--ui-target-small); padding: 1px; }
 .ui-provider .ui-session-activity { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: var(--ui-accent); }
 .ui-provider .ui-session-overflow { position: relative; flex-shrink: 0; }
-.ui-provider .ui-session-menu { left: auto; right: 0; }
-.ui-provider .ui-session-menu .ui-button { justify-content: flex-start; }
-.ui-provider .ui-session-menu .ui-button > span { flex: 1; overflow-wrap: anywhere; }
-.ui-provider .ui-session-menu .ui-button[aria-checked='true'] { background: var(--ui-selected); }
 @media(max-width:760px) { .ui-provider .ui-session-tab > .ui-button[role='tab'] { max-width: 160px; } }

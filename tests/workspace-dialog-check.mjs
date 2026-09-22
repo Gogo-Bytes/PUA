@@ -38,13 +38,15 @@ try {
   for (const key of ['Tab', 'Shift+Tab']) {
     for (let step = 0; step < 12; step++) {
       await page.keyboard.press(key);
+      // Base UI cycles via an off-screen focus guard on the next animation frame.
+      await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.contains(document.activeElement));
       assert(await dialog.evaluate(node => node.contains(document.activeElement)), `${key} step ${step} stays in dialog`);
     }
   }
   await page.screenshot({ path: `${output}/pending-dialog.png` });
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'detached' });
-  assert(await opener.evaluate(node => node === document.activeElement));
+  await page.waitForFunction(label => document.activeElement?.getAttribute('aria-label') === label, await opener.getAttribute('aria-label'));
   assert.deepEqual(errors, []);
   console.log('PASS: lazy project draft creates no empty history; terminal-only Dialog traps focus and restores its opener.', output);
 } finally {
