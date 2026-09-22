@@ -1,3 +1,4 @@
+import { Input } from '../../ui';
 import { useEffect, useRef, useState } from 'react';
 import type { HistorySearchOptions, HistorySearchResult } from '../../../shared/ipc/desktop-api';
 import { Button, Dialog, Icon } from '../../ui';
@@ -35,7 +36,7 @@ export function HistorySearchDialog({ open, onClose, onSearch, onSelect, onError
   return <Dialog open title="搜索全部历史" closeLabel="关闭历史搜索" closeOnBackdrop={false} onClose={onClose}>
     <form className="history-search-form" onSubmit={event => { event.preventDefault(); void search(); }}>
       <label htmlFor="history-search-input">搜索本机 Pi 会话</label>
-      <div className="history-search-input-row"><input ref={input} id="history-search-input" className="ui-input full-input" value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索项目、任务消息或工具摘要…" /><Button type="submit" disabled={!query.trim() || loading}>{loading ? '搜索中…' : '搜索'}</Button></div>
+      <div className="history-search-input-row"><Input ref={input} id="history-search-input" className="ui-input full-input" value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索项目、任务消息或工具摘要…" /><Button type="submit" disabled={!query.trim() || loading}>{loading ? '搜索中…' : '搜索'}</Button></div>
       <p className="ui-meta">搜索活动、休眠和归档的本地历史；不会读取凭据、环境变量或扩展私有状态。</p>
     </form>
     <div className="history-search-results" aria-live="polite">

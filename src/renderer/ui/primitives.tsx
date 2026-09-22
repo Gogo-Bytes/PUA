@@ -1,17 +1,19 @@
 import { cloneElement, forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Collapsible as CollapsiblePrimitive } from '@base-ui/react/collapsible';
+import { Button as ButtonPrimitive } from '@base-ui/react/button';
+import { Input } from './shadcn-fields';
 import { Icon } from './Icon';
 import { Reveal } from './motion';
 export { Icon };
 export const Button = forwardRef<HTMLButtonElement, ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; busy?: boolean }>(function Button({ variant = 'secondary', busy = false, className = '', children, disabled, ...props }, ref) {
-  return <button ref={ref} type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</button>;
+  return <ButtonPrimitive ref={ref} type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</ButtonPrimitive>;
 });
 export const IconButton = forwardRef<HTMLButtonElement, Omit<Parameters<typeof Button>[0], 'children'> & { label: string; icon: Parameters<typeof Icon>[0]['name'] }>(function IconButton({ label, icon, ...props }, ref) {
   return <Button ref={ref} {...props} className={`ui-icon-button ${props.className ?? ''}`} aria-label={label}><Icon name={icon}/></Button>;
 });
 export function TextField({ label, error, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
   const id = useId();
-  return <label className="ui-field"><span>{label}</span><input {...props} id={props.id ?? id} className="ui-input" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : props['aria-describedby']}/>{error && <span id={`${id}-error`} role="alert" className="ui-error">{error}</span>}</label>;
+  return <label className="ui-field"><span>{label}</span><Input {...props} id={props.id ?? id} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : props['aria-describedby']}/>{error && <span id={`${id}-error`} role="alert" className="ui-error">{error}</span>}</label>;
 }
 export function Tag({ children }: { children: ReactNode }) { return <span className="ui-tag">{children}</span>; }
 export type RunStatus = 'idle' | 'running' | 'success' | 'error' | 'paused';

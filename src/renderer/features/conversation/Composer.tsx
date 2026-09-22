@@ -1,3 +1,4 @@
+import { Textarea } from '../../ui';
 import { useLayoutEffect, useRef, useState, type KeyboardEventHandler, type ReactNode, type Ref } from 'react';
 import { Button, Icon, IconButton, Message } from '../../ui';
 export interface ComposerAttachment { id: string; name: string; detail?: ReactNode }
@@ -65,7 +66,7 @@ function ComposerDraft({ conversationKey, value, onValueChange, attachments, onA
     } finally { lock.current = false; if (mounted.current) setBusy(false); }
   }
   return <form className="ui-composer" onSubmit={event => { event.preventDefault(); if (!composing.current) void run('submit'); }}>
-    <textarea ref={node => { editor.current = node; if (typeof editorRef === 'function') editorRef(node); else if (editorRef) editorRef.current = node; }} className="ui-input" aria-label={text.message} placeholder={text.placeholder} value={value} disabled={disabled} onChange={event => onValueChange(event.target.value)} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} onKeyDown={event => {
+    <Textarea ref={node => { editor.current = node; if (typeof editorRef === 'function') editorRef(node); else if (editorRef) editorRef.current = node; }} className="ui-input" aria-label={text.message} placeholder={text.placeholder} value={value} disabled={disabled} onChange={event => onValueChange(event.target.value)} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} onKeyDown={event => {
       if (composing.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
       onEditorKeyDown?.(event);
       if (event.defaultPrevented || event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.metaKey) return;

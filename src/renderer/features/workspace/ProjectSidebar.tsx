@@ -1,3 +1,4 @@
+import { Input } from '../../ui';
 import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
@@ -55,7 +56,7 @@ export function ProjectSidebar({
     </Button>
     <label className="codex-sidebar-search">
       <span className="ui-visually-hidden">筛选项目和会话</span><Icon name="search"/>
-      <input value={query} onChange={event => setQuery(event.target.value)} placeholder="查找项目或会话…"/>
+      <Input value={query} onChange={event => setQuery(event.target.value)} placeholder="查找项目或会话…"/>
     </label>
     <div className="workspace-project-tree codex-project-tree">
       <div className="codex-section-heading"><span>项目</span><IconButton icon="plus" label="打开项目并新建对话" variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation()}/></div>

@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | 1 通用交互底座 | Select、DropdownMenu、Tabs、Collapsible；Tailwind 生产/两预览接入；Portal 主题归属 | 删除手写 ChoicePopup/焦点遍历，全部既有调用走同一实现，键盘/窄窗回归 | 已实施 |
 | 2 浮层与反馈 | Dialog、Tooltip、Toast、Message、Tag/StatusBadge | 焦点锁/恢复、嵌套菜单、长内容、关闭锁、时长/暂停/队列逐项迁移或记录保留理由 | 已实施；保留项见下 |
-| 3 表单与页面控件 | Button/IconButton、Input/Textarea、Checkbox/Radio/Switch/Slider；设置、新建/改名、任务详情、历史搜索、扩展表单 | 所有适用表单统一；保留原校验、提交/禁用/异步语义 | 待实施 |
+| 3 表单与页面控件 | Button/IconButton、Input/Textarea、Checkbox/Radio/Switch/Slider；设置、新建/改名、任务详情、历史搜索、扩展表单 | 所有适用表单统一；保留原校验、提交/禁用/异步语义 | 已实施 |
 | 4 对话与命令 | 模型 Combobox、思考 Select、添加菜单、命令面板、共享 `/` 和 `@` 建议 | 光标 token/选区、IME、Escape、方向键/Enter、选择不误发、旧请求不串会话 | 待实施 |
 | 5 工作台领域组合 | Sidebar、SessionTabs、Breadcrumbs、工具详情、检查器/文件行、搜索/空错误状态 | 消费统一控件；保留文件夹/末端浮层设计；无旧重复交互 | 待实施 |
 | 6 清理与验收 | 样式/旧实现/文档/测试门禁 | 迁移清单闭合、类型/构建/单测/隔离浏览器证据，列出剩余真实桌面验收 | 待实施 |
@@ -40,3 +40,9 @@ Dialog 改为 Base UI Root/Portal/Backdrop/Popup/Title/Close；删除原生 show
 - Tooltip 保留原生 top-layer Adapter：它是完整长标题阅读区，支持 Tab 进入滚动全文、独立 hover/focus 保持、祖先滚动重新定位。直接换普通 Base Tooltip 会丢失这些已验证能力。明暗/窄窗/全文 End/嵌套 Dialog Escape 专项验收通过。
 - Toast 保留已有受控队列与可见时间计时 Adapter。Base/Sonner 自有通知状态不能直接替代 items/onDismiss 的 owner 契约；等待项开始计时、暂停/恢复和一次性回调仍由已有测试覆盖，不增加第二套全局通知仓库。
 - Message、Tag、StatusBadge 是静态语义展示，沿用主题 token 与统一 Button，不包装没有交互价值的库原语。
+
+### 阶段 3 结果
+
+Button/IconButton 使用 Base Button；Checkbox 使用 Base Checkbox。统一 Input/Textarea/Radio/Slider 原语保留原生 ref、事件与表单语义，Tailwind 管理焦点/禁用/主题；无手写键盘算法。现有页面没有 Switch，不增加虚假开关。所有 Feature 的文本框/多行框/单选/范围输入已迁移，任务策略下拉改用公共 Select，改名保存与目录按钮改用公共 Button。预览新增 checkbox/radio/slider。
+
+修复未包 UIProvider 的独立挂载：Portal 默认回退到 document body（生产仍继承 provider）。表单测试按 Portal DOM、异步焦点、Escape 和追加样式类更新，保留所有原业务断言。47 项设置/新建/详情、19 项控件/通知测试通过；两个浏览器脚本和构建通过。原生 Radio/Slider 是刻意保留的稳定浏览器交互，不冒称为 Base UI Radio/Slider。

@@ -24,7 +24,7 @@ export function useTheme(preference: ThemePreference = 'system'): ResolvedTheme 
 }
 const MotionContext = createContext(1);
 export const OverlayContainerContext = createContext<RefObject<HTMLElement | null> | null>(null);
-export function useOverlayContainer() { return useContext(OverlayContainerContext); }
+export function useOverlayContainer() { return useContext(OverlayContainerContext) ?? undefined; }
 export function UIProvider({ theme = 'light', motion = 'normal', children }: { theme?: ResolvedTheme; motion?: MotionMode; children: ReactNode }) {
   const container = useRef<HTMLDivElement>(null);
   const [reduced, setReduced] = useState(() => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);

@@ -37,10 +37,10 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 describe('NewSessionDialog production view/controller characterization (only Fake Desktop)', () => {
   it('debounces exactly 250ms, cancels unstarted checks, forwards raw cwd and gates chat submit', async () => {
     render(<NewSessionDialog {...props} />);
-    expect(document.activeElement).toBe(pathInput()); expect(pathInput().required).toBe(true);
+    expect(pathInput().required).toBe(true);
     expect(radio(/^原生对话/).checked).toBe(true); expect(radio(/^新会话/).checked).toBe(true);
     expect(button().disabled).toBe(true); submit(); expect(props.onCreate).not.toHaveBeenCalled();
-    await tick(249); expect(desktop.inspectProjectResources).not.toHaveBeenCalled();
+    await tick(249); expect(document.activeElement).toBe(pathInput()); expect(desktop.inspectProjectResources).not.toHaveBeenCalled();
     changePath(' /b '); await tick(249); expect(desktop.inspectProjectResources).not.toHaveBeenCalled();
     await tick(1); expect(desktop.inspectProjectResources).toHaveBeenCalledExactlyOnceWith(' /b ');
     expect(button().disabled).toBe(false); submit();
@@ -150,7 +150,7 @@ describe('NewSessionDialog production view/controller characterization (only Fak
   it('clears debounce on unmount and validates but does not publish late inspection success or stringify late errors', async () => {
     const a = render(<NewSessionDialog {...props} />); a.unmount(); await tick(); expect(desktop.inspectProjectResources).not.toHaveBeenCalled();
     const pending = deferred<ProjectResourceInfo>(); vi.mocked(desktop.inspectProjectResources).mockReturnValueOnce(pending.promise);
-    const b = render(<NewSessionDialog {...props} />); await tick(); b.unmount(); expect(vi.getTimerCount()).toBe(0);
+    const b = render(<NewSessionDialog {...props} />); await tick(); b.unmount(); await tick(0); expect(vi.getTimerCount()).toBe(0);
     const paths = vi.fn(() => ['/late']); await act(async () => pending.resolve({ hasResources: true, get paths() { return paths(); } })); expect(paths).toHaveBeenCalledOnce();
     const failure = deferred<ProjectResourceInfo>(); vi.mocked(desktop.inspectProjectResources).mockReturnValueOnce(failure.promise);
     const c = render(<NewSessionDialog {...props} />); await tick(); c.unmount();
@@ -164,12 +164,11 @@ describe('NewSessionDialog production view/controller characterization (only Fak
     expect(pathInput().value).toBe('/new'); expect(props.onCreate).not.toHaveBeenCalled();
     await tick(); expect(desktop.inspectProjectResources).toHaveBeenCalledExactlyOnceWith('/new');
   });
-  it('keeps close and native cancel requests active even while submitting; Modal prevents default cancel', async () => {
+  it('keeps close and Escape requests active even while submitting', async () => {
     const pending = deferred<void>(); vi.mocked(props.onCreate).mockReturnValueOnce(pending.promise);
     const view = render(<NewSessionDialog {...props} />); await tick(); submit();
     fireEvent.click(screen.getByRole('button', { name: '关闭对话框' })); expect(props.onClose).toHaveBeenCalledTimes(1);
-    const cancel = new Event('cancel', { cancelable: true }); fireEvent(screen.getByRole('dialog'), cancel);
-    expect(cancel.defaultPrevented).toBe(true); expect(props.onClose).toHaveBeenCalledTimes(2);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' }); expect(props.onClose).toHaveBeenCalledTimes(2);
     view.unmount(); await act(async () => pending.reject('late create'));
     expect(screen.queryByRole('dialog')).toBeNull(); expect(props.onCreate).toHaveBeenCalledTimes(1);
   });

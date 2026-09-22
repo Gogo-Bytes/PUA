@@ -1,3 +1,4 @@
+import { Input } from '../../ui';
 import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { Button, Icon, IconButton, Tooltip } from '../../ui';
@@ -30,7 +31,7 @@ export function ProjectNav({ projects, selectedCwd, onSelect, onAdd, labels, pat
   const visible = projects.filter(project => `${project.name}\n${project.cwd}`.toLowerCase().includes(query.toLowerCase()));
   return <nav className="ui-project-nav" aria-label={text.title}>
     <div className="ui-module-heading"><span>{text.title}</span>{showCount && <small>{projects.length}</small>}{onAdd && <IconButton icon="plus" label={text.add} variant="ghost" onClick={onAdd}/>}</div>
-    {filterable && projects.length > 0 && <input className="ui-input ui-project-filter" aria-label={text.filter} placeholder={text.filterPlaceholder} value={query} onChange={event => setQuery(event.target.value)}/>}
+    {filterable && projects.length > 0 && <Input className="ui-input ui-project-filter" aria-label={text.filter} placeholder={text.filterPlaceholder} value={query} onChange={event => setQuery(event.target.value)}/>}
     <div className="ui-project-list">{visible.length ? visible.map(project => {
       const duplicate = projects.some(other => other.cwd !== project.cwd && other.name === project.name);
       const showPath = pathVisibility === 'always';

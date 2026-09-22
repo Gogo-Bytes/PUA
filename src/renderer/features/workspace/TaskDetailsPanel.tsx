@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ChatQueueMode, RuntimeInfo, SessionInfo } from '../../../shared/ipc/desktop-api';
-import { Button, Icon, StatusBadge, Tag } from '../../ui';
+import { Button, Checkbox, Select, Icon, StatusBadge, Tag } from '../../ui';
 import { desktopClient, isDesktopAvailable } from '../../app/desktop-client';
 
 export interface TaskDetailsPanelProps {
@@ -60,7 +60,7 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
       <Button variant="danger" busy={busy === 'archive'} disabled={!!busy && busy !== 'archive'} onClick={() => void run('archive', onArchive)}>归档并关闭</Button>
     </div>
     <dl className="task-details-list">
-      <div><dt>项目目录</dt><dd><button type="button" className="task-details-link" aria-label="打开项目目录" onClick={onOpenProject}>{task.cwd}</button></dd></div>
+      <div><dt>项目目录</dt><dd><Button variant="ghost" className="task-details-link" aria-label="打开项目目录" onClick={onOpenProject}>{task.cwd}</Button></dd></div>
       <div><dt>进程状态</dt><dd><StatusBadge status={task.processStatus === 'running' ? 'running' : task.processStatus === 'starting' ? 'paused' : 'error'} label={process}/></dd></div>
       <div><dt>Pi 活动</dt><dd><Tag>{activity}</Tag></dd></div>
       <div><dt>最近活动</dt><dd>{task.lastActivityAt ? new Date(task.lastActivityAt).toLocaleString() : '暂无记录'}</dd></div>
@@ -69,10 +69,10 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
     {task.kind === 'chat' && <section className="task-details-settings" aria-label="Pi 自动策略">
       <div className="task-details-settings-heading"><strong>Pi 自动策略</strong><span className="ui-meta">由 Pi 当前会话控制</span></div>
       {!autoSettings ? <p className="task-details-note">正在读取当前策略…</p> : <>
-        <label className="task-details-toggle"><input type="checkbox" checked={autoSettings.autoCompaction} disabled={!!autoBusy} onChange={event => void toggleAuto('compaction', event.target.checked)}/><span><strong>自动压缩上下文</strong><small>上下文接近上限时自动压缩，保持长任务可继续。</small></span></label>
-        <label className="task-details-toggle"><input type="checkbox" checked={autoSettings.autoRetry} disabled={!!autoBusy} onChange={event => void toggleAuto('retry', event.target.checked)}/><span><strong>自动重试临时错误</strong><small>遇到限流或服务暂时不可用时由 Pi 自动重试。</small></span></label>
-        <label className="task-details-toggle"><span><strong>引导队列策略</strong><small>Pi 处理运行中引导消息的批次策略。</small></span><select aria-label="引导队列策略" value={autoSettings.steeringMode ?? 'one-at-a-time'} disabled={!!autoBusy} onChange={event => void setQueueMode('steering', event.target.value as ChatQueueMode)}><option value="one-at-a-time">逐条处理</option><option value="all">一次处理全部</option></select></label>
-        <label className="task-details-toggle"><span><strong>后续队列策略</strong><small>Pi 完成当前工作后处理后续消息的批次策略。</small></span><select aria-label="后续队列策略" value={autoSettings.followUpMode ?? 'one-at-a-time'} disabled={!!autoBusy} onChange={event => void setQueueMode('followUp', event.target.value as ChatQueueMode)}><option value="one-at-a-time">逐条处理</option><option value="all">一次处理全部</option></select></label>
+        <label className="task-details-toggle"><Checkbox checked={autoSettings.autoCompaction} disabled={!!autoBusy} onCheckedChange={checked => void toggleAuto('compaction', checked)}/><span><strong>自动压缩上下文</strong><small>上下文接近上限时自动压缩，保持长任务可继续。</small></span></label>
+        <label className="task-details-toggle"><Checkbox checked={autoSettings.autoRetry} disabled={!!autoBusy} onCheckedChange={checked => void toggleAuto('retry', checked)}/><span><strong>自动重试临时错误</strong><small>遇到限流或服务暂时不可用时由 Pi 自动重试。</small></span></label>
+        <label className="task-details-toggle"><span><strong>引导队列策略</strong><small>Pi 处理运行中引导消息的批次策略。</small></span><Select label="引导队列策略" value={autoSettings.steeringMode ?? 'one-at-a-time'} disabled={!!autoBusy} onChange={value => void setQueueMode('steering', value as ChatQueueMode)} options={[{ value: 'one-at-a-time', label: '逐条处理' }, { value: 'all', label: '一次处理全部' }]}/></label>
+        <label className="task-details-toggle"><span><strong>后续队列策略</strong><small>Pi 完成当前工作后处理后续消息的批次策略。</small></span><Select label="后续队列策略" value={autoSettings.followUpMode ?? 'one-at-a-time'} disabled={!!autoBusy} onChange={value => void setQueueMode('followUp', value as ChatQueueMode)} options={[{ value: 'one-at-a-time', label: '逐条处理' }, { value: 'all', label: '一次处理全部' }]}/></label>
       </>}
     </section>}
     <p className="task-details-note">这里展示 PUA 当前持有的任务投影。消息历史、会话树、模型、Thinking Level 和扩展等待状态由 Pi 对话区按原生事件提供；不会复制或猜测 Pi 未提供的字段。</p>

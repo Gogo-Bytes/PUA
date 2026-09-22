@@ -1,3 +1,4 @@
+import { Input } from './shadcn-fields';
 import { useEffect, useId, useRef, useState, type Ref } from 'react';
 import { Button } from './primitives';
 export interface InlineRenameLabels { hint: string; input(value: string): string; save: string; cancel: string; empty: string; failed: string }
@@ -26,7 +27,7 @@ export function InlineRename({ value, onRename, onSelect, selected, selectionRol
       if (event.key === 'F2') { event.preventDefault(); start(); }
       else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect?.(); }
     }}>{value}</span> : <div className="ui-rename-editor" tabIndex={-1} aria-busy={busy} onKeyDown={event => event.stopPropagation()}>
-      <input ref={input} className="ui-input" aria-label={text.input(value)} value={draft} disabled={busy} aria-invalid={!!error} aria-describedby={error ? id : undefined} onChange={event => setDraft(event.target.value)} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} onKeyDown={event => {
+      <Input ref={input} className="ui-input" aria-label={text.input(value)} value={draft} disabled={busy} aria-invalid={!!error} aria-describedby={error ? id : undefined} onChange={event => setDraft(event.target.value)} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} onKeyDown={event => {
         event.stopPropagation();
         if (composing.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
         if (event.key === 'Enter') { event.preventDefault(); void commit(); }

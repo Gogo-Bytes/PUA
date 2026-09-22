@@ -44,11 +44,11 @@ describe('SettingsDialog public view characterization (Fake Desktop)', () => {
       expect(button.getAttribute('type')).toBe(button === saveButton() ? 'submit' : 'button');
     }
     const range = screen.getByRole('slider', { name: '终端字号' }) as HTMLInputElement;
-    expect([range.min, range.max, range.className]).toEqual(['10', '28', 'range']);
+    expect([range.min, range.max]).toEqual(['10', '28']); expect(range.classList.contains('range')).toBe(true);
     fireEvent.change(range, { target: { value: '22' } }); expect(screen.getByText('22px')).toBeTruthy();
     expect(desktop.savePreferences).not.toHaveBeenCalled(); submit(); await flush();
     expect(desktop.savePreferences).toHaveBeenCalledWith({ ...boot.preferences, fontSize: 22 });
-    expect(view.container.querySelectorAll('.runtime-card')).toHaveLength(1);
+    expect(screen.getByRole('dialog').querySelectorAll('.runtime-card')).toHaveLength(1);
   });
   it('keeps mount-only dirty draft/args but live runtime display and new callbacks after props change', async () => {
     const view = render(<SettingsDialog {...props} />); change('Pi 路径', '/dirty'); change('Pi CLI 参数', '["--dirty"]');
@@ -162,7 +162,7 @@ describe('SettingsDialog public view characterization (Fake Desktop)', () => {
     const pending = deferred<Bootstrap>(); vi.mocked(desktop.savePreferences).mockReturnValueOnce(pending.promise);
     const view = render(<SettingsDialog {...props} />); submit();
     fireEvent.click(screen.getByRole('button', { name: '取消' })); fireEvent.click(screen.getByRole('button', { name: '关闭对话框' }));
-    const cancel = new Event('cancel', { cancelable: true }); fireEvent(screen.getByRole('dialog'), cancel); expect(cancel.defaultPrevented).toBe(true); expect(props.onClose).toHaveBeenCalledTimes(3);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' }); expect(props.onClose).toHaveBeenCalledTimes(3);
     view.unmount(); await act(async () => pending.resolve(boot)); expect(props.onSave).toHaveBeenCalledWith(boot); expect(props.onClose).toHaveBeenCalledTimes(4);
   });
   it.each(['resolve', 'reject'] as const)('does not affect a new dialog after late picker %s; late failures are still stringified', async outcome => {

@@ -1,3 +1,4 @@
+import { Input, Radio } from '../../ui';
 import { useRef } from 'react';
 import { Button, Dialog } from '../../ui';
 import { useNewSessionLaunch, type SessionLaunchOptions } from './useNewSessionLaunch';
@@ -16,20 +17,20 @@ export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }
     <form onSubmit={event => { event.preventDefault(); submit(); }}>
       <label>项目文件夹</label>
       <div className="input-row">
-        <input className="ui-input" aria-label="项目文件夹" ref={initialFocus} value={cwd} onChange={event => setCwd(event.target.value)} required />
+        <Input className="ui-input" aria-label="项目文件夹" ref={initialFocus} value={cwd} onChange={event => setCwd(event.target.value)} required />
         <Button type="button" onClick={chooseDirectory}>浏览…</Button>
       </div>
       <label>界面</label>
       <div className="mode-options">
         {kinds.filter(([value]) => !options.fixedKind || value === options.fixedKind).map(([value, label, hint]) => <label key={value} className={kind === value ? 'chosen' : ''}>
-          <input type="radio" name="kind" checked={kind === value} disabled={!!options.fixedKind} onChange={() => setKind(value)} />
+          <Radio name="kind" checked={kind === value} disabled={!!options.fixedKind} onChange={() => setKind(value)} />
           <span>{label}<small>{hint}</small></span>
         </label>)}
       </div>
       <label>启动方式</label>
       <div className="mode-options">
         {([['new', '新会话', '开启独立会话'], ['continue', '继续最近', '恢复本项目最近会话'], ...(kind === 'terminal' ? [['resume', '选择历史', 'Pi 原生选择器'] as const] : [])] as const).map(([value, label, hint]) => <label key={value} className={mode === value ? 'chosen' : ''}>
-          <input type="radio" name="mode" checked={mode === value} onChange={() => setMode(value)} />
+          <Radio name="mode" checked={mode === value} onChange={() => setMode(value)} />
           <span>{label}<small>{hint}</small></span>
         </label>)}
       </div>
@@ -37,7 +38,7 @@ export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }
         <label>检测到项目资源</label>
         <div className="trust-options">
           {([['default', '沿用 Pi 已保存决定 / 全局默认'], ['approve', '本次信任并加载项目资源'], ['decline', '本次不加载项目资源']] as const).map(([value, label]) => <label key={value}>
-            <input type="radio" name="trust" checked={trust === value} onChange={() => setTrust(value)} />{label}
+            <Radio name="trust" checked={trust === value} onChange={() => setTrust(value)} />{label}
           </label>)}
         </div>
         <p className="muted">RPC 不会显示 Pi 内置信任提示。PUA 不读取或修改 trust.json；“本次信任/不加载”只向这个进程传递对应参数。</p>

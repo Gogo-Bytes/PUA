@@ -1,3 +1,4 @@
+import { Input, Radio } from '../../ui';
 import { useEffect, useRef, useState } from 'react';
 import type { ProjectTrust } from '../../../shared/ipc/conversation';
 import type { ProjectResourceInfo } from '../../../shared/ipc/desktop-api';
@@ -62,7 +63,7 @@ export function PendingChatPane({ cwd, runtimeAvailable, value, onValueChange, s
     {resources.length > 0 && <div className="pending-trust" aria-label="项目资源信任">
       <strong>检测到项目资源</strong>
       <span>选择本次启动 Pi 时如何处理项目级技能和扩展：</span>
-      {([['default', '沿用 Pi 已保存决定 / 全局默认'], ['approve', '本次加载项目资源'], ['decline', '本次不加载项目资源']] as const).map(([value, label]) => <label key={value}><input type="radio" name={`trust-${cwd}`} checked={trust === value} onChange={() => setTrust(value)}/>{label}</label>)}
+      {([['default', '沿用 Pi 已保存决定 / 全局默认'], ['approve', '本次加载项目资源'], ['decline', '本次不加载项目资源']] as const).map(([value, label]) => <label key={value}><Radio name={`trust-${cwd}`} checked={trust === value} onChange={() => setTrust(value)}/>{label}</label>)}
     </div>}
     {inspecting && <p className="ui-meta pending-trust-status">正在检查项目资源…</p>}
     {inspectionError && <Message tone="error" toneLabel="项目资源检查失败">{inspectionError}</Message>}
