@@ -4,9 +4,9 @@
 
 用户已提供五张截图，确认项目行“更多/新建”、会话行“钉选/归档”、独立 Environment 浮窗、多标签右侧面板和 Review 多文件连续 diff。第一阶段已按图改侧栏：更多菜单使用已有共享 Menu，承载实际可用的打开目录、复制路径、兼容终端；Chat 使用 archive 图标与归档名称。已核对后端 closeSession 确实在进程关闭后持久归档，取消/失败不移除条目；Terminal 不具备持久历史归档，仍明确叫关闭。项目空组的打开目录受 session-id 接口限制而禁用，不临时创建会话。侧栏浏览器回归及类型检查通过。
 
-第二阶段将分离独立环境浮窗与右侧标签宿主，diff 展示库由 research 技能后台核对官方资料后选型；既有未接入能力会显示明确状态，不能虚构 Git 操作、subagents 或后台进程。
+第二阶段已分离独立环境浮窗与右侧标签宿主；通过 research 技能核对三个候选后选用锁定版本 @pierre/diffs 1.4.3，替换手写 diff 行。Review 连续展示多个文件，右侧支持标签打开/切换/关闭、会话隔离与空白入口。既有未接入能力显示明确状态，不虚构 Git 操作、subagents 或后台进程。
 
-用户提出 9 项修订。当前阶段只落实无需额外视觉参考的 2、3、4、9；不声明已复刻 Codex。
+用户提出 9 项修订。前一阶段落实 2、3、4、9；当前落实截图补充后的侧栏、独立浮窗、多标签宿主和 Review 展示。未声明完整复刻 Codex 所有后台能力。
 
 ## 已实施
 
@@ -19,7 +19,11 @@
 
 ## 未完成与所需信息
 
+本次截图阶段验证：70 项 UI/Git/保护清单专项 + 24 项真实 App workspace 回归通过；production/tests/preview 类型、import boundaries、56 项保护清单及生产构建通过。独立浮窗、标签键盘与关闭焦点、浅深色、700px 响应式、无外网请求通过；构建后的 Fake Desktop 使用生产 CSP 同样通过。原工作台浏览器脚本另外覆盖 360–1440px、草稿/附件、引用和面板收放。没有运行真实 Pi/Git 或重启用户 Electron。全量结果另列下方，不将专项等同于全量通过。
+
+全量 Vitest：2695 passed / 16 failed；与先前 `/tmp/pua-ui-final.json` 的 2672 passed / 24 failed 对比，剩余失败身份均在旧基线，未增加新的失败身份。剩余集中在 App 静态 ownership/旧控件查询、command-palette 和 settings 既有断言。并非全量绿灯，也不能仅凭失败身份相同证明所有旧场景无回归。构建保留 chunk-size 警告；DiffSurface 单独懒加载，本地语法 chunks 已产出。
+
 1. 新建会话底栏缺少模型/思考控件的原因已确认：PendingChatPane 没有 footerControls，且 getChatAvailableModels/getChatThinkingLevels 均要求 session id。不能用临时真实会话、硬编码模型列表或虚假按钮掩盖。需要补充不依赖会话的配置目录与首发前参数应用设计；本阶段不改 IPC、进程和会话创建时机。
-2. 第 5–8 项等待 Codex 项目操作菜单、session 操作菜单、右上角浮窗、Changes 和右侧标签栏截图。计算机工具明确禁止访问 `com.openai.codex`，不改用其它方式绕过，也不声称看过目标。用户当前输入框截图不足以确定这些区域的功能、层级与视觉。
-3. 后续右侧应是多标签面板宿主，Changes 只是其中一类。待参考明确后再实现；不能把本阶段未修改的 Git 专用容器当目标完成。
+2. 用户提供的五张截图已经解除第 5–8 项的视觉参考阻碍。不需要也没有绕过计算机工具对 `com.openai.codex` 的限制；参考来自附件，不是实时访问原应用。
+3. 右侧 Terminal/Browser/Files/Side chat、分支操作、提交推送、subagents/后台进程目前仅保留明确标注入口，尚未接宿主能力。完整 unchanged 展开需要新的两侧内容授权接口，当前 patch 不含这些内容。
 4. 分支操作/subagents 等未实现能力应明确显示“未接入”及原因，不可使用成功假反馈或把会话关闭冒充归档。保留现有 Session、Git snapshot、草稿和附件 owner。

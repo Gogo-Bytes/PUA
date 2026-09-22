@@ -1,4 +1,4 @@
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { DropdownMenu, Icon, IconButton } from '../../ui';
 import { projectName } from './selection';
@@ -23,10 +23,11 @@ export interface WorkspaceChromeProps {
   onRename?(): void;
   onArchive?(): void | Promise<void>;
   onTogglePinned?(): void | Promise<void>;
+  environment?: ReactNode;
 }
 
 /** Application-owned titlebar surface. Native traffic lights sit above it on macOS. */
-export function WorkspaceChrome({ active, project, leftOpen, rightOpen, leftToggleRef, rightToggleRef, canNavigateBack, canNavigateForward, onToggleLeft, onToggleRight, onNavigateBack, onNavigateForward, onOpenProject, onOpenTerminal, onSearchTerminal, onChooseReferences, onRename, onArchive, onTogglePinned }: WorkspaceChromeProps) {
+export function WorkspaceChrome({ active, project, leftOpen, rightOpen, leftToggleRef, rightToggleRef, canNavigateBack, canNavigateForward, onToggleLeft, onToggleRight, onNavigateBack, onNavigateForward, onOpenProject, onOpenTerminal, onSearchTerminal, onChooseReferences, onRename, onArchive, onTogglePinned, environment }: WorkspaceChromeProps) {
   const menuItems = active ? [
     { value: 'rename', label: '重命名任务' },
     ...(onTogglePinned ? [{ value: 'pin', label: active.pinned ? '取消置顶' : '置顶任务' }] : []),
@@ -56,10 +57,12 @@ export function WorkspaceChrome({ active, project, leftOpen, rightOpen, leftTogg
       {active && menuItems.length > 0 && <DropdownMenu
         label="更多任务操作"
         icon="more"
+        iconOnly
         items={menuItems}
         onAction={value => { if (value === 'rename') onRename?.(); else if (value === 'pin') void onTogglePinned?.(); else if (value === 'archive') void onArchive?.(); }}
       />}
-      <IconButton ref={rightToggleRef} icon="panelRight" label={rightOpen ? '收起检查器' : '显示检查器'} variant="ghost" aria-expanded={rightOpen} onClick={onToggleRight}/>
+      {environment}
+      <IconButton ref={rightToggleRef} icon="panelRight" label={rightOpen ? '收起右侧面板' : '显示右侧面板'} variant="ghost" aria-expanded={rightOpen} onClick={onToggleRight}/>
     </div>
   </header>;
 }

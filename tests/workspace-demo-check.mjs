@@ -108,18 +108,19 @@ try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.waitForTimeout(300);
     const taskToolbar = page.locator('.workspace-chrome');
-    assert.equal(await taskToolbar.getByRole('button', { name: '收起检查器', exact: true }).getAttribute('aria-expanded'), 'true');
-    await page.getByRole('button', { name: '关闭变更面板' }).waitFor();
-    await page.getByRole('button', { name: 'docs/context.md ?', exact: true }).click();
+    assert.equal(await taskToolbar.getByRole('button', { name: '收起右侧面板', exact: true }).getAttribute('aria-expanded'), 'true');
+    const panel = page.getByRole('complementary', { name: '右侧面板', exact: true });
+    if (await panel.getByRole('button', { name: 'Review', exact: true }).count()) await panel.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByRole('tab', { name: '预览', exact: true }).click();
     await page.getByRole('heading', { name: '测试文档', exact: true }).waitFor();
-    await page.getByRole('button', { name: '引用文件到草稿' }).click();
+    await page.getByRole('region', { name: 'docs/context.md', exact: true }).getByRole('button', { name: '引用文件到草稿' }).click();
     assert.match(await editor.inputValue(), /docs\/context.md/);
-    await page.getByRole('button', { name: '关闭变更面板' }).click();
-    assert(await page.getByRole('button', { name: '显示检查器', exact: true }).evaluateAll(nodes => nodes.some(node => node === document.activeElement)));
+    await taskToolbar.getByRole('button', { name: '收起右侧面板', exact: true }).click();
+    assert(await page.getByRole('button', { name: '显示右侧面板', exact: true }).evaluateAll(nodes => nodes.some(node => node === document.activeElement)));
     await page.setViewportSize({ width: 1440, height: 900 });
-    await taskToolbar.getByRole('button', { name: '显示检查器', exact: true }).click();
-    await page.getByRole('button', { name: '关闭变更面板' }).waitFor();
+    await taskToolbar.getByRole('button', { name: '显示右侧面板', exact: true }).click();
+    await panel.getByRole('tab', { name: 'Review', exact: true }).waitFor();
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
   }
   assert.deepEqual(results.errors, []);
   assert.deepEqual(results.requests, []);

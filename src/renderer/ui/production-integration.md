@@ -52,6 +52,14 @@
 
 ## 隔离验证
 
+### 截图驱动的面板接入（2026-09-22）
+
+Environment 是 WorkspaceChrome 中的独立非模态浮窗，不占用右侧布局；仅打开时读取当前 session 的 GitStatus，晚到结果按 session/关闭清理丢弃。Changes 打开 Review 标签，任务详情打开原 TaskDetailsPanel。分支/提交/subagents/后台进程没有新增 IPC，明确未接入。
+
+SidePanelHost 现在是右侧多标签宿主；无标签显示 Review、Terminal、Browser、Files、Side chat。后四项当前为可关闭的说明页，不伪造终端/浏览器/文件操作。tab 列表按 session/draft 隔离，切 tab 保持已打开 Review 挂载，切会话重置内容投影；全关后回到入口。面板宽度默认 560、最小 280、最大 1000，仍保留 center 360 最小约束与响应式隐藏。
+
+Review 使用连续多文件展示，移除旧 inspector 内卡片。每批 5 个文件、最多 3 并发 fileDiff；刷新/比较范围/会话身份变化清理旧请求结果。集合来自已授权 gitStatus，宿主读取边界不变；结果 Map 不把特殊文件名当对象原型。工作区/暂存区是真实范围；分支比较尚未接入。计数仅按已返回 hunk，截断显式标注，冲突不展示错误双边统计。原文复制、路径引用、未跟踪 Markdown 安全预览保留。UI 库选型与限制见 `docs/research/diff-viewer-selection.md`。
+
 ### Tailwind / shadcn 生产迁移（2026-09-22）
 
 用户已进一步授权全界面分阶段实施，计划见 `docs/ui-migration-plan.md`。阶段 1 已接入生产：`ChoiceControls.tsx` 在既有 Select/DropdownMenu/Tabs 接口后使用 Base UI；Collapsible 使用 Base Root/Trigger/Panel，保持 Reveal seam。`tailwind.css` 已由 production.css 和两类预览共同引入，不开启全局 Preflight。UIProvider 提供 Portal 容器，Dialog 覆盖该容器，保留主题及嵌套浮层归属。Base Select 可聚焦禁用项但不能提交。真实键盘/定位回归运行 `node tests/component-preview/choice-controls-check.mjs`。

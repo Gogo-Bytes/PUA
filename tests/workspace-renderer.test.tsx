@@ -93,11 +93,11 @@ describe('production workspace navigation', () => {
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
     expect(desktop.startSession).toHaveBeenCalledTimes(3);
     vi.mocked(desktop.closeSession).mockResolvedValueOnce(false);
-    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 1' })); await waitFor(() => expect(desktop.closeSession).toHaveBeenCalledWith('s1'));
+    fireEvent.click(screen.getByRole('button', { name: '归档 会话 1' })); await waitFor(() => expect(desktop.closeSession).toHaveBeenCalledWith('s1'));
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
-    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 1' })); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: '归档 会话 1' })); await waitFor(() => expect(container.querySelector('[data-session-id="s1"]')).toBeNull());
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
-    fireEvent.click(screen.getByRole('button', { name: '关闭 会话 2' }));
+    fireEvent.click(screen.getByRole('button', { name: '归档 会话 2' }));
     await waitFor(() => expect(container.querySelector('[data-session-id="s2"]')).toBeNull());
     expect(screen.queryByRole('button', { name: '会话 2' })).toBeNull();
     expect(container.querySelector('[data-session-id="s3"]')).toBeTruthy();
@@ -121,19 +121,17 @@ describe('production workspace navigation', () => {
     expect(screen.getByRole('button', { name: '会话 1' }).getAttribute('aria-current')).toBe('page');
     expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
-  it('filters sidebar session names without changing selection or disposing hidden panes', async () => {
+  it('removes the sidebar filter while preserving session selection and mounted panes', async () => {
     const { container } = render(<App />);
     await findProject('/one/app'); selectProject('/one/app'); await createSession();
     selectProject('/two/app'); await createSession();
     const pane = container.querySelector('[data-session-id="s2"]');
     const draft = screen.getByRole('textbox', { name: '发送消息' });
-    const filter = screen.getByPlaceholderText('查找项目或会话…');
-    fireEvent.change(filter, { target: { value: '会话 1' } });
+    expect(screen.queryByPlaceholderText('查找项目或会话…')).toBeNull();
     expect(screen.getByRole('button', { name: '会话 1' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '会话 2' })).toBeNull();
+    expect(screen.getByRole('button', { name: '会话 2' })).toBeTruthy();
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(draft);
     expect(container.querySelector('[data-session-id="s2"]')).toBe(pane);
-    fireEvent.change(filter, { target: { value: '' } });
     expect(screen.getByRole('button', { name: '会话 2' }).getAttribute('aria-current')).toBe('page');
     expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
@@ -153,7 +151,7 @@ describe('production workspace navigation', () => {
     const draft = screen.getByRole('textbox', { name: '发送消息' }); const toggle = inspectorToggle();
     fireEvent.click(toggle); draft.focus(); fireEvent.keyDown(draft, { key: 'Escape' });
     expect(document.activeElement).toBe(draft); expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(toggle); await screen.findByText('这个范围没有变更');
+    fireEvent.click(toggle); await openReview();
     draft.focus(); fireEvent.keyDown(draft, { key: 'Escape' });
     expect(document.activeElement).toBe(draft); expect(toggle.getAttribute('aria-expanded')).toBe('true');
     fireEvent.compositionStart(draft); fireEvent.keyDown(draft, { key: 'Escape', isComposing: true }); fireEvent.compositionEnd(draft);
@@ -167,13 +165,14 @@ describe('production workspace navigation', () => {
     expect(screen.queryByLabelText('Pi 命令建议')).toBeNull(); expect(document.activeElement).toBe(draft); expect(toggle.getAttribute('aria-expanded')).toBe('true');
     fireEvent.keyDown(screen.getByRole('button', { name: '会话 1' }), { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull(); expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    const closeButton = screen.getByRole('button', { name: '关闭变更面板' }); closeButton.focus(); fireEvent.keyDown(closeButton, { key: 'Escape' });
+    const closeButton = panelClose(); closeButton.focus(); fireEvent.keyDown(closeButton, { key: 'Escape' });
     await waitFor(() => expect(document.activeElement).toBe(toggle));
     // Mounted background panes must not let their hidden suggestions block Escape.
     fireEvent.change(draft, { target: { value: '/rev' } }); await createSession();
-    fireEvent.click(inspectorToggle()); await screen.findByText('这个范围没有变更');
+    if (inspectorToggle().getAttribute('aria-expanded') === 'false') fireEvent.click(inspectorToggle());
+    await openReview();
     const currentToggle = inspectorToggle();
-    fireEvent.keyDown(await screen.findByRole('button', { name: '关闭变更面板' }), { key: 'Escape' });
+    fireEvent.keyDown(panelClose(), { key: 'Escape' });
     await waitFor(() => expect(document.activeElement).toBe(currentToggle));
   });
   it('uses default system changes and saved themes without recreating sessions or losing draft', async () => {
@@ -209,8 +208,8 @@ describe('production workspace navigation', () => {
     const commands = screen.getByRole('button', { name: /搜索与命令/ }); commands.focus(); fireEvent.click(commands);
     fireEvent.click(screen.getByRole('option', { name: /review-real/ })); expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('/review-real'); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
     const toggle = inspectorToggle();
-    await screen.findByText('这个范围没有变更'); expect(desktop.gitStatus).toHaveBeenCalledWith('s1');
-    fireEvent.click(screen.getByRole('button', { name: '关闭变更面板' })); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull();
+    await openReview(); expect(desktop.gitStatus).toHaveBeenCalledWith('s1');
+    fireEvent.click(panelClose()); expect(screen.queryByRole('complementary', { name: '文件与 Git 检查区' })).toBeNull();
     const currentToggle = inspectorToggle();
     fireEvent.click(currentToggle);
     // The inserted command has suggestions: dismiss that local menu before the inspector.
@@ -226,8 +225,8 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 const selected = (title: string) => expect(screen.getByRole('button', { name: title }).getAttribute('aria-current')).toBe('page');
-const closeTab = (title: string) => fireEvent.click(screen.getByRole('button', { name: `关闭 ${title}` }));
-const inspectorToggle = () => screen.getAllByRole('button', { name: /检查器/ })[0]!;
+const closeTab = (title: string) => fireEvent.click(screen.getByRole('button', { name: `归档 ${title}` }));
+const inspectorToggle = () => screen.getAllByRole('button', { name: /(?:显示|收起)右侧面板/ })[0]!;
 async function seedProjects() {
   const view = render(<App />); await findProject('/one/app'); selectProject('/one/app');
   await createSession(); await createSession(); await createSession();
@@ -384,7 +383,8 @@ describe('Session launch through real App and direct sidebar controller', () => 
   });
   it('keeps the Pi-compatible terminal reachable from a project without creating a chat first', async () => {
     render(<App />); await findProject('/one/app');
-    fireEvent.click(screen.getByRole('button', { name: '在 app 中打开兼容终端（/one/app）' }));
+    fireEvent.click(screen.getByRole('button', { name: 'app 更多操作（/one/app）' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '打开兼容终端' }));
     const dialog = screen.getByRole('dialog', { name: '打开项目' });
     const terminal = within(dialog).getByRole('radio', { name: /兼容终端/ }) as HTMLInputElement;
     expect(terminal.checked).toBe(true); expect(terminal.disabled).toBe(true);
@@ -404,3 +404,8 @@ describe('Session launch through real App and direct sidebar controller', () => 
     expect(desktop.createSession).not.toHaveBeenCalled();
   });
 });
+const panelClose = () => within(screen.getByRole('complementary', { name: '右侧面板' })).getByRole('button', { name: '收起右侧面板' });
+async function openReview() {
+  if (!screen.queryByRole('tab', { name: 'Review', hidden: true })) fireEvent.click(await screen.findByRole('button', { name: 'Review' }));
+  await screen.findByText('这个范围没有变更');
+}

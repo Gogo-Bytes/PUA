@@ -2,8 +2,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import '../../../component-preview/test-setup';
-import { TaskDetailsPanel } from '../../../../src/renderer/features/workspace';
-import { InspectorShell } from '../../../../src/renderer/app/InspectorShell';
+import { TaskDetailsPanel, useSidePanelTabs } from '../../../../src/renderer/features/workspace';
+import { SidePanelHost } from '../../../../src/renderer/features/workspace';
 import { UIProvider } from '../../../../src/renderer/ui';
 
 it('shows only the task projection and keeps Pi-specific controls in their native area', () => {
@@ -18,13 +18,20 @@ it('shows only the task projection and keeps Pi-specific controls in their nativ
   fireEvent.click(screen.getByRole('button', { name: '重命名' })); expect(rename).toHaveBeenCalledOnce();
 });
 
-it('keeps Git as the existing inspector default while exposing task details as a tab', () => {
-  render(<UIProvider><InspectorShell task={{ id: 's1', cwd: '/work/pua', title: '调查', kind: 'chat', processStatus: 'exited', activity: 'idle', pinned: true }} runtime={null} changes={<p>Git snapshot</p>} onClose={vi.fn()} onOpenProject={vi.fn()} onRename={vi.fn()} onArchive={vi.fn()} onTogglePinned={vi.fn()}/></UIProvider>);
-  expect(screen.getByRole('tab', { name: 'Git / 环境' }).getAttribute('aria-selected')).toBe('true');
-  expect(screen.getByText('Git snapshot')).toBeTruthy();
-  fireEvent.click(screen.getByRole('tab', { name: '任务详情' }));
+it('starts with launchers and keeps review mounted when another tab is active', () => {
+  function Harness() {
+    const panels = useSidePanelTabs('s1');
+    return <UIProvider><button onClick={() => panels.open('task')}>Open details</button><SidePanelHost panels={panels} task={{ id: 's1', cwd: '/work/pua', title: '调查', kind: 'chat', processStatus: 'exited', activity: 'idle', pinned: true }} runtime={null} changes={<p>Git snapshot</p>} onClose={vi.fn()} onOpenProject={vi.fn()} onRename={vi.fn()} onArchive={vi.fn()}/></UIProvider>;
+  }
+  render(<Harness/>);
+  expect(screen.queryByText('Git snapshot')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Review' }));
+  expect(screen.getByRole('tab', { name: 'Review' }).getAttribute('aria-selected')).toBe('true');
+  fireEvent.click(screen.getByText('Open details'));
   expect(screen.getByRole('region', { name: '任务详情' })).toBeTruthy();
-  expect((screen.getByText('Git snapshot').closest('.inspector-shell-body > div') as HTMLDivElement).hidden).toBe(true);
-  fireEvent.click(screen.getByRole('tab', { name: 'Git / 环境' }));
-  expect(screen.getByText('Git snapshot')).toBeTruthy();
+  expect((screen.getByText('Git snapshot').closest('[role=tabpanel]') as HTMLDivElement).hidden).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '关闭 任务详情 标签页' }));
+  expect(screen.getByRole('tab', { name: 'Review' }).getAttribute('aria-selected')).toBe('true');
+  fireEvent.click(screen.getByRole('button', { name: '关闭 Review 标签页' }));
+  expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
 });

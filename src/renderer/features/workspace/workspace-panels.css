@@ -1,0 +1,22 @@
+.workspace-panel-header { display: flex; align-items: center; gap: 4px; padding: 8px; min-height: 48px; }
+.workspace-panel-header > div:first-child { flex: 1; min-width: 0; }
+.workspace-side-panel { height: 100%; min-width: 0; display: flex; flex-direction: column; background: var(--ui-canvas); }
+.workspace-panel-content { flex: 1; min-height: 0; overflow: hidden; }
+.workspace-panel-content > [role=tabpanel] { height: 100%; min-height: 0; }
+.workspace-panel-content > [role=tabpanel][hidden] { display: none; }
+.workspace-panel-content .task-details-panel { height: 100%; overflow: auto; padding: 16px; }
+.workspace-panel-empty { display: flex; flex-direction: column; gap: 8px; margin: auto 24px 22%; }
+.ui-provider .workspace-panel-empty > button { justify-content: flex-start; gap: 12px; min-height: 46px; padding: 10px 14px; border: 0; background: color-mix(in srgb, var(--ui-surface) 35%, transparent); }
+.workspace-panel-empty small { margin-left: auto; color: var(--ui-tertiary); font: var(--ui-font-meta); }
+.workspace-panel-unavailable { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 32px; color: var(--ui-secondary); text-align: center; }
+.workspace-panel-unavailable > .icon { width: 28px; height: 28px; }
+.workspace-panel-unavailable h2 { font: var(--ui-font-heading); margin: 16px 0 8px; }
+.workspace-panel-unavailable p { max-width: 360px; font: var(--ui-font-control); line-height: 1.8; }
+.workspace-panel-unavailable > span { font: var(--ui-font-meta); color: var(--ui-tertiary); }
+.environment-section + .environment-section { border-top: 1px solid var(--ui-border); margin-top: 12px; padding-top: 12px; }
+.environment-heading { display: flex; align-items: center; justify-content: space-between; min-height: 26px; margin: 0 4px 6px; color: var(--ui-tertiary); font: var(--ui-font-meta); }
+.ui-provider .environment-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 7px 8px; min-height: 34px; font: var(--ui-font-control); border: 0; background: transparent; }
+.environment-row > span { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.environment-row small { color: var(--ui-tertiary); font: var(--ui-font-meta); white-space: nowrap; }
+.environment-row.is-unavailable { color: var(--ui-tertiary); }
+.environment-note { font: var(--ui-font-meta); color: var(--ui-tertiary); margin: 6px 8px; }

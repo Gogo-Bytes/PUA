@@ -62,6 +62,13 @@
 
 ## 既有行为保持
 
+### Popover / PanelTabs / DiffView（2026-09-22）
+
+- `Popover` 使用 Base UI 非模态 Popup，受控 open，Portal 留在 UIProvider；负责定位、Escape/外部点击与焦点恢复。不把 Environment 的仓库查询放进 UI。
+- `PanelTabs` 使用 Base Tabs 键盘导航，关闭按钮是 tab 的兄弟节点；调用方提供唯一 idPrefix 并将面板 id/aria-labelledby 对应。关闭后焦点回到存活的活动 tab；全部关闭后回到 add ref。tabs 的 session/draft 隔离由 workspace 的 `useSidePanelTabs` 负责。
+- `DiffView` 懒加载锁定版本 `@pierre/diffs@1.4.3`（Apache-2.0；保留包内许可证），仅接受 patch 文本及显式明暗主题。严格解析、unified、Shiki 本地语法、Shadow DOM token；不接受 HTML、用户 CSS、远程 grammar 或文件路径读取。超过 120,000 字符/4,000 行、元数据-only、解析失败时保留原文。截断/combined conflict 在 change-review 先分流，不能伪造两侧内容与 unchanged 展开。
+- 隔离验证入口 `tests/workspace-panels-check.mjs` 和 `tests/workspace-panels-production-check.mjs`，后者构建 Fake Desktop 页面并应用生产 CSP。没有真实 Pi/Git 调用，不能当作 Electron 实机全链路验收。
+
 - Collapsible 可通过 open/onOpenChange 受控（如工具失败自动展开），未传入时保留 defaultOpen 内部状态。title 支持非交互 ReactNode，label 可提供完整按钮可访问名称；原字符串调用保持兼容。ToolExecutionCard 用它将图标、摘要和状态合并为一个详情入口，复用现有展开/收起与 reduced-motion 行为。
 
 - `ui/Icon.tsx` 统一映射 lucide-react 按需导入图标：24px 网格、16px 显示、1.75 线宽。通知、状态和任务清单复用同一来源；不再手画路径。免费使用许可为 ISC，部分 Feather 来源图标为 MIT；许可证随 npm 包提供，发布时保留其通知，见 https://lucide.dev/license 。生产与预览现统一使用该来源，旧 `renderer/Icon.tsx` 已删除。

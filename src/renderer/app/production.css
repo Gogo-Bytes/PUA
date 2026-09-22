@@ -7,6 +7,7 @@
 @import '../features/terminal/xterm.css';
 @import './base.css';
 @import '../features/workspace/workspace-production.css';
+@import '../features/workspace/workspace-panels.css';
 @import '../features/terminal/terminal-production.css';
 @import '../features/workspace/search-production.css';
 @import '../features/conversation/transcript-production.css';

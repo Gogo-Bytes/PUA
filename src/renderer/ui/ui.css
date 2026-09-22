@@ -9,6 +9,14 @@
 .ui-provider :focus-visible { outline: none; }
 .ui-provider :is(button, a):focus-visible { color: var(--ui-accent); text-decoration: underline; text-underline-offset: 3px; }
 .ui-provider :is(input, textarea):focus-visible { caret-color: var(--ui-accent); }
+.ui-popover-positioner { z-index: 45; }
+.ui-provider .ui-popover { width: min(336px, calc(100vw - 24px)); max-height: var(--available-height); overflow-y: auto; border: 1px solid var(--ui-border); border-radius: 18px; background: var(--ui-canvas); color: var(--ui-secondary); padding: 16px; box-shadow: var(--ui-shadow); outline: none; }
+.ui-provider .ui-panel-tabs { display: flex; min-width: 0; gap: 4px; overflow-x: auto; }
+.ui-provider .ui-panel-tab { display: flex; align-items: center; flex-shrink: 0; border-radius: 10px; min-width: 120px; max-width: 220px; }
+.ui-provider .ui-panel-tab[data-active] { background: var(--ui-selected); }
+.ui-provider .ui-panel-tab-select { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; padding: 8px 10px; background: transparent; border: 0; color: var(--ui-secondary); font: var(--ui-font-control); cursor: pointer; }
+.ui-provider .ui-panel-tab-select span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-provider .ui-panel-tab > .ui-button { color: var(--ui-tertiary); background: transparent; border: 0; margin-right: 3px; }
 .ui-provider .ui-button { display: inline-flex; justify-content: center; align-items: center; gap: var(--ui-space-tight); min-height: var(--ui-control-height); line-height: var(--ui-control-line); padding: var(--ui-control-inset) var(--ui-space-2); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-control); background: var(--ui-surface); color: var(--ui-secondary); font-weight: var(--ui-weight-normal); cursor: pointer; white-space: nowrap; transition: background var(--ui-hover-duration), box-shadow var(--ui-hover-duration); }
 .ui-provider .ui-button:hover:not(:disabled) { background: var(--ui-muted); }
 .ui-provider .ui-button:active:not(:disabled) { box-shadow: none; }
@@ -95,3 +103,7 @@
 .ui-provider a.ui-breadcrumb-label:hover { background: var(--ui-muted); text-decoration: underline; }
 .ui-provider .ui-breadcrumb-separator { color: var(--ui-secondary); opacity: .6; flex-shrink: 0; }
 .ui-provider .ui-workspace-test-controls > summary { cursor: pointer; min-height: var(--ui-control-height); padding: var(--ui-space-1); font: var(--ui-font-meta); color: var(--ui-tertiary); }
+.ui-diff-view { min-width:0; --diffs-font-family:var(--ui-mono); --diffs-font-size:12px; --diffs-line-height:22px; --diffs-bg-context-override:var(--ui-canvas); --diffs-bg-context-gutter-override:var(--ui-canvas); --diffs-addition-color-override:var(--ui-diff-added); --diffs-deletion-color-override:var(--ui-diff-removed); }
+.ui-diff-view diffs-container { --diffs-bg:var(--ui-canvas); --diffs-bg-separator-override:var(--ui-muted); }
+.ui-diff-view pre, .ui-raw-patch pre { overflow:auto; margin:0; padding:8px 12px; font:12px/1.8 var(--mono); }
+.ui-raw-patch small { display:block; padding:4px 12px; color:var(--ui-tertiary); font:var(--ui-font-meta); }

@@ -4,11 +4,10 @@ import { TerminalPane } from '../features/terminal';
 import { ChatPane, PendingChatPane } from '../features/conversation';
 import { desktopClient } from './desktop-client';
 import { GitPanel } from '../features/change-review';
-import { HistorySearchDialog, ProjectSidebar, WorkspaceChrome, readWorkspaceView, writeWorkspaceView } from '../features/workspace';
+import { SidePanelHost, EnvironmentPopover, HistorySearchDialog, ProjectSidebar, WorkspaceChrome, readWorkspaceView, useSidePanelTabs, writeWorkspaceView } from '../features/workspace';
 import { NewSessionDialog, RenameDialog } from '../features/sessions';
 import { SettingsDialog } from '../features/preferences';
 import { CommandPalette } from '../features/command-palette';
-import { InspectorShell } from './InspectorShell';
 import { Button, Input, Icon, ResizableWorkspace, ToastHost, UIProvider } from '../ui';
 
 export function App() {
@@ -20,6 +19,7 @@ export function App() {
   const { desktopPresentation, workspace, palette, input, launch, sessionActions, navigation } = useWorkspaceComposition(() => {});
   const { boot, theme, error } = desktopPresentation;
   const { sessions, activeId, active, project } = workspace;
+  const panels = useSidePanelTabs(activeId ?? `draft:${project ?? ''}`);
   const [workspaceView, setWorkspaceView] = useState(() => readWorkspaceView());
   const [historySearchOpen, setHistorySearchOpen] = useState(false);
   const attentionToasts = workspace.attentionEvents.map(event => ({
@@ -42,6 +42,7 @@ export function App() {
   }, [boot?.platform, active?.kind, active?.cwd, project]);
   return <UIProvider theme={theme}><div className={`workspace ${boot?.platform === 'darwin' ? 'workspace-darwin' : ''}`}>
     <WorkspaceChrome active={active} project={project} leftOpen={projectPanelOpen} rightOpen={reviewOpen} leftToggleRef={leftPanelToggle} rightToggleRef={panelToggle}
+      environment={<EnvironmentPopover session={active} onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}/>}
       canNavigateBack={workspace.canNavigateBack} canNavigateForward={workspace.canNavigateForward}
       onToggleLeft={() => setProjectPanelOpen(open => !open)} onToggleRight={() => setReviewOpen(open => !open)}
       onNavigateBack={workspace.navigateBack} onNavigateForward={workspace.navigateForward}
@@ -51,10 +52,10 @@ export function App() {
       onChooseReferences={active?.kind === 'terminal' ? () => void input.chooseTerminalReferences() : undefined}
       onRename={active ? sessionActions.beginRename : undefined} onArchive={active ? () => workspace.closeSession(active.id) : undefined}
       onTogglePinned={active ? () => workspace.setSessionPinned(active.id, !active.pinned) : undefined}/>
-    <ResizableWorkspace leftToggleRef={leftPanelToggle} leftOpen={projectPanelOpen} onLeftOpenChange={setProjectPanelOpen} rightToggleRef={panelToggle} rightOpen={reviewOpen} onRightOpenChange={setReviewOpen} hideToolbar
-      labels={{ left: '项目', right: '检查器', show: '显示', hide: '收起', resize: side => side === 'left' ? '调整项目栏宽度' : '调整检查器宽度', compact: '空间足够时自动恢复面板', hint: '拖动边缘或使用方向键调整宽度' }}
+    <ResizableWorkspace rightSize={{ initial: 560, min: 280, max: 1000 }} leftToggleRef={leftPanelToggle} leftOpen={projectPanelOpen} onLeftOpenChange={setProjectPanelOpen} rightToggleRef={panelToggle} rightOpen={reviewOpen} onRightOpenChange={setReviewOpen} hideToolbar
+      labels={{ left: '项目', right: '右侧面板', show: '显示', hide: '收起', resize: side => side === 'left' ? '调整项目栏宽度' : '调整右侧面板宽度', compact: '空间足够时自动恢复面板', hint: '拖动边缘或使用方向键调整宽度' }}
       left={<ProjectSidebar sessions={sessions} recentProjects={boot?.preferences.recentProjects ?? []} activeId={activeId} activeProject={project} collapsedProjects={workspaceView.collapsedProjects} onCollapsedProjectsChange={collapsed => setWorkspaceView(current => ({ ...current, collapsedProjects: [...collapsed] }))} creatingProject={launch.creatingProject} runtimeAvailable={!!boot?.runtime} canNavigateBack={workspace.canNavigateBack} canNavigateForward={workspace.canNavigateForward} onNavigateBack={workspace.navigateBack} onNavigateForward={workspace.navigateForward} onNewConversation={cwd => void launch.newConversation(cwd)} onOpenTerminal={cwd => launch.open({ cwd, kind: 'terminal', mode: 'new' })} onOpenProject={sessionActions.openProject} onCopyProjectPath={cwd => { void desktopClient.writeClipboard(cwd).catch(error => desktopPresentation.reportError(String(error))); }} onSelectSession={navigation.selectSession} onTogglePinned={(id, pinned) => void workspace.setSessionPinned(id, pinned)} onCloseSession={id => void workspace.closeSession(id)} onRenameSession={navigation.renameSession} onForkSession={(id, entryId) => void desktopClient.forkChatSession(id, entryId)} onSearch={palette.openFromSidebar} onSettings={desktopPresentation.showSettings}/>}
-      right={active ? <InspectorShell task={active} runtime={boot?.runtime ?? null} onClose={closeReview} onOpenProject={() => sessionActions.openProject(active.id)} onRename={sessionActions.beginRename} onArchive={() => workspace.closeSession(active.id)} onTogglePinned={() => workspace.setSessionPinned(active.id, !active.pinned)} onClone={() => sessionActions.cloneTask(active.id)} changes={<GitPanel key={active.id} sessionId={active.id} onClose={closeReview} onReference={input.reference}/>} /> : <div className="inspector-placeholder ui-meta">选择会话以查看任务详情与 Git</div>}>
+      right={<SidePanelHost key={activeId ?? project} panels={panels} task={active} runtime={boot?.runtime ?? null} onClose={closeReview} onOpenProject={() => { if (active) sessionActions.openProject(active.id); }} onRename={sessionActions.beginRename} onArchive={() => { if (active) return workspace.closeSession(active.id); }} onTogglePinned={() => { if (active) return workspace.setSessionPinned(active.id, !active.pinned); }} onClone={() => { if (active) return sessionActions.cloneTask(active.id); }} changes={active && <GitPanel key={active.id} theme={theme} sessionId={active.id} onClose={() => panels.close('review')} onReference={input.reference}/>} />}>
       {error && <div className="error-banner" role="alert"><span>{error}</span><Button aria-label="关闭错误提示" onClick={desktopPresentation.dismissError}>×</Button></div>}
       {!active && project ? <PendingChatPane cwd={project} runtimeAvailable={!!boot?.runtime} value={input.readProjectDraft(project)} onValueChange={text => input.replaceProjectDraft(project, text)} stagedAttachmentPaths={input.readProjectAttachmentPaths(project)} onStagedAttachmentPathsChange={paths => input.replaceProjectAttachmentPaths(project, paths)} onStart={(text, trust, attachmentPaths) => navigation.startProjectConversation(project, text, trust, attachmentPaths)} onSettings={desktopPresentation.showSettings}/> : !active && <section className="workspace-blank"><Icon name="chat"/><h1>{launch.creatingProject ? '正在创建对话…' : '开始一个新对话'}</h1><p>{boot?.runtimeError || '从左侧选择项目进入新的对话草稿；发送第一条消息后才会创建历史。'}</p></section>}
       {active?.kind === 'terminal' && input.searchOpen && <form className="search-bar" onSubmit={event => { event.preventDefault(); input.find(); }}><Input autoFocus aria-label="搜索终端历史" placeholder="搜索当前终端缓冲区…" value={input.searchText} onChange={event => { input.editSearch(event.target.value); }} /><span>{!input.found && '未找到'}</span><Button type="button" onClick={() => input.find(true)}>↑</Button><Button type="submit">↓</Button><Button type="button" onClick={() => { input.closeSearch(); }}>×</Button></form>}

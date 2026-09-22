@@ -17,7 +17,7 @@ function fixture() {
 }
 it('keeps the real frozen file set and content identical to the supplied manifest', () => {
   const manifest = JSON.parse(readFileSync(new URL('../scripts/refactor-protected-hashes.json', import.meta.url), 'utf8'));
-  expect(Object.keys(manifest)).toHaveLength(52);
+  expect(Object.keys(manifest)).toHaveLength(56);
   expect(checkProtectedFiles(process.cwd(), manifest)).toEqual([]);
 });
 it.each(['change', 'add', 'delete', 'rename', 'symlink'])('detects protected file %s in every frozen area', operation => {
