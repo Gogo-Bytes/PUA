@@ -13,7 +13,7 @@
 | 1 通用交互底座 | Select、DropdownMenu、Tabs、Collapsible；Tailwind 生产/两预览接入；Portal 主题归属 | 删除手写 ChoicePopup/焦点遍历，全部既有调用走同一实现，键盘/窄窗回归 | 已实施 |
 | 2 浮层与反馈 | Dialog、Tooltip、Toast、Message、Tag/StatusBadge | 焦点锁/恢复、嵌套菜单、长内容、关闭锁、时长/暂停/队列逐项迁移或记录保留理由 | 已实施；保留项见下 |
 | 3 表单与页面控件 | Button/IconButton、Input/Textarea、Checkbox/Radio/Switch/Slider；设置、新建/改名、任务详情、历史搜索、扩展表单 | 所有适用表单统一；保留原校验、提交/禁用/异步语义 | 已实施 |
-| 4 对话与命令 | 模型 Combobox、思考 Select、添加菜单、命令面板、共享 `/` 和 `@` 建议 | 光标 token/选区、IME、Escape、方向键/Enter、选择不误发、旧请求不串会话 | 待实施 |
+| 4 对话与命令 | 模型 Combobox、思考 Select、添加菜单、命令面板、共享 `/` 和 `@` 建议 | 光标 token/选区、IME、Escape、方向键/Enter、选择不误发、旧请求不串会话 | 已实施 |
 | 5 工作台领域组合 | Sidebar、SessionTabs、Breadcrumbs、工具详情、检查器/文件行、搜索/空错误状态 | 消费统一控件；保留文件夹/末端浮层设计；无旧重复交互 | 待实施 |
 | 6 清理与验收 | 样式/旧实现/文档/测试门禁 | 迁移清单闭合、类型/构建/单测/隔离浏览器证据，列出剩余真实桌面验收 | 待实施 |
 
@@ -46,3 +46,11 @@ Dialog 改为 Base UI Root/Portal/Backdrop/Popup/Title/Close；删除原生 show
 Button/IconButton 使用 Base Button；Checkbox 使用 Base Checkbox。统一 Input/Textarea/Radio/Slider 原语保留原生 ref、事件与表单语义，Tailwind 管理焦点/禁用/主题；无手写键盘算法。现有页面没有 Switch，不增加虚假开关。所有 Feature 的文本框/多行框/单选/范围输入已迁移，任务策略下拉改用公共 Select，改名保存与目录按钮改用公共 Button。预览新增 checkbox/radio/slider。
 
 修复未包 UIProvider 的独立挂载：Portal 默认回退到 document body（生产仍继承 provider）。表单测试按 Portal DOM、异步焦点、Escape 和追加样式类更新，保留所有原业务断言。47 项设置/新建/详情、19 项控件/通知测试通过；两个浏览器脚本和构建通过。原生 Radio/Slider 是刻意保留的稳定浏览器交互，不冒称为 Base UI Radio/Slider。
+
+### 阶段 4 结果
+
+模型使用 SearchSelect（Base Combobox），思考程度使用 Select，按打开菜单懒加载；当前模型即使不在返回列表仍有显示项。添加附件改为统一 Menu，只有真实 callback 对应的操作。命令面板与 Composer 共享 SuggestionOptions，Base Toolbar 管理 roving focus，集中补足公共 Toolbar 未暴露的 Home/End；Base Popover 管理输入建议的定位和外部关闭，输入不失焦。
+
+两类对话统一 completionToken，跟踪 selectionStart/End，替换当前完整词段并恢复精确光标，保留后文；选区/IME 不弹建议，Escape 不发送。技能候选仅限消息开头（Pi 只展开开头 /skill），文件引用仍按 JSON 引号协议插入。草稿快照、附件与调用身份不迁移。
+
+14 项 Composer/词段测试、3 项 Pending adapter 测试、类型/构建及 `composer-controls-check.mjs` 通过，截图 `/tmp/pua-composer-migration`。Pending 测试 stub 浮层 Interface，只检验资源/草稿/提交，不把 jsdom 的浮层布局结果当实际验收；真实弹层由浏览器脚本覆盖。系统真实中文输入法仍需人工验证。命令面板 App 旧测试仍先失败于迁移前的项目 title 查询，最终阶段列入统一基线校正。

@@ -1,6 +1,7 @@
-import { Textarea } from '../../ui';
+import { Textarea, DropdownMenu, SuggestionList } from '../../ui';
 import { useLayoutEffect, useRef, useState, type KeyboardEventHandler, type ReactNode, type Ref } from 'react';
 import { Button, Icon, IconButton, Message } from '../../ui';
+import { completionToken, type ComposerSuggestion } from './composer-suggestions';
 export interface ComposerAttachment { id: string; name: string; detail?: ReactNode }
 export interface ComposerSubmission { conversationKey: string; value: string; attachments: readonly ComposerAttachment[] }
 export interface ComposerLabels {
@@ -34,15 +35,33 @@ export interface ComposerProps {
   labels?: Partial<ComposerLabels>;
   /** Controls rendered in the composer footer before the attachment action. */
   footerControls?: ReactNode;
+  suggestions?: readonly ComposerSuggestion[];
 }
 /** The caller owns data and snapshot clearing. Both preview and production use this editor. */
 export function Composer(props: ComposerProps) {
   return <ComposerDraft key={props.conversationKey} {...props}/>;
 }
-function ComposerDraft({ conversationKey, value, onValueChange, attachments, onAddAttachments, onRemoveAttachment, onSend, onQueue, onStop, onFollowUp, editorRef, onEditorKeyDown, busy = false, disabled = false, queuedCount = 0, labels, footerControls }: ComposerProps) {
+function ComposerDraft({ conversationKey, value, onValueChange, attachments, onAddAttachments, onRemoveAttachment, onSend, onQueue, onStop, onFollowUp, editorRef, onEditorKeyDown, busy = false, disabled = false, queuedCount = 0, labels, footerControls, suggestions = [] }: ComposerProps) {
   const editor = useRef<HTMLTextAreaElement | null>(null);
   useLayoutEffect(() => { const node = editor.current; if (node) { node.style.height = '0px'; node.style.height = `${Math.min(160, Math.max(48, node.scrollHeight))}px`; } }, [value]);
   const text = { ...defaults, ...labels };
+  const [selection, setSelection] = useState<{ start: number; end: number }>();
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [imeActive, setImeActive] = useState(false);
+  const suggestionList = useRef<HTMLDivElement>(null);
+  const token = focused && !disabled && !imeActive && !suggestionsDismissed ? completionToken(value, selection?.start ?? value.length, selection?.end ?? value.length) : null;
+  const matches = token ? suggestions.filter(item => item.prefix === token.prefix && (!item.atStartOnly || !value.slice(0, token.start).trim()) && `${item.label} ${item.description ?? ''}`.toLocaleLowerCase().includes(token.query.toLocaleLowerCase())).slice(0, 12) : [];
+  const readSelection = (node: HTMLTextAreaElement) => setSelection({ start: node.selectionStart, end: node.selectionEnd });
+  const chooseSuggestion = (id: string) => {
+    const item = matches.find(item => item.id === id);
+    if (!item || !token) return;
+    const inserted = item.insertText + ' ';
+    onValueChange(value.slice(0, token.start) + inserted + value.slice(token.end));
+    const caret = token.start + inserted.length;
+    setSelection({ start: caret, end: caret }); setSuggestionsDismissed(true);
+    requestAnimationFrame(() => { editor.current?.focus(); editor.current?.setSelectionRange(caret, caret); });
+  };
   const [pending, setPending] = useState(false), [stopping, setStopping] = useState(false), [error, setError] = useState('');
   const locked = useRef(false), stopLocked = useRef(false), composing = useRef(false), mounted = useRef(false), revision = useRef(0);
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -66,15 +85,18 @@ function ComposerDraft({ conversationKey, value, onValueChange, attachments, onA
     } finally { lock.current = false; if (mounted.current) setBusy(false); }
   }
   return <form className="ui-composer" onSubmit={event => { event.preventDefault(); if (!composing.current) void run('submit'); }}>
-    <Textarea ref={node => { editor.current = node; if (typeof editorRef === 'function') editorRef(node); else if (editorRef) editorRef.current = node; }} className="ui-input" aria-label={text.message} placeholder={text.placeholder} value={value} disabled={disabled} onChange={event => onValueChange(event.target.value)} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} onKeyDown={event => {
+    {!!matches.length && <SuggestionList items={matches} label={token?.prefix === '/' ? 'Pi 命令建议' : '上下文引用建议'} anchor={editor} listRef={suggestionList} onSelect={chooseSuggestion} onDismiss={() => setSuggestionsDismissed(true)}/>}
+    <Textarea ref={node => { editor.current = node; if (typeof editorRef === 'function') editorRef(node); else if (editorRef) editorRef.current = node; }} className="ui-input" aria-label={text.message} placeholder={text.placeholder} value={value} disabled={disabled} onFocus={event => { setFocused(true); readSelection(event.currentTarget); }} onSelect={event => { readSelection(event.currentTarget); }} onChange={event => { onValueChange(event.target.value); readSelection(event.target); setSuggestionsDismissed(false); }} onCompositionStart={() => { composing.current = true; setImeActive(true); }} onCompositionEnd={() => { composing.current = false; setImeActive(false); }} onKeyDown={event => {
       if (composing.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
+      if (matches.length && event.key === 'ArrowDown') { event.preventDefault(); suggestionList.current?.querySelector<HTMLButtonElement>('[role=option]')?.focus(); return; }
+      if (matches.length && event.key === 'Escape') { event.preventDefault(); setSuggestionsDismissed(true); return; }
       onEditorKeyDown?.(event);
       if (event.defaultPrevented || event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.metaKey) return;
       event.preventDefault(); void run(event.altKey && busy && onFollowUp ? 'followUp' : 'submit');
     }}/>
     {attachments.length > 0 && <ul className="ui-composer-attachments" aria-label={text.attachments}>{attachments.map(item => <li key={item.id}><Icon name="file"/><span>{item.name}{item.detail && <small>{item.detail}</small>}</span>{onRemoveAttachment && <IconButton icon="close" label={text.removeAttachment(item.name)} variant="ghost" disabled={disabled} onClick={() => onRemoveAttachment(item.id)}/>}</li>)}</ul>}
     <div className="ui-composer-footer"><div className="ui-composer-controls">
-      {onAddAttachments && <IconButton icon="plus" variant="ghost" label={text.addAttachments} disabled={disabled} onClick={onAddAttachments}/>}
+      {onAddAttachments && <DropdownMenu icon="plus" iconOnly label={text.addAttachments} disabled={disabled} items={[{ value: 'attachment', label: text.addAttachments }]} onAction={onAddAttachments}/>}
       {footerControls}
       <span className="ui-meta">{text.hint}</span>
       {queuedCount > 0 && <span className="ui-meta">{text.queued(queuedCount)}</span>}

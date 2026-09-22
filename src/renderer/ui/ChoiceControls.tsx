@@ -26,12 +26,12 @@ export function Select({ label, options, value, onChange, disabled, onOpenChange
   </SelectRoot>;
 }
 
-export function DropdownMenu({ label, items, onAction, icon }: {
-  label: string; items: Choice[]; onAction(value: string): void; icon?: Parameters<typeof Icon>[0]['name'];
+export function DropdownMenu({ label, items, onAction, icon, iconOnly = false, disabled = false }: {
+  label: string; items: Choice[]; onAction(value: string): void; icon?: Parameters<typeof Icon>[0]['name']; iconOnly?: boolean; disabled?: boolean;
 }) {
   const container = useOverlayContainer();
   return <div className="ui-popup-anchor"><MenuRoot>
-    <MenuTrigger className="ui-button ui-button-ghost" aria-label={label} disabled={!items.some(item => !item.disabled)}>{label}<Icon name={icon ?? 'down'}/></MenuTrigger>
+    <MenuTrigger className={`ui-button ui-button-ghost ${iconOnly ? 'ui-icon-button' : ''}`} aria-label={label} disabled={disabled || !items.some(item => !item.disabled)}>{!iconOnly && label}<Icon name={icon ?? 'down'}/></MenuTrigger>
     <MenuContent container={container} aria-label={label}>
       {items.map(item => <MenuItem key={item.value} disabled={item.disabled} onClick={() => onAction(item.value)}>{item.label}</MenuItem>)}
     </MenuContent>

@@ -40,7 +40,7 @@ export function ComposerPreview({ conversationKey, children }: { conversationKey
     {current.running && <ChatMessage role="assistant" author="小派" labels={chatLabels} streaming>演示运行状态：输入下一条内容可排队，也可以停止。没有连接模型。</ChatMessage>}
     </div></div>
     <div className="preview-composer-dock"><div className="preview-reading-column">
-    <Composer conversationKey={conversationKey} value={current.draft.value} onValueChange={value => updateDraft(draft => ({ ...draft, value }))} attachments={current.draft.attachments}
+    <Composer suggestions={[{ id: 'review', prefix: '/', label: '/review', insertText: '/review', description: '检查改动' }, { id: 'readme', prefix: '@', label: '@README.md', insertText: '@"README.md"', description: '项目文件' }, { id: 'research', prefix: '@', label: '@research', insertText: '@research', description: '项目技能' }]} conversationKey={conversationKey} value={current.draft.value} onValueChange={value => updateDraft(draft => ({ ...draft, value }))} attachments={current.draft.attachments}
       onAddAttachments={() => { const id = String(++ids.current); updateDraft(draft => ({ ...draft, attachments: [...draft.attachments, { id, name: `示例笔记-${id}.txt`, detail: '内存示例，不读取磁盘' }] })); }}
       onRemoveAttachment={id => updateDraft(draft => ({ ...draft, attachments: draft.attachments.filter(item => item.id !== id) }))}
       onSend={submission => submit(submission, false)} onQueue={submission => submit(submission, true)} busy={current.running} queuedCount={current.queued}

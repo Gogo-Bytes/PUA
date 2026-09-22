@@ -2,6 +2,8 @@ export { UIProvider, resolveTheme, useTheme, useMotionScale, type MotionMode, ty
 export { motionTokens, MotionSample } from './motion';
 export * from './primitives';
 export { Input, Textarea, Radio, Slider, Checkbox } from './shadcn-fields';
+export { SearchSelect } from './shadcn-search-select';
+export { SuggestionList, SuggestionOptions, type SuggestionItem } from './shadcn-suggestion-list';
 export { InlineRename } from './InlineRename';
 export { ResizableWorkspace } from './ResizableWorkspace';
 export * from './Message';
