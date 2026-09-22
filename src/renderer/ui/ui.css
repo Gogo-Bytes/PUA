@@ -32,12 +32,6 @@
 .ui-provider .ui-status-error { color: var(--ui-danger); background: var(--ui-danger-bg); }
 .ui-provider .ui-status-paused { color: var(--ui-warning); background: var(--ui-warning-bg); }
 .ui-provider .ui-popup-anchor, .ui-provider .ui-tooltip-anchor { display: inline-block; position: relative; }
-.ui-provider .ui-popup { position: absolute; z-index: 30; top: calc(100% + var(--ui-space-1)); left: 0; min-width: 190px; max-width: calc(100vw - var(--ui-space-4)); max-height: 280px; overflow: auto; padding: var(--ui-space-1); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-overlay); background: var(--ui-surface); box-shadow: var(--ui-shadow); }
-.ui-provider .ui-popup button { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); width: 100%; min-height: var(--ui-control-height); border: 0; border-radius: var(--ui-radius-control); background: transparent; color: var(--ui-text); padding: var(--ui-space-1) var(--ui-space-2); text-align: left; cursor: pointer; }
-.ui-provider .ui-popup button:hover:not(:disabled) { background: var(--ui-muted); }
-.ui-provider .ui-popup button[aria-selected='true'] { color: var(--ui-text); background: var(--ui-selected); font-weight: var(--ui-weight-medium); }
-.ui-provider .ui-popup button:focus-visible { outline-offset: -2px; }
-.ui-provider .ui-popup button:disabled { color: var(--ui-disabled); cursor: not-allowed; }
 .ui-provider .ui-tooltip { position: fixed; inset: auto; margin: 0; z-index: 40; width: max-content; max-width: min(var(--ui-detail-width), calc(100vw - var(--ui-space-4))); max-height: calc(100dvh - var(--ui-space-4)); overflow: auto; overflow-wrap: anywhere; white-space: normal; border: 1px solid var(--ui-border); border-radius: var(--ui-radius-overlay); padding: var(--ui-space-tight) var(--ui-space-2); color: var(--ui-text); background: var(--ui-surface); box-shadow: var(--ui-shadow); font-size: var(--ui-type-meta); font-weight: 400; line-height: var(--ui-reading-line); }
 .ui-provider .ui-tooltip:focus-visible { outline-offset: -2px; }
 .ui-provider .ui-tooltip[data-scrollable]::after { content: 'Tab · ↑ ↓ · PgUp / PgDn'; display: block; position: sticky; bottom: 0; padding-top: var(--ui-space-1); background: var(--ui-surface); color: var(--ui-secondary); }

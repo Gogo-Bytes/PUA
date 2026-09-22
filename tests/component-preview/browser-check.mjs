@@ -7,7 +7,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const errors = []; page.on('pageerror', error => errors.push(error.message));
 page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 const output = '/tmp/pua-component-completion-evidence'; await mkdir(output, { recursive: true });
-const select = async (label, option) => { await page.getByRole('button', { name: label, exact: true }).click(); await page.getByRole('option', { name: option, exact: true }).click(); };
+const select = async (label, option) => { await page.getByRole('combobox', { name: label, exact: true }).click(); await page.getByRole('option', { name: option, exact: true }).click(); };
 // Focus and prior editor interactions may scroll tall separators partly out of view.
 const dragPoint = async locator => {
   await locator.scrollIntoViewIfNeeded();
@@ -37,18 +37,18 @@ try {
   await page.goto('http://127.0.0.1:4182/'); await page.waitForTimeout(400);
   await noOverflow(); await page.screenshot({ path: `${output}/primitives-1280-light.png`, fullPage: true });
   // Selection and focus are distinct; keyboard Enter commits and Escape restores trigger.
-  await page.getByRole('button', { name: 'Detail level', exact: true }).focus(); await page.keyboard.press('ArrowDown');
+  await page.getByRole('combobox', { name: 'Detail level', exact: true }).focus(); await page.keyboard.press('ArrowDown');
   assert.equal(await page.getByRole('option', { name: 'Balanced', exact: true }).evaluate(node => node === document.activeElement), true);
-  await page.keyboard.press('End'); await page.keyboard.press('Enter'); assert.equal(await page.getByRole('button', { name: 'Detail level' }).innerText(), 'Detailed');
-  await page.getByRole('button', { name: 'Detail level', exact: true }).click(); await page.keyboard.press('Escape');
-  assert(await page.getByRole('button', { name: 'Detail level' }).evaluate(node => node === document.activeElement));
+  await page.keyboard.press('End'); await page.keyboard.press('ArrowUp'); await page.keyboard.press('Enter'); assert.equal(await page.getByRole('combobox', { name: 'Detail level' }).innerText(), 'Detailed');
+  await page.getByRole('combobox', { name: 'Detail level', exact: true }).click(); await page.keyboard.press('Escape');
+  assert(await page.getByRole('combobox', { name: 'Detail level' }).evaluate(node => node === document.activeElement));
   // Native modal dialog traps focus and restores its opener.
   const opener = page.getByRole('button', { name: 'Open dialog', exact: true }); await opener.click();
   assert(await page.getByRole('dialog').isVisible());
   for (let i = 0; i < 6; i++) { await page.keyboard.press('Tab'); assert(await page.getByRole('dialog').evaluate(node => node.contains(document.activeElement))); }
   await page.keyboard.press('Escape'); assert(await opener.evaluate(node => node === document.activeElement));
   // Real GSAP interpolation: slow mode produces measurable intermediate transform/opacity.
-  await page.getByRole('button', { name: 'Motion', exact: true }).click(); await noOverflow(); await page.keyboard.press('Escape');
+  await page.getByRole('combobox', { name: 'Motion', exact: true }).click(); await noOverflow(); await page.keyboard.press('Escape');
   await select('Motion', 'Motion · 3× slower');
   await page.getByText('测试控制 · 重播', { exact: true }).click();
   await page.getByRole('button', { name: 'Replay transition' }).click();

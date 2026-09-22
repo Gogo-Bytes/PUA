@@ -48,7 +48,11 @@
 
 ## 隔离验证
 
-### Tailwind / shadcn 试接入（2026-09-22）
+### Tailwind / shadcn 生产迁移（2026-09-22）
+
+用户已进一步授权全界面分阶段实施，计划见 `docs/ui-migration-plan.md`。阶段 1 已接入生产：`ChoiceControls.tsx` 在既有 Select/DropdownMenu/Tabs 接口后使用 Base UI；Collapsible 使用 Base Root/Trigger/Panel，保持 Reveal seam。`tailwind.css` 已由 production.css 和两类预览共同引入，不开启全局 Preflight。UIProvider 提供 Portal 容器，Dialog 覆盖该容器，保留主题及原生 top layer 归属。Base Select 可聚焦禁用项但不能提交。真实键盘/定位回归运行 `node tests/component-preview/choice-controls-check.mjs`。
+
+以下为初始隔离试接入的历史记录，不代表当前仍处于等待确认阶段：
 
 用户已授权引入 Tailwind。Vite 已配置 Tailwind v4 插件，`components.json` 固定 base-nova、Lucide 与 `tw` 前缀。`tailwind.css` 只由独立 `shadcn.html` 预览引入，不进入 production.css；不启用全局 Preflight，局部控件 reset 限定在 `.ui-provider .shadcn-scope`。语义颜色、字体尺寸和圆角映射已有 `--ui-*`，不增加第二套主题权威。
 

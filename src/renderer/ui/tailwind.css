@@ -1,4 +1,4 @@
-/* Opt-in only until preview approval. No global Preflight/reset. */
+/* Shared production/preview utilities. No global Preflight/reset. */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme) prefix(tw);
 @import "tailwindcss/utilities.css" layer(utilities) prefix(tw) source(none);

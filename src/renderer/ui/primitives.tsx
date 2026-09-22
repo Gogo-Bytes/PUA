@@ -1,7 +1,8 @@
-import { cloneElement, forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode, type KeyboardEvent, type RefObject } from 'react';
+import { cloneElement, forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ReactElement, type ComponentPropsWithRef, type InputHTMLAttributes, type ReactNode, type RefObject } from 'react';
+import { Collapsible as CollapsiblePrimitive } from '@base-ui/react/collapsible';
 import { Icon } from './Icon';
 import { Reveal, gsap, useGSAP, motionTokens } from './motion';
-import { useMotionScale } from './theme';
+import { OverlayContainerContext, useMotionScale } from './theme';
 export { Icon };
 export const Button = forwardRef<HTMLButtonElement, ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; busy?: boolean }>(function Button({ variant = 'secondary', busy = false, className = '', children, disabled, ...props }, ref) {
   return <button ref={ref} type="button" {...props} disabled={disabled || busy} aria-busy={busy || undefined} className={`ui-button ui-button-${variant} ${className}`}>{busy && <Icon name="running"/>}{children}</button>;
@@ -93,73 +94,15 @@ export function Tooltip({ content, children }: { content: ReactNode; children: R
       }
     }}>{cloneElement(children, { 'aria-describedby': open ? [children.props['aria-describedby'], id].filter(Boolean).join(' ') : children.props['aria-describedby'] })}{open && <span ref={bubble} popover="manual" id={id} role="tooltip" className="ui-tooltip" tabIndex={-1}>{content}</span>}</span>;
 }
-export type Choice = { value: string; label: string; disabled?: boolean };
-/** Shared list behaviour for action menus and single-select choices. Tab leaves naturally; Escape returns focus. */
-function ChoicePopup({ label, choices, value, onChoose, kind, disabled, triggerIcon }: { label: string; choices: Choice[]; value?: string; onChoose(value: string): void; kind: 'menu' | 'listbox'; disabled?: boolean; triggerIcon?: Parameters<typeof Icon>[0]['name'] }) {
-  const root = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null), popup = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false); const id = useId(); const scale = useMotionScale();
-  const close = (restore = true) => { setOpen(false); if (restore) trigger.current?.focus(); };
-  useEffect(() => {
-    if (!open) return;
-    const fit = () => {
-      const node = popup.current; if (!node) return;
-      node.style.left = '0px';
-      const rect = node.getBoundingClientRect();
-      node.style.left = `${Math.max(8 - rect.left, Math.min(0, window.innerWidth - 8 - rect.right))}px`;
-    };
-    fit();
-    const buttons = popup.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
-    (Array.from(buttons ?? []).find(b => b.dataset.value === value) ?? buttons?.[0])?.focus();
-    const outside = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) close(false); };
-    document.addEventListener('pointerdown', outside); window.addEventListener('resize', fit);
-    return () => { document.removeEventListener('pointerdown', outside); window.removeEventListener('resize', fit); };
-  }, [open]);
-  useGSAP(() => {
-    if (open) gsap.fromTo(popup.current, { y: scale ? -4 : 0, opacity: scale ? 0 : 1 }, { y: 0, opacity: 1, duration: motionTokens.overlay * scale, ease: motionTokens.ease, overwrite: 'auto' });
-  }, { scope: root, dependencies: [open, scale], revertOnUpdate: true });
-  function keyDown(event: KeyboardEvent) {
-    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
-    const items = Array.from(popup.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []);
-    const index = items.indexOf(document.activeElement as HTMLButtonElement);
-    let next = index;
-    if (event.key === 'ArrowDown') next = (index + 1) % items.length;
-    else if (event.key === 'ArrowUp') next = (index - 1 + items.length) % items.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = items.length - 1;
-    else if (event.key.length === 1 && /\S/.test(event.key)) {
-      next = -1;
-      for (let step = 1; step <= items.length; step++) {
-        const candidate = (index + step) % items.length;
-        if (items[candidate].textContent?.toLowerCase().startsWith(event.key.toLowerCase())) { next = candidate; break; }
-      }
-    }
-    else return;
-    event.preventDefault(); items[next]?.focus();
-  }
-  return <div ref={root} className="ui-popup-anchor" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) close(false); }}>
-    <Button ref={trigger} disabled={disabled || !choices.some(choice => !choice.disabled)} aria-label={label} aria-haspopup={kind} aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)} onKeyDown={event => { if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); setOpen(true); } }}>{kind === 'listbox' ? choices.find(choice => choice.value === value)?.label ?? label : label}<Icon name={triggerIcon ?? 'down'}/></Button>
-    {open && <div ref={popup} id={id} role={kind} aria-label={label} className="ui-popup" onKeyDown={keyDown}>{choices.map(choice => <button type="button" key={choice.value} role={kind === 'menu' ? 'menuitem' : 'option'} aria-selected={kind === 'listbox' ? value === choice.value : undefined} data-value={choice.value} tabIndex={-1} disabled={choice.disabled} onClick={() => { onChoose(choice.value); close(); }}>{choice.label}{value === choice.value && <Icon name="check"/>}</button>)}</div>}
-  </div>;
-}
-export function Select({ label, options, value, onChange, disabled }: { label: string; options: Choice[]; value: string; onChange(value: string): void; disabled?: boolean }) {
-  return <ChoicePopup kind="listbox" label={label} choices={options} value={value} onChoose={onChange} disabled={disabled}/>;
-}
-export function DropdownMenu({ label, items, onAction, icon }: { label: string; items: Choice[]; onAction(value: string): void; icon?: Parameters<typeof Icon>[0]['name'] }) {
-  return <ChoicePopup kind="menu" label={label} choices={items} onChoose={onAction} triggerIcon={icon}/>;
-}
-export function Tabs({ label, items, value, onChange }: { label: string; items: Choice[]; value: string; onChange(value: string): void }) {
-  return <div className="ui-tabs" role="tablist" aria-label={label} onKeyDown={event => {
-    const enabled = items.filter(item => !item.disabled), index = enabled.findIndex(item => item.value === value);
-    const next = event.key === 'ArrowRight' ? (index + 1) % enabled.length : event.key === 'ArrowLeft' ? (index - 1 + enabled.length) % enabled.length : event.key === 'Home' ? 0 : event.key === 'End' ? enabled.length - 1 : -1;
-    if (next < 0) return; event.preventDefault(); onChange(enabled[next].value);
-    event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')[next]?.focus();
-  }}>{items.map(item => <Button role="tab" key={item.value} variant="ghost" aria-selected={value === item.value} tabIndex={value === item.value ? 0 : -1} disabled={item.disabled} onClick={() => onChange(item.value)}>{item.label}</Button>)}</div>;
-}
+export { Select, DropdownMenu, Tabs, type Choice } from './ChoiceControls';
 export function Collapsible({ title, children, defaultOpen = false, label, open: controlledOpen, onOpenChange }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; label?: string; open?: boolean; onOpenChange?(open: boolean): void }) {
-  const [localOpen, setLocalOpen] = useState(defaultOpen); const id = useId();
+  const [localOpen, setLocalOpen] = useState(defaultOpen);
   const open = controlledOpen ?? localOpen;
   const setOpen = (value: boolean) => { setLocalOpen(value); onOpenChange?.(value); };
-  return <section className="ui-collapsible"><Button variant="ghost" aria-label={label} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}><Icon name={open ? 'down' : 'chevron'}/>{title}</Button><div id={id}><Reveal open={open}>{children}</Reveal></div></section>;
+  return <CollapsiblePrimitive.Root render={<section/>} className="ui-collapsible" open={open} onOpenChange={setOpen}>
+    <CollapsiblePrimitive.Trigger render={<Button variant="ghost"/>} aria-label={label}><Icon name={open ? 'down' : 'chevron'}/>{title}</CollapsiblePrimitive.Trigger>
+    <CollapsiblePrimitive.Panel keepMounted><Reveal open={open}>{children}</Reveal></CollapsiblePrimitive.Panel>
+  </CollapsiblePrimitive.Root>;
 }
 export function Dialog({ open, title, onClose, children, initialFocusRef, closeLabel = 'Close dialog', closeDisabled = false, closeOnBackdrop = true }: { open: boolean; title: string; onClose(): void; children: ReactNode; initialFocusRef?: RefObject<HTMLElement | null>; closeLabel?: string; closeDisabled?: boolean; closeOnBackdrop?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null); const id = useId(); const scale = useMotionScale();
@@ -196,5 +139,5 @@ export function Dialog({ open, title, onClose, children, initialFocusRef, closeL
     if (!first) { event.preventDefault(); event.currentTarget.focus(); }
     else if (event.shiftKey && (document.activeElement === first || document.activeElement === event.currentTarget)) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-  }} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (closeOnBackdrop && event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose(); } }}><div className="ui-dialog-header"><h2 id={id}>{title}</h2><IconButton label={closeLabel} icon="close" variant="ghost" disabled={closeDisabled} onClick={onClose}/></div>{children}</dialog>;
+  }} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (closeOnBackdrop && event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose(); } }}><div className="ui-dialog-header"><h2 id={id}>{title}</h2><IconButton label={closeLabel} icon="close" variant="ghost" disabled={closeDisabled} onClick={onClose}/></div><OverlayContainerContext.Provider value={ref}>{children}</OverlayContainerContext.Provider></dialog>;
 }

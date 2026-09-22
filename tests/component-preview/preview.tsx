@@ -8,6 +8,7 @@ import { ComposerPreview, NotificationsPreview, DialogExamples, ChatExamples } f
 import * as fixtures from './fixtures';
 import { DocumentExamples } from './DocumentExamples';
 import '../../src/renderer/ui/tokens.css';
+import '../../src/renderer/ui/tailwind.css';
 import '../../src/renderer/ui/ui.css';
 import '../../src/renderer/features/workspace/workspace-navigation.css';
 import '../../src/renderer/features/change-review/change-review.css';
