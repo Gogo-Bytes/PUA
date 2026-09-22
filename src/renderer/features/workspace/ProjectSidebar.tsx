@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
-import { Button, Icon, IconButton, InlineRename } from '../../ui';
+import { Button, DropdownMenu, Icon, IconButton, InlineRename } from '../../ui';
 import { groupProjects, projectName } from './selection';
 import type { WorkspaceSessionInfo } from './useWorkspace';
 
@@ -20,6 +20,8 @@ interface ProjectSidebarProps {
   onCollapsedProjectsChange?(projects: readonly string[]): void;
   onNewConversation(cwd?: string): void;
   onOpenTerminal?(cwd: string): void;
+  onOpenProject?(sessionId: string): void;
+  onCopyProjectPath?(cwd: string): void;
   onSelectSession(id: string): void;
   onTogglePinned?(id: string, pinned: boolean): void | Promise<void>;
   onCloseSession(id: string): void;
@@ -32,7 +34,7 @@ interface ProjectSidebarProps {
 /** Production navigation: projects own nested task rows; existing sessions are never represented as tabs. */
 export function ProjectSidebar({
   sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable, collapsedProjects: persistedCollapsed, onCollapsedProjectsChange,
-  canNavigateBack = false, canNavigateForward = false, onNavigateBack, onNavigateForward, onNewConversation, onOpenTerminal, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
+  canNavigateBack = false, canNavigateForward = false, onNavigateBack, onNavigateForward, onNewConversation, onOpenTerminal, onOpenProject, onCopyProjectPath, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
   const [recentOpen, setRecentOpen] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState<Set<string>>(new Set());
@@ -60,8 +62,18 @@ export function ProjectSidebar({
             {project.sessions.length === 0 && <Icon name="folder"/>}<span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
           </Button>
           <span className="codex-menu-tail"><span className="codex-menu-actions" aria-label={`${project.name} 操作`}>
-            <IconButton className="codex-menu-action" icon="plus" label={`在 ${project.name} 中新建对话（${project.cwd}）`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
-            {onOpenTerminal && <IconButton className="codex-menu-action" icon="code" label={`在 ${project.name} 中打开兼容终端（${project.cwd}）`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onOpenTerminal(project.cwd)}/>}
+            <DropdownMenu className="codex-menu-action" icon="more" iconOnly label={`${project.name} 更多操作（${project.cwd}）`}
+              items={[
+                { value: 'open', label: '打开项目目录', disabled: !onOpenProject || !project.sessions.length },
+                { value: 'copy', label: '复制项目路径', disabled: !onCopyProjectPath },
+                { value: 'terminal', label: '打开兼容终端', disabled: !onOpenTerminal || !runtimeAvailable || !!creatingProject },
+              ]}
+              onAction={value => {
+                if (value === 'open' && project.sessions[0]) onOpenProject?.(project.sessions[0].id);
+                if (value === 'copy') onCopyProjectPath?.(project.cwd);
+                if (value === 'terminal') onOpenTerminal?.(project.cwd);
+              }}/>
+            <IconButton className="codex-menu-action" icon="edit" label={`在 ${project.name} 中新建对话（${project.cwd}）`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
           </span></span>
         </div>
         {project.sessions.length > 0 && !collapsed.has(project.cwd) && <ul className="workspace-session-list" aria-label={`${project.name} 的会话`}>
@@ -73,7 +85,7 @@ export function ProjectSidebar({
             {session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity" aria-label="处理中"/>}
             <span className="codex-menu-actions" aria-label={`${session.title} 操作`}>
               {onTogglePinned && <IconButton className="codex-menu-action" icon="pin" aria-pressed={!!session.pinned} label={session.pinned ? `取消置顶 ${session.title}` : `置顶 ${session.title}`} variant="ghost" onClick={() => void onTogglePinned(session.id, !session.pinned)}/>}
-              <IconButton className="codex-menu-action" icon="close" label={`关闭 ${session.title}`} variant="ghost" onClick={() => onCloseSession(session.id)}/>
+              <IconButton className="codex-menu-action" icon={session.kind === 'terminal' ? 'close' : 'archive'} label={`${session.kind === 'terminal' ? '关闭' : '归档'} ${session.title}`} variant="ghost" onClick={() => onCloseSession(session.id)}/>
             </span>
             </span>
             </div>

@@ -41,6 +41,8 @@
 
 - 生产 ProjectSidebar 不再显示项目过滤输入框，顶部搜索与命令入口保留。PendingChatPane 仍无 session id，尚未提供模型/思考选择；现有目录查询 API 需要 session id，不允许为展示菜单而悄悄启动会话或读取 Pi 凭据。补齐此能力需独立设计 pre-session 配置目录及首发前应用契约。
 
+- 侧栏按用户截图进一步对齐：项目末端固定为“更多 / 新建对话”，更多菜单承载打开目录、复制路径与兼容终端；当前打开目录的宿主能力依赖 session id，空项目禁用该项。Chat 会话末端为“钉选 / 归档”，归档仍经真实 closeSession → 进程关闭 → archiveSession 持久化，失败保留条目、运行中沿原生确认；Terminal 无持久归档，明确标为关闭终端，不冒充历史归档。
+
 - ProjectNav 以 cwd 为身份，生产保留筛选，路径退到 Tooltip/title，使用与 demo 相同的名称行。SessionTabs 的双击/F2 改名绑定被编辑 tab 的 id；切换当前会话不改变提交目标。Chat 改名等待 host；Terminal 名称仍仅更新本地。关闭、overflow、方向键导航和 activity 状态继续可用。
 - GitPanel 继续持有 Git status、scope、selected path、刷新 generation 和 diff 请求。InspectorHeader 与 FileRow 只报告用户意图；参数快照、非原子读取说明、冲突 patch 与引用语义保留。
 - ToolExecutionCard 统一使用受控 Collapsible/GSAP，成功默认收起，失败自动展开，用户展开状态跨更新保留。参数、图片、输出快照与复制仍来自原 Tool owner。旧 nativeDetails 分支已移除。

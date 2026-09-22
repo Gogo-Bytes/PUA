@@ -1,7 +1,7 @@
 {
   "src/renderer/ui/Breadcrumbs.tsx": "9d76ae783af4a21c0be1c74d0d8b965aa62987d63631fd2984a113c7c96afd27",
-  "src/renderer/ui/ChoiceControls.tsx": "fb864bd27724395230ea43e40aed46210673a0c142c47131408d8c459a9ad3d9",
-  "src/renderer/ui/Icon.tsx": "915b4a3335af0cd8e8dedf6df95e021de0826ea346db70f6eca843854b806f1d",
+  "src/renderer/ui/ChoiceControls.tsx": "5deab9bef93ad3c79b010f34a80e8d297dfc233608dfcf4f40441cbf54540628",
+  "src/renderer/ui/Icon.tsx": "25ee1c459e4404c2dbc26a25ef4a17e2add956549f18bd6a1a49a338991d49c6",
   "src/renderer/ui/InlineRename.tsx": "af590c677f4378c796d5a3ab8620e3abc3d95ec3c83be778ce8a3fbb7f9468f2",
   "src/renderer/ui/Message.tsx": "0687eed5f073b4253e31b05f52f00e67631cb5929c05216f2a68931778fbf799",
   "src/renderer/ui/README.md": "66be7e6c27bba1825cf866e0768d1d84c8c9db2728dae8036d92a215fac7f1f3",
@@ -11,7 +11,7 @@
   "src/renderer/ui/index.ts": "8f0e5a13c3cd442a5f1e620023de0ad00f1511f1e3895616dc777344209b18d2",
   "src/renderer/ui/motion.tsx": "5e4cb9195b18707bf61961793e292e2024af421ea80ddd068e2904e3fe50f463",
   "src/renderer/ui/primitives.tsx": "b6c2a9db48d0f8d4a24ae6bf887e81991ccd0402971aa9d2a5bb9ba7f98923f7",
-  "src/renderer/ui/production-integration.md": "5a90871c12d179f54b7aeeeb697dbbeaacd642b86f6997af169cce3570cb313b",
+  "src/renderer/ui/production-integration.md": "0fed45a5318f66c9d91cb4ed854efc0e4ccd491be798db2307e082e61a912fc9",
   "src/renderer/ui/shadcn-combobox.tsx": "e656d67c2f36a3ad9b0d5236833fd1bbb51f1555a7d834a60f245f9ac3797214",
   "src/renderer/ui/shadcn-dialog.tsx": "0cc3e5f0e4a80192cbc184c25ff871cdab0f1b8244623e8b9f8b8fa9038ff35b",
   "src/renderer/ui/shadcn-fields.tsx": "283ab6d57a9c16ee4d86b1e549718b8f3b3b7e83bdf87f08185549ab9dae68e5",

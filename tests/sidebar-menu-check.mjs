@@ -13,6 +13,13 @@ try {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('http://127.0.0.1:4181/workspace-preview.html');
   const project = page.locator('.workspace-project-group').first();
+  await project.locator('.codex-project-line').hover();
+  assert.equal(await project.locator('.codex-project-line .codex-menu-actions button').count(), 2);
+  await project.getByRole('button', { name: /更多操作/ }).click();
+  await page.getByRole('menuitem', { name: '复制项目路径' }).waitFor();
+  await page.getByRole('menuitem', { name: '复制项目路径' }).focus();
+  await page.keyboard.press('Escape');
+  await page.getByRole('menuitem', { name: '复制项目路径' }).waitFor({ state: 'hidden' });
   await project.locator('.codex-project-button').click();
   await page.locator('.pending-trust-status').waitFor({ state: 'hidden' });
   const input = page.getByRole('textbox', { name: '发送消息', exact: true });
@@ -20,6 +27,8 @@ try {
   await input.press('Enter');
   const row = project.locator('.codex-session-row').first();
   const label = row.locator('.ui-rename-display');
+  assert.equal(await row.locator('.codex-menu-actions button').count(), 2);
+  assert(await row.locator('.lucide-archive').isVisible());
   await label.waitFor();
   await label.press('F2');
   const title = '对比 official-bot 与 slack-bot-johnny 的工作区导航和很长的会话标题';
@@ -68,7 +77,7 @@ try {
   await label.press('F2');
   assert.equal(await row.locator('.codex-menu-tail').isVisible(), false, 'Actions must not cover the rename editor');
   await row.getByRole('textbox').press('Escape');
-  await row.getByRole('button', { name: `关闭 ${title}`, exact: true }).click();
+  await row.getByRole('button', { name: `归档 ${title}`, exact: true }).click();
   assert.equal(await row.count(), 0);
   assert.deepEqual(errors, []);
   console.log(`PASS sidebar menu: folder keyboard toggle, rename, pin, close, transparent hover, full-row surfaces; screenshots ${output}`);
