@@ -31,12 +31,14 @@ export interface ComposerProps {
   disabled?: boolean;
   queuedCount?: number;
   labels?: Partial<ComposerLabels>;
+  /** Controls rendered in the composer footer before the attachment action. */
+  footerControls?: ReactNode;
 }
 /** The caller owns data and snapshot clearing. Both preview and production use this editor. */
 export function Composer(props: ComposerProps) {
   return <ComposerDraft key={props.conversationKey} {...props}/>;
 }
-function ComposerDraft({ conversationKey, value, onValueChange, attachments, onAddAttachments, onRemoveAttachment, onSend, onQueue, onStop, onFollowUp, editorRef, onEditorKeyDown, busy = false, disabled = false, queuedCount = 0, labels }: ComposerProps) {
+function ComposerDraft({ conversationKey, value, onValueChange, attachments, onAddAttachments, onRemoveAttachment, onSend, onQueue, onStop, onFollowUp, editorRef, onEditorKeyDown, busy = false, disabled = false, queuedCount = 0, labels, footerControls }: ComposerProps) {
   const editor = useRef<HTMLTextAreaElement | null>(null);
   useLayoutEffect(() => { const node = editor.current; if (node) { node.style.height = '0px'; node.style.height = `${Math.min(160, Math.max(48, node.scrollHeight))}px`; } }, [value]);
   const text = { ...defaults, ...labels };
@@ -72,6 +74,7 @@ function ComposerDraft({ conversationKey, value, onValueChange, attachments, onA
     {attachments.length > 0 && <ul className="ui-composer-attachments" aria-label={text.attachments}>{attachments.map(item => <li key={item.id}><Icon name="file"/><span>{item.name}{item.detail && <small>{item.detail}</small>}</span>{onRemoveAttachment && <IconButton icon="close" label={text.removeAttachment(item.name)} variant="ghost" disabled={disabled} onClick={() => onRemoveAttachment(item.id)}/>}</li>)}</ul>}
     <div className="ui-composer-footer"><div className="ui-composer-controls">
       {onAddAttachments && <IconButton icon="plus" variant="ghost" label={text.addAttachments} disabled={disabled} onClick={onAddAttachments}/>}
+      {footerControls}
       <span className="ui-meta">{text.hint}</span>
       {queuedCount > 0 && <span className="ui-meta">{text.queued(queuedCount)}</span>}
       {busy && onStop && <Button disabled={disabled} busy={stopping} onClick={() => void run('stop')}><Icon name="stop"/>{text.stop}</Button>}

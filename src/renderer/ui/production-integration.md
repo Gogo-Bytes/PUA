@@ -18,6 +18,7 @@
 
 - 必传 `conversationKey`、`value` / `onValueChange`、`attachments`。调用方持有每个会话的真实草稿和附件；附件使用稳定唯一 id、不可变数组/对象。`onAddAttachments` / `onRemoveAttachment(id)` 仅报告意图，文件选择、验证和失败展示由调用方负责。
 - `onSend(submission)` 和 `onQueue(submission)` 接收 `{ conversationKey, value, attachments }` 快照；保留原始草稿空白，附件复制为提交快照。纯空白且无附件不可提交，只有附件可以提交。
+- 输入区底栏将附件入口、模型、思考程度、压缩和统计放在同一组紧凑控件中；模型与思考选项仍按当前会话懒加载并通过原有 IPC 提交。命令建议在当前 `/` token 下弹出，项目技能与项目文件在当前 `@` token 下弹出，选择后只替换该 token 并恢复编辑器焦点；Escape 关闭建议，ArrowDown/ArrowUp 在建议列表中移动。文件引用沿用受控的 `@"path"` 文本协议，提交仍经过现有 `sendChatMessage` 快照。
 - `busy` 表示模型运行，而不是禁用输入：可继续编辑、增删附件；有 `onQueue` 时主按钮变成排队，有 `onStop` 时显示独立停止按钮。`queuedCount` 是调用方队列的展示值。没有对应 callback 不展示虚假的操作按钮。
 - `disabled` 才整体锁定输入和操作。异步提交锁防止重复发送/排队；停止有独立 pending 锁，可在排队请求未结束时停止。Enter 提交，Shift+Enter 换行，Ctrl/Meta+Enter 不误提交；composition / isComposing / 229 不触发编辑器命令或提交。可选 onFollowUp 在 busy 时接收 Alt+Enter，和 send/queue 共用提交锁。editorRef 用于生产命令菜单与引用聚焦；onEditorKeyDown 在 IME guard 后调用，preventDefault 可消费本地导航。自动高度在同一 Composer 内管理。
 - 组件**永不清空**草稿或附件，也不内置模拟 timer。callback reject 时保留数据并展示错误，resolve 时只解除内部 pending。

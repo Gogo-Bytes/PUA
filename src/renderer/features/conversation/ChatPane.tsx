@@ -32,6 +32,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const [attachments, setAttachments] = useState<ChatAttachment[]>(initialAttachments);
   const [models, setModels] = useState<import('../../../shared/ipc/conversation').ChatModel[]>([]);
   const [thinkingLevels, setThinkingLevels] = useState<string[]>([]);
+  const [projectPaths, setProjectPaths] = useState<string[]>([]);
   const [sessionStats, setSessionStats] = useState<ChatSessionStats>();
   const [statsOpen, setStatsOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -44,6 +45,11 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const changeDraft = (text: string) => { draftRef.current = { text, revision: draftRef.current.revision + 1 }; callbacks.current.onDraftChange(text); };
   const loadModels = () => { if (!models.length) void desktopClient.getChatAvailableModels(session.id).then(setModels).catch(error => onError(String(error))); };
   const loadThinkingLevels = () => { if (!thinkingLevels.length) void desktopClient.getChatThinkingLevels(session.id).then(setThinkingLevels).catch(error => onError(String(error))); };
+  useEffect(() => {
+    let current = true;
+    void desktopClient.inspectProjectResources(session.cwd).then(info => { if (current) setProjectPaths(info.paths); }).catch(() => { if (current) setProjectPaths([]); });
+    return () => { current = false; };
+  }, [session.cwd]);
   const [atBottom, setAtBottom] = useState(true);
   const list = useRef<VirtuosoHandle>(null);
   // Virtuoso treats a followOutput function as enabled for size changes even when it
@@ -167,11 +173,16 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     });
   }, [active, state.ready, initialMessage]);
 
-  const slash = !slashDismissed && draft.startsWith('/') ? state.commands.filter(command => `/${command.name} ${command.description ?? ''}`.toLowerCase().includes(draft.toLowerCase())).slice(0, 8) : [];
-  // Pi's native skill expansion is command-leading; an inline @ mention would
-  // not execute and must not be presented as an actionable suggestion.
-  const skillMatch = !skillDismissed ? draft.match(/^\s*@([^\s]*)$/) : null;
-  const skills = skillMatch ? state.commands.filter(command => command.source === 'skill' && command.name.toLowerCase().includes(skillMatch[1].toLowerCase())).slice(0, 8) : [];
+  const tokenMatch = (prefix: string) => {
+    const match = draft.slice(0, textarea.current?.selectionStart ?? draft.length).match(new RegExp(`(?:^|\\s)\\${prefix}([^\\s]*)$`));
+    return match ? { query: match[1], start: (textarea.current?.selectionStart ?? draft.length) - match[1].length - 1 } : null;
+  };
+  const slashMatch = !slashDismissed ? tokenMatch('/') : null;
+  const slash = slashMatch ? state.commands.filter(command => `/${command.name} ${command.description ?? ''}`.toLowerCase().includes(`/${slashMatch.query}`.toLowerCase())).slice(0, 8) : [];
+  const mentionMatch = !skillDismissed ? tokenMatch('@') : null;
+  const skills = mentionMatch ? state.commands.filter(command => command.source === 'skill' && command.name.replace(/^skill:/, '').toLowerCase().includes(mentionMatch.query.toLowerCase())).slice(0, 6) : [];
+  const pathSuggestions = mentionMatch ? projectPaths.filter(path => path.toLowerCase().includes(mentionMatch.query.toLowerCase())).slice(0, 6) : [];
+  const replaceToken = (start: number, token: string) => changeDraft(`${draft.slice(0, start)}${token}${draft.slice((textarea.current?.selectionStart ?? draft.length))}`);
   return <section className={`chat-pane ${active ? 'active' : ''}`} aria-hidden={!active} data-session-id={session.id}>
     <div className="chat-exit-slot">
       {unavailable && session.processStatus === 'exited' && <div className="chat-exit-banner" role="alert">Pi 对话进程已退出。<Button onClick={onTerminalRecovery}>改用兼容终端</Button></div>}
@@ -189,10 +200,15 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       {state.notices.slice(-3).map(notice => <div key={notice.id} className={`chat-notice ${notice.level}`}>{notice.message}</div>)}
       {widgetsAt(state.widgets, 'aboveEditor').map(widget => <div className="chat-widget" key={widget.key}>{widget.lines.map((line, index) => <div key={index}>{line}</div>)}</div>)}
       {!!queueText(state.queue).length && <div className="queue-strip"><strong>已排队</strong>{state.queue.steering.map((text, index) => <span key={`s${index}`}>引导 · {text}</span>)}{state.queue.followUp.map((text, index) => <span key={`f${index}`}>后续 · {text}</span>)}</div>}
-      {!!slash.length && <div className="slash-menu" aria-label="Pi 命令建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSlashDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {slash.map(command => <Button key={command.name} onClick={() => { changeDraft(`/${command.name} `); setSlashDismissed(true); textarea.current?.focus(); }}><code>/{command.name}</code><span>{command.description || command.source}</span></Button>)}</div>}
-      {!!skills.length && <div className="skill-menu" role="listbox" aria-label="技能建议" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSkillDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role=option]')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}> {skills.map(command => <Button key={command.name} role="option" aria-selected="false" onClick={() => { const before = draft.slice(0, draft.length - (skillMatch?.[1].length ?? 0)); const name = command.name.replace(/^skill:/, ''); changeDraft(`${before.replace(/@$/, '')}@${name} `); setSkillDismissed(true); textarea.current?.focus(); }}><code>@{command.name.replace(/^skill:/, '')}</code><span>{command.description || '@ Pi 技能'}</span></Button>)}</div>}
-      <div className="chat-runtime-controls"><select aria-label="模型" value={state.model ? `${state.model.provider}/${state.model.id}` : ''} onFocus={loadModels} onChange={event => { const [provider, ...rest] = event.target.value.split('/'); void desktopClient.setChatModel(session.id, provider, rest.join('/')).catch(error => onError(String(error))); }}>{!state.model && <option value="">模型</option>}{models.map(model => <option key={`${model.provider}/${model.id}`} value={`${model.provider}/${model.id}`}>{model.name || model.id}</option>)}</select><select aria-label="Thinking Level" value={state.thinkingLevel || ''} onFocus={loadThinkingLevels} onChange={event => { if (event.target.value) void desktopClient.setChatThinkingLevel(session.id, event.target.value).catch(error => onError(String(error))); }}><option value="">Thinking</option>{thinkingLevels.map(level => <option key={level} value={level}>{level}</option>)}</select><Button variant="ghost" disabled={busy || unavailable} onClick={() => void compact()}>压缩上下文</Button><Button variant="ghost" disabled={statsLoading || unavailable} onClick={() => void showStats()}>{statsLoading ? '读取统计…' : '会话统计'}</Button></div>
-      <Composer conversationKey={session.id} editorRef={textarea} disabled={unavailable} value={draft}
+      <div className="composer-shell">
+      {(slash.length > 0 || skills.length > 0 || pathSuggestions.length > 0) && <div className="slash-menu" role="listbox" aria-label={slash.length ? 'Pi 命令建议' : '上下文引用建议'} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSlashDismissed(true); setSkillDismissed(true); textarea.current?.focus(); } if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')]; const index = items.indexOf(event.target as HTMLButtonElement); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); } }}>
+        {slash.map(command => <Button key={`slash-${command.name}`} role="option" onClick={() => { replaceToken(slashMatch?.start ?? 0, `/${command.name} `); setSlashDismissed(true); textarea.current?.focus(); }}><code>/{command.name}</code><span>{command.description || command.source}</span></Button>)}
+        {skills.map(command => <Button key={`skill-${command.name}`} role="option" onClick={() => { const name = command.name.replace(/^skill:/, ''); replaceToken(mentionMatch?.start ?? 0, `@${name} `); setSkillDismissed(true); textarea.current?.focus(); }}><code>@{command.name.replace(/^skill:/, '')}</code><span>{command.description || 'Pi 技能'}</span></Button>)}
+        {pathSuggestions.map(path => <Button key={`path-${path}`} role="option" onClick={() => { replaceToken(mentionMatch?.start ?? 0, `@${JSON.stringify(path)} `); setSkillDismissed(true); textarea.current?.focus(); }}><code>@{path}</code><span>项目文件</span></Button>)}
+      </div>}
+      <Composer conversationKey={session.id} editorRef={textarea}
+        footerControls={<div className="chat-runtime-controls"><select aria-label="模型" value={state.model ? `${state.model.provider}/${state.model.id}` : ''} onFocus={loadModels} onChange={event => { const [provider, ...rest] = event.target.value.split('/'); void desktopClient.setChatModel(session.id, provider, rest.join('/')).catch(error => onError(String(error))); }}>{!state.model && <option value="">模型</option>}{models.map(model => <option key={`${model.provider}/${model.id}`} value={`${model.provider}/${model.id}`}>{model.name || model.id}</option>)}</select><select aria-label="思考程度" value={state.thinkingLevel || ''} onFocus={loadThinkingLevels} onChange={event => { if (event.target.value) void desktopClient.setChatThinkingLevel(session.id, event.target.value).catch(error => onError(String(error))); }}><option value="">思考</option>{thinkingLevels.map(level => <option key={level} value={level}>{level}</option>)}</select><Button variant="ghost" disabled={busy || unavailable} onClick={() => void compact()}>压缩</Button><Button variant="ghost" disabled={statsLoading || unavailable} onClick={() => void showStats()}>{statsLoading ? '读取…' : '统计'}</Button></div>}
+        disabled={unavailable} value={draft}
         attachments={attachments.map(item => ({ id: item.id, name: item.name, detail: <>{item.previewUrl && <img className="attachment-preview" src={item.previewUrl} alt=""/>}{formatBytes(item.size)}</> }))}
         onAddAttachments={() => void chooseAttachments()}
         onRemoveAttachment={id => void desktopClient.removeChatAttachment(session.id, id).then(() => setAttachments(current => current.filter(item => item.id !== id))).catch(error => onError(String(error)))}
@@ -202,8 +218,9 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
         onEditorKeyDown={event => {
           if (event.key === 'Escape') { setSlashDismissed(true); setSkillDismissed(true); return; }
           if (event.key === 'ArrowDown' && slash.length) { event.preventDefault(); event.currentTarget.closest('.composer-area')?.querySelector<HTMLButtonElement>('.slash-menu button')?.focus(); }
-          if (event.key === 'ArrowDown' && skills.length) { event.preventDefault(); event.currentTarget.closest('.composer-area')?.querySelector<HTMLButtonElement>('.skill-menu [role=option]')?.focus(); }
+          if (event.key === 'ArrowDown' && (skills.length || pathSuggestions.length)) { event.preventDefault(); event.currentTarget.closest('.composer-area')?.querySelector<HTMLButtonElement>('.slash-menu [role=option]')?.focus(); }
         }} />
+      </div>
       {widgetsAt(state.widgets, 'belowEditor').map(widget => <div className="chat-widget" key={widget.key}>{widget.lines.map((line, index) => <div key={index}>{line}</div>)}</div>)}
       <div className="chat-meta"><span>{state.exited || session.processStatus === 'exited' ? 'Pi 已退出' : session.processStatus === 'starting' || !state.ready ? '正在连接 Pi…' : activityLabel(state.activity)}</span><span>{state.model ? `${state.model.provider}/${state.model.id}` : '未选择模型'}{state.thinkingLevel ? ` · ${state.thinkingLevel}` : ''}</span>{Object.entries(state.statuses).map(([key, value]) => <span key={key}>{value}</span>)}</div>
     </div>
