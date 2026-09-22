@@ -1,4 +1,3 @@
-import { Input } from '../../ui';
 import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
@@ -35,7 +34,6 @@ export function ProjectSidebar({
   sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable, collapsedProjects: persistedCollapsed, onCollapsedProjectsChange,
   canNavigateBack = false, canNavigateForward = false, onNavigateBack, onNavigateForward, onNewConversation, onOpenTerminal, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
 }: ProjectSidebarProps) {
-  const [query, setQuery] = useState('');
   const [recentOpen, setRecentOpen] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState<Set<string>>(new Set());
   const collapsed = new Set(persistedCollapsed ?? localCollapsed);
@@ -45,7 +43,6 @@ export function ProjectSidebar({
     if (onCollapsedProjectsChange) onCollapsedProjectsChange([...next]); else setLocalCollapsed(next);
   };
   const projects = groupProjects([...sessions], [...recentProjects]);
-  const visible = projects.filter(project => `${project.name}\n${project.cwd}\n${project.sessions.map(session => session.title).join('\n')}`.toLowerCase().includes(query.trim().toLowerCase()));
   return <nav className="workspace-sidebar codex-sidebar" aria-label="项目">
     <div className="codex-sidebar-brand">
       <Button className="codex-brand-button" variant="ghost" aria-label="PUA 菜单" onClick={onSettings}><strong>PUA</strong><Icon name="down"/></Button>
@@ -54,13 +51,9 @@ export function ProjectSidebar({
     <Button className="codex-sidebar-new" variant="ghost" aria-label="新建会话" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(activeProject)}>
       <Icon name="edit"/><span>{creatingProject && creatingProject === activeProject ? '正在创建…' : '新对话'}</span><Icon name="plus"/>
     </Button>
-    <label className="codex-sidebar-search">
-      <span className="ui-visually-hidden">筛选项目和会话</span><Icon name="search"/>
-      <Input value={query} onChange={event => setQuery(event.target.value)} placeholder="查找项目或会话…"/>
-    </label>
     <div className="workspace-project-tree codex-project-tree">
       <div className="codex-section-heading"><span>项目</span><IconButton icon="plus" label="打开项目并新建对话" variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation()}/></div>
-      {visible.length === 0 ? <p className="ui-meta">暂无匹配项目</p> : visible.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
+      {projects.length === 0 ? <p className="ui-meta">暂无项目</p> : projects.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line codex-project-line">
           {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse codex-project-folder-toggle" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => toggleProject(project.cwd)}><Icon name={collapsed.has(project.cwd) ? 'folder' : 'folderOpen'}/></Button>}
           <Button variant="ghost" className="workspace-project-button codex-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
@@ -92,7 +85,7 @@ export function ProjectSidebar({
     <section className="workspace-recent codex-recent" aria-label="最近任务">
       <Button variant="ghost" className="workspace-recent-toggle" aria-expanded={recentOpen} onClick={() => setRecentOpen(open => !open)}><Icon name="clock"/><span>最近</span><span aria-hidden="true">{recentOpen ? '⌄' : '›'}</span></Button>
       {recentOpen && <ul className="workspace-recent-list" aria-label="最近任务列表">
-        {sessions.filter(session => `${session.title}\n${session.cwd}`.toLowerCase().includes(query.trim().toLowerCase())).slice().sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).slice(0, 8).map(session => <li key={session.id} data-active={session.id === activeId || undefined}>
+        {sessions.slice().sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).slice(0, 8).map(session => <li key={session.id} data-active={session.id === activeId || undefined}>
           <Button variant="ghost" className="workspace-recent-item" aria-current={session.id === activeId ? 'page' : undefined} onClick={() => onSelectSession(session.id)}><Icon name={session.kind === 'terminal' ? 'code' : 'chat'}/><span><strong>{session.title}</strong><small>{projectName(session.cwd)}</small></span></Button>
         </li>)}
         {!sessions.length && <li className="ui-meta">暂无最近任务</li>}

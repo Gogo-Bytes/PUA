@@ -36,7 +36,6 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   const [projectPaths, setProjectPaths] = useState<string[]>([]);
   const [sessionStats, setSessionStats] = useState<ChatSessionStats>();
   const [statsOpen, setStatsOpen] = useState(false);
-  const [statsLoading, setStatsLoading] = useState(false);
   const sendingRef = useRef(false);
   const stoppingRef = useRef(false);
   const recoveredRequests = useRef(new Set<string>());
@@ -119,7 +118,18 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     const mode = delivery ?? (busy ? 'steer' : 'prompt');
     sendingRef.current = true;
     try {
-      await desktopClient.sendChatMessage(session.id, { text: expandSkillReference(submitted.text, state.commands), attachmentIds: submittedIds, delivery: mode });
+      const compact = value.match(/^\/compact(?:\s+([\s\S]*))?$/);
+      const stats = value === '/stats';
+      if ((compact || stats) && submittedIds.length) throw new Error('此命令不接收附件；请先移除附件，或将命令作为普通消息的一部分发送。');
+      if (compact) {
+        if (busy) throw new Error('请等待当前任务结束后再压缩上下文。');
+        await desktopClient.compactChatSession(session.id, compact[1]?.trim() || undefined);
+      } else if (stats) {
+        setSessionStats(await desktopClient.getChatSessionStats(session.id));
+        setStatsOpen(true);
+      } else {
+        await desktopClient.sendChatMessage(session.id, { text: expandSkillReference(submitted.text, state.commands), attachmentIds: submittedIds, delivery: mode });
+      }
       if (draftRef.current.revision === submitted.revision && (explicitText === undefined || draftRef.current.text === explicitText)) changeDraft('');
       setAttachments(current => current.filter(item => !submittedIds.includes(item.id)));
     } catch (error) { onError(String(error)); return false; }
@@ -148,20 +158,6 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
     catch (error) { onError(String(error)); }
     finally { forkingRef.current = false; }
   };
-  const compact = async () => {
-    if (sendingRef.current || unavailable || busy) return;
-    sendingRef.current = true;
-    try { await desktopClient.compactChatSession(session.id); }
-    catch (error) { onError(String(error)); }
-    finally { sendingRef.current = false; }
-  };
-  const showStats = async () => {
-    if (statsLoading || unavailable) return;
-    setStatsLoading(true);
-    try { setSessionStats(await desktopClient.getChatSessionStats(session.id)); setStatsOpen(true); }
-    catch (error) { onError(String(error)); }
-    finally { setStatsLoading(false); }
-  };
 
   useEffect(() => {
     if (!active || !state.ready || initialMessage === undefined || initialSentRef.current) return;
@@ -173,7 +169,9 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
   }, [active, state.ready, initialMessage]);
 
   const suggestions = [
-    ...state.commands.map(command => ({ id: `slash-${command.name}`, prefix: '/' as const, label: `/${command.name}`, insertText: `/${command.name}`, description: command.description || command.source })),
+    { id: 'local-compact', atStartOnly: true, prefix: '/' as const, label: '/compact', insertText: '/compact', description: '压缩上下文 · 可在命令后追加压缩要求' },
+    { id: 'local-stats', atStartOnly: true, prefix: '/' as const, label: '/stats', insertText: '/stats', description: '查看当前 Pi 会话统计' },
+    ...state.commands.filter(command => !['compact', 'stats'].includes(command.name)).map(command => ({ id: `slash-${command.name}`, prefix: '/' as const, label: `/${command.name}`, insertText: `/${command.name}`, description: command.description || command.source })),
     ...state.commands.filter(command => command.source === 'skill').map(command => ({ id: `skill-${command.name}`, atStartOnly: true, prefix: '@' as const, label: `@${command.name.replace(/^skill:/, '')}`, insertText: `@${command.name.replace(/^skill:/, '')}`, description: command.description || 'Pi 技能' })),
     ...projectPaths.map(path => ({ id: `path-${path}`, prefix: '@' as const, label: `@${path}`, insertText: `@${JSON.stringify(path)}`, description: '项目文件' })),
   ];
@@ -200,7 +198,7 @@ export function ChatPane({ session, active, draft, onDraftChange, onError, onCom
       {!!queueText(state.queue).length && <div className="queue-strip"><strong>已排队</strong>{state.queue.steering.map((text, index) => <span key={`s${index}`}>引导 · {text}</span>)}{state.queue.followUp.map((text, index) => <span key={`f${index}`}>后续 · {text}</span>)}</div>}
       <div className="composer-shell">
       <Composer suggestions={active ? suggestions : []} conversationKey={session.id} editorRef={textarea}
-        footerControls={<div className="chat-runtime-controls"><SearchSelect label="模型" value={currentModel} options={modelOptions} disabled={unavailable} onOpenChange={open => { if (open) loadModels(); }} onChange={value => { const [provider, ...rest] = value.split('/'); void desktopClient.setChatModel(session.id, provider, rest.join('/')).catch(error => onError(String(error))); }}/><Select label="思考程度" value={state.thinkingLevel || ''} options={levels} disabled={unavailable} onOpenChange={open => { if (open) loadThinkingLevels(); }} onChange={value => { if (value) void desktopClient.setChatThinkingLevel(session.id, value).catch(error => onError(String(error))); }}/><Button variant="ghost" disabled={busy || unavailable} onClick={() => void compact()}>压缩</Button><Button variant="ghost" disabled={statsLoading || unavailable} onClick={() => void showStats()}>{statsLoading ? '读取…' : '统计'}</Button></div>}
+        footerControls={<div className="chat-runtime-controls"><SearchSelect label="模型" value={currentModel} options={modelOptions} disabled={unavailable} onOpenChange={open => { if (open) loadModels(); }} onChange={value => { const [provider, ...rest] = value.split('/'); void desktopClient.setChatModel(session.id, provider, rest.join('/')).catch(error => onError(String(error))); }}/><Select label="思考程度" value={state.thinkingLevel || ''} options={levels} disabled={unavailable} onOpenChange={open => { if (open) loadThinkingLevels(); }} onChange={value => { if (value) void desktopClient.setChatThinkingLevel(session.id, value).catch(error => onError(String(error))); }}/></div>}
         disabled={unavailable} value={draft}
         attachments={attachments.map(item => ({ id: item.id, name: item.name, detail: <>{item.previewUrl && <img className="attachment-preview" src={item.previewUrl} alt=""/>}{formatBytes(item.size)}</> }))}
         onAddAttachments={() => void chooseAttachments()}

@@ -98,7 +98,7 @@ function ComposerDraft({ conversationKey, value, onValueChange, attachments, onA
     <div className="ui-composer-footer"><div className="ui-composer-controls">
       {onAddAttachments && <DropdownMenu icon="plus" iconOnly label={text.addAttachments} disabled={disabled} items={[{ value: 'attachment', label: text.addAttachments }]} onAction={onAddAttachments}/>}
       {footerControls}
-      <span className="ui-meta">{text.hint}</span>
+      <span className="ui-composer-spacer" aria-hidden="true"/>
       {queuedCount > 0 && <span className="ui-meta">{text.queued(queuedCount)}</span>}
       {busy && onStop && <Button disabled={disabled} busy={stopping} onClick={() => void run('stop')}><Icon name="stop"/>{text.stop}</Button>}
       {submit && <Button className="ui-composer-submit" type="submit" variant="primary" aria-label={busy ? text.queue : text.send} title={busy ? text.queue : text.send} busy={pending} disabled={disabled || !hasContent}><Icon name="up"/></Button>}

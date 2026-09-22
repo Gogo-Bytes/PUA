@@ -6,10 +6,12 @@
 .ui-provider strong, .ui-provider b { font-weight: var(--ui-weight-semibold); }
 .ui-provider button, .ui-provider input, .ui-provider textarea { font: inherit; }
 .ui-provider .icon { width: 16px; height: 16px; flex: 0 0 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
-.ui-provider :focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+.ui-provider :focus-visible { outline: none; }
+.ui-provider :is(button, a):focus-visible { color: var(--ui-accent); text-decoration: underline; text-underline-offset: 3px; }
+.ui-provider :is(input, textarea):focus-visible { caret-color: var(--ui-accent); }
 .ui-provider .ui-button { display: inline-flex; justify-content: center; align-items: center; gap: var(--ui-space-tight); min-height: var(--ui-control-height); line-height: var(--ui-control-line); padding: var(--ui-control-inset) var(--ui-space-2); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-control); background: var(--ui-surface); color: var(--ui-secondary); font-weight: var(--ui-weight-normal); cursor: pointer; white-space: nowrap; transition: background var(--ui-hover-duration), box-shadow var(--ui-hover-duration); }
 .ui-provider .ui-button:hover:not(:disabled) { background: var(--ui-muted); }
-.ui-provider .ui-button:active:not(:disabled) { box-shadow: inset 0 0 0 2px var(--ui-border); }
+.ui-provider .ui-button:active:not(:disabled) { box-shadow: none; }
 .ui-provider .ui-button-primary { font-weight: var(--ui-weight-medium); color: var(--ui-on-accent); background: var(--ui-accent); border-color: transparent; }
 .ui-provider .ui-button-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-accent), var(--ui-text) 12%); }
 .ui-provider .ui-button-ghost { background: transparent; border-color: transparent; }

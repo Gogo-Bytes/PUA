@@ -87,15 +87,15 @@ describe('native composer', () => {
     expect(menu.isConnected).toBe(false);
   });
   it('exposes Pi-native compaction as an acknowledged action', async () => {
-    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
+    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="/compact" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: '压缩上下文' }));
-    await waitFor(() => expect(desktop.compactChatSession).toHaveBeenCalledExactlyOnceWith('s'));
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
+    await waitFor(() => expect(desktop.compactChatSession).toHaveBeenCalledExactlyOnceWith('s', undefined));
   });
   it('exposes Pi-native session statistics without treating them as account usage', async () => {
-    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
+    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="/stats" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: '会话统计' }));
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
     await waitFor(() => expect(desktop.getChatSessionStats).toHaveBeenCalledExactlyOnceWith('s'));
     expect((await screen.findByRole('dialog', { name: 'Pi 会话统计' })).textContent).toContain('输入 3');
     expect(screen.getByText(/不代表账户级或云端用量/)).toBeTruthy();
