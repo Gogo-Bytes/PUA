@@ -36,6 +36,8 @@
 
 ## 生产组件与状态边界
 
+- 当前生产左栏使用 `ProjectSidebar` 的项目/会话嵌套菜单。文件夹图标按钮承担折叠，展开时为打开文件夹；项目名称仍进入新对话草稿。会话无前置图标，与项目共用整行高亮、末端浮层操作；按钮透明，hover 只改变图标色。操作在 hover、键盘焦点进入时显示，当前会话和触屏常显；重命名时隐藏末端浮层以免遮挡编辑器。关注/运行状态保留在末端。专项隔离浏览器验收：启动 4181 Workspace Preview 后运行 `node tests/sidebar-menu-check.mjs`，明暗与窄窗截图输出到 `/tmp/pua-sidebar-menu`。
+
 - ProjectNav 以 cwd 为身份，生产保留筛选，路径退到 Tooltip/title，使用与 demo 相同的名称行。SessionTabs 的双击/F2 改名绑定被编辑 tab 的 id；切换当前会话不改变提交目标。Chat 改名等待 host；Terminal 名称仍仅更新本地。关闭、overflow、方向键导航和 activity 状态继续可用。
 - GitPanel 继续持有 Git status、scope、selected path、刷新 generation 和 diff 请求。InspectorHeader 与 FileRow 只报告用户意图；参数快照、非原子读取说明、冲突 patch 与引用语义保留。
 - ToolExecutionCard 统一使用受控 Collapsible/GSAP，成功默认收起，失败自动展开，用户展开状态跨更新保留。参数、图片、输出快照与复制仍来自原 Tool owner。旧 nativeDetails 分支已移除。
