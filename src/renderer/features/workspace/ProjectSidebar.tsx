@@ -26,6 +26,7 @@ interface ProjectSidebarProps {
   onTogglePinned?(id: string, pinned: boolean): void | Promise<void>;
   onCloseSession(id: string): void;
   onRenameSession(id: string, title: string): void | Promise<void>;
+  /** Legacy/test adapter only. Production App never supplies this history-navigation control. */
   onForkSession?(id: string, entryId: string): void | Promise<void>;
   onSearch(): void;
   onSettings(): void;
@@ -89,7 +90,7 @@ export function ProjectSidebar({
             </span>
             </span>
             </div>
-            {session.sessionTree?.length && onForkSession ? <TreeBranch nodes={session.sessionTree} onFork={entryId => void onForkSession(session.id, entryId)}/> : null}
+            {onForkSession && session.sessionTree?.length ? <TreeBranch nodes={session.sessionTree} onFork={entryId => void onForkSession(session.id, entryId)}/> : null}
           </li>)}
         </ul>}
       </section>)}

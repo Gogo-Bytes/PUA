@@ -134,6 +134,13 @@ describe('production workspace navigation', () => {
     expect(screen.getByRole('button', { name: '会话 2' }).getAttribute('aria-current')).toBe('page');
     expect(desktop.startSession).toHaveBeenCalledTimes(2);
   });
+  it('keeps Pi conversation branch nodes out of the project session list', async () => {
+    render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession();
+    emit({ id: 's1', type: 'chat-fork-metadata', entries: [{ entryId: 'entry-1', text: 'hello' }], sessionTree: [{ entryId: 'entry-1', label: 'hello', forkable: true, active: true, children: [{ entryId: 'entry-2', label: 'branch node', forkable: true, active: false, children: [] }] }] });
+    expect(screen.getByRole('button', { name: '会话 1' })).toBeTruthy();
+    expect(screen.queryByText('branch node')).toBeNull();
+    expect(document.querySelector('.workspace-session-branches')).toBeNull();
+  });
   it('orders recent tasks by the latest Pi-accepted activity in the current window', async () => {
     render(<App />); await findProject('/one/app'); selectProject('/one/app'); await createSession(); await createSession();
     emit({ id: 's1', type: 'session-info', lastActivityAt: 100 });

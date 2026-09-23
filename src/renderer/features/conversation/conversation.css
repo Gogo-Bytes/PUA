@@ -68,6 +68,8 @@
 .ui-provider .ui-composer textarea { display: block; min-height: var(--ui-composer-height); resize: none; max-height: 160px; overflow-y: auto; font: var(--ui-font-reading); border-color: transparent; }
 .ui-provider .ui-composer:has(textarea:focus-visible) { outline: none; }
 .ui-provider .ui-composer textarea:focus-visible { outline: none; }
+.ui-provider .ui-composer:focus-within { outline: 0 !important; border-color: var(--ui-border) !important; box-shadow: var(--ui-shadow) !important; }
+.ui-provider .ui-composer textarea:focus, .ui-provider .ui-composer textarea:focus-visible { outline: 0 !important; box-shadow: none !important; }
 .ui-provider .ui-composer-footer { display: flex; gap: var(--ui-space-2); align-items: center; justify-content: space-between; margin-top: var(--ui-space-2); }
 .ui-provider .ui-composer-footer, .ui-provider .ui-composer-controls { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); align-items: center; }
 .ui-provider .ui-composer-controls { flex: 1; }

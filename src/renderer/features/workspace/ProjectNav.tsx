@@ -1,5 +1,3 @@
-import { Input } from '../../ui';
-import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { Button, Icon, IconButton, Tooltip } from '../../ui';
 import { groupProjects } from './selection';
@@ -9,8 +7,6 @@ export interface ProjectNavLabels {
   title: string;
   add: string;
   empty: string;
-  filter: string;
-  filterPlaceholder: string;
 }
 
 export interface ProjectNavProps {
@@ -20,19 +16,15 @@ export interface ProjectNavProps {
   onAdd?(): void;
   labels?: Partial<ProjectNavLabels>;
   pathVisibility?: 'always' | 'duplicates';
-  filterable?: boolean;
   showCount?: boolean;
   selectionMode?: 'current' | 'pressed';
 }
 
-export function ProjectNav({ projects, selectedCwd, onSelect, onAdd, labels, pathVisibility = 'duplicates', filterable = false, showCount = false, selectionMode = 'current' }: ProjectNavProps) {
-  const text = { title: 'Projects', add: 'Add project', empty: 'No projects yet.', filter: 'Filter projects', filterPlaceholder: 'Find project…', ...labels };
-  const [query, setQuery] = useState('');
-  const visible = projects.filter(project => `${project.name}\n${project.cwd}`.toLowerCase().includes(query.toLowerCase()));
+export function ProjectNav({ projects, selectedCwd, onSelect, onAdd, labels, pathVisibility = 'duplicates', showCount = false, selectionMode = 'current' }: ProjectNavProps) {
+  const text = { title: 'Projects', add: 'Add project', empty: 'No projects yet.', ...labels };
   return <nav className="ui-project-nav" aria-label={text.title}>
     <div className="ui-module-heading"><span>{text.title}</span>{showCount && <small>{projects.length}</small>}{onAdd && <IconButton icon="plus" label={text.add} variant="ghost" onClick={onAdd}/>}</div>
-    {filterable && projects.length > 0 && <Input className="ui-input ui-project-filter" aria-label={text.filter} placeholder={text.filterPlaceholder} value={query} onChange={event => setQuery(event.target.value)}/>}
-    <div className="ui-project-list">{visible.length ? visible.map(project => {
+    <div className="ui-project-list">{projects.length ? projects.map(project => {
       const duplicate = projects.some(other => other.cwd !== project.cwd && other.name === project.name);
       const showPath = pathVisibility === 'always';
       const row = <Button variant="ghost" className="ui-project-row" aria-current={selectionMode === 'current' && selectedCwd === project.cwd ? 'page' : undefined} aria-pressed={selectionMode === 'pressed' ? selectedCwd === project.cwd : undefined} title={project.cwd} onClick={() => onSelect(project.cwd)}><Icon name="folder"/><span className="ui-project-copy"><span>{project.name}</span>{showPath && <small>{project.cwd}</small>}</span><span className="ui-project-count">{project.sessions}</span></Button>;
@@ -43,5 +35,5 @@ export function ProjectNav({ projects, selectedCwd, onSelect, onAdd, labels, pat
 
 export function ProjectNavigation({ sessions, recentProjects, project, onSelect, onAdd }: { sessions: SessionInfo[]; recentProjects: string[]; project?: string; onSelect(cwd: string): void; onAdd?(): void }) {
   const projects = groupProjects(sessions, recentProjects).map(item => ({ cwd: item.cwd, name: item.name, sessions: item.sessions.length }));
-  return <ProjectNav projects={projects} selectedCwd={project} onSelect={onSelect} onAdd={onAdd} filterable labels={{ title: '项目', add: '打开项目', empty: '暂无项目', filter: '筛选项目', filterPlaceholder: '查找项目…' }}/>;
+  return <ProjectNav projects={projects} selectedCwd={project} onSelect={onSelect} onAdd={onAdd} labels={{ title: '项目', add: '打开项目', empty: '暂无项目' }}/>;
 }
