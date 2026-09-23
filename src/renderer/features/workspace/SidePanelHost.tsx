@@ -1,4 +1,4 @@
-import { useId, useRef, type ReactNode } from 'react';
+import { useId, useRef, type ReactNode, type RefObject } from 'react';
 import type { RuntimeInfo, SessionInfo } from '../../../shared/ipc/desktop-api';
 import { Button, DropdownMenu, Icon, IconButton, PanelTabs } from '../../ui';
 import { TaskDetailsPanel } from './TaskDetailsPanel';
@@ -20,9 +20,9 @@ const unavailable: Partial<Record<SidePanelKind, string>> = {
 };
 
 /** Right-side tab host, separate from the titlebar Environment popover. */
-export function SidePanelHost({ task, runtime, panels, changes, onClose, onOpenProject, onRename, onArchive, onTogglePinned, onClone }: {
+export function SidePanelHost({ task, runtime, panels, changes, terminalDockRef, onClose, onOpenProject, onRename, onArchive, onTogglePinned, onClone }: {
   task?: SessionInfo; runtime: RuntimeInfo | null; panels: ReturnType<typeof useSidePanelTabs>;
-  changes: ReactNode; onClose(): void; onOpenProject(): void; onRename(): void;
+  changes: ReactNode; terminalDockRef?: RefObject<HTMLDivElement | null>; onClose(): void; onOpenProject(): void; onRename(): void;
   onArchive(): void | Promise<void>; onTogglePinned?(): void | Promise<void>; onClone?(): void | Promise<void>;
 }) {
   const add = useRef<HTMLButtonElement>(null);
@@ -43,7 +43,7 @@ export function SidePanelHost({ task, runtime, panels, changes, onClose, onOpenP
       </Button>)}
     </div> : <div className="workspace-panel-content">
       {tabs.map(tab => <div key={tab.id} role="tabpanel" id={`${idPrefix}-panel-${tab.id}`} aria-labelledby={`${idPrefix}-tab-${tab.id}`} tabIndex={0} hidden={panels.active !== tab.id}>
-        {tab.id === 'review' ? changes : tab.id === 'files' ? <FilesPanel task={task}/> : tab.id === 'browser' ? <BrowserPanel/> : tab.id === 'task' && task
+        {tab.id === 'review' ? changes : tab.id === 'terminal' ? task?.kind === 'terminal' ? <div className="workspace-terminal-dock" ref={terminalDockRef} aria-label="兼容终端"/> : <div className="workspace-panel-unavailable"><Icon name="terminal"/><h2>Terminal</h2><p>终端面板复用当前兼容终端的唯一 PTY。请先切换到兼容终端会话。</p></div> : tab.id === 'files' ? <FilesPanel task={task}/> : tab.id === 'browser' ? <BrowserPanel/> : tab.id === 'task' && task
           ? <TaskDetailsPanel task={task} runtime={runtime} onOpenProject={onOpenProject} onRename={onRename} onArchive={onArchive} onTogglePinned={onTogglePinned} onClone={onClone}/>
           : <div className="workspace-panel-unavailable"><Icon name={tab.icon}/><h2>{tab.label}</h2><span>尚未接入</span><p>{unavailable[tab.id]}</p></div>}
       </div>)}

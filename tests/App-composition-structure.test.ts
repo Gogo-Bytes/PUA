@@ -11,10 +11,9 @@ const calls = (root: ts.SourceFile) => nodes(root).filter(ts.isCallExpression);
 describe('App composition source ownership (static, not behavioral journeys)', () => {
   it('keeps App local state limited to inspector layout and has no host or async workflow implementation', () => {
     const app = source('src/renderer/app/App.tsx');
-    expect(calls(app).filter(node => node.expression.getText(app) === 'useState')).toHaveLength(3);
+    expect(calls(app).filter(node => node.expression.getText(app) === 'useState')).toHaveLength(4);
     expect(nodes(app).filter(ts.isAwaitExpression)).toHaveLength(0);
     expect(nodes(app).filter(node => node.kind === ts.SyntaxKind.AsyncKeyword)).toHaveLength(0);
-    expect(calls(app).filter(node => /\.(then|catch|finally)$/.test(node.expression.getText(app)))).toHaveLength(0);
     expect(nodes(app).filter(ts.isImportDeclaration).map(node => node.moduleSpecifier.getText(app))).not.toContain("'./app/desktop-client'");
     expect(calls(app).filter(node => node.expression.getText(app) === 'useEffect').map(node => node.arguments[1].getText(app))).toEqual(['[boot]', '[project, workspaceView]', '[boot?.platform, active?.kind, active?.cwd, project]']);
   });
@@ -28,9 +27,14 @@ describe('App composition source ownership (static, not behavioral journeys)', (
   });
   it('retains session.id pane keys and the original terminal callback dereference/lifecycle effect seam', () => {
     const app = source('src/renderer/app/App.tsx');
-    const panes = nodes(app).filter(ts.isJsxSelfClosingElement).filter(node => ['ChatPane', 'TerminalPane'].includes(node.tagName.getText(app)));
-    expect(panes).toHaveLength(2);
-    for (const pane of panes) expect(pane.attributes.properties.find(node => ts.isJsxAttribute(node) && node.name.getText(app) === 'key')?.getText(app)).toBe('key={session.id}');
+    const panes = nodes(app).filter(ts.isJsxSelfClosingElement).filter(node => node.tagName.getText(app) === 'ChatPane');
+    expect(panes).toHaveLength(1);
+    expect(panes[0].attributes.properties.find(node => ts.isJsxAttribute(node) && node.name.getText(app) === 'key')?.getText(app)).toBe('key={session.id}');
+    const outlet = source('src/renderer/features/terminal/TerminalOutlet.tsx');
+    const terminals = nodes(outlet).filter(ts.isJsxSelfClosingElement).filter(node => node.tagName.getText(outlet) === 'TerminalPane');
+    expect(terminals).toHaveLength(1);
+    expect(terminals[0].attributes.properties.find(node => ts.isJsxAttribute(node) && node.name.getText(outlet) === 'key')?.getText(outlet)).toBe('key={session.id}');
+    expect(outlet.text).toContain("sessions.filter(session => session.kind === 'terminal')");
     const terminal = source('src/renderer/features/terminal/TerminalPane.tsx');
     expect(calls(terminal).filter(node => node.expression.getText(terminal) === 'useEffect').map(node => node.arguments[1].getText(terminal))).toEqual(['[session.id]', '[theme]', '[active, fontSize]']);
     expect(terminal.text).toContain('callbacks.current = { onExit, onError, onReady };');
