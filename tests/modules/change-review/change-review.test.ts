@@ -3,7 +3,7 @@ import { ChangeReviewApplication, ReviewFailure, type ReviewRepositoryPort, type
 
 function harness() {
   const snapshot: RepositorySnapshot = { root: '/repo', branch: 'main', capturedAt: 'observed', files: [{ path: 'new\nname', originalPath: 'old\nname', index: 'R', worktree: ' ' }, { path: '-new', index: '?', worktree: '?' }] };
-  const port = { captureSnapshot: vi.fn<ReviewRepositoryPort['captureSnapshot']>().mockResolvedValue(snapshot), readAuthorizedPreview: vi.fn<ReviewRepositoryPort['readAuthorizedPreview']>().mockResolvedValue({ text: 'preview', kind: 'diff', truncated: false }), listBranches: vi.fn<ReviewRepositoryPort['listBranches']>().mockResolvedValue(['main']), switchBranch: vi.fn<ReviewRepositoryPort['switchBranch']>() };
+  const port = { captureSnapshot: vi.fn<ReviewRepositoryPort['captureSnapshot']>().mockResolvedValue(snapshot), readAuthorizedPreview: vi.fn<ReviewRepositoryPort['readAuthorizedPreview']>().mockResolvedValue({ text: 'preview', kind: 'diff', truncated: false }), listBranches: vi.fn<ReviewRepositoryPort['listBranches']>().mockResolvedValue(['main']), switchBranch: vi.fn<ReviewRepositoryPort['switchBranch']>(), createBranch: vi.fn<ReviewRepositoryPort['createBranch']>(), deleteBranch: vi.fn<ReviewRepositoryPort['deleteBranch']>() };
   return { snapshot, port, review: new ChangeReviewApplication(port) };
 }
 describe('ChangeReviewApplication fresh membership authorization', () => {

@@ -48,5 +48,9 @@
 .environment-row.is-unavailable { color: var(--ui-tertiary); }
 .environment-note { font: var(--ui-font-meta); color: var(--ui-tertiary); margin: 6px 8px; }
 .environment-branches { margin: 2px 0 8px 30px; padding: 4px; border-left: 1px solid var(--ui-border); display: grid; gap: 2px; }
-.ui-provider .environment-branch-option { min-height: 30px; display:flex; align-items:center; justify-content:space-between; width:100%; padding:5px 8px; font:var(--ui-font-meta); border:0; background:transparent; text-align:left; }
+.environment-branch-row { display:flex; align-items:center; gap:2px; min-width:0; }
+.ui-provider .environment-branch-option { min-height: 30px; display:flex; align-items:center; justify-content:space-between; flex:1; min-width:0; padding:5px 8px; font:var(--ui-font-meta); border:0; background:transparent; text-align:left; }
+.environment-branch-create { display:flex; gap:4px; align-items:center; padding:4px 0 0; }
+.environment-branch-create .ui-input { min-width:0; flex:1; }
+.environment-branch-create .ui-button { flex:none; white-space:nowrap; }
 .environment-branch-option small { color:var(--ui-tertiary); }

@@ -13,7 +13,7 @@ const browserListeners = new Set<(state: BrowserViewState) => void>();
 const sessions = new Map<string, SessionInfo>();
 let preferences: Preferences = { piPath: 'TEST ONLY / no executable', nodePath: '', args: [], fontSize: 14, recentProjects: ['/test/workspace/PUA', '/test/other/PUA', '/test/empty'] };
 let sequence = 0;
-let previewBranch = 'test-only'; let previewGitClean = false;
+let previewBranch = 'test-only'; let previewBranches = ['main', 'test-only']; let previewGitClean = false;
 let clipboard = ''; // Fake Desktop never reaches the system clipboard.
 const launchOptions: unknown[] = [];
 const emit = (event: SessionEvent) => listeners.forEach(listener => listener(event));
@@ -58,7 +58,9 @@ installDesktopFake({
   chooseChatAttachments: async id => [{ id: `${id}-attachment`, kind: 'file', name: 'test-context.txt', path: '/test/test-context.txt', size: 12 }],
   removeChatAttachment: async () => {},
   gitStatus: async id => ({ root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: previewGitClean ? [] : [{ path: 'src/source.ts', index: 'M', worktree: 'M' }, { path: 'docs/context.md', index: '?', worktree: '?' }] }),
-  gitBranches: async () => ({ current: previewBranch, branches: ['main', 'test-only'] }), switchGitBranch: async id => { if (!previewGitClean) throw new Error('工作区存在未提交改动'); previewBranch = 'main'; return { root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }; },
+  gitBranches: async () => ({ current: previewBranch, branches: [...previewBranches] }), switchGitBranch: async id => { if (!previewGitClean) throw new Error('工作区存在未提交改动'); previewBranch = 'main'; return { root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }; },
+  createGitBranch: async (id, branch) => { if (!previewGitClean) throw new Error('工作区存在未提交改动'); if (previewBranches.includes(branch)) throw new Error('分支已存在'); previewBranches = [...previewBranches, branch]; previewBranch = branch; return { root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }; },
+  deleteGitBranch: async (_id, branch) => { previewBranches = previewBranches.filter(item => item !== branch); return { current: previewBranch, branches: [...previewBranches] }; },
   fileDiff: async (_id, filename, scope) => filename.endsWith('.md') ? { kind: 'untracked', text: source, truncated: false } : { kind: 'diff', truncated: false, text: `diff --git a/src/source.ts b/src/source.ts\n--- a/src/source.ts\n+++ b/src/source.ts\n@@ -1,2 +1,3 @@\n-const source = "file";\n+const source = "${scope === 'index' ? 'staged snapshot' : 'tool snapshot'}";\n+const currentFile = false;\n export { source };` },
   listSessionFiles: async (_id, path) => ({ path, entries: path === ''
     ? [{ name: 'src', path: 'src', kind: 'directory' as const }, { name: 'docs', path: 'docs', kind: 'directory' as const }, { name: 'README.md', path: 'README.md', kind: 'file' as const }]

@@ -134,6 +134,8 @@ export interface DesktopAPI {
   gitStatus(id: string): Promise<GitStatus>;
   gitBranches(id: string): Promise<GitBranches>;
   switchGitBranch(id: string, branch: string): Promise<GitStatus>;
+  createGitBranch(id: string, branch: string): Promise<GitStatus>;
+  deleteGitBranch(id: string, branch: string): Promise<GitBranches>;
   fileDiff(id: string, path: string, scope: DiffScope): Promise<FileDiff>;
   /** List immediate, non-symlink children under an active session's cwd. */
   listSessionFiles(id: string, relativePath: string): Promise<SessionFileListing>;

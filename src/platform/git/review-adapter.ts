@@ -67,6 +67,35 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
     await git(root, ['switch', '--quiet', '--', candidate]);
   }
 
+  async createBranch(cwd: string, branch: string): Promise<void> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    const candidate = branch.trim();
+    if (!candidate || candidate.length > 255 || candidate.includes('\0')) throw new Error('无效分支名称');
+    await git(root, ['check-ref-format', '--branch', candidate]);
+    const status = await git(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
+    if (status) throw new Error('工作区存在未提交改动，已拒绝创建分支；请先提交或收纳改动。');
+    const branches = await this.listBranches(root);
+    if (branches.includes(candidate)) throw new Error('本地分支已存在，请刷新列表。');
+    await git(root, ['switch', '--quiet', '--create', candidate]);
+  }
+
+  async deleteBranch(cwd: string, branch: string): Promise<void> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    const candidate = branch.trim();
+    if (!candidate || candidate.length > 255 || candidate.includes('\0')) throw new Error('无效分支名称');
+    await git(root, ['check-ref-format', '--branch', candidate]);
+    const [current, status, branches] = await Promise.all([
+      git(root, ['symbolic-ref', '--short', '-q', 'HEAD']).catch(() => ''),
+      git(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']),
+      this.listBranches(root),
+    ]);
+    if (current.trim() === candidate) throw new Error('不能删除当前分支，请先切换到其他分支。');
+    if (status) throw new Error('工作区存在未提交改动，已拒绝删除分支；请先提交或收纳改动。');
+    if (!branches.includes(candidate)) throw new Error('本地分支不存在，请刷新列表。');
+    // `-d` intentionally refuses to delete an unmerged branch; never force-delete user work.
+    await git(root, ['branch', '--delete', '--', candidate]);
+  }
+
   /** Read-only UI preview. Does not stage/revert files or run external diff/textconv helpers. */
   async readAuthorizedPreview(selection: AuthorizedPreview): Promise<ReviewPreview> {
     const { root: repositoryRoot, path: filename } = selection;

@@ -45,6 +45,8 @@ export const invokeChannels = {
   gitStatus: 'desktop:git-status',
   gitBranches: 'desktop:git-branches',
   switchGitBranch: 'desktop:git-branch-switch',
+  createGitBranch: 'desktop:git-branch-create',
+  deleteGitBranch: 'desktop:git-branch-delete',
   fileDiff: 'desktop:file-diff',
   listSessionFiles: 'desktop:session-files',
   readSessionFile: 'desktop:session-file-read',

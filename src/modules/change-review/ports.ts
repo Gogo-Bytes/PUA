@@ -5,4 +5,6 @@ export interface ReviewRepositoryPort {
   readAuthorizedPreview(selection: AuthorizedPreview): Promise<ReviewPreview>;
   listBranches(cwd: string): Promise<string[]>;
   switchBranch(cwd: string, branch: string): Promise<void>;
+  createBranch(cwd: string, branch: string): Promise<void>;
+  deleteBranch(cwd: string, branch: string): Promise<void>;
 }

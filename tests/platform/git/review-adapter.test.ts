@@ -34,6 +34,44 @@ function memoryFile(bytes = Buffer.from('safe')) {
 }
 
 describe('GitReviewAdapter command/parser compatibility with Fake exec', () => {
+  it('creates only a validated local branch after a fresh clean check and switches to it', async () => {
+    fake.exec.mockImplementation(async (_command: string, args: string[]) => {
+      const operation = args.slice(4).join(' ');
+      if (operation === 'rev-parse --show-toplevel') return { stdout: '/repo\n' };
+      if (operation === 'check-ref-format --branch feature/new') return { stdout: '' };
+      if (operation === 'status --porcelain=v1 -z --untracked-files=all') return { stdout: '' };
+      if (operation === 'for-each-ref --format=%(refname:short) refs/heads') return { stdout: 'main\n' };
+      if (operation === 'switch --quiet --create feature/new') return { stdout: '' };
+      throw new Error(`unexpected git command: ${operation}`);
+    });
+    await adapter().createBranch('/cwd', 'feature/new');
+    expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['switch', '--quiet', '--create', 'feature/new']);
+  });
+  it('does not create on a dirty worktree', async () => {
+    fake.exec.mockImplementation(async (_command: string, args: string[]) => {
+      const operation = args.slice(4).join(' ');
+      if (operation === 'rev-parse --show-toplevel') return { stdout: '/repo\n' };
+      if (operation === 'check-ref-format --branch feature/new') return { stdout: '' };
+      if (operation === 'status --porcelain=v1 -z --untracked-files=all') return { stdout: ' M file\0' };
+      throw new Error(`unexpected git command: ${operation}`);
+    });
+    await expect(adapter().createBranch('/cwd', 'feature/new')).rejects.toThrow('工作区存在未提交改动');
+    expect(fake.exec.mock.calls.some(call => call[1].includes('--create'))).toBe(false);
+  });
+  it('deletes only a non-current local branch with git safe-delete semantics', async () => {
+    fake.exec.mockImplementation(async (_command: string, args: string[]) => {
+      const operation = args.slice(4).join(' ');
+      if (operation === 'rev-parse --show-toplevel') return { stdout: '/repo\n' };
+      if (operation === 'check-ref-format --branch feature/old') return { stdout: '' };
+      if (operation === 'symbolic-ref --short -q HEAD') return { stdout: 'main\n' };
+      if (operation === 'status --porcelain=v1 -z --untracked-files=all') return { stdout: '' };
+      if (operation === 'for-each-ref --format=%(refname:short) refs/heads') return { stdout: 'main\nfeature/old\n' };
+      if (operation === 'branch --delete -- feature/old') return { stdout: '' };
+      throw new Error(`unexpected git command: ${operation}`);
+    });
+    await adapter().deleteBranch('/cwd', 'feature/old');
+    expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['branch', '--delete', '--', 'feature/old']);
+  });
   it('construction has zero repository IO; root strips only one newline, branch trims end, clock belongs to adapter', async () => {
     const subject = adapter(); expect(fake.exec).not.toHaveBeenCalled(); expect(fake.lstat).not.toHaveBeenCalled();
     fake.exec.mockResolvedValueOnce({ stdout: '/repo\n\r\n' }).mockResolvedValueOnce({ stdout: 'MM hello world\0R  new\nname\0old\nname\0?? 图片\0' }).mockResolvedValueOnce({ stdout: ' branch \n' });

@@ -4,7 +4,7 @@ export const create = { cwd: '~/project', kind: 'chat', startMode: 'new', projec
 export const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   bootstrap: [], chooseDirectory: [], chooseFile: [], chooseAttachments: [], readClipboard: [],
   chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true], searchHistory: [{ query: 'message', limit: 10 }],
-  stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], gitBranches: ['id'], switchGitBranch: ['id', 'feature/test'], writeClipboard: ['clipboard'], listSessionFiles: ['id', ''], readSessionFile: ['id', 'README.md'],
+  stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], gitBranches: ['id'], switchGitBranch: ['id', 'feature/test'], createGitBranch: ['id', 'feature/new'], deleteGitBranch: ['id', 'feature/old'], writeClipboard: ['clipboard'], listSessionFiles: ['id', ''], readSessionFile: ['id', 'README.md'],
   createBrowserView: [], setBrowserViewBounds: ['browser-id', { x: 0, y: 0, width: 300, height: 400 }], navigateBrowser: ['browser-id', 'https://example.com/'], goBackBrowser: ['browser-id'], goForwardBrowser: ['browser-id'], reloadBrowser: ['browser-id'], disposeBrowserView: ['browser-id'],
   savePreferences: [preferences], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
@@ -34,7 +34,7 @@ export const successes: { [K in InvokeMethod]: RequestResult<K> } = {
   getChatSessionStats: { userMessages: 0, assistantMessages: 0, toolCalls: 0, toolResults: 0, totalMessages: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }, cost: 0 }, getChatAutoSettings: { autoCompaction: true, autoRetry: true },
   compactChatSession: undefined, setChatAutoCompaction: undefined, setChatAutoRetry: undefined, setChatSteeringMode: undefined, setChatFollowUpMode: undefined,
   openExternal: undefined, openProject: undefined, writeClipboard: undefined,
-  gitStatus: { root: '/fake', branch: '', capturedAt: '', files: [] }, gitBranches: { current: 'main', branches: ['main'] }, switchGitBranch: { root: '/fake', branch: 'main', capturedAt: '', files: [] },
+  gitStatus: { root: '/fake', branch: '', capturedAt: '', files: [] }, gitBranches: { current: 'main', branches: ['main'] }, switchGitBranch: { root: '/fake', branch: 'main', capturedAt: '', files: [] }, createGitBranch: { root: '/fake', branch: 'feature/new', capturedAt: '', files: [] }, deleteGitBranch: { current: 'main', branches: ['main'] },
   fileDiff: { text: '', kind: 'diff', truncated: false }, readClipboard: { text: '', image: false },
   listSessionFiles: { path: '', entries: [], truncated: false }, readSessionFile: { path: 'README.md', text: 'hello', truncated: false },
   createBrowserView: 'browser-id', setBrowserViewBounds: undefined, navigateBrowser: undefined, goBackBrowser: undefined, goForwardBrowser: undefined, reloadBrowser: undefined, disposeBrowserView: undefined,

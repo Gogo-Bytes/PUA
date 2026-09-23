@@ -104,6 +104,8 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   gitStatus: idArgs,
   gitBranches: idArgs,
   switchGitBranch: tuple<'switchGitBranch'>(2, (id, branch) => [text(id), boundedText(branch, 255, '分支名称')]),
+  createGitBranch: tuple<'createGitBranch'>(2, (id, branch) => [text(id), boundedText(branch, 255, '分支名称')]),
+  deleteGitBranch: tuple<'deleteGitBranch'>(2, (id, branch) => [text(id), boundedText(branch, 255, '分支名称')]),
   writeClipboard: idArgs,
   savePreferences: tuple<'savePreferences'>(1, value => [validatePreferences(value)]),
   createSession: tuple<'createSession'>(1, value => [validateCreateSessionOptions(value)]),

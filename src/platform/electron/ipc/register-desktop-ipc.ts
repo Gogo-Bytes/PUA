@@ -28,6 +28,22 @@ export interface DesktopIPCDependencies {
 /** Closed Desktop methods only; sender → tuple parser → captured window/core workflow. */
 export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources, listSessionFiles, readSessionFile, browserViews }: DesktopIPCDependencies): void {
   const { handle, listen } = createIPCRegistrar(ipcMain, event => checkSender(event, requireCurrent().window.webContents, rendererURL));
+  const gitMutationCwds = new Set<string>();
+  const inFlightChatSends = new Map<string, number>();
+  const assertGitMutationSafe = (capabilities: WindowContext['capabilities'], cwd: string) => {
+    if ((inFlightChatSends.get(cwd) ?? 0) > 0) throw new Error('当前项目正在提交对话消息，请稍后再操作 Git 分支。');
+    const busy = capabilities.session.list().find(session => session.cwd === cwd && (
+      session.lifecycle.phase === 'starting' || isSessionBusy(session, capabilities.activity(session.id))
+    ));
+    if (busy) throw new Error('同一项目中有 Pi/Terminal 任务正在运行，已拒绝操作 Git 分支。');
+    if (gitMutationCwds.has(cwd)) throw new Error('当前项目正在操作 Git 分支，请稍后重试。');
+  };
+  const mutateGit = async <T>(capabilities: WindowContext['capabilities'], cwd: string, action: () => Promise<T>): Promise<T> => {
+    assertGitMutationSafe(capabilities, cwd);
+    gitMutationCwds.add(cwd);
+    try { return await action(); }
+    finally { gitMutationCwds.delete(cwd); }
+  };
   handle('bootstrap', async () => { await preferences.whenReady(); return preferences.getBootstrap(); });
   handle('chooseDirectory', async () => {
     const result = await dialog.showOpenDialog(requireCurrent().window, { properties: ['openDirectory'] });
@@ -53,6 +69,8 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('startSession', async (id) => {
     const { capabilities } = requireCurrent();
     await preferences.verifySessionForStart(id);
+    const session = requireSessionSnapshot(capabilities.session.get(id));
+    if (gitMutationCwds.has(session.cwd)) throw new Error('当前项目正在操作 Git 分支，请稍后启动会话。');
     return applySessionStartResult(capabilities.session.start(id));
   });
   handle('closeSession', async (id) => {
@@ -74,7 +92,18 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('deleteArchivedSession', id => preferences.deleteArchivedSession(id));
   handle('setSessionPinned', (id, pinned) => preferences.setSessionPinned(id, pinned));
   handle('searchHistory', options => preferences.searchHistory(options));
-  handle('sendChatMessage', (id, input) => requireCurrent().capabilities.conversation.send(id, sendIntent(input.text, input.attachmentIds, input.delivery)).catch(conversationError));
+  handle('sendChatMessage', async (id, input) => {
+    const { capabilities } = requireCurrent();
+    const cwd = requireSessionSnapshot(capabilities.session.get(id)).cwd;
+    if (gitMutationCwds.has(cwd)) throw new Error('当前项目正在操作 Git 分支，请稍后发送消息。');
+    inFlightChatSends.set(cwd, (inFlightChatSends.get(cwd) ?? 0) + 1);
+    try { await capabilities.conversation.send(id, sendIntent(input.text, input.attachmentIds, input.delivery)); }
+    catch (error) { throw conversationError(error); }
+    finally {
+      const pending = (inFlightChatSends.get(cwd) ?? 1) - 1;
+      if (pending > 0) inFlightChatSends.set(cwd, pending); else inFlightChatSends.delete(cwd);
+    }
+  });
   handle('stopChat', id => requireCurrent().capabilities.conversation.stop(id));
   handle('respondToExtensionUI', (id, response) => requireCurrent().capabilities.conversation.respond(id, extensionResponse(response)));
   handle('removeChatAttachment', (id, attachmentId) => {
@@ -118,10 +147,30 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('switchGitBranch', async (id, branch) => {
     const { capabilities } = requireCurrent();
     const session = requireSessionSnapshot(capabilities.session.get(id));
-    if (isSessionBusy(session, capabilities.activity(id))) throw new Error('当前 Pi/Terminal 任务正在运行，已拒绝切换分支。');
     const cwd = session.cwd;
-    await changeReview.switchBranch(cwd, branch);
-    return changeReview.snapshot(cwd).then(repositorySnapshotDTO).catch(reviewError);
+    return mutateGit(capabilities, cwd, async () => {
+      await changeReview.switchBranch(cwd, branch);
+      return changeReview.snapshot(cwd).then(repositorySnapshotDTO).catch(reviewError);
+    });
+  });
+  handle('createGitBranch', async (id, branch) => {
+    const { capabilities } = requireCurrent();
+    const session = requireSessionSnapshot(capabilities.session.get(id));
+    const cwd = session.cwd;
+    return mutateGit(capabilities, cwd, async () => {
+      await changeReview.createBranch(cwd, branch);
+      return changeReview.snapshot(cwd).then(repositorySnapshotDTO).catch(reviewError);
+    });
+  });
+  handle('deleteGitBranch', async (id, branch) => {
+    const { capabilities } = requireCurrent();
+    const session = requireSessionSnapshot(capabilities.session.get(id));
+    const cwd = session.cwd;
+    return mutateGit(capabilities, cwd, async () => {
+      await changeReview.deleteBranch(cwd, branch);
+      const [snapshot, branches] = await Promise.all([changeReview.snapshot(cwd), changeReview.branches(cwd)]);
+      return { current: snapshot.branch, branches };
+    });
   });
   handle('fileDiff', (id, filename, scope) => changeReview.preview({ cwd: requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, path: filename, scope: reviewScopeInput(scope) }).then(reviewPreviewDTO).catch(reviewError));
   handle('listSessionFiles', (id, relativePath) => listSessionFiles(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
