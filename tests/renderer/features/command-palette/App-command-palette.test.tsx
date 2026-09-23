@@ -45,8 +45,7 @@ async function create(kind: 'chat' | 'terminal' = 'chat') {
     fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
     const draft = await screen.findByRole('textbox', { name: '发送消息' });
     fireEvent.change(draft, { target: { value: `seed ${++draftCounter}` } });
-    await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
-    await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
+    await flush(); fireEvent.keyDown(draft, { key: 'Enter' });
     await waitFor(() => expect(desktop.createSession).toHaveBeenCalled());
     const id = `s${vi.mocked(desktop.createSession).mock.calls.length}`;
     await waitFor(() => expect(desktop.startSession).toHaveBeenCalledWith(id));

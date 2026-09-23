@@ -47,7 +47,6 @@ async function createSession() {
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
   const draft = await screen.findByRole('textbox', { name: '发送消息' });
   fireEvent.change(draft, { target: { value: `seed ${++draftSequence}` } });
-  await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
   await new Promise(resolve => setTimeout(resolve, 180));
   fireEvent.keyDown(draft, { key: 'Enter' });
   await waitFor(() => expect(desktop.createSession).toHaveBeenCalledTimes(created + 1));

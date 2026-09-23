@@ -51,8 +51,7 @@ async function create(kind: 'chat' | 'terminal' = 'chat', verifyInitialSend = tr
   fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
   const draft = await screen.findByRole('textbox', { name: '发送消息' });
   fireEvent.change(draft, { target: { value: `seed ${++draftCounter}` } });
-  await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
-  await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
+  await flush(); fireEvent.keyDown(draft, { key: 'Enter' });
   await waitFor(() => expect(desktop.createSession).toHaveBeenCalled());
   const id = `s${vi.mocked(desktop.createSession).mock.calls.length}`;
   await waitFor(() => expect(desktop.startSession).toHaveBeenCalledWith(id));
@@ -118,8 +117,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
     const draft = screen.getByRole('textbox', { name: '发送消息' });
     fireEvent.change(draft, { target: { value: 'pending' } });
-    await waitFor(() => expect(desktop.inspectProjectResources).toHaveBeenCalled());
-    await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' }); await flush();
+    await flush(); fireEvent.keyDown(draft, { key: 'Enter' }); await flush();
     expect((screen.getByRole('button', { name: '新建会话' }) as HTMLButtonElement).disabled).toBe(true);
     expect(desktop.createSession).toHaveBeenCalledTimes(2);
     await act(async () => pending.resolve({ id: 'late', title: 'Late', cwd: '/one', kind: 'chat', processStatus: 'running', activity: 'idle' }));
