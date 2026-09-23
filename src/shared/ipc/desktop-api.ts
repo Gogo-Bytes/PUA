@@ -83,6 +83,9 @@ export interface CreateSessionOptions {
 export type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 export interface ProjectResourceInfo { hasResources: boolean; paths: string[]; skills?: ChatCommand[]; prompts?: ChatCommand[] }
+export interface SessionFileEntry { name: string; path: string; kind: 'file' | 'directory' }
+export interface SessionFileListing { path: string; entries: SessionFileEntry[]; truncated: boolean }
+export interface SessionFilePreview { path: string; text: string; truncated: boolean }
 
 export interface DesktopAPI {
   bootstrap(): Promise<Bootstrap>;
@@ -128,6 +131,9 @@ export interface DesktopAPI {
   openProject(id: string): Promise<void>;
   gitStatus(id: string): Promise<GitStatus>;
   fileDiff(id: string, path: string, scope: DiffScope): Promise<FileDiff>;
+  /** List immediate, non-symlink children under an active session's cwd. */
+  listSessionFiles(id: string, relativePath: string): Promise<SessionFileListing>;
+  readSessionFile(id: string, relativePath: string): Promise<SessionFilePreview>;
   readClipboard(): Promise<{ text: string; image: boolean }>;
   writeClipboard(text: string): Promise<void>;
 }

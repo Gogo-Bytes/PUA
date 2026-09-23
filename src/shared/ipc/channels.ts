@@ -44,6 +44,8 @@ export const invokeChannels = {
   openProject: 'desktop:project',
   gitStatus: 'desktop:git-status',
   fileDiff: 'desktop:file-diff',
+  listSessionFiles: 'desktop:session-files',
+  readSessionFile: 'desktop:session-file-read',
   readClipboard: 'desktop:clipboard-read',
   writeClipboard: 'desktop:clipboard-write',
 } as const satisfies Record<InvokeMethod, string>;

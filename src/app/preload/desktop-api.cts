@@ -48,6 +48,8 @@ const api: DesktopBridge = {
   openProject: id => ipcRenderer.invoke(invokeChannels.openProject, id),
   gitStatus: id => ipcRenderer.invoke(invokeChannels.gitStatus, id),
   fileDiff: (id, path, scope) => ipcRenderer.invoke(invokeChannels.fileDiff, id, path, scope),
+  listSessionFiles: (id, path) => ipcRenderer.invoke(invokeChannels.listSessionFiles, id, path),
+  readSessionFile: (id, path) => ipcRenderer.invoke(invokeChannels.readSessionFile, id, path),
   readClipboard: () => ipcRenderer.invoke(invokeChannels.readClipboard),
   writeClipboard: text => ipcRenderer.invoke(invokeChannels.writeClipboard, text),
 };

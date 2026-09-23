@@ -9,7 +9,7 @@ const create = { cwd: '/fake/project', kind: 'chat', startMode: 'new', projectTr
 const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   bootstrap: [], chooseDirectory: [], chooseFile: [], chooseAttachments: [], readClipboard: [],
   chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true], searchHistory: [{ query: 'message', limit: 10 }],
-  stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], writeClipboard: ['clipboard'],
+  stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], writeClipboard: ['clipboard'], listSessionFiles: ['id', ''], readSessionFile: ['id', 'README.md'],
   savePreferences: [initial], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
   forkChatSession: ['id', 'entry'],
@@ -53,6 +53,8 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.shell.openExternal).toHaveBeenCalledExactlyOnceWith('https://example.com/'); expect(h.shell.openPath).toHaveBeenCalledExactlyOnceWith('/fake/project');
     expect(h.getGitStatus).toHaveBeenCalledExactlyOnceWith('/fake/project'); expect(results.gitStatus).toEqual({ root: '/repo', branch: 'main', capturedAt: 'now', files: [{ path: 'new\nname', originalPath: 'old', index: 'R', worktree: ' ' }] });
     expect(h.getFileDiff).toHaveBeenCalledExactlyOnceWith({ cwd: '/fake/project', path: 'relative/file', scope: 'worktree' }); expect(results.fileDiff).toEqual({ text: 'patch', kind: 'diff', truncated: false });
+    expect(h.listSessionFiles).toHaveBeenCalledExactlyOnceWith('/fake/project', ''); expect(results.listSessionFiles).toEqual({ path: '', entries: [], truncated: false });
+    expect(h.readSessionFile).toHaveBeenCalledExactlyOnceWith('/fake/project', 'README.md'); expect(results.readSessionFile).toEqual({ path: 'README.md', text: 'hello', truncated: false });
     expect(h.inspectProjectResources).toHaveBeenCalledExactlyOnceWith('../project'); expect(results.inspectProjectResources).toEqual({ hasResources: false, paths: [] });
     expect(results.readClipboard).toEqual({ text: 'clip', image: true }); expect(h.clipboard.has.mock.calls.flat()).toEqual(['image/png', 'image/jpeg', 'image/tiff', 'image/webp']); expect(h.clipboard.writeText).toHaveBeenCalledExactlyOnceWith('clipboard');
   });
@@ -63,7 +65,7 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     for (const method of Object.keys(invokeChannels) as (keyof typeof invokeChannels)[]) expect(h.invokes.get(invokeChannels[method])!(foreign, ...samples[method])).toMatchObject({ ok: false, error: { kind: 'authorization', code: 'UNTRUSTED_SENDER' } });
     for (const method of Object.keys(sendChannels) as (keyof typeof sendChannels)[]) h.sends.get(sendChannels[method])!(foreign, ...samples[method]);
     for (const parser of parsers) { expect(parser).not.toHaveBeenCalled(); parser.mockRestore(); }
-    for (const spy of [h.store.write, h.resolveRuntime, h.validateChatArguments, h.dialog.showOpenDialog, h.dialog.showMessageBox, h.shell.openPath, h.shell.openExternal, ...Object.values(h.clipboard), h.getGitStatus, h.getFileDiff, h.inspectProjectResources, ...Object.values(h.capabilities.session), ...Object.values(h.capabilities.conversation), ...Object.values(h.capabilities.terminal), h.capabilities.createSession, h.capabilities.registerChatAttachments]) expect(spy).not.toHaveBeenCalled();
+    for (const spy of [h.store.write, h.resolveRuntime, h.validateChatArguments, h.dialog.showOpenDialog, h.dialog.showMessageBox, h.shell.openPath, h.shell.openExternal, ...Object.values(h.clipboard), h.getGitStatus, h.getFileDiff, h.inspectProjectResources, h.listSessionFiles, h.readSessionFile, ...Object.values(h.capabilities.session), ...Object.values(h.capabilities.conversation), ...Object.values(h.capabilities.terminal), h.capabilities.createSession, h.capabilities.registerChatAttachments]) expect(spy).not.toHaveBeenCalled();
     expect(report).toHaveBeenCalledTimes(3); report.mockRestore();
   });
   it('all trusted malformed tuples fail before effects; sends log/drop', () => {

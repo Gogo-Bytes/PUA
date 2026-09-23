@@ -13,6 +13,21 @@
 .workspace-panel-unavailable h2 { font: var(--ui-font-heading); margin: 16px 0 8px; }
 .workspace-panel-unavailable p { max-width: 360px; font: var(--ui-font-control); line-height: 1.8; }
 .workspace-panel-unavailable > span { font: var(--ui-font-meta); color: var(--ui-tertiary); }
+.workspace-files { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.workspace-files-toolbar { min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--ui-border); }
+.workspace-files-path { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; overflow: hidden; color: var(--ui-secondary); font: var(--ui-font-control); white-space: nowrap; }
+.workspace-files-path > span, .workspace-files-path > button, .workspace-files-crumb { flex: 0 0 auto; min-width: 0; }
+.workspace-files-path > span:first-of-type { overflow: hidden; text-overflow: ellipsis; }
+.workspace-files-path button { border: 0; background: transparent; color: inherit; font: inherit; padding: 4px; }
+.workspace-files-crumb { display: inline-flex; align-items: center; gap: 7px; }
+.workspace-files-list { flex: 1; min-height: 0; overflow: auto; padding: 8px; }
+.ui-provider .workspace-files-entry { width: 100%; min-height: 36px; display: flex; justify-content: flex-start; gap: 10px; padding: 6px 10px; border: 0; background: transparent; text-align: left; }
+.workspace-files-entry > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-files-entry > .icon:last-child { width: 14px; height: 14px; color: var(--ui-tertiary); }
+.workspace-files-message { padding: 12px; color: var(--ui-tertiary); font: var(--ui-font-meta); }
+.workspace-files-preview { min-height: 0; overflow: auto; padding: 12px; }
+.workspace-files-preview pre { margin: 0; color: var(--ui-primary); font: 12px/1.6 var(--ui-font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.workspace-files-preview p { color: var(--ui-tertiary); font: var(--ui-font-meta); }
 .environment-section + .environment-section { border-top: 1px solid var(--ui-border); margin-top: 12px; padding-top: 12px; }
 .environment-heading { display: flex; align-items: center; justify-content: space-between; min-height: 26px; margin: 0 4px 6px; color: var(--ui-tertiary); font: var(--ui-font-meta); }
 .ui-provider .environment-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 7px 8px; min-height: 34px; font: var(--ui-font-control); border: 0; background: transparent; }

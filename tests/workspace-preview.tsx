@@ -52,6 +52,11 @@ installDesktopFake({
   removeChatAttachment: async () => {},
   gitStatus: async id => ({ root: sessions.get(id)?.cwd || '/test', branch: 'test-only', capturedAt: new Date().toISOString(), files: [{ path: 'src/source.ts', index: 'M', worktree: 'M' }, { path: 'docs/context.md', index: '?', worktree: '?' }] }),
   fileDiff: async (_id, filename, scope) => filename.endsWith('.md') ? { kind: 'untracked', text: source, truncated: false } : { kind: 'diff', truncated: false, text: `diff --git a/src/source.ts b/src/source.ts\n--- a/src/source.ts\n+++ b/src/source.ts\n@@ -1,2 +1,3 @@\n-const source = "file";\n+const source = "${scope === 'index' ? 'staged snapshot' : 'tool snapshot'}";\n+const currentFile = false;\n export { source };` },
+  listSessionFiles: async (_id, path) => ({ path, entries: path === ''
+    ? [{ name: 'src', path: 'src', kind: 'directory' as const }, { name: 'docs', path: 'docs', kind: 'directory' as const }, { name: 'README.md', path: 'README.md', kind: 'file' as const }]
+    : path === 'docs' ? [{ name: 'context.md', path: 'docs/context.md', kind: 'file' as const }]
+      : [{ name: 'source.ts', path: 'src/source.ts', kind: 'file' as const }], truncated: false }),
+  readSessionFile: async (_id, path) => ({ path, text: path === 'docs/context.md' ? source : 'export const source = "TEST ONLY";', truncated: false }),
   writeClipboard: async text => { clipboard = text; },
   readClipboard: async () => ({ text: clipboard, image: false }), openExternal: unsupported, openProject: unsupported, chooseDirectory: unsupported, chooseFile: unsupported, chooseAttachments: unsupported,
   respondToExtensionUI: unsupported, write: () => {}, resize: () => {}, acknowledge: () => {},

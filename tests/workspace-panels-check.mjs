@@ -37,6 +37,17 @@ try {
   assert.equal(await panel.getByRole('tab', { name: 'Review', exact: true }).getAttribute('aria-selected'), 'true');
   await panel.locator('diffs-container pre').first().waitFor();
   await panel.getByRole('button', { name: '关闭 Browser 标签页' }).click();
+  await panel.getByRole('button', { name: '打开右侧标签页' }).click();
+  await page.getByRole('menuitem', { name: 'Files', exact: true }).click();
+  await panel.getByRole('tab', { name: 'Files', exact: true }).waitFor();
+  await panel.getByRole('tab', { name: 'Files', exact: true }).click();
+  await panel.getByRole('button', { name: 'docs', exact: true }).click();
+  await panel.getByRole('button', { name: 'context.md', exact: true }).click();
+  const filePreview = panel.locator('.workspace-files-preview pre');
+  await filePreview.waitFor();
+  assert.match(await filePreview.innerText(), /这份内容来自测试 IPC，不是磁盘文件。/);
+  await panel.getByRole('button', { name: '返回文件列表' }).click();
+  await panel.getByRole('button', { name: '关闭 Files 标签页' }).click();
   await page.getByRole('button', { name: '桌面设置', exact: true }).click();
   await page.getByRole('button', { name: '深色', exact: true }).click();
   await page.getByRole('button', { name: '保存设置', exact: true }).click();

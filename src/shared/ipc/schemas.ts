@@ -153,4 +153,14 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
     const sessionId = text(id); const file = text(filename);
     return [sessionId, file, validateDiffScope(scope)];
   }),
+  listSessionFiles: tuple<'listSessionFiles'>(2, (id, relativePath) => {
+    const path = boundedText(relativePath, 4096, '目录路径');
+    if (path.startsWith('/') || path.includes('\\') || /^[a-zA-Z]:/.test(path) || (path !== '' && path.split('/').some(part => !part || part === '..' || part === '.'))) throw new Error('无效目录路径');
+    return [text(id), path];
+  }),
+  readSessionFile: tuple<'readSessionFile'>(2, (id, relativePath) => {
+    const path = boundedText(relativePath, 4096, '文件路径');
+    if (!path || path.startsWith('/') || path.includes('\\') || /^[a-zA-Z]:/.test(path) || path.split('/').some(part => !part || part === '..' || part === '.')) throw new Error('无效文件路径');
+    return [text(id), path];
+  }),
 };

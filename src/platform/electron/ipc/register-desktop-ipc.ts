@@ -7,6 +7,7 @@ import { conversationError, extensionResponse, sendIntent } from '../../../app/m
 import type { ChangeReview } from '../../../modules/change-review/index.js';
 import { repositorySnapshotDTO, reviewPreviewDTO, reviewScopeInput, reviewError } from './change-review-mapper.js';
 import type { inspectProjectResources as InspectResources } from '../../filesystem/project-resources.js';
+import type { listSessionFiles as BrowseSessionFiles, readSessionFile as PreviewSessionFile } from '../../filesystem/session-files.js';
 
 export interface DesktopIPCDependencies {
   ipcMain: Pick<typeof ElectronIPC, 'handle' | 'on'>;
@@ -18,10 +19,12 @@ export interface DesktopIPCDependencies {
   preferences: ReturnType<typeof createDesktopPreferences>;
   changeReview: ChangeReview;
   inspectProjectResources: typeof InspectResources;
+  listSessionFiles: typeof BrowseSessionFiles;
+  readSessionFile: typeof PreviewSessionFile;
 }
 
 /** Closed Desktop methods only; sender → tuple parser → captured window/core workflow. */
-export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources }: DesktopIPCDependencies): void {
+export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources, listSessionFiles, readSessionFile }: DesktopIPCDependencies): void {
   const { handle, listen } = createIPCRegistrar(ipcMain, event => checkSender(event, requireCurrent().window.webContents, rendererURL));
   handle('bootstrap', async () => { await preferences.whenReady(); return preferences.getBootstrap(); });
   handle('chooseDirectory', async () => {
@@ -104,6 +107,8 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   });
   handle('gitStatus', (id) => changeReview.snapshot(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd).then(repositorySnapshotDTO).catch(reviewError));
   handle('fileDiff', (id, filename, scope) => changeReview.preview({ cwd: requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, path: filename, scope: reviewScopeInput(scope) }).then(reviewPreviewDTO).catch(reviewError));
+  handle('listSessionFiles', (id, relativePath) => listSessionFiles(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
+  handle('readSessionFile', (id, relativePath) => readSessionFile(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
   handle('readClipboard', async () => ({
     text: await clipboard.readText(),
     image: (await Promise.all(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'].map(type => clipboard.has(type)))).some(Boolean),

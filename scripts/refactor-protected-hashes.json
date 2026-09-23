@@ -15,7 +15,7 @@
   "src/renderer/ui/index.ts": "83b70ed8ed23a79853a1fd8e36ca2fc02b9fffd13a887b8fcc3a5f222b2afb3b",
   "src/renderer/ui/motion.tsx": "5e4cb9195b18707bf61961793e292e2024af421ea80ddd068e2904e3fe50f463",
   "src/renderer/ui/primitives.tsx": "b6c2a9db48d0f8d4a24ae6bf887e81991ccd0402971aa9d2a5bb9ba7f98923f7",
-  "src/renderer/ui/production-integration.md": "db2950d9fd2e4b17390110f1e303f75ef4041eb21c6a9313f554b2bbb79a971e",
+  "src/renderer/ui/production-integration.md": "6fd1aeb45a1d905bf9dfe87987b460b1096c321e758e54b8ff65606001b89304",
   "src/renderer/ui/shadcn-combobox.tsx": "e656d67c2f36a3ad9b0d5236833fd1bbb51f1555a7d834a60f245f9ac3797214",
   "src/renderer/ui/shadcn-dialog.tsx": "0cc3e5f0e4a80192cbc184c25ff871cdab0f1b8244623e8b9f8b8fa9038ff35b",
   "src/renderer/ui/shadcn-fields.tsx": "283ab6d57a9c16ee4d86b1e549718b8f3b3b7e83bdf87f08185549ab9dae68e5",

@@ -11,6 +11,7 @@ import { GitReviewAdapter } from '../../platform/git/review-adapter.js';
 import { inspectProjectResources } from '../../platform/filesystem/project-resources.js';
 import { listPiModelCatalog } from '../../platform/pi/model-catalog.js';
 import { registerDesktopIPC } from '../../platform/electron/ipc/register-desktop-ipc.js';
+import { listSessionFiles, readSessionFile } from '../../platform/filesystem/session-files.js';
 import { composeMain } from './composition.js';
 import { createDesktopPreferences, validateChatArguments } from './desktop-preferences.js';
 import { createWindow, createWindowHolder, windowEventEmitter } from './create-window.js';
@@ -40,7 +41,7 @@ if (hasSingleInstanceLock) void app.whenReady().then(async () => {
   const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial, storage), resolveRuntime, validateChatArguments, home: os.homedir(), platform: process.platform, sessionStore, listModels: listPiModelCatalog });
   const changeReview = new ChangeReviewApplication(new GitReviewAdapter());
   const holder = createWindowHolder();
-  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources });
+  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources, listSessionFiles, readSessionFile });
   installMenu({ Menu, shell, platform: process.platform, diagnostics: process.env.PUA_MISSING_ASSISTANT_DIAGNOSTICS === 'next-chat' });
   const window = createWindow(options => new BrowserWindow(options), preloadPath);
   mainWindow = window;

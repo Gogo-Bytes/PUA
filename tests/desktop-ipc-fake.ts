@@ -27,7 +27,8 @@ export function desktopIPCFake() {
   const shell = { openExternal: vi.fn().mockResolvedValue(undefined), openPath: vi.fn().mockResolvedValue('') };
   const clipboard = { readText: vi.fn(async () => 'clip'), has: vi.fn(async (type: string) => type === 'image/png'), writeText: vi.fn().mockResolvedValue(undefined) };
   const getGitStatus = vi.fn<ChangeReview['snapshot']>().mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: 'now', files: [{ path: 'new\nname', originalPath: 'old', index: 'R', worktree: ' ' }] }); const getFileDiff = vi.fn<ChangeReview['preview']>().mockResolvedValue({ text: 'patch', kind: 'diff', truncated: false }); const inspectProjectResources = vi.fn().mockResolvedValue({ hasResources: false, paths: [] });
-  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL: fake.webContents.mainFrame.url, preferences, changeReview: { snapshot: getGitStatus, preview: getFileDiff }, inspectProjectResources });
+  const listSessionFiles = vi.fn().mockResolvedValue({ path: '', entries: [], truncated: false }); const readSessionFile = vi.fn().mockResolvedValue({ path: 'README.md', text: 'hello', truncated: false });
+  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL: fake.webContents.mainFrame.url, preferences, changeReview: { snapshot: getGitStatus, preview: getFileDiff }, inspectProjectResources, listSessionFiles, readSessionFile });
   const event = { sender: fake.webContents, senderFrame: fake.webContents.mainFrame } as unknown as IpcMainInvokeEvent & IpcMainEvent;
   const rawCall = (method: keyof typeof invokeChannels, ...args: unknown[]) => invokes.get(invokeChannels[method])!(event, ...args);
   const listeners = new Set<(event: unknown, value: unknown) => void>();
@@ -40,5 +41,5 @@ export function desktopIPCFake() {
   const client = createDesktopClient(() => bridge);
   const call = (method: keyof typeof invokeChannels, ...args: unknown[]) => (client[method] as (...args: unknown[]) => Promise<unknown>)(...args);
   const emit = (value: unknown) => { for (const listener of listeners) listener({ secretElectronEvent: true }, value); };
-  return { fake, window, holder, capabilities, invokes, sends, store, runtime, preferences, resolveRuntime, validateChatArguments, dialog, shell, clipboard, getGitStatus, getFileDiff, inspectProjectResources, event, call, rawCall, bridge, client, listeners, emit };
+  return { fake, window, holder, capabilities, invokes, sends, store, runtime, preferences, resolveRuntime, validateChatArguments, dialog, shell, clipboard, getGitStatus, getFileDiff, inspectProjectResources, listSessionFiles, readSessionFile, event, call, rawCall, bridge, client, listeners, emit };
 }
