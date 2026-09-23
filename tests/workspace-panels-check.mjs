@@ -13,8 +13,7 @@ try {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('request', request => { if (/^https?:/.test(request.url()) && !request.url().startsWith(`${baseURL}/`)) external.push(request.url()); });
   await page.goto(`${baseURL}/workspace-preview.html`);
-  await page.locator('.codex-project-button').first().click();
-  await page.locator('.pending-trust-status').waitFor({ state: 'hidden' });
+  await page.getByRole('navigation', { name: '项目' }).getByRole('button', { name: 'PUA', exact: true }).first().click();
   const input = page.getByRole('textbox', { name: '发送消息', exact: true });
   await input.fill('隔离面板预览'); await input.press('Enter');
   const panel = page.getByRole('complementary', { name: '右侧面板', exact: true });
