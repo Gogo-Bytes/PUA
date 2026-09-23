@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installDesktopFake } from '../../../desktop-bridge-fake';
 import type { DesktopAPI } from '../../../../src/shared/ipc/desktop-api';
@@ -11,8 +11,8 @@ import { useState, type ComponentProps } from 'react';
 vi.mock('../../../../src/renderer/ui', async importOriginal => {
   const actual = await importOriginal<typeof import('../../../../src/renderer/ui')>();
   return { ...actual,
-    SuggestionList: ({ items, label, onSelect }: ComponentProps<typeof actual.SuggestionList>) => <div role="listbox" aria-label={label}>{items.map(item => <button key={item.id} role="option" onClick={() => onSelect(item.id)}>{item.label}</button>)}</div>,
-    DropdownMenu: ({ label, items, onAction }: ComponentProps<typeof actual.DropdownMenu>) => <button onClick={() => onAction(items[0].value)}>{label}</button>,
+    SuggestionList: ({ items, label, onSelect }: ComponentProps<typeof actual.SuggestionList>) => <div role="listbox" aria-label={label}>{items.map(item => <button type="button" key={item.id} role="option" onClick={() => onSelect(item.id)}>{item.label}</button>)}</div>,
+    DropdownMenu: ({ label, items, onAction }: ComponentProps<typeof actual.DropdownMenu>) => <button type="button" onClick={() => onAction(items[0].value)}>{label}</button>,
   };
 });
 
@@ -40,8 +40,10 @@ describe('project draft composer', () => {
     expect(screen.getByRole('list', { name: '附件' }).textContent).toContain('context.txt');
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'inspect' } });
     fireEvent.submit(screen.getByRole('textbox').closest('form')!);
-    await act(async () => {});
-    expect(onStart).toHaveBeenCalledWith('inspect', 'default', ['/work/context.txt']);
+    const trust = await screen.findByRole('dialog', { name: '检测到项目资源' });
+    await act(async () => { fireEvent.click(within(trust).getByRole('button', { name: '本次不加载' })); await Promise.resolve(); });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '检测到项目资源' })).toBeNull());
+    expect(onStart).toHaveBeenCalledWith('inspect', 'decline', ['/work/context.txt']);
   });
 
   it('offers native / prompt template candidates without changing their Pi syntax', async () => {
@@ -56,7 +58,7 @@ describe('project draft composer', () => {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 180)); });
     expect(screen.getByRole('option', { name: /\/review/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('option', { name: /\/review/ }));
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('/review ');
+    expect((screen.getByRole('region', { name: '新对话' }).querySelector('textarea') as HTMLTextAreaElement).value).toBe('/review ');
   });
 
   it('does not advertise inline @ skills that Pi would send literally', async () => {

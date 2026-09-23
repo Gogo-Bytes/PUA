@@ -237,6 +237,7 @@ async function submitPendingCreate() {
   const draft = await screen.findByRole('textbox', { name: '发送消息' });
   fireEvent.change(draft, { target: { value: `pending ${++draftSequence}` } });
   await new Promise(resolve => setTimeout(resolve, 180)); fireEvent.keyDown(draft, { key: 'Enter' });
+  await waitFor(() => expect(desktop.createSession).toHaveBeenCalled());
 }
 
 describe('Workspace real App with in-memory Desktop deferred completions (not Electron/Pi)', () => {

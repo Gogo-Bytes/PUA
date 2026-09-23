@@ -15,22 +15,27 @@ let inspect: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
-  inspect = vi.fn().mockResolvedValue({ hasResources: true, paths: ['/a/.pi'] });
+  inspect = vi.fn().mockResolvedValue({ hasResources: false, paths: [] });
   installDesktopFake({ inspectProjectResources: inspect, chooseDirectory: vi.fn().mockResolvedValue(null) } as unknown as DesktopAPI);
   props = { initialPath: '/a', hasRuntime: true, onClose: vi.fn(), onCreate: vi.fn().mockResolvedValue(undefined), onSettings: vi.fn() };
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('NewSessionDialog without advisory resource gate', () => {
-  it('immediately submits using Pi default policy without inspecting resources', async () => {
+  it('requests an explicit project-resource choice only when launch is submitted', async () => {
+    inspect.mockResolvedValue({ hasResources: true, paths: ['/a/.pi'] });
     render(<NewSessionDialog {...props} />);
     expect(pathInput().required).toBe(true);
     expect(radio(/^原生对话/).checked).toBe(true);
     fireEvent.change(pathInput(), { target: { value: ' /b ' } });
     await act(async () => { submit(); });
-    expect(props.onCreate).toHaveBeenCalledExactlyOnceWith(' /b ', 'chat', 'new', 'default');
-    expect(inspect).not.toHaveBeenCalled();
-    expect(screen.queryByText('检测到项目资源')).toBeNull();
+    await screen.findByText('检测到项目资源');
+    expect(props.onCreate).not.toHaveBeenCalled();
+    expect(inspect).toHaveBeenCalledExactlyOnceWith(' /b ');
+    fireEvent.click(radio(/^本次信任并加载项目资源/));
+    await act(async () => { submit(); });
+    expect(props.onCreate).toHaveBeenCalledExactlyOnceWith(' /b ', 'chat', 'new', 'approve');
+    expect(screen.getByText('检测到项目资源')).toBeTruthy();
   });
   it.each(['', '   '])('rejects blank paths for both launch kinds: %j', cwd => {
     render(<NewSessionDialog {...props} initialPath={cwd} />);
@@ -56,7 +61,8 @@ describe('NewSessionDialog without advisory resource gate', () => {
   it('prevents duplicate submission and permits retry after failure', async () => {
     let reject!: (reason: unknown) => void;
     vi.mocked(props.onCreate).mockReturnValueOnce(new Promise<void>((_, no) => { reject = no; }));
-    render(<NewSessionDialog {...props} />); submit(); submit();
+    render(<NewSessionDialog {...props} />); await act(async () => { submit(); }); await act(async () => { submit(); });
+    await vi.waitFor(() => expect(props.onCreate).toHaveBeenCalledTimes(1));
     expect(props.onCreate).toHaveBeenCalledTimes(1);
     await act(async () => { reject('create failed'); });
     expect(screen.getByRole('alert').textContent).toBe('create failed');

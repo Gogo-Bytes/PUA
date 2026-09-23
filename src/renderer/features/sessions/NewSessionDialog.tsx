@@ -11,7 +11,7 @@ export interface NewSessionDialogProps extends SessionLaunchOptions {
 
 export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }: NewSessionDialogProps) {
   const initialFocus = useRef<HTMLInputElement>(null);
-  const { cwd, setCwd, kind, setKind, mode, setMode, busy, error, submit, chooseDirectory } = useNewSessionLaunch(options);
+  const { cwd, setCwd, kind, setKind, mode, setMode, busy, error, submit, chooseDirectory, resources, trust, setTrust } = useNewSessionLaunch(options);
   const kinds = ([['chat', '原生对话', '默认 · RPC 消息与工具卡片'], ['terminal', '兼容终端', '登录、设置和 TUI 专属扩展']] as const);
   return <Dialog initialFocusRef={initialFocus} open title="打开项目" closeLabel="关闭对话框" onClose={onClose}>
     <form onSubmit={event => { event.preventDefault(); submit(); }}>
@@ -35,9 +35,22 @@ export function NewSessionDialog({ hasRuntime, onClose, onSettings, ...options }
         </label>)}
       </div>
       <p className="muted">兼容终端可在内部切换任意历史，因此必须独占：请先关闭其他会话，等待进程退出后再打开。</p>
+      {kind === 'chat' && resources && <fieldset className="trust-options">
+        <legend>检测到项目资源</legend>
+        <p className="muted">项目包含 Pi 技能、提示模板或扩展。请选择它们本次如何加载。</p>
+        {([
+          ['default', '沿用 Pi 保存的决定'],
+          ['approve', '本次信任并加载项目资源'],
+          ['decline', '本次不加载项目资源'],
+        ] as const).map(([value, label]) => <label key={value} className={trust === value ? 'chosen' : ''}>
+          <Radio name="project-trust" checked={trust === value} onChange={() => setTrust(value)} />
+          <span>{label}</span>
+        </label>)}
+        <ul className="project-resource-paths">{resources.paths.map(path => <li key={path}>{path}</li>)}</ul>
+      </fieldset>}
       {error && <p role="alert" className="form-error">{error}</p>}
       <div className="modal-actions">
-        {!hasRuntime ? <Button type="button" variant="primary" onClick={onSettings}>先配置 Pi</Button> : <Button type="submit" variant="primary" disabled={busy || !cwd.trim()}>{busy ? '正在打开…' : kind === 'chat' ? '开始对话 ↗' : '打开兼容终端 ↗'}</Button>}
+        {!hasRuntime ? <Button type="button" variant="primary" onClick={onSettings}>先配置 Pi</Button> : <Button type="submit" variant="primary" disabled={busy || !cwd.trim() || !!resources && trust === null}>{busy ? '正在检查…' : kind === 'chat' ? resources ? '按所选策略开始 ↗' : '开始对话 ↗' : '打开兼容终端 ↗'}</Button>}
       </div>
     </form>
   </Dialog>;
