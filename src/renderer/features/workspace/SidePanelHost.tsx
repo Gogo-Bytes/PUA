@@ -4,6 +4,7 @@ import { Button, DropdownMenu, Icon, IconButton, PanelTabs } from '../../ui';
 import { TaskDetailsPanel } from './TaskDetailsPanel';
 import type { SidePanelKind, useSidePanelTabs } from './useSidePanelTabs';
 import { FilesPanel } from './FilesPanel';
+import { BrowserPanel } from './BrowserPanel';
 
 const entries = [
   { id: 'review', label: 'Review', icon: 'review' },
@@ -15,7 +16,6 @@ const entries = [
 ] as const;
 const unavailable: Partial<Record<SidePanelKind, string>> = {
   terminal: '侧栏终端尚未接入。兼容终端仍可通过项目更多菜单打开；它遵守现有会话互斥规则。',
-  browser: '内嵌浏览器尚未接入。此处尚无导航、网络访问或远程页面执行能力。',
   'side-chat': '独立侧栏对话尚未接入。此入口不会创建 Pi 会话或发送消息。',
 };
 
@@ -43,7 +43,7 @@ export function SidePanelHost({ task, runtime, panels, changes, onClose, onOpenP
       </Button>)}
     </div> : <div className="workspace-panel-content">
       {tabs.map(tab => <div key={tab.id} role="tabpanel" id={`${idPrefix}-panel-${tab.id}`} aria-labelledby={`${idPrefix}-tab-${tab.id}`} tabIndex={0} hidden={panels.active !== tab.id}>
-        {tab.id === 'review' ? changes : tab.id === 'files' ? <FilesPanel task={task}/> : tab.id === 'task' && task
+        {tab.id === 'review' ? changes : tab.id === 'files' ? <FilesPanel task={task}/> : tab.id === 'browser' ? <BrowserPanel/> : tab.id === 'task' && task
           ? <TaskDetailsPanel task={task} runtime={runtime} onOpenProject={onOpenProject} onRename={onRename} onArchive={onArchive} onTogglePinned={onTogglePinned} onClone={onClone}/>
           : <div className="workspace-panel-unavailable"><Icon name={tab.icon}/><h2>{tab.label}</h2><span>尚未接入</span><p>{unavailable[tab.id]}</p></div>}
       </div>)}

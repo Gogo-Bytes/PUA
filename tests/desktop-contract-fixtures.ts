@@ -5,6 +5,7 @@ export const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   bootstrap: [], chooseDirectory: [], chooseFile: [], chooseAttachments: [], readClipboard: [],
   chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true], searchHistory: [{ query: 'message', limit: 10 }],
   stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], writeClipboard: ['clipboard'], listSessionFiles: ['id', ''], readSessionFile: ['id', 'README.md'],
+  createBrowserView: [], setBrowserViewBounds: ['browser-id', { x: 0, y: 0, width: 300, height: 400 }], navigateBrowser: ['browser-id', 'https://example.com/'], goBackBrowser: ['browser-id'], goForwardBrowser: ['browser-id'], reloadBrowser: ['browser-id'], disposeBrowserView: ['browser-id'],
   savePreferences: [preferences], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
   forkChatSession: ['id', 'entry'],
@@ -36,4 +37,5 @@ export const successes: { [K in InvokeMethod]: RequestResult<K> } = {
   gitStatus: { root: '/fake', branch: '', capturedAt: '', files: [] },
   fileDiff: { text: '', kind: 'diff', truncated: false }, readClipboard: { text: '', image: false },
   listSessionFiles: { path: '', entries: [], truncated: false }, readSessionFile: { path: 'README.md', text: 'hello', truncated: false },
+  createBrowserView: 'browser-id', setBrowserViewBounds: undefined, navigateBrowser: undefined, goBackBrowser: undefined, goForwardBrowser: undefined, reloadBrowser: undefined, disposeBrowserView: undefined,
 };

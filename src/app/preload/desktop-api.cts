@@ -1,6 +1,6 @@
 import { invokeChannels, sendChannels, eventChannels } from '../../shared/ipc/channels.js';
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DesktopBridge } from '../../shared/ipc/desktop-api.js';
+import type { BrowserViewState, DesktopBridge } from '../../shared/ipc/desktop-api.js';
 
 const api: DesktopBridge = {
   bootstrap: () => ipcRenderer.invoke(invokeChannels.bootstrap),
@@ -44,12 +44,24 @@ const api: DesktopBridge = {
     ipcRenderer.on(eventChannels.onSessionEvent, listener);
     return () => { ipcRenderer.removeListener(eventChannels.onSessionEvent, listener); };
   },
+  onBrowserViewState: callback => {
+    const listener = (_event: unknown, value: unknown) => callback(value as BrowserViewState);
+    ipcRenderer.on(eventChannels.onBrowserViewState, listener);
+    return () => { ipcRenderer.removeListener(eventChannels.onBrowserViewState, listener); };
+  },
   openExternal: url => ipcRenderer.invoke(invokeChannels.openExternal, url),
   openProject: id => ipcRenderer.invoke(invokeChannels.openProject, id),
   gitStatus: id => ipcRenderer.invoke(invokeChannels.gitStatus, id),
   fileDiff: (id, path, scope) => ipcRenderer.invoke(invokeChannels.fileDiff, id, path, scope),
   listSessionFiles: (id, path) => ipcRenderer.invoke(invokeChannels.listSessionFiles, id, path),
   readSessionFile: (id, path) => ipcRenderer.invoke(invokeChannels.readSessionFile, id, path),
+  createBrowserView: () => ipcRenderer.invoke(invokeChannels.createBrowserView),
+  setBrowserViewBounds: (id, bounds) => ipcRenderer.invoke(invokeChannels.setBrowserViewBounds, id, bounds),
+  navigateBrowser: (id, url) => ipcRenderer.invoke(invokeChannels.navigateBrowser, id, url),
+  goBackBrowser: id => ipcRenderer.invoke(invokeChannels.goBackBrowser, id),
+  goForwardBrowser: id => ipcRenderer.invoke(invokeChannels.goForwardBrowser, id),
+  reloadBrowser: id => ipcRenderer.invoke(invokeChannels.reloadBrowser, id),
+  disposeBrowserView: id => ipcRenderer.invoke(invokeChannels.disposeBrowserView, id),
   readClipboard: () => ipcRenderer.invoke(invokeChannels.readClipboard),
   writeClipboard: text => ipcRenderer.invoke(invokeChannels.writeClipboard, text),
 };

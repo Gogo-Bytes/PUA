@@ -86,6 +86,8 @@ export interface ProjectResourceInfo { hasResources: boolean; paths: string[]; s
 export interface SessionFileEntry { name: string; path: string; kind: 'file' | 'directory' }
 export interface SessionFileListing { path: string; entries: SessionFileEntry[]; truncated: boolean }
 export interface SessionFilePreview { path: string; text: string; truncated: boolean }
+export interface BrowserViewBounds { x: number; y: number; width: number; height: number }
+export interface BrowserViewState { id: string; url: string; title: string; canGoBack: boolean; canGoForward: boolean; loading: boolean; error?: string }
 
 export interface DesktopAPI {
   bootstrap(): Promise<Bootstrap>;
@@ -134,6 +136,14 @@ export interface DesktopAPI {
   /** List immediate, non-symlink children under an active session's cwd. */
   listSessionFiles(id: string, relativePath: string): Promise<SessionFileListing>;
   readSessionFile(id: string, relativePath: string): Promise<SessionFilePreview>;
+  createBrowserView(): Promise<string>;
+  setBrowserViewBounds(id: string, bounds: BrowserViewBounds | null): Promise<void>;
+  navigateBrowser(id: string, url: string): Promise<void>;
+  goBackBrowser(id: string): Promise<void>;
+  goForwardBrowser(id: string): Promise<void>;
+  reloadBrowser(id: string): Promise<void>;
+  disposeBrowserView(id: string): Promise<void>;
+  onBrowserViewState(callback: (state: BrowserViewState) => void): () => void;
   readClipboard(): Promise<{ text: string; image: boolean }>;
   writeClipboard(text: string): Promise<void>;
 }

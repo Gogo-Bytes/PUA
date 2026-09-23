@@ -31,7 +31,9 @@ try {
   await page.screenshot({ path: `${output}/review-light.png` });
   await panel.getByRole('button', { name: '打开右侧标签页' }).click();
   await page.getByRole('menuitem', { name: 'Browser', exact: true }).click();
-  await panel.getByRole('heading', { name: 'Browser', exact: true }).waitFor();
+  const address = panel.getByRole('textbox', { name: '浏览器地址' });
+  await address.fill('https://preview.example'); await address.press('Enter');
+  await page.waitForFunction(() => document.querySelector('[aria-label="浏览器地址"]')?.value === 'https://preview.example/');
   await panel.getByRole('tab', { name: 'Browser', exact: true }).focus();
   await page.keyboard.press('ArrowLeft'); await page.keyboard.press('Enter');
   assert.equal(await panel.getByRole('tab', { name: 'Review', exact: true }).getAttribute('aria-selected'), 'true');

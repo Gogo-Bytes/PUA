@@ -46,6 +46,13 @@ export const invokeChannels = {
   fileDiff: 'desktop:file-diff',
   listSessionFiles: 'desktop:session-files',
   readSessionFile: 'desktop:session-file-read',
+  createBrowserView: 'desktop:browser-create',
+  setBrowserViewBounds: 'desktop:browser-bounds',
+  navigateBrowser: 'desktop:browser-navigate',
+  goBackBrowser: 'desktop:browser-back',
+  goForwardBrowser: 'desktop:browser-forward',
+  reloadBrowser: 'desktop:browser-reload',
+  disposeBrowserView: 'desktop:browser-dispose',
   readClipboard: 'desktop:clipboard-read',
   writeClipboard: 'desktop:clipboard-write',
 } as const satisfies Record<InvokeMethod, string>;
@@ -58,4 +65,5 @@ export const sendChannels = {
 
 export const eventChannels = {
   onSessionEvent: 'desktop:event',
+  onBrowserViewState: 'desktop:browser-state',
 } as const satisfies Record<Exclude<keyof DesktopAPI, RequestMethod>, string>;

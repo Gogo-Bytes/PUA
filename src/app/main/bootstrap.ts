@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, shell, Tray } from 'electron';
+import { app, BrowserWindow, WebContentsView, clipboard, dialog, ipcMain, Menu, nativeImage, session, shell, Tray } from 'electron';
 import type { Tray as ElectronTray } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
@@ -19,6 +19,7 @@ import { bindWindowLifecycle } from './lifecycle.js';
 import { installMenu } from './menu.js';
 import { JsonWorkspaceSessionStore } from './workspace-session-store.js';
 import { createBackgroundTray } from './background-tray.js';
+import { BrowserViews } from '../../platform/electron/browser-views.js';
 
 const rendererURL = new URL('../../renderer/index.html', import.meta.url).href;
 const preloadPath = fileURLToPath(new URL('../preload/preload.cjs', import.meta.url));
@@ -41,7 +42,11 @@ if (hasSingleInstanceLock) void app.whenReady().then(async () => {
   const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial, storage), resolveRuntime, validateChatArguments, home: os.homedir(), platform: process.platform, sessionStore, listModels: listPiModelCatalog });
   const changeReview = new ChangeReviewApplication(new GitReviewAdapter());
   const holder = createWindowHolder();
-  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources, listSessionFiles, readSessionFile });
+  const browserViews = new BrowserViews({
+    createSession: id => session.fromPartition(`pua-browser-${id}`),
+    createView: browserSession => new WebContentsView({ webPreferences: { session: browserSession, contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true, allowRunningInsecureContent: false, webviewTag: false } }),
+  });
+  registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources, listSessionFiles, readSessionFile, browserViews });
   installMenu({ Menu, shell, platform: process.platform, diagnostics: process.env.PUA_MISSING_ASSISTANT_DIAGNOSTICS === 'next-chat' });
   const window = createWindow(options => new BrowserWindow(options), preloadPath);
   mainWindow = window;

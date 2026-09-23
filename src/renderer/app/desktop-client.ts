@@ -1,6 +1,6 @@
 import type { DesktopAPI, DesktopBridge } from '../../shared/ipc/desktop-api.js';
 import { invokeChannels, sendChannels, type InvokeMethod } from '../../shared/ipc/channels.js';
-import { desktopVoidMethods, isDesktopSessionEvent, parseDesktopResult, safeErrorMessage, type DesktopErrorKind } from '../../shared/ipc/desktop-result.js';
+import { desktopVoidMethods, isDesktopSessionEvent, isDesktopBrowserViewState, parseDesktopResult, safeErrorMessage, type DesktopErrorKind } from '../../shared/ipc/desktop-result.js';
 
 export class DesktopClientError extends Error {
   constructor(readonly kind: DesktopErrorKind | 'transport' | 'protocol' | 'unavailable', readonly code: string, message: string) {
@@ -62,6 +62,17 @@ export function createDesktopClient(getBridge: () => DesktopBridge | undefined):
         active = false;
         remove();
       };
+    },
+    onBrowserViewState(observer) {
+      const current = bridge();
+      let active = true;
+      const remove = current.onBrowserViewState(value => {
+        if (!active) return;
+        if (!isDesktopBrowserViewState(value)) throw new DesktopClientError('protocol', 'INVALID_BROWSER_EVENT', '桌面返回了无效浏览器状态');
+        observer(value);
+      });
+      if (typeof remove !== 'function') { active = false; throw protocolError(); }
+      return () => { if (!active) return; active = false; remove(); };
     },
   } as DesktopAPI;
 }

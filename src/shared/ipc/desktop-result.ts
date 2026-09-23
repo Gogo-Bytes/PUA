@@ -58,6 +58,8 @@ export const desktopValueGuards = {
   fileDiff: (v: unknown) => record(v) && text(v.text) && oneOf(v.kind, ['diff', 'untracked', 'binary', 'symlink']) && bool(v.truncated),
   listSessionFiles: (v: unknown) => record(v) && text(v.path) && bool(v.truncated) && arrayOf(v.entries, entry => record(entry) && text(entry.name) && text(entry.path) && oneOf(entry.kind, ['file', 'directory'])),
   readSessionFile: (v: unknown) => record(v) && text(v.path) && text(v.text) && bool(v.truncated),
+  createBrowserView: text,
+  setBrowserViewBounds: empty, navigateBrowser: empty, goBackBrowser: empty, goForwardBrowser: empty, reloadBrowser: empty, disposeBrowserView: empty,
   readClipboard: (v: unknown) => record(v) && text(v.text) && bool(v.image),
 } satisfies Record<InvokeMethod, (value: unknown) => boolean>;
 
@@ -84,6 +86,7 @@ type VoidMethod = { [K in InvokeMethod]: RequestResult<K> extends void ? K : nev
 export const desktopVoidMethods = {
   removeChatAttachment: true, startSession: true, sendChatMessage: true, stopChat: true, deleteArchivedSession: true, setSessionPinned: true,
   respondToExtensionUI: true, renameChatSession: true, setChatModel: true, setChatThinkingLevel: true, setChatAutoCompaction: true, setChatAutoRetry: true, setChatSteeringMode: true, setChatFollowUpMode: true, compactChatSession: true, openExternal: true, openProject: true, writeClipboard: true,
+  setBrowserViewBounds: true, navigateBrowser: true, goBackBrowser: true, goForwardBrowser: true, reloadBrowser: true, disposeBrowserView: true,
 } satisfies Record<VoidMethod, true>;
 
 export function desktopSuccess<K extends InvokeMethod>(method: K, value: RequestResult<K>): DesktopResult<WireValue<RequestResult<K>>> {
@@ -131,4 +134,8 @@ export function isDesktopSessionEvent(v: unknown): v is import('./conversation.j
       default: return false;
     }
   } catch { return false; }
+}
+
+export function isDesktopBrowserViewState(v: unknown): v is import('./desktop-api.js').BrowserViewState {
+  return record(v) && text(v.id) && text(v.url) && text(v.title) && bool(v.canGoBack) && bool(v.canGoForward) && bool(v.loading) && optional(v.error, text);
 }

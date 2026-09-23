@@ -163,4 +163,17 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
     if (!path || path.startsWith('/') || path.includes('\\') || /^[a-zA-Z]:/.test(path) || path.split('/').some(part => !part || part === '..' || part === '.')) throw new Error('无效文件路径');
     return [text(id), path];
   }),
+  createBrowserView: tuple<'createBrowserView'>(0, () => []),
+  setBrowserViewBounds: tuple<'setBrowserViewBounds'>(2, (id, bounds) => {
+    if (bounds === null) return [text(id), null];
+    if (!bounds || typeof bounds !== 'object' || Array.isArray(bounds)) throw new Error('无效浏览器视图位置');
+    const value = bounds as Record<string, unknown>;
+    if (!['x', 'y', 'width', 'height'].every(key => Number.isSafeInteger(value[key]) && Number(value[key]) >= 0 && Number(value[key]) <= 16384)) throw new Error('无效浏览器视图位置');
+    return [text(id), { x: value.x as number, y: value.y as number, width: value.width as number, height: value.height as number }];
+  }),
+  navigateBrowser: tuple<'navigateBrowser'>(2, (id, url) => [text(id), boundedText(url, 4096, '网址')]),
+  goBackBrowser: idArgs,
+  goForwardBrowser: idArgs,
+  reloadBrowser: idArgs,
+  disposeBrowserView: idArgs,
 };

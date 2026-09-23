@@ -5,15 +5,18 @@ import { createRoot } from 'react-dom/client';
 import { App } from '../src/renderer/app/App';
 import type { DesktopAPI, Preferences, SessionInfo } from '../src/shared/ipc/desktop-api';
 import type { SessionEvent } from '../src/shared/ipc/conversation';
+import type { BrowserViewState } from '../src/shared/ipc/desktop-api';
 import '../src/renderer/app/production.css';
 
 const listeners = new Set<(event: SessionEvent) => void>();
+const browserListeners = new Set<(state: BrowserViewState) => void>();
 const sessions = new Map<string, SessionInfo>();
 let preferences: Preferences = { piPath: 'TEST ONLY / no executable', nodePath: '', args: [], fontSize: 14, recentProjects: ['/test/workspace/PUA', '/test/other/PUA', '/test/empty'] };
 let sequence = 0;
 let clipboard = ''; // Fake Desktop never reaches the system clipboard.
 const launchOptions: unknown[] = [];
 const emit = (event: SessionEvent) => listeners.forEach(listener => listener(event));
+const emitBrowser = (state: BrowserViewState) => browserListeners.forEach(listener => listener(state));
 const source = '# 测试文档\n\n这份内容来自测试 IPC，不是磁盘文件。\n\n## 阅读边界\n\n- 工具输出是执行快照。\n- Git patch 不是完整文件。\n- 引用只回填草稿。';
 const unsupported = async (): Promise<never> => { throw new Error('TEST ONLY：浏览器预览不提供此 Electron 能力'); };
 const bootstrap: DesktopAPI['bootstrap'] = async () => ({ preferences, runtime: { executable: 'TEST ONLY', args: [], source: 'MOCK / NOT ELECTRON' }, home: '/test', platform: 'darwin' });
@@ -21,6 +24,8 @@ installDesktopFake({
   bootstrap,
   savePreferences: async value => { preferences = value; return bootstrap(); },
   onSessionEvent: callback => { listeners.add(callback); return () => listeners.delete(callback); },
+  onBrowserViewState: callback => { browserListeners.add(callback); return () => browserListeners.delete(callback); },
+  createBrowserView: async () => 'preview-browser', setBrowserViewBounds: async () => {}, navigateBrowser: async (_id, url) => emitBrowser({ id: 'preview-browser', url, title: 'Fake isolated preview', canGoBack: false, canGoForward: false, loading: false }), goBackBrowser: async () => {}, goForwardBrowser: async () => {}, reloadBrowser: async () => {}, disposeBrowserView: async () => {},
   inspectProjectResources: async () => ({ hasResources: false, paths: [] }),
   createSession: async options => {
     if (options.kind === 'terminal') return unsupported();

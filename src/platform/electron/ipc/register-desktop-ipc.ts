@@ -8,6 +8,7 @@ import type { ChangeReview } from '../../../modules/change-review/index.js';
 import { repositorySnapshotDTO, reviewPreviewDTO, reviewScopeInput, reviewError } from './change-review-mapper.js';
 import type { inspectProjectResources as InspectResources } from '../../filesystem/project-resources.js';
 import type { listSessionFiles as BrowseSessionFiles, readSessionFile as PreviewSessionFile } from '../../filesystem/session-files.js';
+import type { BrowserViews } from '../browser-views.js';
 
 export interface DesktopIPCDependencies {
   ipcMain: Pick<typeof ElectronIPC, 'handle' | 'on'>;
@@ -21,10 +22,11 @@ export interface DesktopIPCDependencies {
   inspectProjectResources: typeof InspectResources;
   listSessionFiles: typeof BrowseSessionFiles;
   readSessionFile: typeof PreviewSessionFile;
+  browserViews: BrowserViews;
 }
 
 /** Closed Desktop methods only; sender → tuple parser → captured window/core workflow. */
-export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources, listSessionFiles, readSessionFile }: DesktopIPCDependencies): void {
+export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources, listSessionFiles, readSessionFile, browserViews }: DesktopIPCDependencies): void {
   const { handle, listen } = createIPCRegistrar(ipcMain, event => checkSender(event, requireCurrent().window.webContents, rendererURL));
   handle('bootstrap', async () => { await preferences.whenReady(); return preferences.getBootstrap(); });
   handle('chooseDirectory', async () => {
@@ -109,6 +111,13 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('fileDiff', (id, filename, scope) => changeReview.preview({ cwd: requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, path: filename, scope: reviewScopeInput(scope) }).then(reviewPreviewDTO).catch(reviewError));
   handle('listSessionFiles', (id, relativePath) => listSessionFiles(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
   handle('readSessionFile', (id, relativePath) => readSessionFile(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
+  handle('createBrowserView', () => browserViews.create(requireCurrent().window));
+  handle('setBrowserViewBounds', (id, bounds) => browserViews.setBounds(requireCurrent().window, id, bounds));
+  handle('navigateBrowser', (id, url) => browserViews.navigate(requireCurrent().window, id, url));
+  handle('goBackBrowser', id => browserViews.back(requireCurrent().window, id));
+  handle('goForwardBrowser', id => browserViews.forward(requireCurrent().window, id));
+  handle('reloadBrowser', id => browserViews.reload(requireCurrent().window, id));
+  handle('disposeBrowserView', id => browserViews.dispose(requireCurrent().window, id));
   handle('readClipboard', async () => ({
     text: await clipboard.readText(),
     image: (await Promise.all(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'].map(type => clipboard.has(type)))).some(Boolean),

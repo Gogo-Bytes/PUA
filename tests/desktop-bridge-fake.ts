@@ -31,7 +31,7 @@ export function desktopBridgeFake(api: DesktopAPI): DesktopBridge {
   const sends = Object.fromEntries(Object.keys(sendChannels).map(method => [method, (...args: unknown[]) => {
     (api[method as keyof typeof sendChannels] as (...args: unknown[]) => void).apply(api, args);
   }]));
-  return { ...invokes, ...sends, onSessionEvent: callback => api.onSessionEvent(callback) } as DesktopBridge;
+  return { ...invokes, ...sends, onSessionEvent: callback => api.onSessionEvent(callback), onBrowserViewState: callback => api.onBrowserViewState(callback) } as DesktopBridge;
 }
 export function installDesktopFake(api: DesktopAPI): DesktopAPI {
   window.desktop = desktopBridgeFake(api);
