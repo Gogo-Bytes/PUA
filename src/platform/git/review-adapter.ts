@@ -49,6 +49,24 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
     return { root, branch: branch.trimEnd() || 'detached HEAD', files: parseStatus(status), capturedAt: this.capturedAt() };
   }
 
+  async listBranches(cwd: string): Promise<string[]> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    const output = await git(root, ['for-each-ref', '--format=%(refname:short)', 'refs/heads']);
+    return [...new Set(output.split(/\r?\n/).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }
+
+  async switchBranch(cwd: string, branch: string): Promise<void> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    const candidate = branch.trim();
+    if (!candidate || candidate.length > 255 || candidate.includes('\0')) throw new Error('无效分支名称');
+    await git(root, ['check-ref-format', '--branch', candidate]);
+    const status = await git(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
+    if (status) throw new Error('工作区存在未提交改动，已拒绝切换分支；请先提交或收纳改动。');
+    const branches = await this.listBranches(root);
+    if (!branches.includes(candidate)) throw new Error('本地分支不存在，请刷新列表。');
+    await git(root, ['switch', '--quiet', '--', candidate]);
+  }
+
   /** Read-only UI preview. Does not stage/revert files or run external diff/textconv helpers. */
   async readAuthorizedPreview(selection: AuthorizedPreview): Promise<ReviewPreview> {
     const { root: repositoryRoot, path: filename } = selection;
@@ -105,4 +123,3 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
 function truncate(text: string, kind: ReviewPreview['kind']) {
   return { text: text.slice(0, previewLimit), kind, truncated: text.length > previewLimit };
 }
-

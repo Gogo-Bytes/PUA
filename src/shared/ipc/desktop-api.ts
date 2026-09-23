@@ -1,5 +1,5 @@
 import type { DesktopResult, WireValue } from './desktop-result.js';
-import type { DiffScope, FileDiff, GitStatus } from './change-review.js';
+import type { DiffScope, FileDiff, GitBranches, GitStatus } from './change-review.js';
 import type {
   ChatAttachment, ChatCommand, ChatDelivery, ExtensionUIResponse, ProjectTrust, SessionActivity,
   SessionEvent, SessionKind, SessionProcessStatus,
@@ -132,6 +132,8 @@ export interface DesktopAPI {
   openExternal(url: string): Promise<void>;
   openProject(id: string): Promise<void>;
   gitStatus(id: string): Promise<GitStatus>;
+  gitBranches(id: string): Promise<GitBranches>;
+  switchGitBranch(id: string, branch: string): Promise<GitStatus>;
   fileDiff(id: string, path: string, scope: DiffScope): Promise<FileDiff>;
   /** List immediate, non-symlink children under an active session's cwd. */
   listSessionFiles(id: string, relativePath: string): Promise<SessionFileListing>;

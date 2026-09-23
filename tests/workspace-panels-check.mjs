@@ -65,6 +65,16 @@ try {
   await page.screenshot({ path: `${output}/empty-dark.png` });
   await page.getByRole('button', { name: '环境与任务信息', exact: true }).click();
   await popup.waitFor();
+  await popup.getByRole('button', { name: /test-only.*本地分支/ }).click();
+  const blockedBranch = popup.getByRole('option', { name: 'main' });
+  await blockedBranch.waitFor(); assert.equal(await blockedBranch.isDisabled(), true);
+  assert.match(await popup.innerText(), /工作区有未提交改动/);
+  await page.keyboard.press('Escape'); await popup.waitFor({ state: 'hidden' });
+  await page.evaluate(() => window.__workspacePreviewSetGitClean?.(true));
+  await page.getByRole('button', { name: '环境与任务信息', exact: true }).click(); await popup.waitFor();
+  await popup.getByRole('button', { name: /test-only.*本地分支/ }).click();
+  await popup.getByRole('option', { name: 'main' }).click();
+  await popup.getByRole('button', { name: /main.*本地分支/ }).waitFor();
   await page.screenshot({ path: `${output}/environment-dark.png` });
   await page.keyboard.press('Escape');
   await popup.waitFor({ state: 'hidden' });

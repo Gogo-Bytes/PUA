@@ -55,6 +55,8 @@ export const desktopValueGuards = {
   setChatAutoCompaction: empty, setChatAutoRetry: empty, setChatSteeringMode: empty, setChatFollowUpMode: empty,
   getChatThinkingLevels: v => arrayOf(v, text),
   gitStatus: (v: unknown) => record(v) && text(v.root) && text(v.branch) && text(v.capturedAt) && arrayOf(v.files, f => record(f) && text(f.path) && text(f.index) && text(f.worktree) && optional(f.originalPath, text)),
+  gitBranches: (v: unknown) => record(v) && text(v.current) && strings(v.branches),
+  switchGitBranch: (v: unknown) => record(v) && text(v.root) && text(v.branch) && text(v.capturedAt) && arrayOf(v.files, f => record(f) && text(f.path) && text(f.index) && text(f.worktree) && optional(f.originalPath, text)),
   fileDiff: (v: unknown) => record(v) && text(v.text) && oneOf(v.kind, ['diff', 'untracked', 'binary', 'symlink']) && bool(v.truncated),
   listSessionFiles: (v: unknown) => record(v) && text(v.path) && bool(v.truncated) && arrayOf(v.entries, entry => record(entry) && text(entry.name) && text(entry.path) && oneOf(entry.kind, ['file', 'directory'])),
   readSessionFile: (v: unknown) => record(v) && text(v.path) && text(v.text) && bool(v.truncated),

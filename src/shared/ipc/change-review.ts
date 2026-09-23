@@ -10,6 +10,10 @@ export interface GitStatus {
   files: ChangedFile[];
   capturedAt: string;
 }
+export interface GitBranches {
+  current: string;
+  branches: string[];
+}
 export type DiffScope = 'worktree' | 'index';
 
 export interface FileDiff {

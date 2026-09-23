@@ -3,4 +3,6 @@ import type { AuthorizedPreview, RepositorySnapshot, ReviewPreview } from './dom
 export interface ReviewRepositoryPort {
   captureSnapshot(cwd: string): Promise<RepositorySnapshot>;
   readAuthorizedPreview(selection: AuthorizedPreview): Promise<ReviewPreview>;
+  listBranches(cwd: string): Promise<string[]>;
+  switchBranch(cwd: string, branch: string): Promise<void>;
 }

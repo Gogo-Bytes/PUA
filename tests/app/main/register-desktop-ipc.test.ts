@@ -9,7 +9,7 @@ const create = { cwd: '/fake/project', kind: 'chat', startMode: 'new', projectTr
 const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   bootstrap: [], chooseDirectory: [], chooseFile: [], chooseAttachments: [], readClipboard: [],
   chooseChatAttachments: ['id'], inspectProjectResources: ['../project'], startSession: ['id'], closeSession: ['id'], restoreArchivedSession: ['id'], deleteArchivedSession: ['id'], setSessionPinned: ['id', true], searchHistory: [{ query: 'message', limit: 10 }],
-  stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], writeClipboard: ['clipboard'], listSessionFiles: ['id', ''], readSessionFile: ['id', 'README.md'],
+  stopChat: ['id'], openProject: ['id'], gitStatus: ['id'], gitBranches: ['id'], switchGitBranch: ['id', 'feature/test'], writeClipboard: ['clipboard'], listSessionFiles: ['id', ''], readSessionFile: ['id', 'README.md'],
   createBrowserView: [], setBrowserViewBounds: ['browser-id', { x: 0, y: 0, width: 300, height: 400 }], navigateBrowser: ['browser-id', 'https://example.com/'], goBackBrowser: ['browser-id'], goForwardBrowser: ['browser-id'], reloadBrowser: ['browser-id'], disposeBrowserView: ['browser-id'],
   savePreferences: [initial], createSession: [create], removeChatAttachment: ['id', 'token'],
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
@@ -52,7 +52,10 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     expect(h.capabilities.conversation.removeAttachment).toHaveBeenCalledExactlyOnceWith('id', 'token'); expect(h.capabilities.conversation.rename).toHaveBeenCalledExactlyOnceWith('id', 'title');
     expect(h.capabilities.terminal.write).toHaveBeenCalledExactlyOnceWith('id', '\0\x1b[31m\r\n'); expect(h.capabilities.terminal.resize).toHaveBeenCalledExactlyOnceWith('id', 100, 30); expect(h.capabilities.terminal.acknowledge).toHaveBeenCalledExactlyOnceWith('id', 1);
     expect(h.shell.openExternal).toHaveBeenCalledExactlyOnceWith('https://example.com/'); expect(h.shell.openPath).toHaveBeenCalledExactlyOnceWith('/fake/project');
-    expect(h.getGitStatus).toHaveBeenCalledExactlyOnceWith('/fake/project'); expect(results.gitStatus).toEqual({ root: '/repo', branch: 'main', capturedAt: 'now', files: [{ path: 'new\nname', originalPath: 'old', index: 'R', worktree: ' ' }] });
+    expect(h.getGitStatus).toHaveBeenCalledTimes(3); expect(h.getGitStatus).toHaveBeenCalledWith('/fake/project'); expect(results.gitStatus).toEqual({ root: '/repo', branch: 'main', capturedAt: 'now', files: [{ path: 'new\nname', originalPath: 'old', index: 'R', worktree: ' ' }] });
+    expect(results.gitBranches).toEqual({ current: 'main', branches: ['main'] });
+    expect(results.switchGitBranch).toEqual({ root: '/repo', branch: 'main', capturedAt: 'now', files: [{ path: 'new\nname', originalPath: 'old', index: 'R', worktree: ' ' }] });
+    expect(h.getGitBranches).toHaveBeenCalledExactlyOnceWith('/fake/project'); expect(h.switchGitBranch).toHaveBeenCalledExactlyOnceWith('/fake/project', 'feature/test');
     expect(h.getFileDiff).toHaveBeenCalledExactlyOnceWith({ cwd: '/fake/project', path: 'relative/file', scope: 'worktree' }); expect(results.fileDiff).toEqual({ text: 'patch', kind: 'diff', truncated: false });
     expect(h.listSessionFiles).toHaveBeenCalledExactlyOnceWith('/fake/project', ''); expect(results.listSessionFiles).toEqual({ path: '', entries: [], truncated: false });
     expect(h.readSessionFile).toHaveBeenCalledExactlyOnceWith('/fake/project', 'README.md'); expect(results.readSessionFile).toEqual({ path: 'README.md', text: 'hello', truncated: false });
@@ -72,7 +75,7 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     for (const method of Object.keys(invokeChannels) as (keyof typeof invokeChannels)[]) expect(h.invokes.get(invokeChannels[method])!(foreign, ...samples[method])).toMatchObject({ ok: false, error: { kind: 'authorization', code: 'UNTRUSTED_SENDER' } });
     for (const method of Object.keys(sendChannels) as (keyof typeof sendChannels)[]) h.sends.get(sendChannels[method])!(foreign, ...samples[method]);
     for (const parser of parsers) { expect(parser).not.toHaveBeenCalled(); parser.mockRestore(); }
-    for (const spy of [h.store.write, h.resolveRuntime, h.validateChatArguments, h.dialog.showOpenDialog, h.dialog.showMessageBox, h.shell.openPath, h.shell.openExternal, ...Object.values(h.clipboard), h.getGitStatus, h.getFileDiff, h.inspectProjectResources, h.listSessionFiles, h.readSessionFile, ...Object.values(h.browserViews), ...Object.values(h.capabilities.session), ...Object.values(h.capabilities.conversation), ...Object.values(h.capabilities.terminal), h.capabilities.createSession, h.capabilities.registerChatAttachments]) expect(spy).not.toHaveBeenCalled();
+    for (const spy of [h.store.write, h.resolveRuntime, h.validateChatArguments, h.dialog.showOpenDialog, h.dialog.showMessageBox, h.shell.openPath, h.shell.openExternal, ...Object.values(h.clipboard), h.getGitStatus, h.getGitBranches, h.switchGitBranch, h.getFileDiff, h.inspectProjectResources, h.listSessionFiles, h.readSessionFile, ...Object.values(h.browserViews), ...Object.values(h.capabilities.session), ...Object.values(h.capabilities.conversation), ...Object.values(h.capabilities.terminal), h.capabilities.createSession, h.capabilities.registerChatAttachments]) expect(spy).not.toHaveBeenCalled();
     expect(report).toHaveBeenCalledTimes(3); report.mockRestore();
   });
   it('all trusted malformed tuples fail before effects; sends log/drop', () => {
@@ -91,6 +94,11 @@ describe('real registerDesktopIPC with Fake Electron and closed business depende
     await expect(h.call('fileDiff', 'id', 'file', 'worktree')).rejects.toThrow('文件状态已变化，请刷新变更列表。');
     const error = new Error('Git denied'); h.getGitStatus.mockRejectedValueOnce(error);
     await expect(h.call('gitStatus', 'id')).rejects.toThrow(error.message);
+  });
+  it('rejects branch switches while Pi is active before calling Git', async () => {
+    const h = harness(); h.capabilities.activity.mockReturnValueOnce('responding');
+    await expect(h.call('switchGitBranch', 'id', 'feature/test')).rejects.toThrow('当前 Pi/Terminal 任务正在运行');
+    expect(h.switchGitBranch).not.toHaveBeenCalled();
   });
   it('captures original context across attachment/close dialogs, with cancel and core false semantics', async () => {
     const h = harness(); const attachments = deferred<{ canceled: boolean; filePaths: string[] }>(); const confirmation = deferred<{ response: number }>();

@@ -13,10 +13,12 @@ const browserListeners = new Set<(state: BrowserViewState) => void>();
 const sessions = new Map<string, SessionInfo>();
 let preferences: Preferences = { piPath: 'TEST ONLY / no executable', nodePath: '', args: [], fontSize: 14, recentProjects: ['/test/workspace/PUA', '/test/other/PUA', '/test/empty'] };
 let sequence = 0;
+let previewBranch = 'test-only'; let previewGitClean = false;
 let clipboard = ''; // Fake Desktop never reaches the system clipboard.
 const launchOptions: unknown[] = [];
 const emit = (event: SessionEvent) => listeners.forEach(listener => listener(event));
 const emitBrowser = (state: BrowserViewState) => browserListeners.forEach(listener => listener(state));
+Object.assign(window as Window & { __workspacePreviewSetGitClean?: (value: boolean) => void }, { __workspacePreviewSetGitClean: (value: boolean) => { previewGitClean = value; } });
 const source = '# 测试文档\n\n这份内容来自测试 IPC，不是磁盘文件。\n\n## 阅读边界\n\n- 工具输出是执行快照。\n- Git patch 不是完整文件。\n- 引用只回填草稿。';
 const unsupported = async (): Promise<never> => { throw new Error('TEST ONLY：浏览器预览不提供此 Electron 能力'); };
 const bootstrap: DesktopAPI['bootstrap'] = async () => ({ preferences, runtime: { executable: 'TEST ONLY', args: [], source: 'MOCK / NOT ELECTRON' }, home: '/test', platform: 'darwin' });
@@ -55,7 +57,8 @@ installDesktopFake({
   stopChat: async () => {},
   chooseChatAttachments: async id => [{ id: `${id}-attachment`, kind: 'file', name: 'test-context.txt', path: '/test/test-context.txt', size: 12 }],
   removeChatAttachment: async () => {},
-  gitStatus: async id => ({ root: sessions.get(id)?.cwd || '/test', branch: 'test-only', capturedAt: new Date().toISOString(), files: [{ path: 'src/source.ts', index: 'M', worktree: 'M' }, { path: 'docs/context.md', index: '?', worktree: '?' }] }),
+  gitStatus: async id => ({ root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: previewGitClean ? [] : [{ path: 'src/source.ts', index: 'M', worktree: 'M' }, { path: 'docs/context.md', index: '?', worktree: '?' }] }),
+  gitBranches: async () => ({ current: previewBranch, branches: ['main', 'test-only'] }), switchGitBranch: async id => { if (!previewGitClean) throw new Error('工作区存在未提交改动'); previewBranch = 'main'; return { root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }; },
   fileDiff: async (_id, filename, scope) => filename.endsWith('.md') ? { kind: 'untracked', text: source, truncated: false } : { kind: 'diff', truncated: false, text: `diff --git a/src/source.ts b/src/source.ts\n--- a/src/source.ts\n+++ b/src/source.ts\n@@ -1,2 +1,3 @@\n-const source = "file";\n+const source = "${scope === 'index' ? 'staged snapshot' : 'tool snapshot'}";\n+const currentFile = false;\n export { source };` },
   listSessionFiles: async (_id, path) => ({ path, entries: path === ''
     ? [{ name: 'src', path: 'src', kind: 'directory' as const }, { name: 'docs', path: 'docs', kind: 'directory' as const }, { name: 'README.md', path: 'README.md', kind: 'file' as const }]

@@ -108,6 +108,21 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
     if (result) throw new Error(result);
   });
   handle('gitStatus', (id) => changeReview.snapshot(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd).then(repositorySnapshotDTO).catch(reviewError));
+  handle('gitBranches', async id => {
+    const cwd = requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd;
+    const [current, branches] = await Promise.all([
+      changeReview.snapshot(cwd), changeReview.branches(cwd),
+    ]);
+    return { current: current.branch, branches };
+  });
+  handle('switchGitBranch', async (id, branch) => {
+    const { capabilities } = requireCurrent();
+    const session = requireSessionSnapshot(capabilities.session.get(id));
+    if (isSessionBusy(session, capabilities.activity(id))) throw new Error('当前 Pi/Terminal 任务正在运行，已拒绝切换分支。');
+    const cwd = session.cwd;
+    await changeReview.switchBranch(cwd, branch);
+    return changeReview.snapshot(cwd).then(repositorySnapshotDTO).catch(reviewError);
+  });
   handle('fileDiff', (id, filename, scope) => changeReview.preview({ cwd: requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, path: filename, scope: reviewScopeInput(scope) }).then(reviewPreviewDTO).catch(reviewError));
   handle('listSessionFiles', (id, relativePath) => listSessionFiles(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
   handle('readSessionFile', (id, relativePath) => readSessionFile(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));

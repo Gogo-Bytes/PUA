@@ -30,7 +30,7 @@ async function repository() {
   return { root, git };
 }
 
-describe('read-only Git review', () => {
+describe('Git review and guarded local branch operations', () => {
   it('parses NUL-delimited paths, both index/worktree states and rename pairs', () => {
     const files = parseStatus('MM hello world.txt\0R  new\nname.txt\0old name.txt\0?? 图片.png\0');
     expect(files[1]).toEqual({ path: 'new\nname.txt', originalPath: 'old name.txt', index: 'R', worktree: ' ' });
@@ -93,5 +93,18 @@ describe('read-only Git review', () => {
     expect(diff.text).toContain('rename from hello.txt');
     const outside = await mkdtemp(path.join(os.tmpdir(), 'pi-no-git-')); temporary.push(outside);
     await expect(getGitStatus(outside)).rejects.toThrow();
+  });
+  it('lists local branches and switches only when the worktree is clean', async () => {
+    const { root, git } = await repository();
+    await git('branch', 'feature/ui');
+    expect(await review.branches(root)).toEqual(['feature/ui', 'main']);
+    await writeFile(path.join(root, 'hello.txt'), 'uncommitted\n');
+    await expect(review.switchBranch(root, 'feature/ui')).rejects.toThrow('工作区存在未提交改动');
+    expect((await getGitStatus(root)).branch).toBe('main');
+    await writeFile(path.join(root, 'hello.txt'), 'base\n');
+    await review.switchBranch(root, 'feature/ui');
+    expect((await getGitStatus(root)).branch).toBe('feature/ui');
+    await expect(review.switchBranch(root, 'missing')).rejects.toThrow('本地分支不存在');
+    await expect(review.switchBranch(root, '-force')).rejects.toThrow();
   });
 });

@@ -47,3 +47,6 @@
 .environment-row small { color: var(--ui-tertiary); font: var(--ui-font-meta); white-space: nowrap; }
 .environment-row.is-unavailable { color: var(--ui-tertiary); }
 .environment-note { font: var(--ui-font-meta); color: var(--ui-tertiary); margin: 6px 8px; }
+.environment-branches { margin: 2px 0 8px 30px; padding: 4px; border-left: 1px solid var(--ui-border); display: grid; gap: 2px; }
+.ui-provider .environment-branch-option { min-height: 30px; display:flex; align-items:center; justify-content:space-between; width:100%; padding:5px 8px; font:var(--ui-font-meta); border:0; background:transparent; text-align:left; }
+.environment-branch-option small { color:var(--ui-tertiary); }
