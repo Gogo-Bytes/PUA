@@ -29,6 +29,7 @@ export const invokeChannels = {
   forkChatSession: 'desktop:chat-fork',
   cloneChatSession: 'desktop:chat-clone',
   getChatAvailableModels: 'desktop:chat-models',
+  getChatModelCatalog: 'desktop:chat-model-catalog',
   getChatThinkingLevels: 'desktop:chat-thinking-levels',
   setChatModel: 'desktop:chat-model-set',
   setChatThinkingLevel: 'desktop:chat-thinking-set',

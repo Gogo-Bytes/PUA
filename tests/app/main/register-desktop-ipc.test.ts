@@ -14,7 +14,7 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   renameChatSession: ['id', 'title'], respondToExtensionUI: ['id', { id: 'request', confirmed: true }],
   forkChatSession: ['id', 'entry'],
   cloneChatSession: ['id'],
-  getChatAvailableModels: ['id'], getChatThinkingLevels: ['id'],
+  getChatAvailableModels: ['id'], getChatModelCatalog: [], getChatThinkingLevels: ['id'],
   getChatSessionStats: ['id'], getChatAutoSettings: ['id'],
   setChatModel: ['id', 'provider', 'model'], setChatThinkingLevel: ['id', 'high'],
   compactChatSession: ['id', undefined], setChatAutoCompaction: ['id', true], setChatAutoRetry: ['id', false], setChatSteeringMode: ['id', 'one-at-a-time'], setChatFollowUpMode: ['id', 'all'],

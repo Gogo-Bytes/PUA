@@ -29,10 +29,11 @@ interface DesktopPreferencesDependencies {
   home: string;
   platform: string;
   sessionStore?: WorkspaceSessionStore;
+  listModels?(runtime: import('../../shared/ipc/desktop-api.js').RuntimeInfo, cwd: string): Promise<import('../../shared/ipc/conversation.js').ChatModel[]>;
 }
 
 /** Runtime/bootstrap mapping and cross-Session compensation; preferences state lives in the module. */
-export function createDesktopPreferences({ application, resolveRuntime, validateChatArguments, home, platform, sessionStore }: DesktopPreferencesDependencies) {
+export function createDesktopPreferences({ application, resolveRuntime, validateChatArguments, home, platform, sessionStore, listModels = async () => { throw new Error('Pi 模型目录读取器尚未配置'); } }: DesktopPreferencesDependencies) {
   let restoredSessions: SessionInfo[] = [];
   let archivedSessions: SessionInfo[] = [];
   let restorer: SessionRestoration | undefined;
@@ -139,6 +140,11 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
   }
   return {
     getBootstrap,
+    async getChatModelCatalog() {
+      const current = application.read();
+      validateChatArguments(current.args);
+      return listModels(resolveRuntime(current), home);
+    },
     savePreferences(next: Preferences): Promise<Bootstrap> {
       return application.save(next, getBootstrap);
     },

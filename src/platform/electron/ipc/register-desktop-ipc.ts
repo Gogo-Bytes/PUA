@@ -83,6 +83,7 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
   handle('forkChatSession', (id, entryId) => requireCurrent().capabilities.conversation.fork(id, entryId));
   handle('cloneChatSession', id => preferences.cloneSession(id, requireCurrent().capabilities as unknown as Parameters<typeof preferences.cloneSession>[1]));
   handle('getChatAvailableModels', id => requireCurrent().capabilities.conversation.getAvailableModels(id));
+  handle('getChatModelCatalog', () => preferences.getChatModelCatalog());
   handle('getChatThinkingLevels', id => requireCurrent().capabilities.conversation.getAvailableThinkingLevels(id));
   handle('setChatModel', (id, provider, modelId) => requireCurrent().capabilities.conversation.setModel(id, provider, modelId));
   handle('setChatThinkingLevel', (id, level) => requireCurrent().capabilities.conversation.setThinkingLevel(id, level));

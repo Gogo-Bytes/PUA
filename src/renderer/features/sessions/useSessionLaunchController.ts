@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { Bootstrap, SessionInfo } from '../../../shared/ipc/desktop-api';
+import type { Bootstrap, SessionInfo, PiThinkingLevel } from '../../../shared/ipc/desktop-api';
 import type { ProjectTrust, SessionKind } from '../../../shared/ipc/conversation';
 import { desktopClient } from '../../app/desktop-client';
 
@@ -27,21 +27,21 @@ export function useSessionLaunchController({ boot, project, onCreated, afterCrea
     // Synchronous outlets in the original host continuation; neither is awaited.
     onCreated(session); setOpen(false); setContext(undefined); afterCreated();
   };
-  const createChat = async (cwd: string, projectTrust: ProjectTrust = 'default'): Promise<SessionInfo> => {
+  const createChat = async (cwd: string, projectTrust: ProjectTrust = 'default', initial?: { model?: { provider: string; id: string }; thinkingLevel?: PiThinkingLevel }): Promise<SessionInfo> => {
     const normalized = cwd.trim();
     if (!normalized) throw new Error('项目路径不能为空');
     if (pending.current.has(normalized)) throw new Error('该项目正在启动对话');
     if (!boot?.runtime) { onSettings(); throw new Error('尚未配置 Pi'); }
     pending.current.add(normalized); setCreatingProject(normalized);
     try {
-      const session = await desktopClient.createSession({ cwd: normalized, kind: 'chat', startMode: 'new', projectTrust, cols: 100, rows: 30 });
+      const session = await desktopClient.createSession({ cwd: normalized, kind: 'chat', startMode: 'new', projectTrust, ...(initial?.model ? { initialModel: initial.model } : {}), ...(initial?.thinkingLevel ? { initialThinkingLevel: initial.thinkingLevel } : {}), cols: 100, rows: 30 });
       onCreated(session); afterCreated();
       return session;
     } catch (error) { onError(String(error)); throw error; }
     finally { pending.current.delete(normalized); setCreatingProject(current => current === normalized ? undefined : current); }
   };
-  const createChatAnd = async (cwd: string, projectTrust: ProjectTrust, onReady: (session: SessionInfo) => void | Promise<void>): Promise<void> => {
-    const session = await createChat(cwd, projectTrust);
+  const createChatAnd = async (cwd: string, projectTrust: ProjectTrust, onReady: (session: SessionInfo) => void | Promise<void>, initial?: { model?: { provider: string; id: string }; thinkingLevel?: PiThinkingLevel }): Promise<void> => {
+    const session = await createChat(cwd, projectTrust, initial);
     await onReady(session);
   };
   const newConversation = async (cwd?: string) => {

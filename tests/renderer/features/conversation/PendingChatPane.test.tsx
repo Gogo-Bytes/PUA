@@ -15,6 +15,12 @@ vi.mock('../../../../src/renderer/ui', async importOriginal => {
     DropdownMenu: ({ label, items, onAction }: ComponentProps<typeof actual.DropdownMenu>) => <button type="button" onClick={() => onAction(items[0].value)}>{label}</button>,
   };
 });
+vi.mock('../../../../src/renderer/ui/ChoiceControls', () => ({
+  Select: ({ label, value, options, onChange }: { label: string; value: string; options: { value: string; label: string }[]; onChange(value: string): void }) => <select aria-label={label} value={value} onChange={event => onChange(event.target.value)}>{options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>,
+}));
+vi.mock('../../../../src/renderer/ui/shadcn-search-select', () => ({
+  SearchSelect: ({ label, value, options, onChange, onOpenChange }: { label: string; value: string; options: { value: string; label: string }[]; onChange(value: string): void; onOpenChange?(open: boolean): void }) => <select aria-label={label} value={value} onFocus={() => onOpenChange?.(true)} onChange={event => onChange(event.target.value)}>{options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>,
+}));
 
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -71,5 +77,19 @@ describe('project draft composer', () => {
     editor.setSelectionRange(editor.value.length, editor.value.length); act(() => editor.focus());
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 180)); });
     expect(screen.queryByRole('option', { name: /@review-code/ })).toBeNull();
+  });
+
+  it('loads the no-session Pi catalog on demand and passes choices with the first message', async () => {
+    const onStart = vi.fn().mockResolvedValue(undefined);
+    const getChatModelCatalog = vi.fn().mockResolvedValue([{ provider: 'openai-codex', id: 'gpt-5.5', name: 'gpt-5.5', reasoning: true }]);
+    installDesktopFake({ inspectProjectResources: vi.fn().mockResolvedValue({ hasResources: false, paths: [] }), getChatModelCatalog } as unknown as DesktopAPI);
+    render(<PendingChatPane cwd="/work" runtimeAvailable value="first prompt" onValueChange={vi.fn()} onStart={onStart} onSettings={vi.fn()} />);
+    fireEvent.focus(screen.getByRole('combobox', { name: '模型' }));
+    await waitFor(() => expect(screen.getByRole('option', { name: 'gpt-5.5' })).toBeTruthy());
+    fireEvent.change(screen.getByRole('combobox', { name: '模型' }), { target: { value: 'openai-codex/gpt-5.5' } });
+    fireEvent.change(screen.getByRole('combobox', { name: '思考程度' }), { target: { value: 'high' } });
+    fireEvent.submit(screen.getByRole('textbox', { name: '发送消息' }).closest('form')!);
+    await waitFor(() => expect(onStart).toHaveBeenCalledWith('first prompt', 'default', [], { model: { provider: 'openai-codex', id: 'gpt-5.5' }, thinkingLevel: 'high' }));
+    expect(getChatModelCatalog).toHaveBeenCalledOnce();
   });
 });

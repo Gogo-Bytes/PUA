@@ -19,6 +19,15 @@ function harness() {
   return { preferences, store, resolveRuntime, validateChatArguments, runtime, capabilities: fakeCapabilities() };
 }
 describe('desktop preferences workflow with real PreferencesApplication and Fake runtime/storage/Session', () => {
+  it('reads Pi model metadata from the current runtime without creating a Chat session', async () => {
+    const listModels = vi.fn().mockResolvedValue([{ provider: 'openai-codex', id: 'gpt-5.5', name: 'gpt-5.5', reasoning: true }]);
+    const h = harness();
+    const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial(), h.store), resolveRuntime: h.resolveRuntime, validateChatArguments: h.validateChatArguments, home: '/fake/home', platform: 'fake', listModels });
+    await expect(preferences.getChatModelCatalog()).resolves.toEqual([{ provider: 'openai-codex', id: 'gpt-5.5', name: 'gpt-5.5', reasoning: true }]);
+    expect(h.validateChatArguments).toHaveBeenCalledExactlyOnceWith(['--fake']);
+    expect(h.resolveRuntime).toHaveBeenCalledExactlyOnceWith(initial());
+    expect(listModels).toHaveBeenCalledExactlyOnceWith(h.runtime, '/fake/home');
+  });
   it('indexes a chat only after Pi accepts its first message, while preserving --no-session as ephemeral', async () => {
     const store = { read: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), archive: vi.fn().mockResolvedValue(undefined), setPinned: vi.fn().mockResolvedValue(undefined), rename: vi.fn().mockResolvedValue(undefined) };
     const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };

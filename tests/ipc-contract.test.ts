@@ -8,13 +8,13 @@ const methods = Object.keys(samples) as RequestMethod[];
 describe('desktop IPC contract', () => {
   it('retains exactly the legacy invoke/send/event whitelist and unique channels', () => {
     const values = [...Object.values(invokeChannels), ...Object.values(sendChannels), ...Object.values(eventChannels)];
-    expect(values).toHaveLength(42);
-    expect(new Set(values).size).toBe(42);
-    expect(Object.keys(invokeChannels)).toHaveLength(38);
+    expect(values).toHaveLength(43);
+    expect(new Set(values).size).toBe(43);
+    expect(Object.keys(invokeChannels)).toHaveLength(39);
     expect(Object.keys(sendChannels)).toEqual(['write', 'resize', 'acknowledge']);
     expect(Object.keys(eventChannels)).toEqual(['onSessionEvent']);
     expect(values.map(value => value.replace('desktop:', '')).sort()).toEqual([
-      'bootstrap', 'directory', 'file', 'attachments', 'chat-attachment-remove', 'chat-attachments', 'preferences',
+      'bootstrap', 'directory', 'file', 'attachments', 'chat-attachment-remove', 'chat-attachments', 'preferences', 'chat-model-catalog',
       'project-resources', 'create', 'start', 'close', 'archive-restore', 'archive-delete', 'session-pin', 'history-search', 'chat-send', 'chat-stop', 'extension-response', 'chat-rename', 'chat-models', 'chat-thinking-levels', 'chat-model-set', 'chat-thinking-set',
       'external', 'project', 'git-status', 'file-diff', 'clipboard-read', 'clipboard-write', 'chat-fork', 'chat-clone', 'chat-session-stats', 'chat-auto-settings', 'chat-compact', 'chat-auto-compaction-set', 'chat-auto-retry-set', 'chat-steering-mode-set', 'chat-follow-up-mode-set', 'write', 'resize', 'ack', 'event',
     ].sort());
@@ -70,6 +70,11 @@ describe('desktop IPC contract', () => {
       expect(() => requestParsers.createSession([{ ...create, kind, startMode, projectTrust, cols: 2, rows: 1000 }])).not.toThrow();
     }
     for (const patch of [{ cwd: null }, { kind: 'raw' }, { startMode: 'fork' }, { projectTrust: 'yes' }, { kind: 'terminal' }, { cols: '100' }, { rows: Infinity }]) {
+      expect(() => requestParsers.createSession([{ ...create, ...patch }])).toThrow();
+    }
+    const initial = { ...create, initialModel: { provider: 'openai-codex', id: 'gpt-5.5' }, initialThinkingLevel: 'high' };
+    expect(requestParsers.createSession([initial])[0]).toMatchObject({ initialModel: initial.initialModel, initialThinkingLevel: 'high' });
+    for (const patch of [{ initialThinkingLevel: 'secret' }, { initialModel: { provider: '--bad', id: 'model' } }, { initialModel: { provider: 'openai', id: '--flag' } }, { kind: 'terminal', initialThinkingLevel: 'high' }, { startMode: 'continue', initialModel: { provider: 'openai', id: 'model' } }]) {
       expect(() => requestParsers.createSession([{ ...create, ...patch }])).toThrow();
     }
     expect(requestParsers.createSession([{ ...create, arbitrary: 'raw-command' }])[0]).not.toHaveProperty('arbitrary');

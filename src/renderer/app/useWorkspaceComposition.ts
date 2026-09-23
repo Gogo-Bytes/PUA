@@ -34,8 +34,8 @@ export function useWorkspaceComposition(afterReference: () => void) {
     },
     selectSession: (id: string) => { workspace.selectSession(id); input.hideSearch(); },
     selectProject: (cwd: string) => { workspace.prepareConversation(cwd); input.hideSearch(); },
-    startProjectConversation: (cwd: string, text: string, trust: import('../../shared/ipc/conversation').ProjectTrust, attachmentPaths: string[] = []) => {
-      return launch.createChatAnd(cwd, trust, session => input.stageProjectAttachments(cwd, session.id, text, attachmentPaths, desktopPresentation.reportError));
+    startProjectConversation: (cwd: string, text: string, trust: import('../../shared/ipc/conversation').ProjectTrust, attachmentPaths: string[] = [], initial?: { model?: { provider: string; id: string }; thinkingLevel?: import('../../shared/ipc/desktop-api').PiThinkingLevel }) => {
+      return launch.createChatAnd(cwd, trust, session => input.stageProjectAttachments(cwd, session.id, text, attachmentPaths, desktopPresentation.reportError), initial);
     },
   };
   return { desktopPresentation, workspace, palette, input, launch, sessionActions, navigation };

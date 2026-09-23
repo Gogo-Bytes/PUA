@@ -18,6 +18,18 @@ try {
   const projects = page.getByRole('navigation', { name: '项目', exact: true });
   await projects.getByTitle('/test/workspace/PUA', { exact: true }).click();
   await page.keyboard.press('Escape');
+  const pending = page.getByRole('region', { name: '新对话', exact: true });
+  const model = pending.getByRole('combobox', { name: '模型', exact: true });
+  await model.click();
+  await page.getByRole('option', { name: 'gpt-5.5', exact: true }).click();
+  await pending.getByRole('combobox', { name: '思考程度', exact: true }).click();
+  await page.getByRole('option', { name: '高', exact: true }).click();
+  assert.equal(await page.evaluate(() => document.querySelector('.pending-chat-pane') !== null), true, '模型选择阶段不创建真实/预览会话');
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, '窄屏新对话 Composer 不得横向溢出');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({ path: `${output}/pending-model-thinking.png` });
   async function create(message) {
     await page.getByRole('region', { name: '新对话', exact: true }).waitFor();
     await page.locator('.pending-trust-status').waitFor({ state: 'hidden' });
@@ -27,6 +39,10 @@ try {
     await page.locator('.chat-pane.active').waitFor();
   }
   await create('建立第一个验收会话');
+  assert.deepEqual(await page.evaluate(() => window.__workspacePreviewLaunchOptions?.[0]), {
+    cwd: '/test/workspace/PUA', kind: 'chat', startMode: 'new', projectTrust: 'default',
+    initialModel: { provider: 'openai-codex', id: 'gpt-5.5' }, initialThinkingLevel: 'high', cols: 100, rows: 30,
+  }, '首条消息创建 session 时应用预先选择的模型和思考程度');
   const editor = page.getByRole('textbox', { name: '发送消息', exact: true });
   assert.equal(await page.locator('.ui-composer').count(), 1);
   assert.equal(await page.locator('.composer,.chat-message,.tool-card,details.tool-card').count(), 0);

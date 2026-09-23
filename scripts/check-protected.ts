@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 export const foundationCommit = '6788fc550d36bed9dc4f9ad86aa5c6892524d541';
 const protectedDirectories = ['src/renderer/ui', 'tests/component-preview'];
 
-/** Approved 2026-09-22 UI migration baseline: compare both membership and bytes. */
+/** UI migration baseline plus approved interaction follow-ups: compare membership and bytes. */
 export function checkProtectedFiles(root: string, manifest: Record<string, string>): string[] {
   const errors: string[] = [];
   const walk = (relative: string): string[] => {

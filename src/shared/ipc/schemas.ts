@@ -39,7 +39,20 @@ export function validateCreateSessionOptions(value: unknown): CreateSessionOptio
   if (projectTrust !== 'default' && projectTrust !== 'approve' && projectTrust !== 'decline') throw new Error('无效信任选项');
   if (kind === 'terminal' ? !validSize(cols, rows) :
       (cols !== undefined && !validSize(cols, 2)) || (rows !== undefined && !validSize(2, rows))) throw new Error('无效终端尺寸');
-  return { cwd, kind, startMode, projectTrust, cols: cols as number | undefined, rows: rows as number | undefined };
+  const initialModel = v.initialModel;
+  if (initialModel !== undefined && (kind !== 'chat' || startMode !== 'new' || !initialModel || typeof initialModel !== 'object' || Array.isArray(initialModel))) throw new Error('无效初始模型');
+  let model: CreateSessionOptions['initialModel'];
+  if (initialModel !== undefined) {
+    const selected = initialModel as Record<string, unknown>;
+    const provider = boundedText(selected.provider, 128, '模型提供方');
+    const id = boundedText(selected.id, 256, '模型 ID');
+    if (!/^[\w.-]+$/.test(provider) || provider.startsWith('-') || !id || /[\s\0]/.test(id) || id.startsWith('-')) throw new Error('无效初始模型');
+    model = { provider, id };
+  }
+  const thinking = v.initialThinkingLevel;
+  const thinkingLevels = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
+  if (thinking !== undefined && (kind !== 'chat' || startMode !== 'new' || !thinkingLevels.includes(thinking as typeof thinkingLevels[number]))) throw new Error('无效初始思考程度');
+  return { cwd, kind, startMode, projectTrust, ...(model ? { initialModel: model } : {}), ...(thinking !== undefined ? { initialThinkingLevel: thinking as CreateSessionOptions['initialThinkingLevel'] } : {}), cols: cols as number | undefined, rows: rows as number | undefined };
 }
 
 export function validateDiffScope(scope: unknown): DiffScope {
@@ -97,6 +110,7 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   forkChatSession: tuple<'forkChatSession'>(2, (id, entryId) => [text(id), boundedText(entryId, 256, '分支消息 id')]),
   cloneChatSession: idArgs,
   getChatAvailableModels: idArgs,
+  getChatModelCatalog: tuple<'getChatModelCatalog'>(0, () => []),
   getChatThinkingLevels: idArgs,
   getChatSessionStats: idArgs,
   getChatAutoSettings: idArgs,

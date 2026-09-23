@@ -476,3 +476,10 @@ it.each(['default', 'approve', 'decline'] as const)('composition preserves runti
   expect(material.args).toEqual(['--model', 'fake-model']);
   const closed = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
 });
+it('applies pre-session model and thinking selection to the first Chat process using argv values', async () => {
+  const sessions = composeMain(() => {}, { prepareProject });
+  const chat = await sessions.createSession(runtime, { ...options, initialModel: { provider: 'openai-codex', id: 'gpt-5.5' }, initialThinkingLevel: 'high' });
+  applySessionStartResult(sessions.session.start(chat.id)); const host = fake.hosts[0]; host.emit('spawn');
+  expect(host.postMessage.mock.calls[0][0]).toMatchObject({ type: 'start', args: ['--session-id', chat.id, '--model', 'openai-codex/gpt-5.5', '--thinking', 'high'] });
+  const closed = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
+});

@@ -72,9 +72,15 @@ export interface CreateSessionOptions {
   kind: SessionKind;
   startMode: 'new' | 'continue' | 'resume';
   projectTrust: ProjectTrust;
+  /** Applied only to a newly-created Chat process; omitted preserves Pi's configured default. */
+  initialModel?: { provider: string; id: string };
+  /** Pi CLI thinking preset; omitted preserves Pi's configured default. */
+  initialThinkingLevel?: PiThinkingLevel;
   cols?: number;
   rows?: number;
 }
+
+export type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 export interface ProjectResourceInfo { hasResources: boolean; paths: string[]; skills?: ChatCommand[]; prompts?: ChatCommand[] }
 
@@ -102,6 +108,8 @@ export interface DesktopAPI {
   forkChatSession(id: string, entryId: string): Promise<{ text: string; cancelled: boolean }>;
   cloneChatSession(id: string): Promise<SessionInfo>;
   getChatAvailableModels(id: string): Promise<import('./conversation.js').ChatModel[]>;
+  /** Read Pi's model catalog without creating or restoring a Chat session. */
+  getChatModelCatalog(): Promise<import('./conversation.js').ChatModel[]>;
   getChatThinkingLevels(id: string): Promise<string[]>;
   setChatModel(id: string, provider: string, modelId: string): Promise<void>;
   setChatThinkingLevel(id: string, level: string): Promise<void>;

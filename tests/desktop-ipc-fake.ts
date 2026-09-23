@@ -21,7 +21,7 @@ export function desktopIPCFake() {
   };
   const store = { write: vi.fn().mockResolvedValue(undefined) }; const runtime = { executable: '/fake/pi', args: [], source: '/fake/pi' };
   const resolveRuntime = vi.fn(() => runtime); const validateChatArguments = vi.fn();
-  const preferences = createDesktopPreferences({ application: new PreferencesApplication({ ...initial, recentProjects: [...initial.recentProjects] }, store), resolveRuntime, validateChatArguments, home: '/fake/home', platform: 'fake' });
+  const preferences = createDesktopPreferences({ application: new PreferencesApplication({ ...initial, recentProjects: [...initial.recentProjects] }, store), resolveRuntime, validateChatArguments, home: '/fake/home', platform: 'fake', listModels: async () => [] });
   preferences.restoreArchivedSession = vi.fn().mockResolvedValue({ ...sessionInfo, archived: true, pinned: false, lastActivityAt: 0 });
   const dialog = { showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: ['/fake/file'] }), showMessageBox: vi.fn().mockResolvedValue({ response: 1 }) };
   const shell = { openExternal: vi.fn().mockResolvedValue(undefined), openPath: vi.fn().mockResolvedValue('') };

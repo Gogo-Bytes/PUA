@@ -12,6 +12,7 @@ const sessions = new Map<string, SessionInfo>();
 let preferences: Preferences = { piPath: 'TEST ONLY / no executable', nodePath: '', args: [], fontSize: 14, recentProjects: ['/test/workspace/PUA', '/test/other/PUA', '/test/empty'] };
 let sequence = 0;
 let clipboard = ''; // Fake Desktop never reaches the system clipboard.
+const launchOptions: unknown[] = [];
 const emit = (event: SessionEvent) => listeners.forEach(listener => listener(event));
 const source = '# 测试文档\n\n这份内容来自测试 IPC，不是磁盘文件。\n\n## 阅读边界\n\n- 工具输出是执行快照。\n- Git patch 不是完整文件。\n- 引用只回填草稿。';
 const unsupported = async (): Promise<never> => { throw new Error('TEST ONLY：浏览器预览不提供此 Electron 能力'); };
@@ -23,6 +24,8 @@ installDesktopFake({
   inspectProjectResources: async () => ({ hasResources: false, paths: [] }),
   createSession: async options => {
     if (options.kind === 'terminal') return unsupported();
+    launchOptions.push({ ...options });
+    Object.assign(window as Window & { __workspacePreviewLaunchOptions?: unknown[] }, { __workspacePreviewLaunchOptions: launchOptions });
     const session: SessionInfo = { id: `test-${++sequence}`, cwd: options.cwd, title: `检查上下文 ${sequence}`, kind: 'chat', processStatus: 'running', activity: 'idle' };
     sessions.set(session.id, session); return session;
   },
@@ -40,7 +43,7 @@ installDesktopFake({
   closeSession: async id => { sessions.delete(id); return true; },
   searchHistory: async () => [],
   restoreArchivedSession: async id => sessions.get(id)!, deleteArchivedSession: async id => { sessions.delete(id); }, setSessionPinned: async (id, pinned) => { const session = sessions.get(id); if (session) session.pinned = pinned; },
-  getChatAvailableModels: async () => [], getChatThinkingLevels: async () => [], setChatModel: async () => {}, setChatThinkingLevel: async () => {}, getChatSessionStats: async () => ({ userMessages: 0, assistantMessages: 0, toolCalls: 0, toolResults: 0, totalMessages: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }, cost: 0 }), getChatAutoSettings: async () => ({ autoCompaction: true, autoRetry: true, steeringMode: 'one-at-a-time' as const, followUpMode: 'one-at-a-time' as const }), compactChatSession: async () => {}, setChatAutoCompaction: async () => {}, setChatAutoRetry: async () => {}, setChatSteeringMode: async () => {}, setChatFollowUpMode: async () => {},
+  getChatAvailableModels: async () => [], getChatModelCatalog: async () => [{ provider: 'openai-codex', id: 'gpt-5.5', name: 'gpt-5.5', reasoning: true }], getChatThinkingLevels: async () => [], setChatModel: async () => {}, setChatThinkingLevel: async () => {}, getChatSessionStats: async () => ({ userMessages: 0, assistantMessages: 0, toolCalls: 0, toolResults: 0, totalMessages: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }, cost: 0 }), getChatAutoSettings: async () => ({ autoCompaction: true, autoRetry: true, steeringMode: 'one-at-a-time' as const, followUpMode: 'one-at-a-time' as const }), compactChatSession: async () => {}, setChatAutoCompaction: async () => {}, setChatAutoRetry: async () => {}, setChatSteeringMode: async () => {}, setChatFollowUpMode: async () => {},
   renameChatSession: async (id, title) => { const session = sessions.get(id); if (session) session.title = title; },
   forkChatSession: async () => ({ text: 'TEST ONLY', cancelled: false }), cloneChatSession: async id => ({ id: `${id}-clone`, cwd: sessions.get(id)?.cwd || '/test', title: `${sessions.get(id)?.title || '任务'} · 副本`, kind: 'chat', processStatus: 'running', activity: 'idle' }),
   sendChatMessage: async (id, input) => emit({ id, type: 'chat-message-end', message: { id: `input-${++sequence}`, timestamp: Date.now(), role: 'user', blocks: [{ type: 'text', text: `[TEST ONLY · 未调用模型]\n${input.text}` }] } }),

@@ -9,6 +9,7 @@ import { resolveRuntime } from '../../platform/pi/runtime/discovery.js';
 import { ChangeReviewApplication } from '../../modules/change-review/index.js';
 import { GitReviewAdapter } from '../../platform/git/review-adapter.js';
 import { inspectProjectResources } from '../../platform/filesystem/project-resources.js';
+import { listPiModelCatalog } from '../../platform/pi/model-catalog.js';
 import { registerDesktopIPC } from '../../platform/electron/ipc/register-desktop-ipc.js';
 import { composeMain } from './composition.js';
 import { createDesktopPreferences, validateChatArguments } from './desktop-preferences.js';
@@ -36,7 +37,7 @@ if (hasSingleInstanceLock) void app.whenReady().then(async () => {
   try { initial = await storage.read(); }
   catch (error) { dialog.showErrorBox('无法读取设置', (error as Error).message); app.exit(1); throw error; }
   let capabilities: ReturnType<typeof composeMain>;
-  const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial, storage), resolveRuntime, validateChatArguments, home: os.homedir(), platform: process.platform, sessionStore });
+  const preferences = createDesktopPreferences({ application: new PreferencesApplication(initial, storage), resolveRuntime, validateChatArguments, home: os.homedir(), platform: process.platform, sessionStore, listModels: listPiModelCatalog });
   const changeReview = new ChangeReviewApplication(new GitReviewAdapter());
   const holder = createWindowHolder();
   registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireCurrent: holder.requireCurrent, rendererURL, preferences, changeReview, inspectProjectResources });

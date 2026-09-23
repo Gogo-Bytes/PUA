@@ -25,6 +25,7 @@ const api: DesktopBridge = {
   forkChatSession: (id, entryId) => ipcRenderer.invoke(invokeChannels.forkChatSession, id, entryId),
   cloneChatSession: id => ipcRenderer.invoke(invokeChannels.cloneChatSession, id),
   getChatAvailableModels: id => ipcRenderer.invoke(invokeChannels.getChatAvailableModels, id),
+  getChatModelCatalog: () => ipcRenderer.invoke(invokeChannels.getChatModelCatalog),
   getChatThinkingLevels: id => ipcRenderer.invoke(invokeChannels.getChatThinkingLevels, id),
   setChatModel: (id, provider, modelId) => ipcRenderer.invoke(invokeChannels.setChatModel, id, provider, modelId),
   setChatThinkingLevel: (id, level) => ipcRenderer.invoke(invokeChannels.setChatThinkingLevel, id, level),

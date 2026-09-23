@@ -82,6 +82,8 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
     if (options.kind === 'terminal' && options.startMode === 'resume') args.push('--resume');
     if (options.kind === 'chat' && options.projectTrust === 'approve') args.push('--approve');
     if (options.kind === 'chat' && options.projectTrust === 'decline') args.push('--no-approve');
+    if (options.kind === 'chat' && options.startMode === 'new' && options.initialModel) args.push('--model', `${options.initialModel.provider}/${options.initialModel.id}`);
+    if (options.kind === 'chat' && options.startMode === 'new' && options.initialThinkingLevel) args.push('--thinking', options.initialThinkingLevel);
     let resolveHostExit!: () => void;
     const hostExit = new Promise<void>(resolve => { resolveHostExit = resolve; });
     this.resources.set(id, { id, runtime: { ...runtime, args }, ...(managedIdentity ? { expectedIdentity: managedIdentity } : {}), cols: options.cols ?? 100, rows: options.rows ?? 30, hostEnded: false, hostExit, resolveHostExit, exitCode: 0, invalidated: false, activity: 'idle', pending: new Map(), payloads: new Map(), sources: new Map() });
