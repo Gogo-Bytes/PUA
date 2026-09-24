@@ -12,6 +12,16 @@ export interface RepositorySnapshot {
   readonly files: readonly ReviewFile[];
   readonly capturedAt: string;
 }
+export interface RepositoryWorktree {
+  readonly path: string;
+  readonly head: string;
+  readonly branch?: string;
+  readonly current: boolean;
+}
+export interface RepositoryWorktrees {
+  readonly current: string;
+  readonly worktrees: readonly RepositoryWorktree[];
+}
 export interface ReviewPreview {
   readonly text: string;
   readonly kind: 'diff' | 'untracked' | 'binary' | 'symlink';

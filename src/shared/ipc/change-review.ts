@@ -14,6 +14,16 @@ export interface GitBranches {
   current: string;
   branches: string[];
 }
+export interface GitWorktree {
+  path: string;
+  head: string;
+  branch?: string;
+  current: boolean;
+}
+export interface GitWorktrees {
+  current: string;
+  worktrees: GitWorktree[];
+}
 export type DiffScope = 'worktree' | 'index';
 
 export interface FileDiff {

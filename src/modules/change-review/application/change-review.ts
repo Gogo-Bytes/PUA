@@ -1,4 +1,4 @@
-import { authorizePreview, reviewScope, type RepositorySnapshot, type ReviewPreview, type ReviewScope } from '../domain/review.js';
+import { authorizePreview, reviewScope, type RepositorySnapshot, type RepositoryWorktrees, type ReviewPreview, type ReviewScope } from '../domain/review.js';
 import type { ReviewRepositoryPort } from '../ports.js';
 
 export interface ChangeReview {
@@ -8,6 +8,9 @@ export interface ChangeReview {
   switchBranch(cwd: string, branch: string): Promise<void>;
   createBranch(cwd: string, branch: string): Promise<void>;
   deleteBranch(cwd: string, branch: string): Promise<void>;
+  worktrees(cwd: string): Promise<RepositoryWorktrees>;
+  createWorktree(cwd: string, branch: string): Promise<RepositoryWorktrees>;
+  deleteWorktree(cwd: string, worktreePath: string): Promise<RepositoryWorktrees>;
 }
 
 export class ChangeReviewApplication implements ChangeReview {
@@ -17,6 +20,9 @@ export class ChangeReviewApplication implements ChangeReview {
   switchBranch(cwd: string, branch: string): Promise<void> { return this.repository.switchBranch(cwd, branch); }
   createBranch(cwd: string, branch: string): Promise<void> { return this.repository.createBranch(cwd, branch); }
   deleteBranch(cwd: string, branch: string): Promise<void> { return this.repository.deleteBranch(cwd, branch); }
+  worktrees(cwd: string): Promise<RepositoryWorktrees> { return this.repository.listWorktrees(cwd); }
+  createWorktree(cwd: string, branch: string): Promise<RepositoryWorktrees> { return this.repository.createWorktree(cwd, branch); }
+  deleteWorktree(cwd: string, worktreePath: string): Promise<RepositoryWorktrees> { return this.repository.deleteWorktree(cwd, worktreePath); }
   async preview(input: { cwd: string; path: string; scope: ReviewScope }): Promise<ReviewPreview> {
     const { cwd, path, scope: requestedScope } = input;
     const scope = reviewScope(requestedScope);

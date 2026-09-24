@@ -57,3 +57,6 @@
 .environment-branch-create .ui-input { min-width:0; flex:1; }
 .environment-branch-create .ui-button { flex:none; white-space:nowrap; }
 .environment-branch-option small { color:var(--ui-tertiary); }
+.environment-worktree-option { display:flex; flex:1; min-width:0; flex-direction:column; gap:2px; padding:5px 8px; overflow:hidden; font:var(--ui-font-meta); }
+.environment-worktree-option span,.environment-worktree-option small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.environment-worktree-option small { color:var(--ui-tertiary); }

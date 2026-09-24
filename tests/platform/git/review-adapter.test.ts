@@ -72,6 +72,40 @@ describe('GitReviewAdapter command/parser compatibility with Fake exec', () => {
     await adapter().deleteBranch('/cwd', 'feature/old');
     expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['branch', '--delete', '--', 'feature/old']);
   });
+  it('lists porcelain worktrees and marks the repository worktree as current', async () => {
+    fake.exec.mockResolvedValueOnce({ stdout: '/repo\n' }).mockResolvedValueOnce({ stdout: 'worktree /repo\nHEAD abc123\nbranch refs/heads/main\n\nworktree /repo-feature\nHEAD def456\nbranch refs/heads/feature/test\n' });
+    await expect(adapter().listWorktrees('/cwd')).resolves.toEqual({ current: '/repo', worktrees: [
+      { path: '/repo', head: 'abc123', branch: 'main', current: true },
+      { path: '/repo-feature', head: 'def456', branch: 'feature/test', current: false },
+    ] });
+  });
+  it('creates a clean sibling worktree with a new local branch', async () => {
+    fake.lstat.mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+    fake.exec.mockImplementation(async (_command: string, args: string[]) => {
+      const operation = args.slice(4).join(' ');
+      if (operation === 'rev-parse --show-toplevel') return { stdout: '/repo\n' };
+      if (operation === 'check-ref-format --branch feature/worktree') return { stdout: '' };
+      if (operation === 'status --porcelain=v1 -z --untracked-files=all') return { stdout: '' };
+      if (operation === 'for-each-ref --format=%(refname:short) refs/heads') return { stdout: 'main\n' };
+      if (operation === 'worktree add --quiet --new-branch feature/worktree /repo-feature-worktree') return { stdout: '' };
+      if (operation === 'worktree list --porcelain') return { stdout: 'worktree /repo\nHEAD abc123\nbranch refs/heads/main\n\nworktree /repo-feature-worktree\nHEAD def456\nbranch refs/heads/feature/worktree\n' };
+      throw new Error(`unexpected git command: ${operation}`);
+    });
+    await adapter().createWorktree('/cwd', 'feature/worktree');
+    expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['worktree', 'add', '--quiet', '--new-branch', 'feature/worktree', '/repo-feature-worktree']);
+  });
+  it('removes only a clean non-current worktree without force', async () => {
+    fake.exec.mockImplementation(async (_command: string, args: string[]) => {
+      const operation = args.slice(4).join(' ');
+      if (operation === 'rev-parse --show-toplevel') return { stdout: '/repo\n' };
+      if (operation === 'worktree list --porcelain') return { stdout: 'worktree /repo\nHEAD abc123\nbranch refs/heads/main\n\nworktree /repo-feature\nHEAD def456\nbranch refs/heads/feature/test\n' };
+      if (operation === 'status --porcelain=v1 -z --untracked-files=all') return { stdout: '' };
+      if (operation === 'worktree remove --quiet /repo-feature') return { stdout: '' };
+      throw new Error(`unexpected git command: ${operation}`);
+    });
+    await adapter().deleteWorktree('/cwd', '/repo-feature');
+    expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['worktree', 'remove', '--quiet', '/repo-feature']);
+  });
   it('construction has zero repository IO; root strips only one newline, branch trims end, clock belongs to adapter', async () => {
     const subject = adapter(); expect(fake.exec).not.toHaveBeenCalled(); expect(fake.lstat).not.toHaveBeenCalled();
     fake.exec.mockResolvedValueOnce({ stdout: '/repo\n\r\n' }).mockResolvedValueOnce({ stdout: 'MM hello world\0R  new\nname\0old\nname\0?? 图片\0' }).mockResolvedValueOnce({ stdout: ' branch \n' });

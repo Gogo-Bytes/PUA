@@ -16,20 +16,30 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
   const [branchError, setBranchError] = useState<string>();
   const [newBranch, setNewBranch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<string>();
+  const [worktreeState, setWorktreeState] = useState<{ id: string; current: string; worktrees: import('../../../shared/ipc/change-review').GitWorktree[] }>();
+  const [showWorktrees, setShowWorktrees] = useState(false);
+  const [worktreeBusy, setWorktreeBusy] = useState(false);
+  const [worktreeError, setWorktreeError] = useState<string>();
+  const [newWorktreeBranch, setNewWorktreeBranch] = useState('');
+  const [deleteWorktreeTarget, setDeleteWorktreeTarget] = useState<string>();
   useEffect(() => {
     if (!open || !session) return;
     let current = true;
-    setSnapshot(undefined); setBranchState(undefined); setShowBranches(false); setBranchError(undefined); setNewBranch(''); setDeleteTarget(undefined);
+    setSnapshot(undefined); setBranchState(undefined); setShowBranches(false); setBranchError(undefined); setNewBranch(''); setDeleteTarget(undefined); setWorktreeState(undefined); setShowWorktrees(false); setWorktreeError(undefined); setNewWorktreeBranch(''); setDeleteWorktreeTarget(undefined);
     void desktopClient.gitStatus(session.id).then(status => {
       if (current) setSnapshot({ id: session.id, status });
     }).catch(error => { if (current) setSnapshot({ id: session.id, error: String(error) }); });
     void desktopClient.gitBranches(session.id).then(value => {
       if (current) setBranchState({ id: session.id, ...value });
     }).catch(error => { if (current) setBranchError(String(error)); });
+    void desktopClient.gitWorktrees(session.id).then(value => {
+      if (current) setWorktreeState({ id: session.id, ...value });
+    }).catch(error => { if (current) setWorktreeError(String(error)); });
     return () => { current = false; };
   }, [open, session?.id]);
   const status = snapshot?.id === session?.id ? snapshot?.status : undefined;
   const branches = branchState?.id === session?.id ? branchState : undefined;
+  const worktrees = worktreeState?.id === session?.id ? worktreeState : undefined;
   const taskBusy = !!session && (session.kind === 'terminal' || session.activity !== 'idle');
   const openPanel = (kind: SidePanelKind) => { setOpen(false); onOpenPanel(kind); };
   const switchBranch = async (branch: string) => {
@@ -66,6 +76,26 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
     } catch (error) { setBranchError(String(error)); }
     finally { setBranchBusy(false); }
   };
+  const createWorktree = async (event: FormEvent) => {
+    event.preventDefault();
+    const name = newWorktreeBranch.trim();
+    if (!session || !name || worktreeBusy) return;
+    setWorktreeBusy(true); setWorktreeError(undefined);
+    try {
+      const next = await desktopClient.createGitWorktree(session.id, name);
+      setWorktreeState({ id: session.id, ...next }); setNewWorktreeBranch('');
+    } catch (error) { setWorktreeError(String(error)); }
+    finally { setWorktreeBusy(false); }
+  };
+  const deleteWorktree = async () => {
+    if (!session || !deleteWorktreeTarget || worktreeBusy) return;
+    setWorktreeBusy(true); setWorktreeError(undefined);
+    try {
+      const next = await desktopClient.deleteGitWorktree(session.id, deleteWorktreeTarget);
+      setWorktreeState({ id: session.id, ...next }); setDeleteWorktreeTarget(undefined);
+    } catch (error) { setWorktreeError(String(error)); }
+    finally { setWorktreeBusy(false); }
+  };
   return <Popover label="环境与任务信息" icon="environment" open={open} onOpenChange={setOpen} className="environment-popover">
     <section className="environment-section">
       <div className="environment-heading"><span>Environment</span><IconButton icon="plus" label="添加环境（未接入）" disabled variant="ghost"/></div>
@@ -92,6 +122,22 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
         {branchError && <p className="environment-note" role="alert">{branchError}</p>}
       </div>}
       {!branches && branchError && <p className="environment-note" role="alert">无法读取本地分支：{branchError}</p>}
+      <Button variant="ghost" className="environment-row" disabled={!session || !worktrees?.worktrees.length} aria-expanded={showWorktrees} onClick={() => setShowWorktrees(value => !value)}>
+        <Icon name="folder"/><span>Worktrees</span><small>{worktrees ? `${worktrees.worktrees.length} 个工作树` : worktreeError ? '读取失败' : '读取中…'}</small><Icon name="down"/>
+      </Button>
+      {showWorktrees && <div className="environment-branches" role="group" aria-label="本地工作树">
+        {worktrees?.worktrees.map(item => <div key={item.path} className="environment-branch-row">
+          <div className="environment-worktree-option" title={item.path}><span>{item.branch || 'detached HEAD'}</span><small>{item.current ? '当前 · ' : ''}{item.path}</small></div>
+          {!item.current && <IconButton icon="close" label={`移除工作树 ${item.path}`} variant="ghost" disabled={worktreeBusy || taskBusy || status === undefined || status.files.length > 0} onClick={() => setDeleteWorktreeTarget(item.path)}/>}
+        </div>)}
+        <form className="environment-branch-create" onSubmit={event => void createWorktree(event)}>
+          <Input aria-label="新工作树分支名称" placeholder="从新分支创建工作树…" maxLength={255} value={newWorktreeBranch} disabled={worktreeBusy || taskBusy || status === undefined || status.files.length > 0} onChange={event => setNewWorktreeBranch(event.target.value)}/>
+          <Button type="submit" variant="ghost" disabled={!newWorktreeBranch.trim() || worktreeBusy || taskBusy || status === undefined || status.files.length > 0}>{worktreeBusy ? '处理中…' : '创建工作树'}</Button>
+        </form>
+        {status && status.files.length > 0 && <p className="environment-note">工作区有未提交改动；请先提交或收纳后再操作工作树。</p>}
+        {taskBusy && <p className="environment-note">任务执行期间不能操作工作树。</p>}
+        {worktreeError && <p className="environment-note" role="alert">{worktreeError}</p>}
+      </div>}
       <Button variant="ghost" className="environment-row" disabled><Icon name="branch"/><span>Commit or push</span><small>未接入</small></Button>
       {snapshot?.id === session?.id && snapshot?.error && <p className="environment-note">暂时无法读取仓库；可打开 Review 查看错误并重试。</p>}
     </section>
@@ -109,6 +155,11 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
       <p>将尝试安全删除 <strong>{deleteTarget}</strong>。如果分支包含尚未合并的提交，Git 会拒绝删除；不会强制删除。</p>
       {branchError && <p className="form-error" role="alert">{branchError}</p>}
       <div className="modal-actions"><Button disabled={branchBusy} onClick={() => setDeleteTarget(undefined)}>取消</Button><Button variant="primary" busy={branchBusy} onClick={() => void deleteBranch()}>删除分支</Button></div>
+    </Dialog>
+    <Dialog open={!!deleteWorktreeTarget} title="移除工作树？" closeLabel="取消" closeDisabled={worktreeBusy} closeOnBackdrop={!worktreeBusy} onClose={() => setDeleteWorktreeTarget(undefined)}>
+      <p>将尝试移除 <strong>{deleteWorktreeTarget}</strong>。只有干净的非当前工作树可以移除，不会强制删除未提交文件。</p>
+      {worktreeError && <p className="form-error" role="alert">{worktreeError}</p>}
+      <div className="modal-actions"><Button disabled={worktreeBusy} onClick={() => setDeleteWorktreeTarget(undefined)}>取消</Button><Button variant="primary" busy={worktreeBusy} onClick={() => void deleteWorktree()}>移除工作树</Button></div>
     </Dialog>
   </Popover>;
 }

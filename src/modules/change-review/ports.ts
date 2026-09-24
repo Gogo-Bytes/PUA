@@ -1,4 +1,4 @@
-import type { AuthorizedPreview, RepositorySnapshot, ReviewPreview } from './domain/review.js';
+import type { AuthorizedPreview, RepositorySnapshot, RepositoryWorktrees, ReviewPreview } from './domain/review.js';
 
 export interface ReviewRepositoryPort {
   captureSnapshot(cwd: string): Promise<RepositorySnapshot>;
@@ -7,4 +7,7 @@ export interface ReviewRepositoryPort {
   switchBranch(cwd: string, branch: string): Promise<void>;
   createBranch(cwd: string, branch: string): Promise<void>;
   deleteBranch(cwd: string, branch: string): Promise<void>;
+  listWorktrees(cwd: string): Promise<RepositoryWorktrees>;
+  createWorktree(cwd: string, branch: string): Promise<RepositoryWorktrees>;
+  deleteWorktree(cwd: string, worktreePath: string): Promise<RepositoryWorktrees>;
 }

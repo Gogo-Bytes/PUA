@@ -39,6 +39,7 @@ const arrayOf = (v: unknown, guard: (v: unknown) => boolean) => Array.isArray(v)
 const empty = (v: unknown) => v === null;
 const picker = (v: unknown) => v === null || text(v);
 const chatTree = (v: unknown, depth = 0): boolean => depth < 64 && arrayOf(v, node => record(node) && text(node.entryId) && optional(node.label, text) && optional(node.forkable, bool) && optional(node.active, bool) && chatTree(node.children, depth + 1));
+const worktrees = (v: unknown) => record(v) && text(v.current) && arrayOf(v.worktrees, item => record(item) && text(item.path) && text(item.head) && optional(item.branch, text) && bool(item.current));
 
 /** Exhaustive method-specific outer DTO checks; no cloning or recursive transcript schema. */
 export const desktopValueGuards = {
@@ -59,6 +60,9 @@ export const desktopValueGuards = {
   switchGitBranch: (v: unknown) => record(v) && text(v.root) && text(v.branch) && text(v.capturedAt) && arrayOf(v.files, f => record(f) && text(f.path) && text(f.index) && text(f.worktree) && optional(f.originalPath, text)),
   createGitBranch: (v: unknown) => record(v) && text(v.root) && text(v.branch) && text(v.capturedAt) && arrayOf(v.files, f => record(f) && text(f.path) && text(f.index) && text(f.worktree) && optional(f.originalPath, text)),
   deleteGitBranch: (v: unknown) => record(v) && text(v.current) && strings(v.branches),
+  gitWorktrees: (v: unknown) => worktrees(v),
+  createGitWorktree: (v: unknown) => worktrees(v),
+  deleteGitWorktree: (v: unknown) => worktrees(v),
   fileDiff: (v: unknown) => record(v) && text(v.text) && oneOf(v.kind, ['diff', 'untracked', 'binary', 'symlink']) && bool(v.truncated),
   listSessionFiles: (v: unknown) => record(v) && text(v.path) && bool(v.truncated) && arrayOf(v.entries, entry => record(entry) && text(entry.name) && text(entry.path) && oneOf(entry.kind, ['file', 'directory'])),
   readSessionFile: (v: unknown) => record(v) && text(v.path) && text(v.text) && bool(v.truncated),

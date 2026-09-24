@@ -3,7 +3,7 @@ import { constants } from 'node:fs';
 import { lstat, open, readlink, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import type { AuthorizedPreview, ReviewFile, ReviewPreview, RepositorySnapshot, ReviewRepositoryPort } from '../../modules/change-review/index.js';
+import type { AuthorizedPreview, ReviewFile, ReviewPreview, RepositorySnapshot, RepositoryWorktree, RepositoryWorktrees, ReviewRepositoryPort } from '../../modules/change-review/index.js';
 
 const exec = promisify(execFile);
 const previewLimit = 200_000;
@@ -96,6 +96,45 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
     await git(root, ['branch', '--delete', '--', candidate]);
   }
 
+  async listWorktrees(cwd: string): Promise<RepositoryWorktrees> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    const output = await git(root, ['worktree', 'list', '--porcelain']);
+    const worktrees = parseWorktrees(output, root);
+    return { current: root, worktrees };
+  }
+
+  async createWorktree(cwd: string, branch: string): Promise<RepositoryWorktrees> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    const candidate = validateBranch(branch);
+    await git(root, ['check-ref-format', '--branch', candidate]);
+    const status = await git(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
+    if (status) throw new Error('工作区存在未提交改动，已拒绝创建工作树；请先提交或收纳改动。');
+    const branches = await this.listBranches(root);
+    if (branches.includes(candidate)) throw new Error('本地分支已存在，请使用其他工作树分支名称。');
+    const slug = candidate.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'worktree';
+    const target = path.resolve(path.dirname(root), `${path.basename(root)}-${slug}`);
+    try { await lstat(target); throw new Error('工作树目标目录已存在，请先移除或使用其他分支名称。'); }
+    catch (error) {
+      const code = (error as { code?: string }).code;
+      if (code !== 'ENOENT') throw error;
+    }
+    await git(root, ['worktree', 'add', '--quiet', '--new-branch', candidate, target]);
+    return this.listWorktrees(root);
+  }
+
+  async deleteWorktree(cwd: string, worktreePath: string): Promise<RepositoryWorktrees> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    if (!path.isAbsolute(worktreePath)) throw new Error('无效工作树路径');
+    const listed = await this.listWorktrees(root);
+    const target = listed.worktrees.find(item => path.resolve(item.path) === path.resolve(worktreePath));
+    if (!target) throw new Error('工作树不存在，请刷新列表。');
+    if (target.current || path.resolve(target.path) === path.resolve(root)) throw new Error('不能移除当前工作树。');
+    const status = await git(target.path, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
+    if (status) throw new Error('工作树存在未提交改动，已拒绝移除；请先提交或清理改动。');
+    await git(root, ['worktree', 'remove', '--quiet', target.path]);
+    return this.listWorktrees(root);
+  }
+
   /** Read-only UI preview. Does not stage/revert files or run external diff/textconv helpers. */
   async readAuthorizedPreview(selection: AuthorizedPreview): Promise<ReviewPreview> {
     const { root: repositoryRoot, path: filename } = selection;
@@ -147,6 +186,23 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
       throw error;
     }
   }
+}
+
+function validateBranch(branch: string): string {
+  const candidate = branch.trim();
+  if (!candidate || candidate.length > 255 || candidate.includes('\0')) throw new Error('无效分支名称');
+  return candidate;
+}
+
+function parseWorktrees(output: string, root: string): RepositoryWorktree[] {
+  return output.split(/\r?\n\r?\n/).filter(Boolean).map(block => {
+    const lines = block.split(/\r?\n/);
+    const worktreePath = lines.find(line => line.startsWith('worktree '))?.slice('worktree '.length);
+    const head = lines.find(line => line.startsWith('HEAD '))?.slice('HEAD '.length);
+    const branchRef = lines.find(line => line.startsWith('branch '))?.slice('branch '.length);
+    if (!worktreePath || !head) throw new Error('无法解析 Git 工作树');
+    return { path: worktreePath, head, ...(branchRef ? { branch: branchRef.replace(/^refs\/heads\//, '') } : {}), current: path.resolve(worktreePath) === path.resolve(root) };
+  });
 }
 
 function truncate(text: string, kind: ReviewPreview['kind']) {
