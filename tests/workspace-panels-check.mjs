@@ -16,6 +16,7 @@ try {
   await page.getByRole('navigation', { name: '项目' }).getByRole('button', { name: 'PUA', exact: true }).first().click();
   const input = page.getByRole('textbox', { name: '发送消息', exact: true });
   await input.fill('隔离面板预览'); await input.press('Enter');
+  const mainSessionId = await page.locator('.session-stage .chat-pane.active').getAttribute('data-session-id');
   const panel = page.getByRole('complementary', { name: '右侧面板', exact: true });
   await panel.getByRole('button', { name: 'Review', exact: true }).waitFor();
   const before = await panel.boundingBox();
@@ -50,6 +51,15 @@ try {
   assert.match(await filePreview.innerText(), /这份内容来自测试 IPC，不是磁盘文件。/);
   await panel.getByRole('button', { name: '返回文件列表' }).click();
   await panel.getByRole('button', { name: '关闭 Files 标签页' }).click();
+  await panel.getByRole('button', { name: '打开右侧标签页' }).click();
+  await page.getByRole('menuitem', { name: 'Side chat', exact: true }).click();
+  const sideChatInput = panel.getByRole('textbox', { name: '发送消息', exact: true });
+  await sideChatInput.waitFor();
+  await sideChatInput.fill('侧栏独立会话');
+  await sideChatInput.press('Enter');
+  await panel.getByRole('tab', { name: 'Side chat', exact: true }).waitFor();
+  assert.equal(await page.locator('.session-stage .chat-pane.active').getAttribute('data-session-id'), mainSessionId);
+  await panel.getByRole('button', { name: '关闭 Side chat 标签页' }).click();
   await page.getByRole('button', { name: '桌面设置', exact: true }).click();
   await page.getByRole('button', { name: '深色', exact: true }).click();
   await page.getByRole('button', { name: '保存设置', exact: true }).click();

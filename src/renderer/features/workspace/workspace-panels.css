@@ -40,6 +40,9 @@
 .workspace-browser-error { padding: 8px 12px; color: var(--ui-danger, #d44); font: var(--ui-font-meta); }
 .workspace-browser-loading { position: absolute; top: 56px; right: 12px; color: var(--ui-tertiary); font: var(--ui-font-meta); }
 .workspace-terminal-dock { height: 100%; min-height: 0; background: var(--ui-canvas); }
+.workspace-side-chat { position: relative; height: 100%; min-height: 0; overflow: hidden; }
+.workspace-side-chat .chat-pane { font-size: 0.94em; }
+.workspace-side-chat-empty { padding: 24px; }
 .environment-section + .environment-section { border-top: 1px solid var(--ui-border); margin-top: 12px; padding-top: 12px; }
 .environment-heading { display: flex; align-items: center; justify-content: space-between; min-height: 26px; margin: 0 4px 6px; color: var(--ui-tertiary); font: var(--ui-font-meta); }
 .ui-provider .environment-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 7px 8px; min-height: 34px; font: var(--ui-font-control); border: 0; background: transparent; }
