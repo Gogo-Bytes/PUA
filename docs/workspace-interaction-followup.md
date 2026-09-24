@@ -12,6 +12,8 @@
 
 第二阶段已分离独立环境浮窗与右侧标签宿主；通过 research 技能核对三个候选后选用锁定版本 @pierre/diffs 1.4.3，替换手写 diff 行。Review 连续展示多个文件，右侧支持标签打开/切换/关闭、会话隔离与空白入口。既有未接入能力显示明确状态，不虚构 Git 操作、subagents 或后台进程。
 
+Review 的 unchanged 展开已接入：`fileDiffContents` 通过同一份最新 Git 成员快照授权后，由 main/Git Adapter 返回比较两侧的完整文本；Pierre `loadDiffFiles` 仅用于真实两侧内容，授权或读取失败时保留原 patch，不伪造上下文。
+
 用户提出 9 项修订。前一阶段落实 2、3、4、9；当前落实截图补充后的侧栏、独立浮窗、多标签宿主和 Review 展示。未声明完整复刻 Codex 所有后台能力。
 
 ## 已实施
@@ -31,5 +33,5 @@
 
 1. 新建会话模型/思考控件已实施：按需经 Desktop IPC 使用 Pi 自己的离线 `--list-models`，传入 `--no-session`、`--no-extensions` 并固定在 home cwd，不启动会话或扫描项目资源；首次创建 Chat 时将所选项作为 schema 校验后的 argv 初始参数。Pi 不可列出模型时仍可发送并使用 Pi 默认值。思考等级使用 Pi CLI 支持的全局枚举；无 reasoning 能力的模型会禁用该选择。定向 IPC、Pi adapter、Pending composer 与 Session 启动测试及生产构建通过；真实 Electron/Pi 首条请求仍需桌面验收。
 2. 用户提供的五张截图已经解除第 5–8 项的视觉参考阻碍。不需要也没有绕过计算机工具对 `com.openai.codex` 的限制；参考来自附件，不是实时访问原应用。
-3. 右侧 Files 已实现会话目录浏览与受限文本预览；Browser 已由主进程隔离 WebContentsView 承载，限制 HTTPS/loopback HTTP、权限、下载和新窗口；Terminal tab 已复用唯一 PTY/xterm 视图在工作区与 dock 间切换；环境浮窗支持列出本地分支并仅在空闲 Chat + clean worktree 下切换；Side chat 使用独立的真实 Pi Chat session，创建、消息订阅、草稿和关闭回收均与主会话分离；分支、worktree、commit 和 push 均通过独立 IPC 与 Git adapter 完成安全校验，worktree 创建使用同仓库父目录下的派生目标路径，移除拒绝当前、脏或占用中的工作树；提交前要求用户输入说明，推送使用仓库已配置的 upstream，不自动覆盖远程历史；Background processes 只投影窗口内真实的兼容终端 Session，不读取或猜测系统其他进程。subagents 仍待接入。完整 unchanged 展开需要新的两侧内容授权接口，当前变更不含这些内容。
+3. 右侧 Files 已实现会话目录浏览与受限文本预览；Browser 已由主进程隔离 WebContentsView 承载，限制 HTTPS/loopback HTTP、权限、下载和新窗口；Terminal tab 已复用唯一 PTY/xterm 视图在工作区与 dock 间切换；环境浮窗支持列出本地分支并仅在空闲 Chat + clean worktree 下切换；Side chat 使用独立的真实 Pi Chat session，创建、消息订阅、草稿和关闭回收均与主会话分离；分支、worktree、commit 和 push 均通过独立 IPC 与 Git adapter 完成安全校验，worktree 创建使用同仓库父目录下的派生目标路径，移除拒绝当前、脏或占用中的工作树；提交前要求用户输入说明，推送使用仓库已配置的 upstream，不自动覆盖远程历史；Background processes 只投影窗口内真实的兼容终端 Session，不读取或猜测系统其他进程。subagents 仍待接入。
 4. 分支操作/subagents 等未实现能力应明确显示“未接入”及原因，不可使用成功假反馈或把会话关闭冒充归档。保留现有 Session、Git snapshot、草稿和附件 owner。

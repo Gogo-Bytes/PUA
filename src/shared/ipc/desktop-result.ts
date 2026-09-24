@@ -67,6 +67,7 @@ export const desktopValueGuards = {
   commitGitChanges: gitStatus,
   pushGitChanges: gitStatus,
   fileDiff: (v: unknown) => record(v) && text(v.text) && oneOf(v.kind, ['diff', 'untracked', 'binary', 'symlink']) && bool(v.truncated),
+  fileDiffContents: (v: unknown) => record(v) && (v.oldFile === null || (record(v.oldFile) && text(v.oldFile.name) && text(v.oldFile.contents))) && (v.newFile === null || (record(v.newFile) && text(v.newFile.name) && text(v.newFile.contents))),
   listSessionFiles: (v: unknown) => record(v) && text(v.path) && bool(v.truncated) && arrayOf(v.entries, entry => record(entry) && text(entry.name) && text(entry.path) && oneOf(entry.kind, ['file', 'directory'])),
   readSessionFile: (v: unknown) => record(v) && text(v.path) && text(v.text) && bool(v.truncated),
   createBrowserView: text,

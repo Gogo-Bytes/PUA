@@ -1,9 +1,10 @@
-import { authorizePreview, reviewScope, type RepositorySnapshot, type RepositoryWorktrees, type ReviewPreview, type ReviewScope } from '../domain/review.js';
+import { authorizePreview, reviewScope, type RepositorySnapshot, type RepositoryWorktrees, type ReviewContents, type ReviewPreview, type ReviewScope } from '../domain/review.js';
 import type { ReviewRepositoryPort } from '../ports.js';
 
 export interface ChangeReview {
   snapshot(cwd: string): Promise<RepositorySnapshot>;
   preview(input: { cwd: string; path: string; scope: ReviewScope }): Promise<ReviewPreview>;
+  contents(input: { cwd: string; path: string; scope: ReviewScope }): Promise<ReviewContents>;
   branches(cwd: string): Promise<string[]>;
   switchBranch(cwd: string, branch: string): Promise<void>;
   createBranch(cwd: string, branch: string): Promise<void>;
@@ -32,5 +33,11 @@ export class ChangeReviewApplication implements ChangeReview {
     const scope = reviewScope(requestedScope);
     const snapshot = await this.repository.captureSnapshot(cwd);
     return this.repository.readAuthorizedPreview(authorizePreview(snapshot, path, scope));
+  }
+  async contents(input: { cwd: string; path: string; scope: ReviewScope }): Promise<ReviewContents> {
+    const { cwd, path, scope: requestedScope } = input;
+    const scope = reviewScope(requestedScope);
+    const snapshot = await this.repository.captureSnapshot(cwd);
+    return this.repository.readAuthorizedContents(authorizePreview(snapshot, path, scope));
   }
 }

@@ -1,6 +1,11 @@
 import { Component, lazy, Suspense, type ReactNode } from 'react';
+import type { FileDiffMetadata } from '@pierre/diffs';
 
-export interface DiffViewProps { text: string; theme: 'light' | 'dark' }
+export interface DiffViewProps {
+  text: string;
+  theme: 'light' | 'dark';
+  loadDiffFiles?: (fileDiff: FileDiffMetadata) => Promise<{ oldFile: { name: string; contents: string } | null; newFile: { name: string; contents: string } | null }>;
+}
 const Surface = lazy(() => import('./DiffSurface'));
 export function RawPatch({ text, note = '原始 patch · 无法完整解析或仅含文件元数据时保留原文' }: { text: string; note?: string }) {
   return <div className="ui-raw-patch"><small>{note}</small><pre>{text}</pre></div>;

@@ -6,7 +6,7 @@ import type { createDesktopPreferences } from '../../../app/main/desktop-prefere
 import { applySessionStartResult, isSessionBusy, requireSessionSnapshot, unwrapSessionResult } from '../../../app/main/session-mapper.js';
 import { conversationError, extensionResponse, sendIntent } from '../../../app/main/conversation-mapper.js';
 import type { ChangeReview } from '../../../modules/change-review/index.js';
-import { repositorySnapshotDTO, reviewPreviewDTO, reviewScopeInput, reviewError, worktreesDTO } from './change-review-mapper.js';
+import { repositorySnapshotDTO, reviewPreviewDTO, reviewContentsDTO, reviewScopeInput, reviewError, worktreesDTO } from './change-review-mapper.js';
 import type { inspectProjectResources as InspectResources } from '../../filesystem/project-resources.js';
 import type { listSessionFiles as BrowseSessionFiles, readSessionFile as PreviewSessionFile } from '../../filesystem/session-files.js';
 import type { BrowserViews } from '../browser-views.js';
@@ -201,6 +201,7 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
     return mutateGit(capabilities, cwd, () => changeReview.pushChanges(cwd).then(repositorySnapshotDTO));
   });
   handle('fileDiff', (id, filename, scope) => changeReview.preview({ cwd: requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, path: filename, scope: reviewScopeInput(scope) }).then(reviewPreviewDTO).catch(reviewError));
+  handle('fileDiffContents', (id, filename, scope) => changeReview.contents({ cwd: requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, path: filename, scope: reviewScopeInput(scope) }).then(reviewContentsDTO).catch(reviewError));
   handle('listSessionFiles', (id, relativePath) => listSessionFiles(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
   handle('readSessionFile', (id, relativePath) => readSessionFile(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
   handle('createBrowserView', () => browserViews.create(requireCurrent().window));

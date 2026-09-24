@@ -74,12 +74,12 @@ function ReviewFiles({ status, files, sessionId, scope, theme, onReference }: {
   const visible = files.slice(0, limit);
   const loading = visible.some(file => !results.get(file.path));
   return <div className="review-files" aria-label="变更文件">
-    {visible.map(file => <ReviewFile key={file.path} file={file} result={results.get(file.path)} scope={scope} theme={theme} onReference={() => onReference(`请检查这个文件的变更：${referencePaths([status.root.replace(/[\\/]$/, '') + '/' + file.path])}`)}/>)}
+    {visible.map(file => <ReviewFile key={file.path} file={file} result={results.get(file.path)} sessionId={sessionId} scope={scope} theme={theme} onReference={() => onReference(`请检查这个文件的变更：${referencePaths([status.root.replace(/[\\/]$/, '') + '/' + file.path])}`)}/>)}
     {limit < files.length && <Button className="review-load-more" disabled={loading} onClick={() => setLimit(current => current + PAGE_SIZE)}>{loading ? '读取差异…' : `继续加载 ${Math.min(PAGE_SIZE, files.length - limit)} 个文件`} · 共 {files.length} 个</Button>}
   </div>;
 }
 
-function ReviewFile({ file, result, scope, theme, onReference }: { file: ChangedFile; result?: Result; scope: DiffScope; theme: 'light' | 'dark'; onReference(): void }) {
+function ReviewFile({ file, result, sessionId, scope, theme, onReference }: { file: ChangedFile; result?: Result; sessionId: string; scope: DiffScope; theme: 'light' | 'dark'; onReference(): void }) {
   const [expanded, setExpanded] = useState(true);
   const [view, setView] = useState<'source' | 'preview'>('source');
   const diff = result && 'diff' in result ? result.diff : null;
@@ -103,7 +103,7 @@ function ReviewFile({ file, result, scope, theme, onReference }: { file: Changed
         {diff.truncated && <p className="diff-note">内容已截断（约前 200KB）；{conflict ? '仅保留已返回的原始 patch。' : '计数仅涵盖已显示差异，不代表完整文件。'}</p>}
         {markdown && <Tabs label="文件视图" value={view} onChange={value => setView(value as 'source' | 'preview')} items={[{ value: 'source', label: '源码' }, { value: 'preview', label: '预览' }]}/>}
         {conflict || (diff.kind === 'diff' && diff.truncated) ? <pre className="diff-content" aria-label={conflict ? '原始冲突 patch' : '已截断 patch'}>{diff.text}</pre>
-          : diff.kind === 'diff' ? <DiffView text={diff.text} theme={theme}/>
+          : diff.kind === 'diff' ? <DiffView text={diff.text} theme={theme} loadDiffFiles={() => desktopClient.fileDiffContents(sessionId, file.path, scope)}/>
           : diff.kind === 'untracked' ? markdown && view === 'preview' ? <div className="document ui-chat-body"><MarkdownView text={diff.text}/></div> : <SourceView text={diff.text} label="未跟踪文件源码快照"/>
           : <p className="diff-note">{diff.text}</p>}
       </>}

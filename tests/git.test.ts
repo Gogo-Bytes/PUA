@@ -12,6 +12,7 @@ import type { DiffScope } from '../src/shared/ipc/change-review';
 
 const review = new ChangeReviewApplication(new GitReviewAdapter());
 const getFileDiff = (cwd: string, path: string, scope: DiffScope) => review.preview({ cwd, path, scope }).then(reviewPreviewDTO).catch(reviewError);
+const getFileContents = (cwd: string, path: string, scope: DiffScope) => review.contents({ cwd, path, scope });
 const getGitStatus = (cwd: string) => review.snapshot(cwd).then(repositorySnapshotDTO);
 
 const exec = promisify(execFile);
@@ -51,6 +52,12 @@ describe('Git review and guarded local branch operations', () => {
     expect(index.text).toContain('+staged'); expect(index.text).not.toContain('+unstaged');
     expect(worktree.text).toContain('+unstaged'); expect(worktree.text).toContain('-staged');
     expect(await readFile(path.join(root, '.git/index'))).toEqual(before);
+    const indexContents = await getFileContents(root, 'hello.txt', 'index');
+    expect(indexContents.oldFile?.contents).toBe('base\n');
+    expect(indexContents.newFile?.contents).toBe('staged\n');
+    const worktreeContents = await getFileContents(root, 'hello.txt', 'worktree');
+    expect(worktreeContents.oldFile?.contents).toBe('staged\n');
+    expect(worktreeContents.newFile?.contents).toBe('unstaged\n');
   });
   it('previews text, reports binary files, truncates large output and rejects arbitrary paths', async () => {
     const { root } = await repository();

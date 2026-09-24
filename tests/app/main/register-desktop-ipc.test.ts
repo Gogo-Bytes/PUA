@@ -21,7 +21,7 @@ const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   compactChatSession: ['id', undefined], setChatAutoCompaction: ['id', true], setChatAutoRetry: ['id', false], setChatSteeringMode: ['id', 'one-at-a-time'], setChatFollowUpMode: ['id', 'all'],
   sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
   write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
-  openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
+  openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'], fileDiffContents: ['id', 'relative/file', 'worktree'],
 };
 import { desktopIPCFake as harness } from '../../desktop-ipc-fake';
 describe('real registerDesktopIPC with Fake Electron and closed business dependencies', () => {

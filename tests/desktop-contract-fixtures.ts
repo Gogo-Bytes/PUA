@@ -16,7 +16,7 @@ export const samples: { [K in RequestMethod]: RequestArgs<K> } = {
   compactChatSession: ['id', undefined], setChatAutoCompaction: ['id', true], setChatAutoRetry: ['id', false], setChatSteeringMode: ['id', 'one-at-a-time'], setChatFollowUpMode: ['id', 'all'],
   sendChatMessage: ['id', { text: 'message', attachmentIds: [], delivery: 'prompt' }],
   write: ['id', '\0\x1b[31m\r\n'], resize: ['id', 100, 30], acknowledge: ['id', 1],
-  openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'],
+  openExternal: ['https://example.com/'], fileDiff: ['id', 'relative/file', 'worktree'], fileDiffContents: ['id', 'relative/file', 'worktree'],
 };
 
 import type { InvokeMethod, RequestResult } from '../src/shared/ipc/channels';
@@ -35,7 +35,7 @@ export const successes: { [K in InvokeMethod]: RequestResult<K> } = {
   compactChatSession: undefined, setChatAutoCompaction: undefined, setChatAutoRetry: undefined, setChatSteeringMode: undefined, setChatFollowUpMode: undefined,
   openExternal: undefined, openProject: undefined, writeClipboard: undefined,
   gitStatus: { root: '/fake', branch: '', capturedAt: '', files: [] }, gitBranches: { current: 'main', branches: ['main'] }, switchGitBranch: { root: '/fake', branch: 'main', capturedAt: '', files: [] }, createGitBranch: { root: '/fake', branch: 'feature/new', capturedAt: '', files: [] }, deleteGitBranch: { current: 'main', branches: ['main'] }, gitWorktrees: { current: '/fake', worktrees: [{ path: '/fake', head: 'abc', branch: 'main', current: true }] }, createGitWorktree: { current: '/fake', worktrees: [{ path: '/fake', head: 'abc', branch: 'main', current: true }] }, deleteGitWorktree: { current: '/fake', worktrees: [{ path: '/fake', head: 'abc', branch: 'main', current: true }] }, commitGitChanges: { root: '/fake', branch: 'main', capturedAt: '', files: [] }, pushGitChanges: { root: '/fake', branch: 'main', capturedAt: '', files: [] },
-  fileDiff: { text: '', kind: 'diff', truncated: false }, readClipboard: { text: '', image: false },
+  fileDiff: { text: '', kind: 'diff', truncated: false }, fileDiffContents: { oldFile: null, newFile: null }, readClipboard: { text: '', image: false },
   listSessionFiles: { path: '', entries: [], truncated: false }, readSessionFile: { path: 'README.md', text: 'hello', truncated: false },
   createBrowserView: 'browser-id', setBrowserViewBounds: undefined, navigateBrowser: undefined, goBackBrowser: undefined, goForwardBrowser: undefined, reloadBrowser: undefined, disposeBrowserView: undefined,
 };

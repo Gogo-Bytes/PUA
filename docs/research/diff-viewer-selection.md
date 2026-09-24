@@ -6,7 +6,7 @@
 
 推荐锁定 **`@pierre/diffs@1.4.3`**，在 UI 层封装只读差异表面，由 change-review feature 提供已授权的 patch。其 unified 行、双侧行号、文件标题与增删统计、Shiki 语法着色、行间分隔和虚拟化更接近用户提供的 Review 截图。不是 Monaco 编辑器，也不引入可执行预览或编辑能力。[官方 README](https://github.com/pierrecomputer/pierre/blob/main/packages/diffs/README.md)
 
-当前数据只有 `FileDiff { text, kind, truncated }`。**任何查看器都不能还原 patch 没有携带的 unchanged 内容**。第一阶段展示真实已返回的上下文与间隔，不伪造可展开内容；若后续需要完整展开，必须另行设计同一仓库、同一比较修订的两侧内容加载接口。Pierre 的 `loadDiffFiles` 正是该接缝，不应绕过现有宿主读取路径。[官方 React API 示例](https://github.com/pierrecomputer/pierre/blob/main/apps/docs/app/%28diffs%29/docs/ReactAPI/constants.ts)
+当前 patch 数据只有 `FileDiff { text, kind, truncated }`；查看器不能从 patch 推断省略的 unchanged 内容。生产已补上 `fileDiffContents` 两侧内容加载接口：它先按最新 Git 成员快照授权，再由 main/Git Adapter 返回两侧文本；Pierre 的 `loadDiffFiles` 通过该宿主接缝展开内容，失败时保留原 patch。[官方 React API 示例](https://github.com/pierrecomputer/pierre/blob/main/apps/docs/app/%28diffs%29/docs/ReactAPI/constants.ts)
 
 ## 比较
 

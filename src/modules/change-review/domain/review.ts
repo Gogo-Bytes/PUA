@@ -27,6 +27,10 @@ export interface ReviewPreview {
   readonly kind: 'diff' | 'untracked' | 'binary' | 'symlink';
   readonly truncated: boolean;
 }
+export interface ReviewContents {
+  readonly oldFile: { readonly name: string; readonly contents: string } | null;
+  readonly newFile: { readonly name: string; readonly contents: string } | null;
+}
 /** In-process membership decision, not an OS credential or unforgeable token. */
 export type AuthorizedPreview =
   | { readonly kind: 'untracked'; readonly root: string; readonly path: string }

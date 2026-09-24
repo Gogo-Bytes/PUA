@@ -1,8 +1,8 @@
 {
   "src/renderer/ui/Breadcrumbs.tsx": "9d76ae783af4a21c0be1c74d0d8b965aa62987d63631fd2984a113c7c96afd27",
   "src/renderer/ui/ChoiceControls.tsx": "661f5ba81039a9cfbc95b73428675040e2f6fd24ab832edf6a1f24c80c3a0c56",
-  "src/renderer/ui/DiffSurface.tsx": "f9e0caeab63b51cf37e26db26c7b5caaa4ff131ca3a2de3a773247502a1efa5c",
-  "src/renderer/ui/DiffView.tsx": "63ca84aa385fff33dc68b494cb9b87539cda0f9b62ba9b9b1266948be8c50b77",
+  "src/renderer/ui/DiffSurface.tsx": "09ee7a6d2a849b9cb56ded35866910338902a0b1a85afc22ec155027156e6264",
+  "src/renderer/ui/DiffView.tsx": "ac94c058c0ae675901d2fcf1044d2a32fe05b3568099d0b46342c00bd7b8f606",
   "src/renderer/ui/Icon.tsx": "25ee1c459e4404c2dbc26a25ef4a17e2add956549f18bd6a1a49a338991d49c6",
   "src/renderer/ui/InlineRename.tsx": "af590c677f4378c796d5a3ab8620e3abc3d95ec3c83be778ce8a3fbb7f9468f2",
   "src/renderer/ui/Message.tsx": "0687eed5f073b4253e31b05f52f00e67631cb5929c05216f2a68931778fbf799",

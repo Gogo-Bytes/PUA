@@ -31,3 +31,7 @@ export interface FileDiff {
   kind: 'diff' | 'untracked' | 'binary' | 'symlink';
   truncated: boolean;
 }
+export interface FileDiffContents {
+  oldFile: { name: string; contents: string } | null;
+  newFile: { name: string; contents: string } | null;
+}

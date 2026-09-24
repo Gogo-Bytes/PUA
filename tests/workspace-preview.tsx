@@ -68,6 +68,7 @@ installDesktopFake({
   commitGitChanges: async (id) => ({ root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }),
   pushGitChanges: async (id) => ({ root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }),
   fileDiff: async (_id, filename, scope) => filename.endsWith('.md') ? { kind: 'untracked', text: source, truncated: false } : { kind: 'diff', truncated: false, text: `diff --git a/src/source.ts b/src/source.ts\n--- a/src/source.ts\n+++ b/src/source.ts\n@@ -1,2 +1,3 @@\n-const source = "file";\n+const source = "${scope === 'index' ? 'staged snapshot' : 'tool snapshot'}";\n+const currentFile = false;\n export { source };` },
+  fileDiffContents: async (_id, filename, scope) => ({ oldFile: { name: filename, contents: 'const source = "old snapshot";\nexport { source };' }, newFile: { name: filename, contents: `const source = "${scope === 'index' ? 'staged snapshot' : 'tool snapshot'}";\nconst currentFile = false;\nexport { source };` } }),
   listSessionFiles: async (_id, path) => ({ path, entries: path === ''
     ? [{ name: 'src', path: 'src', kind: 'directory' as const }, { name: 'docs', path: 'docs', kind: 'directory' as const }, { name: 'README.md', path: 'README.md', kind: 'file' as const }]
     : path === 'docs' ? [{ name: 'context.md', path: 'docs/context.md', kind: 'file' as const }]

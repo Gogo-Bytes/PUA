@@ -166,6 +166,10 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
     const sessionId = text(id); const file = text(filename);
     return [sessionId, file, validateDiffScope(scope)];
   }),
+  fileDiffContents: tuple<'fileDiffContents'>(3, (id, filename, scope) => {
+    const sessionId = text(id); const file = text(filename);
+    return [sessionId, file, validateDiffScope(scope)];
+  }),
   listSessionFiles: tuple<'listSessionFiles'>(2, (id, relativePath) => {
     const path = boundedText(relativePath, 4096, '目录路径');
     if (path.startsWith('/') || path.includes('\\') || /^[a-zA-Z]:/.test(path) || (path !== '' && path.split('/').some(part => !part || part === '..' || part === '.'))) throw new Error('无效目录路径');

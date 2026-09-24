@@ -8,15 +8,15 @@ const methods = Object.keys(samples) as RequestMethod[];
 describe('desktop IPC contract', () => {
   it('retains exactly the declared invoke/send/event whitelist and unique channels', () => {
     const values = [...Object.values(invokeChannels), ...Object.values(sendChannels), ...Object.values(eventChannels)];
-    expect(values).toHaveLength(62);
-    expect(new Set(values).size).toBe(62);
-    expect(Object.keys(invokeChannels)).toHaveLength(57);
+    expect(values).toHaveLength(63);
+    expect(new Set(values).size).toBe(63);
+    expect(Object.keys(invokeChannels)).toHaveLength(58);
     expect(Object.keys(sendChannels)).toEqual(['write', 'resize', 'acknowledge']);
     expect(Object.keys(eventChannels)).toEqual(['onSessionEvent', 'onBrowserViewState']);
     expect(values.map(value => value.replace('desktop:', '')).sort()).toEqual([
       'bootstrap', 'directory', 'file', 'attachments', 'chat-attachment-remove', 'chat-attachments', 'preferences', 'chat-model-catalog',
       'project-resources', 'create', 'start', 'close', 'archive-restore', 'archive-delete', 'session-pin', 'history-search', 'chat-send', 'chat-stop', 'extension-response', 'chat-rename', 'chat-models', 'chat-thinking-levels', 'chat-model-set', 'chat-thinking-set',
-      'external', 'project', 'git-status', 'git-branches', 'git-branch-switch', 'git-branch-create', 'git-branch-delete', 'git-worktrees', 'git-worktree-create', 'git-worktree-delete', 'git-commit', 'git-push', 'file-diff', 'session-files', 'session-file-read', 'browser-create', 'browser-bounds', 'browser-navigate', 'browser-back', 'browser-forward', 'browser-reload', 'browser-dispose', 'browser-state', 'clipboard-read', 'clipboard-write', 'chat-fork', 'chat-clone', 'chat-session-stats', 'chat-auto-settings', 'chat-compact', 'chat-auto-compaction-set', 'chat-auto-retry-set', 'chat-steering-mode-set', 'chat-follow-up-mode-set', 'write', 'resize', 'ack', 'event',
+      'external', 'project', 'git-status', 'git-branches', 'git-branch-switch', 'git-branch-create', 'git-branch-delete', 'git-worktrees', 'git-worktree-create', 'git-worktree-delete', 'git-commit', 'git-push', 'file-diff', 'file-diff-contents', 'session-files', 'session-file-read', 'browser-create', 'browser-bounds', 'browser-navigate', 'browser-back', 'browser-forward', 'browser-reload', 'browser-dispose', 'browser-state', 'clipboard-read', 'clipboard-write', 'chat-fork', 'chat-clone', 'chat-session-stats', 'chat-auto-settings', 'chat-compact', 'chat-auto-compaction-set', 'chat-auto-retry-set', 'chat-steering-mode-set', 'chat-follow-up-mode-set', 'write', 'resize', 'ack', 'event',
     ].sort());
     expect(Object.keys(requestParsers).sort()).toEqual(methods.sort());
   });

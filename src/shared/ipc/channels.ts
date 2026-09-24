@@ -53,6 +53,7 @@ export const invokeChannels = {
   commitGitChanges: 'desktop:git-commit',
   pushGitChanges: 'desktop:git-push',
   fileDiff: 'desktop:file-diff',
+  fileDiffContents: 'desktop:file-diff-contents',
   listSessionFiles: 'desktop:session-files',
   readSessionFile: 'desktop:session-file-read',
   createBrowserView: 'desktop:browser-create',

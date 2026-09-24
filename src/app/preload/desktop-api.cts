@@ -62,6 +62,7 @@ const api: DesktopBridge = {
   commitGitChanges: (id, message) => ipcRenderer.invoke(invokeChannels.commitGitChanges, id, message),
   pushGitChanges: id => ipcRenderer.invoke(invokeChannels.pushGitChanges, id),
   fileDiff: (id, path, scope) => ipcRenderer.invoke(invokeChannels.fileDiff, id, path, scope),
+  fileDiffContents: (id, path, scope) => ipcRenderer.invoke(invokeChannels.fileDiffContents, id, path, scope),
   listSessionFiles: (id, path) => ipcRenderer.invoke(invokeChannels.listSessionFiles, id, path),
   readSessionFile: (id, path) => ipcRenderer.invoke(invokeChannels.readSessionFile, id, path),
   createBrowserView: () => ipcRenderer.invoke(invokeChannels.createBrowserView),

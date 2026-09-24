@@ -3,15 +3,16 @@ import { constants } from 'node:fs';
 import { lstat, open, readlink, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import type { AuthorizedPreview, ReviewFile, ReviewPreview, RepositorySnapshot, RepositoryWorktree, RepositoryWorktrees, ReviewRepositoryPort } from '../../modules/change-review/index.js';
+import type { AuthorizedPreview, ReviewContents, ReviewFile, ReviewPreview, RepositorySnapshot, RepositoryWorktree, RepositoryWorktrees, ReviewRepositoryPort } from '../../modules/change-review/index.js';
 
 const exec = promisify(execFile);
 const previewLimit = 200_000;
+const contentsLimit = 8 * 1024 * 1024;
 const gitEnv = { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0' };
 
 async function git(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await exec('git', ['--no-pager', '--literal-pathspecs', '-c', 'core.quotePath=false', ...args], {
-    cwd, env: gitEnv, encoding: 'utf8', timeout: 10_000, maxBuffer: args[0] === 'diff' ? previewLimit + 1 : 8 * 1024 * 1024,
+    cwd, env: gitEnv, encoding: 'utf8', timeout: 10_000, maxBuffer: args[0] === 'diff' ? previewLimit + 1 : contentsLimit,
     windowsHide: true,
   });
   return stdout;
@@ -203,6 +204,71 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
       }
       throw error;
     }
+  }
+
+  /** Return both comparison sides for Pierre's unchanged-context hydration. */
+  async readAuthorizedContents(selection: AuthorizedPreview): Promise<ReviewContents> {
+    if (selection.kind !== 'tracked') throw new Error('未跟踪文件没有 Git 双侧内容');
+    const oldPath = selection.originalPath ?? selection.path;
+    const oldObject = selection.scope === 'index' ? await this.gitTreeBlob(selection.root, 'HEAD', oldPath) : await this.indexBlob(selection.root, oldPath);
+    const newObject = selection.scope === 'index' ? await this.indexBlob(selection.root, selection.path) : null;
+    const oldFile = oldObject ? { name: oldPath, contents: await this.readBlob(selection.root, oldObject) } : null;
+    const newFile = selection.scope === 'index'
+      ? newObject ? { name: selection.path, contents: await this.readBlob(selection.root, newObject) } : null
+      : await this.readWorkingFile(selection.root, selection.path);
+    return { oldFile, newFile };
+  }
+
+  private async readBlob(root: string, object: string): Promise<string> {
+    const value = await git(root, ['cat-file', 'blob', object]);
+    if (value.includes('\0')) throw new Error('二进制文件不提供双侧文本内容');
+    return value;
+  }
+
+  private async gitTreeBlob(root: string, ref: string, filename: string): Promise<string | null> {
+    try {
+      const output = await git(root, ['ls-tree', '-z', ref, '--', filename]);
+      const record = output.split('\0').find(Boolean);
+      if (!record) return null;
+      const match = record.match(/^[^ ]+ blob ([0-9a-f]+)\t/);
+      return match?.[1] ?? null;
+    } catch { return null; }
+  }
+
+  private async indexBlob(root: string, filename: string): Promise<string | null> {
+    const output = await git(root, ['ls-files', '--stage', '-z', '--', filename]);
+    const record = output.split('\0').find(Boolean);
+    if (!record) return null;
+    const match = record.match(/^[^ ]+ ([0-9a-f]+) [0-3]\t/);
+    return match?.[1] ?? null;
+  }
+
+  private async readWorkingFile(root: string, filename: string): Promise<{ name: string; contents: string } | null> {
+    const fullPath = path.resolve(root, filename);
+    const relative = path.relative(root, fullPath);
+    if (relative.startsWith('..' + path.sep) || relative === '..' || path.isAbsolute(relative)) throw new Error('文件不在当前仓库内');
+    let info;
+    try { info = await lstat(fullPath); } catch (error) {
+      if ((error as { code?: string }).code === 'ENOENT') return null;
+      throw error;
+    }
+    if (info.isSymbolicLink() || !info.isFile()) throw new Error('此路径不是普通文件');
+    const rootReal = await realpath(root);
+    const resolved = await realpath(fullPath);
+    const inside = path.relative(rootReal, resolved);
+    if (inside === '..' || inside.startsWith('..' + path.sep) || path.isAbsolute(inside)) throw new Error('预览路径已移出仓库，请刷新。');
+    const fd = await open(fullPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    try {
+      const opened = await fd.stat();
+      const current = await lstat(fullPath);
+      if (!opened.isFile() || current.isSymbolicLink() || opened.dev !== info.dev || opened.ino !== info.ino || opened.dev !== current.dev || opened.ino !== current.ino) throw new Error('预览文件在读取前发生变化，请刷新。');
+      const buffer = Buffer.alloc(contentsLimit + 1);
+      const { bytesRead } = await fd.read(buffer, 0, buffer.length, 0);
+      const bytes = buffer.subarray(0, bytesRead);
+      if (bytes.includes(0)) throw new Error('二进制文件不提供双侧文本内容');
+      if (bytesRead > contentsLimit) throw new Error('文件过大，无法展开完整上下文');
+      return { name: filename, contents: bytes.toString('utf8') };
+    } finally { await fd.close(); }
   }
 }
 
