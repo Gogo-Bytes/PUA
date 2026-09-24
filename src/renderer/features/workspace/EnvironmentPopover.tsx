@@ -164,7 +164,7 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
       {snapshot?.id === session?.id && snapshot?.error && <p className="environment-note">暂时无法读取仓库；可打开 Review 查看错误并重试。</p>}
     </section>
     <section className="environment-section"><div className="environment-heading">Subagents</div>
-      <div className="environment-row is-unavailable"><Icon name="agents"/><span>子代理任务</span><small>未接入</small></div>
+      <div className="environment-row is-unavailable"><Icon name="agents"/><span>子代理任务</span><small>Pi 未暴露</small></div>
     </section>
     <section className="environment-section"><div className="environment-heading">Background processes</div>
       {backgroundProcesses.length ? backgroundProcesses.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { setOpen(false); onSelectSession?.(item.id); }}>

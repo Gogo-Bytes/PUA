@@ -17,6 +17,7 @@ const entries = [
 ] as const;
 const unavailable: Partial<Record<SidePanelKind, string>> = {
   terminal: '侧栏终端尚未接入。兼容终端仍可通过项目更多菜单打开；它遵守现有会话互斥规则。',
+  'side-chat': '独立侧栏对话已接入为单独 Pi 会话。',
 };
 
 /** Right-side tab host, separate from the titlebar Environment popover. */
