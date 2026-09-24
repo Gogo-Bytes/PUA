@@ -109,6 +109,12 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   gitWorktrees: idArgs,
   createGitWorktree: tuple<'createGitWorktree'>(2, (id, branch) => [text(id), boundedText(branch, 255, '分支名称')]),
   deleteGitWorktree: tuple<'deleteGitWorktree'>(2, (id, path) => [text(id), boundedText(path, 4096, '工作树路径')]),
+  commitGitChanges: tuple<'commitGitChanges'>(2, (id, message) => {
+    const value = boundedText(message, 2000, '提交说明').trim();
+    if (!value) throw new Error('提交说明不能为空');
+    return [text(id), value];
+  }),
+  pushGitChanges: idArgs,
   writeClipboard: idArgs,
   savePreferences: tuple<'savePreferences'>(1, value => [validatePreferences(value)]),
   createSession: tuple<'createSession'>(1, value => [validateCreateSessionOptions(value)]),

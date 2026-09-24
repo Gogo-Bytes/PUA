@@ -106,6 +106,34 @@ describe('GitReviewAdapter command/parser compatibility with Fake exec', () => {
     await adapter().deleteWorktree('/cwd', '/repo-feature');
     expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['worktree', 'remove', '--quiet', '/repo-feature']);
   });
+  it('commits all current changes only after a non-detached branch and returns a fresh snapshot', async () => {
+    let capture = 0;
+    fake.exec.mockImplementation(async (_command: string, args: string[]) => {
+      const operation = args.slice(4).join(' ');
+      if (operation === 'rev-parse --show-toplevel') return { stdout: '/repo\n' };
+      if (operation === 'status --porcelain=v1 -z --untracked-files=all') return { stdout: capture++ === 0 ? ' M file\0' : '' };
+      if (operation === 'symbolic-ref --short -q HEAD') return { stdout: 'main\n' };
+      if (operation === 'git add') return { stdout: '' };
+      if (operation === 'add --all -- .') return { stdout: '' };
+      if (operation === 'commit --quiet --message message') return { stdout: '' };
+      throw new Error(`unexpected git command: ${operation}`);
+    });
+    await adapter().commitChanges('/cwd', ' message ');
+    expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['add', '--all', '--', '.']);
+    expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['commit', '--quiet', '--message', 'message']);
+  });
+  it('pushes the configured upstream only from a named branch', async () => {
+    fake.exec.mockImplementation(async (_command: string, args: string[]) => {
+      const operation = args.slice(4).join(' ');
+      if (operation === 'rev-parse --show-toplevel') return { stdout: '/repo\n' };
+      if (operation === 'status --porcelain=v1 -z --untracked-files=all') return { stdout: '' };
+      if (operation === 'symbolic-ref --short -q HEAD') return { stdout: 'main\n' };
+      if (operation === 'push --quiet') return { stdout: '' };
+      throw new Error(`unexpected git command: ${operation}`);
+    });
+    await adapter().pushChanges('/cwd');
+    expect(fake.exec.mock.calls.map(call => call[1].slice(4))).toContainEqual(['push', '--quiet']);
+  });
   it('construction has zero repository IO; root strips only one newline, branch trims end, clock belongs to adapter', async () => {
     const subject = adapter(); expect(fake.exec).not.toHaveBeenCalled(); expect(fake.lstat).not.toHaveBeenCalled();
     fake.exec.mockResolvedValueOnce({ stdout: '/repo\n\r\n' }).mockResolvedValueOnce({ stdout: 'MM hello world\0R  new\nname\0old\nname\0?? 图片\0' }).mockResolvedValueOnce({ stdout: ' branch \n' });

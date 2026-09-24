@@ -65,6 +65,8 @@ installDesktopFake({
   gitWorktrees: async () => ({ current: previewWorktrees.find(item => item.current)?.path || '/test/workspace/PUA', worktrees: [...previewWorktrees] }),
   createGitWorktree: async (_id, branch) => { if (!previewGitClean) throw new Error('工作区存在未提交改动'); const item = { path: `/test/workspace/PUA-${branch.replace(/[^A-Za-z0-9._-]+/g, '-')}`, head: 'new-head', branch, current: false }; previewWorktrees = [...previewWorktrees, item]; return { current: previewWorktrees[0].path, worktrees: [...previewWorktrees] }; },
   deleteGitWorktree: async (_id, worktreePath) => { previewWorktrees = previewWorktrees.filter(item => item.path !== worktreePath); return { current: previewWorktrees[0].path, worktrees: [...previewWorktrees] }; },
+  commitGitChanges: async (id) => ({ root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }),
+  pushGitChanges: async (id) => ({ root: sessions.get(id)?.cwd || '/test', branch: previewBranch, capturedAt: new Date().toISOString(), files: [] }),
   fileDiff: async (_id, filename, scope) => filename.endsWith('.md') ? { kind: 'untracked', text: source, truncated: false } : { kind: 'diff', truncated: false, text: `diff --git a/src/source.ts b/src/source.ts\n--- a/src/source.ts\n+++ b/src/source.ts\n@@ -1,2 +1,3 @@\n-const source = "file";\n+const source = "${scope === 'index' ? 'staged snapshot' : 'tool snapshot'}";\n+const currentFile = false;\n export { source };` },
   listSessionFiles: async (_id, path) => ({ path, entries: path === ''
     ? [{ name: 'src', path: 'src', kind: 'directory' as const }, { name: 'docs', path: 'docs', kind: 'directory' as const }, { name: 'README.md', path: 'README.md', kind: 'file' as const }]

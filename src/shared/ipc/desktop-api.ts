@@ -139,6 +139,8 @@ export interface DesktopAPI {
   gitWorktrees(id: string): Promise<GitWorktrees>;
   createGitWorktree(id: string, branch: string): Promise<GitWorktrees>;
   deleteGitWorktree(id: string, path: string): Promise<GitWorktrees>;
+  commitGitChanges(id: string, message: string): Promise<GitStatus>;
+  pushGitChanges(id: string): Promise<GitStatus>;
   fileDiff(id: string, path: string, scope: DiffScope): Promise<FileDiff>;
   /** List immediate, non-symlink children under an active session's cwd. */
   listSessionFiles(id: string, relativePath: string): Promise<SessionFileListing>;

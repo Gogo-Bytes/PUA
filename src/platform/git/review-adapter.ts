@@ -135,6 +135,24 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
     return this.listWorktrees(root);
   }
 
+  async commitChanges(cwd: string, message: string): Promise<RepositorySnapshot> {
+    const snapshot = await this.captureSnapshot(cwd);
+    const candidate = message.trim();
+    if (!candidate || candidate.length > 2000) throw new Error('提交说明不能为空或过长。');
+    if (snapshot.branch === 'detached HEAD') throw new Error('当前处于 detached HEAD，不能创建提交。');
+    if (!snapshot.files.length) throw new Error('工作区没有可提交的改动。');
+    await git(snapshot.root, ['add', '--all', '--', '.']);
+    await git(snapshot.root, ['commit', '--quiet', '--message', candidate]);
+    return this.captureSnapshot(snapshot.root);
+  }
+
+  async pushChanges(cwd: string): Promise<RepositorySnapshot> {
+    const snapshot = await this.captureSnapshot(cwd);
+    if (snapshot.branch === 'detached HEAD') throw new Error('当前处于 detached HEAD，不能推送。');
+    await git(snapshot.root, ['push', '--quiet']);
+    return this.captureSnapshot(snapshot.root);
+  }
+
   /** Read-only UI preview. Does not stage/revert files or run external diff/textconv helpers. */
   async readAuthorizedPreview(selection: AuthorizedPreview): Promise<ReviewPreview> {
     const { root: repositoryRoot, path: filename } = selection;

@@ -190,6 +190,16 @@ export function registerDesktopIPC({ ipcMain, dialog, shell, clipboard, requireC
     const cwd = requireSessionSnapshot(capabilities.session.get(id)).cwd;
     return mutateGit(capabilities, cwd, () => changeReview.deleteWorktree(cwd, worktreePath).then(worktreesDTO), [worktreePath]);
   });
+  handle('commitGitChanges', async (id, message) => {
+    const { capabilities } = requireCurrent();
+    const cwd = requireSessionSnapshot(capabilities.session.get(id)).cwd;
+    return mutateGit(capabilities, cwd, () => changeReview.commitChanges(cwd, message).then(repositorySnapshotDTO));
+  });
+  handle('pushGitChanges', async id => {
+    const { capabilities } = requireCurrent();
+    const cwd = requireSessionSnapshot(capabilities.session.get(id)).cwd;
+    return mutateGit(capabilities, cwd, () => changeReview.pushChanges(cwd).then(repositorySnapshotDTO));
+  });
   handle('fileDiff', (id, filename, scope) => changeReview.preview({ cwd: requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, path: filename, scope: reviewScopeInput(scope) }).then(reviewPreviewDTO).catch(reviewError));
   handle('listSessionFiles', (id, relativePath) => listSessionFiles(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));
   handle('readSessionFile', (id, relativePath) => readSessionFile(requireSessionSnapshot(requireCurrent().capabilities.session.get(id)).cwd, relativePath));

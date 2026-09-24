@@ -11,6 +11,8 @@ export interface ChangeReview {
   worktrees(cwd: string): Promise<RepositoryWorktrees>;
   createWorktree(cwd: string, branch: string): Promise<RepositoryWorktrees>;
   deleteWorktree(cwd: string, worktreePath: string): Promise<RepositoryWorktrees>;
+  commitChanges(cwd: string, message: string): Promise<RepositorySnapshot>;
+  pushChanges(cwd: string): Promise<RepositorySnapshot>;
 }
 
 export class ChangeReviewApplication implements ChangeReview {
@@ -23,6 +25,8 @@ export class ChangeReviewApplication implements ChangeReview {
   worktrees(cwd: string): Promise<RepositoryWorktrees> { return this.repository.listWorktrees(cwd); }
   createWorktree(cwd: string, branch: string): Promise<RepositoryWorktrees> { return this.repository.createWorktree(cwd, branch); }
   deleteWorktree(cwd: string, worktreePath: string): Promise<RepositoryWorktrees> { return this.repository.deleteWorktree(cwd, worktreePath); }
+  commitChanges(cwd: string, message: string): Promise<RepositorySnapshot> { return this.repository.commitChanges(cwd, message); }
+  pushChanges(cwd: string): Promise<RepositorySnapshot> { return this.repository.pushChanges(cwd); }
   async preview(input: { cwd: string; path: string; scope: ReviewScope }): Promise<ReviewPreview> {
     const { cwd, path, scope: requestedScope } = input;
     const scope = reviewScope(requestedScope);

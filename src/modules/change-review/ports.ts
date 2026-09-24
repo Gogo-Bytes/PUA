@@ -10,4 +10,6 @@ export interface ReviewRepositoryPort {
   listWorktrees(cwd: string): Promise<RepositoryWorktrees>;
   createWorktree(cwd: string, branch: string): Promise<RepositoryWorktrees>;
   deleteWorktree(cwd: string, worktreePath: string): Promise<RepositoryWorktrees>;
+  commitChanges(cwd: string, message: string): Promise<RepositorySnapshot>;
+  pushChanges(cwd: string): Promise<RepositorySnapshot>;
 }

@@ -22,10 +22,14 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
   const [worktreeError, setWorktreeError] = useState<string>();
   const [newWorktreeBranch, setNewWorktreeBranch] = useState('');
   const [deleteWorktreeTarget, setDeleteWorktreeTarget] = useState<string>();
+  const [commitOpen, setCommitOpen] = useState(false);
+  const [commitMessage, setCommitMessage] = useState('');
+  const [commitBusy, setCommitBusy] = useState(false);
+  const [commitError, setCommitError] = useState<string>();
   useEffect(() => {
     if (!open || !session) return;
     let current = true;
-    setSnapshot(undefined); setBranchState(undefined); setShowBranches(false); setBranchError(undefined); setNewBranch(''); setDeleteTarget(undefined); setWorktreeState(undefined); setShowWorktrees(false); setWorktreeError(undefined); setNewWorktreeBranch(''); setDeleteWorktreeTarget(undefined);
+    setSnapshot(undefined); setBranchState(undefined); setShowBranches(false); setBranchError(undefined); setNewBranch(''); setDeleteTarget(undefined); setWorktreeState(undefined); setShowWorktrees(false); setWorktreeError(undefined); setNewWorktreeBranch(''); setDeleteWorktreeTarget(undefined); setCommitOpen(false); setCommitMessage(''); setCommitError(undefined);
     void desktopClient.gitStatus(session.id).then(status => {
       if (current) setSnapshot({ id: session.id, status });
     }).catch(error => { if (current) setSnapshot({ id: session.id, error: String(error) }); });
@@ -96,6 +100,23 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
     } catch (error) { setWorktreeError(String(error)); }
     finally { setWorktreeBusy(false); }
   };
+  const commit = async (push: boolean) => {
+    if (!session || commitBusy) return;
+    setCommitBusy(true); setCommitError(undefined);
+    try {
+      const next = await desktopClient.commitGitChanges(session.id, commitMessage);
+      const result = push ? await desktopClient.pushGitChanges(session.id) : next;
+      setSnapshot({ id: session.id, status: result }); setCommitOpen(false); setCommitMessage('');
+    } catch (error) { setCommitError(String(error)); }
+    finally { setCommitBusy(false); }
+  };
+  const push = async () => {
+    if (!session || commitBusy) return;
+    setCommitBusy(true); setCommitError(undefined);
+    try { const next = await desktopClient.pushGitChanges(session.id); setSnapshot({ id: session.id, status: next }); setCommitOpen(false); }
+    catch (error) { setCommitError(String(error)); }
+    finally { setCommitBusy(false); }
+  };
   return <Popover label="环境与任务信息" icon="environment" open={open} onOpenChange={setOpen} className="environment-popover">
     <section className="environment-section">
       <div className="environment-heading"><span>Environment</span><IconButton icon="plus" label="添加环境（未接入）" disabled variant="ghost"/></div>
@@ -138,7 +159,7 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
         {taskBusy && <p className="environment-note">任务执行期间不能操作工作树。</p>}
         {worktreeError && <p className="environment-note" role="alert">{worktreeError}</p>}
       </div>}
-      <Button variant="ghost" className="environment-row" disabled><Icon name="branch"/><span>Commit or push</span><small>未接入</small></Button>
+      <Button variant="ghost" className="environment-row" disabled={!session || !status || taskBusy} onClick={() => { setCommitError(undefined); setCommitOpen(true); }}><Icon name="branch"/><span>Commit or push</span><small>{status?.files.length ? `${status.files.length} 个文件待提交` : '推送当前分支'}</small></Button>
       {snapshot?.id === session?.id && snapshot?.error && <p className="environment-note">暂时无法读取仓库；可打开 Review 查看错误并重试。</p>}
     </section>
     <section className="environment-section"><div className="environment-heading">Subagents</div>
@@ -160,6 +181,14 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
       <p>将尝试移除 <strong>{deleteWorktreeTarget}</strong>。只有干净的非当前工作树可以移除，不会强制删除未提交文件。</p>
       {worktreeError && <p className="form-error" role="alert">{worktreeError}</p>}
       <div className="modal-actions"><Button disabled={worktreeBusy} onClick={() => setDeleteWorktreeTarget(undefined)}>取消</Button><Button variant="primary" busy={worktreeBusy} onClick={() => void deleteWorktree()}>移除工作树</Button></div>
+    </Dialog>
+    <Dialog open={commitOpen} title="Commit or push" closeLabel="取消" closeDisabled={commitBusy} closeOnBackdrop={!commitBusy} onClose={() => setCommitOpen(false)}>
+      {status?.files.length ? <><p>将把当前工作区的全部改动加入本地提交。请确认提交说明。</p><Input autoFocus aria-label="提交说明" placeholder="例如：修复侧栏交互" maxLength={2000} value={commitMessage} disabled={commitBusy} onChange={event => setCommitMessage(event.target.value)}/></> : <p>当前工作区没有未提交改动，可以推送当前分支的已有提交。</p>}
+      {commitError && <p className="form-error" role="alert">{commitError}</p>}
+      <div className="modal-actions">
+        <Button disabled={commitBusy} onClick={() => void push()}>推送</Button>
+        {status?.files.length ? <><Button disabled={commitBusy || !commitMessage.trim()} onClick={() => void commit(false)}>提交</Button><Button variant="primary" busy={commitBusy} disabled={!commitMessage.trim()} onClick={() => void commit(true)}>提交并推送</Button></> : null}
+      </div>
     </Dialog>
   </Popover>;
 }

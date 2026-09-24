@@ -50,6 +50,8 @@ export const invokeChannels = {
   gitWorktrees: 'desktop:git-worktrees',
   createGitWorktree: 'desktop:git-worktree-create',
   deleteGitWorktree: 'desktop:git-worktree-delete',
+  commitGitChanges: 'desktop:git-commit',
+  pushGitChanges: 'desktop:git-push',
   fileDiff: 'desktop:file-diff',
   listSessionFiles: 'desktop:session-files',
   readSessionFile: 'desktop:session-file-read',
