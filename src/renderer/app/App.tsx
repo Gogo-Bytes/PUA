@@ -44,7 +44,7 @@ export function App() {
   }, [boot?.platform, active?.kind, active?.cwd, project]);
   return <UIProvider theme={theme}><div className={`workspace ${boot?.platform === 'darwin' ? 'workspace-darwin' : ''}`}>
     <WorkspaceChrome active={active} project={project} leftOpen={projectPanelOpen} rightOpen={reviewOpen} leftToggleRef={leftPanelToggle} rightToggleRef={panelToggle}
-      environment={<EnvironmentPopover session={active} onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}/>}
+      environment={<EnvironmentPopover session={active} sessions={sessions} onSelectSession={navigation.selectSession} onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}/>}
       canNavigateBack={workspace.canNavigateBack} canNavigateForward={workspace.canNavigateForward}
       onToggleLeft={() => setProjectPanelOpen(open => !open)} onToggleRight={() => setReviewOpen(open => !open)}
       onNavigateBack={workspace.navigateBack} onNavigateForward={workspace.navigateForward}

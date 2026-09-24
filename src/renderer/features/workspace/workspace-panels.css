@@ -49,6 +49,7 @@
 .environment-row > span { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .environment-row small { color: var(--ui-tertiary); font: var(--ui-font-meta); white-space: nowrap; }
 .environment-row.is-unavailable { color: var(--ui-tertiary); }
+.environment-process-row { text-align: left; }
 .environment-note { font: var(--ui-font-meta); color: var(--ui-tertiary); margin: 6px 8px; }
 .environment-branches { margin: 2px 0 8px 30px; padding: 4px; border-left: 1px solid var(--ui-border); display: grid; gap: 2px; }
 .environment-branch-row { display:flex; align-items:center; gap:2px; min-width:0; }

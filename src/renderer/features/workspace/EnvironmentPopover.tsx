@@ -5,8 +5,8 @@ import { desktopClient } from '../../app/desktop-client';
 import { Button, Dialog, Icon, IconButton, Input, Popover } from '../../ui';
 import type { SidePanelKind } from './useSidePanelTabs';
 
-export function EnvironmentPopover({ session, onOpenPanel }: {
-  session?: SessionInfo; onOpenPanel(kind: SidePanelKind): void;
+export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenPanel }: {
+  session?: SessionInfo; sessions?: readonly SessionInfo[]; onSelectSession?(id: string): void; onOpenPanel(kind: SidePanelKind): void;
 }) {
   const [open, setOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<{ id: string; status?: GitStatus; error?: string }>();
@@ -45,6 +45,7 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
   const branches = branchState?.id === session?.id ? branchState : undefined;
   const worktrees = worktreeState?.id === session?.id ? worktreeState : undefined;
   const taskBusy = !!session && (session.kind === 'terminal' || session.activity !== 'idle');
+  const backgroundProcesses = (sessions ?? []).filter(item => item.kind === 'terminal' && item.processStatus !== 'exited');
   const openPanel = (kind: SidePanelKind) => { setOpen(false); onOpenPanel(kind); };
   const switchBranch = async (branch: string) => {
     if (!session || branch === branches?.current || branchBusy) return;
@@ -166,7 +167,9 @@ export function EnvironmentPopover({ session, onOpenPanel }: {
       <div className="environment-row is-unavailable"><Icon name="agents"/><span>子代理任务</span><small>未接入</small></div>
     </section>
     <section className="environment-section"><div className="environment-heading">Background processes</div>
-      <div className="environment-row is-unavailable"><Icon name="terminal"/><span>后台进程</span><small>未接入</small></div>
+      {backgroundProcesses.length ? backgroundProcesses.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { setOpen(false); onSelectSession?.(item.id); }}>
+        <Icon name="terminal"/><span>{item.title}</span><small>{item.activity === 'idle' ? '就绪' : item.activity === 'waiting-input' ? '等待输入' : '运行中'}</small>
+      </Button>) : <div className="environment-row is-unavailable"><Icon name="terminal"/><span>暂无后台终端</span><small>窗口内</small></div>}
     </section>
     <section className="environment-section"><div className="environment-heading"><span>Sources</span><IconButton icon="plus" label="添加来源（未接入）" disabled variant="ghost"/></div>
       <div className="environment-row" title={session?.cwd}><Icon name="folder"/><span>{session?.cwd || '尚未选择会话'}</span></div>
