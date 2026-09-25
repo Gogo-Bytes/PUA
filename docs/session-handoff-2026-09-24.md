@@ -73,6 +73,7 @@
 - `npm run test:pi` 已通过：使用已安装 Pi 的隔离 profile，覆盖 RPC handshake、官方 `modal-editor.ts` / `rpc-demo.ts` 扩展 UI、超时/零超时/确认交互，以及归档任务后从项目菜单启动兼容终端；未发起模型请求，也未修改用户配置。
 - `npm run test:ipc` 已通过：真实 sandbox preload、隔离 userData、窗口 sender 拒绝、输入校验和事件取消订阅。
 - `npm run test:lifecycle` 已通过：`close`、`handshake`、`renderer`、`host`、`terminal-close` 五种场景均为 3 个进程启动、3 个进程停止。
+- `npm run package` 已通过并生成未签名的 macOS arm64 `release/mac-arm64/Pi Desktop.app`；随后对该打包产物执行 `PI_DESKTOP_TEST_EXECUTABLE=... node scripts/smoke-desktop.mjs` 也已通过。打包仍有既有大 chunk、默认图标、重复依赖和无 Developer ID 的警告，未执行签名、公证或上传。
 - 这些是隔离的自动化 Electron/Pi 验收，不等同于跨平台发布、签名、公证、完整人工视觉验收或真实外部网络浏览器验收。
 
 ### 真实能力边界
@@ -97,9 +98,8 @@
 1. 全量 `npm test` 已恢复绿灯：89 个文件、2794 个断言全部通过（2026-09-25）。后续若出现失败，应记录新的文件/断言，不再沿用旧的 84/2778 历史数字。
 2. Electron/Pi/IPC/生命周期已完成一轮隔离自动验收，但完整人工视觉验收、Browser 面板端到端场景、跨平台发布矩阵、签名/公证和长时间运行验证仍未完成。
 3. formatter/完整 lint、跨平台 release matrix、签名/公证和长时间运行验证仍是独立门禁。
-4. 生产 CSS 中还残留已退休项目过滤器的 selector；这是低风险清理项，不能因此恢复输入框。
-5. 主工作区兼容终端的真实 Electron/Pi 验收已完成；右侧 Terminal 标签与主工作区之间的完整切换矩阵仍需单独验收，不要为了截图临时启动第二个 PTY。
-6. Subagents 仍是能力缺口，下一阶段只能做能力重新核验或入口文案/禁用态完善，不能直接编造 RPC。
+4. 主工作区兼容终端的真实 Electron/Pi 验收已完成；右侧 Terminal 标签与主工作区之间的完整切换矩阵仍需单独验收，不要为了截图临时启动第二个 PTY。
+5. Subagents 仍是能力缺口，下一阶段只能做能力重新核验或入口文案/禁用态完善，不能直接编造 RPC。
 
 ## 5. 最近阶段和证据
 
@@ -107,6 +107,7 @@
 
 - `b316fc9`：Changes unchanged context expansion；已 push。类型检查、测试、生产构建、protected/boundary 检查均通过；完整测试仍保留上述旧基线失败。
 - `93999f3`：将 Electron/Pi/lifecycle smoke 适配到当前项目资源授权、Review 多标签、右侧面板和项目菜单入口，并完成真实验收。`npm test` 89/89 文件、2794/2794 断言；`typecheck`、`typecheck:tests`、`check:boundaries`、`test:desktop`、`test:pi`、`test:ipc`、`test:lifecycle` 全部通过；已 push 到 `origin/main`。
+- `5560dc0`：移除生产侧栏已退休项目过滤器 CSS；`check:protected` 56/56、`npm run verify` 和 `npm run package` 通过，并对打包产物重跑桌面 smoke；已 push 到 `origin/main`。
 - `aadf60a`：明确 Subagents 当前 Pi RPC 不可用，不伪造能力。
 - `ea3418d`：真实托管后台终端投影。
 - `da79cb8`：受保护的 commit/push 流程。
