@@ -100,7 +100,9 @@ async function runScenario(root, fixture, mode) {
       page.setDefaultTimeout(5000);
       await page.getByTitle(temporary, { exact: true }).waitFor();
       if (mode === 'terminal-close') {
-        await page.getByRole('button', { name: /中打开兼容终端/ }).click();
+        const projectGroup = page.getByTitle(temporary, { exact: true }).locator('xpath=ancestor::section[1]');
+        await projectGroup.getByRole('button', { name: /更多操作/ }).evaluate(button => button.click());
+        await page.getByRole('menuitem', { name: '打开兼容终端', exact: true }).click();
         await page.getByRole('dialog').getByRole('button', { name: /打开兼容终端/ }).click();
         await app.evaluate(({ dialog }) => { dialog.showMessageBoxSync = () => 1; });
       } else {

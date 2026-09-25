@@ -72,7 +72,9 @@ try {
   await window.locator('.chat-pane').waitFor({ state: 'detached' });
 
   // Explicit compatibility terminal: TUI-only custom editor remains functional.
-  await window.getByRole('button', { name: /中打开兼容终端/ }).click();
+  const projectGroup = window.getByTitle(project, { exact: true }).locator('xpath=ancestor::section[1]');
+  await projectGroup.getByRole('button', { name: /更多操作/ }).evaluate(button => button.click());
+  await window.getByRole('menuitem', { name: '打开兼容终端', exact: true }).click();
   await window.getByRole('dialog').getByRole('button', { name: /打开兼容终端/ }).click();
   await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes(' INSERT ')), undefined, { timeout: 30000 });
   const id = await window.locator('.terminal-pane.active').getAttribute('data-session-id');

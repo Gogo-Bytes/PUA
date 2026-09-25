@@ -27,10 +27,11 @@ try {
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/welcome.png') });
 
   await window.getByRole('button', { name: '项目 with spaces', exact: true }).click();
-  await window.getByText('检测到项目资源').waitFor();
-  await window.getByRole('radio', { name: /沿用 Pi/ }).check();
   await window.getByRole('textbox', { name: '发送消息' }).fill('你好 Pi\nsecond line');
   await window.getByRole('button', { name: '发送消息', exact: true }).click();
+  const trust = window.getByRole('dialog', { name: '检测到项目资源' });
+  await trust.waitFor();
+  await trust.getByRole('button', { name: '沿用 Pi 保存的决定', exact: true }).click();
   await window.locator('.chat-pane.active').waitFor();
   await window.getByRole('heading', { name: '启动确认' }).waitFor();
   await window.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click();
@@ -50,11 +51,15 @@ try {
   assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'const ready = true;\n');
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/native-chat.png') });
 
-  if (!await window.getByRole('complementary', { name: '文件与 Git 检查区' }).count()) await window.getByLabel('当前任务操作栏').getByRole('button', { name: '显示 检查器' }).click();
-  await window.locator('.changed-files button').filter({ hasText: 'editor.ts' }).click();
-  await window.getByRole('button', { name: '引用文件到草稿' }).click();
+  if (!await window.getByRole('complementary', { name: '文件与 Git 检查区' }).count()) {
+    const review = window.getByRole('button', { name: 'Review', exact: true });
+    if (!await review.count()) await window.getByRole('banner', { name: '窗口操作栏' }).getByRole('button', { name: '显示右侧面板', exact: true }).click();
+    await window.getByRole('button', { name: 'Review', exact: true }).click();
+  }
+  await window.locator('.review-files button').filter({ hasText: 'editor.ts' }).click();
+  await window.getByRole('region', { name: 'editor.ts', exact: true }).getByRole('button', { name: '引用文件到草稿' }).click();
   assert((await window.getByRole('textbox', { name: '发送消息' }).inputValue()).includes('editor.ts'));
-  await window.getByRole('button', { name: '关闭变更面板' }).click();
+  await window.getByRole('button', { name: '关闭 Review 标签页' }).click();
 
   // Narrow-window Escape belongs to focused input unless the inspector itself handles it.
   const originalBounds = await app.evaluate(({ BrowserWindow }) => { const browser = BrowserWindow.getAllWindows()[0]; const bounds = browser.getBounds(); browser.setContentSize(1000, 800); return bounds; });
@@ -62,15 +67,17 @@ try {
   const chatInput = window.getByRole('textbox', { name: '发送消息' });
   await chatInput.press('Escape');
   assert(await chatInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal chat Escape focus');
-  const inspectorToggle = window.locator('.ui-workspace-toolbar button').filter({ hasText: '检查器' }).first();
-  await inspectorToggle.waitFor({ state: 'visible' });
-  await inspectorToggle.click();
+  const panelToggle = window.getByRole('banner', { name: '窗口操作栏' }).getByRole('button', { name: /右侧面板/ });
+  await panelToggle.click();
   await chatInput.press('Escape');
-  assert.equal(await inspectorToggle.getAttribute('aria-expanded'), 'true', 'input Escape must not close inspector');
-  await window.getByRole('button', { name: '关闭变更面板' }).press('Escape');
-  assert.equal(await inspectorToggle.getAttribute('aria-expanded'), 'false');
-  await window.waitForFunction(() => [...document.querySelectorAll('button')].some(node => getComputedStyle(node).display !== 'none' && node.textContent?.includes('检查器') && node === document.activeElement));
-  assert(await inspectorToggle.evaluate(node => node === document.activeElement), 'inspector Escape returns focus to toggle');
+  assert.equal(await panelToggle.getAttribute('aria-expanded'), 'false', 'input Escape must not reopen the right panel');
+  await panelToggle.click();
+  await chatInput.press('Escape');
+  assert.equal(await panelToggle.getAttribute('aria-expanded'), 'true', 'input Escape must not close the right panel');
+  await panelToggle.press('Escape');
+  assert.equal(await panelToggle.getAttribute('aria-expanded'), 'false');
+  await window.waitForFunction(() => [...document.querySelectorAll('button')].some(node => getComputedStyle(node).display !== 'none' && node.getAttribute('aria-label')?.includes('右侧面板') && node === document.activeElement));
+  assert(await panelToggle.evaluate(node => node === document.activeElement), 'right panel Escape returns focus to toggle');
   await app.evaluate(({ BrowserWindow }, bounds) => BrowserWindow.getAllWindows()[0].setBounds(bounds), originalBounds);
 
   await window.getByRole('textbox', { name: '发送消息' }).fill('/mock-dialog');
@@ -167,8 +174,7 @@ try {
   const lastReply = await app.evaluate(({ clipboard }) => clipboard.readText());
   assert(lastReply.includes('Paragraph 100:'), 'retained reply remains visible and copyable after exit');
   await window.screenshot({ path: path.join(root, '.agent-work/native-chat/evidence/exited-chat.png') });
-  await window.getByRole('button', { name: '兼容终端', exact: true }).click();
-  await window.getByRole('radio', { name: /兼容终端/ }).check();
+  await window.getByRole('button', { name: '打开兼容终端', exact: true }).click();
   await window.getByRole('dialog').getByRole('button', { name: '打开兼容终端 ↗', exact: true }).click();
   await window.waitForFunction(() => window.__events.some(event => event.type === 'terminal-data' && event.data.includes('MOCK_PI_READY')));
   const terminalId = await window.locator('.terminal-pane.active').getAttribute('data-session-id'); assert.notEqual(firstId, terminalId);
@@ -176,7 +182,7 @@ try {
   assert(terminalOutput.includes('spaces;$(not-a-shell)'));
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1000, 800));
   await window.waitForFunction(() => window.innerWidth <= 1100);
-  assert.equal(await window.getByLabel('当前任务操作栏').getByRole('button', { name: '显示 检查器' }).getAttribute('aria-expanded'), 'false');
+  assert.equal(await window.getByRole('banner', { name: '窗口操作栏' }).getByRole('button', { name: /右侧面板/ }).getAttribute('aria-expanded'), 'false');
   const terminalInput = window.locator('.terminal-pane.active .xterm-helper-textarea');
   await terminalInput.press('Escape');
   assert(await terminalInput.evaluate(node => node === document.activeElement), 'closed inspector must not steal real xterm Escape focus');
