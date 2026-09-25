@@ -57,7 +57,7 @@ describe('real App → SettingsDialog → Fake Desktop characterization', () => 
     await act(async () => first.resolve(failed));
     expect(screen.getByRole('dialog')).toBe(dialog); expect(within(dialog).getByRole('alert').textContent).toBe(failed.runtimeError);
     expect(document.documentElement.dataset.theme).toBe('dark'); expect(screen.getByTitle('/published-project')).toBeTruthy();
-    expect(screen.getByText('尚未连接 Pi')).toBeTruthy(); expect(within(dialog).getByText('未检测到')).toBeTruthy();
+    expect(screen.getByText('尚未连接')).toBeTruthy(); expect(within(dialog).getByText('未检测到')).toBeTruthy();
     expect(input('Pi 路径').value).toBe('/picked'); expect(input('Pi CLI 参数').value).toBe('["--extension","/new.ts"]');
     change('Pi 路径', '/fixed'); fireEvent.click(screen.getByRole('button', { name: '浅色' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
     const sentAgain = vi.mocked(desktop.savePreferences).mock.calls[1][0];

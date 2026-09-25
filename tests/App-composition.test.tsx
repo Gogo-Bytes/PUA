@@ -32,10 +32,15 @@ const commandsA: ChatCommand[] = [{ name: 'Alpha', description: 'FIRST descripti
 const query = () => screen.getByRole('textbox', { name: '搜索命令' }) as HTMLInputElement;
 const filter = (value: string) => fireEvent.change(query(), { target: { value } });
 const list = () => screen.getByRole('dialog').querySelector('.command-list') as HTMLElement;
-const items = () => within(list()).queryAllByRole('button');
+const items = () => within(list()).queryAllByRole('option');
 const close = () => fireEvent.click(screen.getByRole('button', { name: '关闭对话框' }));
 const open = () => fireEvent.click(screen.getByRole('button', { name: /搜索与命令/ }));
-const inspectorToggle = () => screen.getAllByRole('button', { name: /(?:显示|收起) 检查器/ })[0]!;
+const inspectorToggle = () => screen.getAllByRole('button', { name: /(?:显示|收起)右侧面板/ })[0]!;
+const openReview = async () => {
+  const opener = screen.queryByRole('button', { name: 'Review' });
+  if (opener) fireEvent.click(opener);
+  await screen.findByRole('button', { name: 'a.ts' });
+};
 const selectProject = (path: string) => fireEvent.click(within(screen.getByRole('navigation', { name: '项目' })).getByTitle(path));
 const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) => {
   const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true, cancelable: true, ...init });
@@ -44,7 +49,7 @@ const shortcut = (init: KeyboardEventInit = {}, target: EventTarget = window) =>
 let draftCounter = 0;
 async function create(kind: 'chat' | 'terminal' = 'chat', verifyInitialSend = true) {
   if (kind === 'terminal') {
-    fireEvent.click(screen.getByRole('button', { name: '兼容终端' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开兼容终端' }));
     const button = screen.getByRole('button', { name: '打开兼容终端 ↗' });
     await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); await flush(); return;
   }
@@ -104,7 +109,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     await create(); fireEvent.click(screen.getByRole('button', { name: 'Session 1' }));
     fireEvent.click(screen.getByRole('button', { name: '桌面设置' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush();
     expect(captures.size).toBe(1);
-    await screen.findByRole('button', { name: 'a.ts M' });
+    await openReview();
     expect(trace.filter(x => x === 'add:bubble')).toHaveLength(0); // Inspector Escape is scoped to ResizableWorkspace, not a window listener.
     await create('terminal'); expect(captures.size).toBe(1);
     boot = { ...boot, platform: 'linux' }; fireEvent.click(screen.getByRole('button', { name: '桌面设置' })); fireEvent.click(screen.getByRole('button', { name: '保存设置' })); await flush();
@@ -150,25 +155,25 @@ describe('App composition before/after: real owners and panes, only in-memory ho
   });
   it('late attachment queries the old ID in the live registry, never a disposed handle or newest active terminal', async () => {
     await mount('terminal'); const pending = deferred<string[]>(); vi.mocked(desktop.chooseAttachments).mockReturnValueOnce(pending.promise);
-    fireEvent.click(screen.getByRole('button', { name: '＋ 文件引用' })); await create('terminal');
+    fireEvent.click(screen.getByRole('button', { name: '添加文件引用' })); await create('terminal');
     fireEvent.click(screen.getByRole('button', { name: '关闭 Session 2' })); await flush(); expect(terminal.instances[0].disposed).toBe(true);
     open(); filter('model'); await act(async () => pending.resolve(['/old.txt']));
     expect(terminal.instances.map(instance => instance.pastes)).toEqual([[], []]); expect(screen.queryByRole('dialog')).toBeNull(); shortcut(); expect(query().value).toBe(''); expect(desktop.write).not.toHaveBeenCalled();
   });
   it('search hide retains text/found; close fallback leaves it open; close button clears then hides then focuses', async () => {
-    await mount('terminal'); fireEvent.click(screen.getByRole('button', { name: '搜索' }));
+    await mount('terminal'); fireEvent.click(screen.getByRole('button', { name: '搜索终端历史' }));
     const search = () => screen.getByRole('textbox', { name: '搜索终端历史' }) as HTMLInputElement;
     fireEvent.change(search(), { target: { value: 'needle' } }); terminal.search.mockReturnValue(false); fireEvent.submit(search().closest('form')!); expect(screen.getByText('未找到')).toBeTruthy();
-    await create('terminal'); expect(screen.queryByRole('textbox', { name: '搜索终端历史' })).toBeNull(); fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
+    await create('terminal'); expect(screen.queryByRole('textbox', { name: '搜索终端历史' })).toBeNull(); fireEvent.click(screen.getByRole('button', { name: '搜索终端历史' })); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '关闭 Session 3' })); await flush(); expect(search().value).toBe('needle'); expect(screen.getByText('未找到')).toBeTruthy();
     terminal.trace = []; fireEvent.click(within(search().closest('form')!).getByRole('button', { name: '×' })); expect(terminal.trace).toEqual(['clear', 'focus']); expect(screen.queryByRole('textbox', { name: '搜索终端历史' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '搜索' })); expect(search().value).toBe('needle'); fireEvent.change(search(), { target: { value: 'edited' } }); expect(screen.queryByText('未找到')).toBeNull(); expect(desktop.startSession).toHaveBeenCalledTimes(3);
+    fireEvent.click(screen.getByRole('button', { name: '搜索终端历史' })); expect(search().value).toBe('needle'); fireEvent.change(search(), { target: { value: 'edited' } }); expect(screen.queryByText('未找到')).toBeNull(); expect(desktop.startSession).toHaveBeenCalledTimes(3);
   });
   it.each(['chat', 'terminal'] as const)('Git %s reference preserves palette split, newline and narrow textarea focus without toggle focus', async kind => {
     await mount(kind); const draft = kind === 'chat' ? screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement : undefined;
     if (draft) fireEvent.change(draft, { target: { value: 'existing' } });
-    const toggle = inspectorToggle(); fireEvent.click(await screen.findByRole('button', { name: 'a.ts M' })); await screen.findByRole('button', { name: '引用文件到草稿' });
-    open(); filter('model'); const focus = vi.spyOn(toggle, 'focus'); fireEvent.click(screen.getByRole('button', { name: '引用文件到草稿' }));
+    await openReview(); const toggle = inspectorToggle(); fireEvent.click(await screen.findByRole('button', { name: 'a.ts' })); await screen.findByRole('button', { name: '引用文件到草稿' });
+    open(); filter('model'); const focus = vi.spyOn(toggle, 'focus'); fireEvent.click(screen.getByRole('button', { name: '引用文件到草稿', hidden: true }));
     expect(toggle.getAttribute('aria-expanded')).toBe('true'); expect(focus).not.toHaveBeenCalled();
     const text = '请检查这个文件的变更：@"/one/a.ts" ';
     if (draft) { expect(draft.value).toBe(`existing\n${text}`); expect(document.activeElement).toBe(draft); expect(query().value).toBe('model'); }
@@ -194,12 +199,12 @@ describe('App original synchronous throw versus rejection and dynamic client loo
   });
   it('binds later requests to the current bridge without resubscribing the original workspace', async () => {
     await mount(); const replacement = { ...desktop, openProject: vi.fn().mockResolvedValue(undefined) };
-    installDesktopFake(replacement); fireEvent.click(screen.getByRole('button', { name: '打开目录' })); await flush();
+    installDesktopFake(replacement); fireEvent.click(screen.getByRole('button', { name: '打开项目目录' })); await flush();
     expect(replacement.openProject).toHaveBeenCalledExactlyOnceWith('s1'); expect(desktop.openProject).not.toHaveBeenCalled();
-    vi.mocked(replacement.openProject).mockRejectedValueOnce(new Error('directory rejected')); fireEvent.click(screen.getByRole('button', { name: '打开目录' })); await screen.findByText('Error: directory rejected');
+    vi.mocked(replacement.openProject).mockRejectedValueOnce(new Error('directory rejected')); fireEvent.click(screen.getByRole('button', { name: '打开项目目录' })); await screen.findByText('Error: directory rejected');
     fireEvent.click(screen.getByRole('button', { name: '关闭错误提示' })); vi.mocked(replacement.openProject).mockImplementationOnce(() => { throw new Error('directory threw'); });
     const errors: unknown[] = []; const onError = (event: ErrorEvent) => { errors.push(event.error); event.preventDefault(); }; window.addEventListener('error', onError);
-    fireEvent.click(screen.getByRole('button', { name: '打开目录' })); window.removeEventListener('error', onError);
+    fireEvent.click(screen.getByRole('button', { name: '打开项目目录' })); window.removeEventListener('error', onError);
     expect(errors).toHaveLength(1); expect(screen.queryByRole('alert')).toBeNull(); expect(listeners.size).toBe(2);
   });
 });

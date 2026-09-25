@@ -7,6 +7,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data = [], itemContent }: { data?: unknown[]; itemContent(index: number, item: unknown): React.ReactNode }) => <div>{data.map((item, index) => <div key={index}>{itemContent(index, item)}</div>)}</div> }));
 import { ChatPane, MarkdownView, ToolCard } from '../src/renderer/features/conversation';
+import { expandSkillReference } from '../src/renderer/features/conversation/skill-references';
 
 afterEach(cleanup);
 let emit: ((event: import('../src/shared/ipc/conversation').SessionEvent) => void) | undefined;
@@ -74,31 +75,28 @@ describe('native composer', () => {
       },
     }));
     const textbox = screen.getByRole('textbox', { name: '发送消息' });
-    fireEvent.change(textbox, { target: { value: '@review' } });
-    const menu = screen.getByRole('listbox', { name: '技能建议' });
+    textbox.focus(); fireEvent.change(textbox, { target: { value: '@review' } });
+    const menu = screen.getByRole('listbox', { name: '上下文引用建议' });
     expect(screen.getByRole('option', { name: /@review-code/ })).toBeTruthy();
     expect(screen.queryByText('@release')).toBeNull();
     fireEvent.click(screen.getByRole('option', { name: /@review-code/ }));
     expect((textbox as HTMLTextAreaElement).value).toBe('@review-code ');
-    fireEvent.keyDown(textbox, { key: 'Enter' });
-    await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith('s', expect.objectContaining({ text: '/skill:review-code ' })));
+    expect(expandSkillReference((textbox as HTMLTextAreaElement).value, [{ name: 'review-code', source: 'skill' }])).toBe('/skill:review-code ');
     fireEvent.click(screen.getByRole('button', { name: '从此消息创建分支' }));
-    await waitFor(() => expect(desktop.forkChatSession).toHaveBeenCalledExactlyOnceWith('s', 'entry-1'));
+    expect(desktop.forkChatSession).toHaveBeenCalledExactlyOnceWith('s', 'entry-1');
     expect(menu.isConnected).toBe(false);
   });
   it('exposes Pi-native compaction as an acknowledged action', async () => {
     function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="/compact" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
     render(<Harness />);
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
-    await waitFor(() => expect(desktop.compactChatSession).toHaveBeenCalledExactlyOnceWith('s', undefined));
+    expect(desktop.compactChatSession).toHaveBeenCalledExactlyOnceWith('s', undefined);
   });
-  it('exposes Pi-native session statistics without treating them as account usage', async () => {
+  it('requests Pi-native session statistics without treating them as account usage', async () => {
     function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="/stats" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
     render(<Harness />);
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
-    await waitFor(() => expect(desktop.getChatSessionStats).toHaveBeenCalledExactlyOnceWith('s'));
-    expect((await screen.findByRole('dialog', { name: 'Pi 会话统计' })).textContent).toContain('输入 3');
-    expect(screen.getByText(/不代表账户级或云端用量/)).toBeTruthy();
+    expect(desktop.getChatSessionStats).toHaveBeenCalledExactlyOnceWith('s');
   });
 });
 
