@@ -35,6 +35,9 @@ export function BrowserPanel() {
     });
     const observer = new ResizeObserver(syncBounds);
     if (surface.current) observer.observe(surface.current);
+    const tabPanel = surface.current?.closest('[role="tabpanel"]');
+    const visibilityObserver = tabPanel ? new MutationObserver(syncBounds) : undefined;
+    if (tabPanel && visibilityObserver) visibilityObserver.observe(tabPanel, { attributes: true, attributeFilter: ['hidden'] });
     const onResize = () => syncBounds();
     window.addEventListener('resize', onResize);
     void desktopClient.createBrowserView().then(viewId => {
@@ -42,7 +45,7 @@ export function BrowserPanel() {
       idRef.current = viewId; setId(viewId); syncBounds();
     }).catch(reason => { if (active) setError(String(reason)); });
     return () => {
-      active = false; observer.disconnect(); window.removeEventListener('resize', onResize); unsubscribe();
+      active = false; observer.disconnect(); visibilityObserver?.disconnect(); window.removeEventListener('resize', onResize); unsubscribe();
       const viewId = idRef.current; idRef.current = undefined;
       if (viewId) { try { void desktopClient.disposeBrowserView(viewId).catch(() => {}); } catch { /* The view may outlive a disconnected renderer. */ } }
     };
