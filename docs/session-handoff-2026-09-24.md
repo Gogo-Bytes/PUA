@@ -1,8 +1,8 @@
 # PUA 新 Session 交接材料
 
-更新时间：2026-09-25
+更新时间：2026-09-26
 当前分支：`main`
-当前提交：`93999f3 test(smoke): align desktop acceptance with current UI`
+当前提交：`438a7ca test(browser): add real WebContentsView acceptance`
 工作区状态：干净，`main` 已推送到 `origin/main`。
 
 这份文档是给下一次开发 session 的启动材料。它把用户要求、当前实现、剩余风险和下一阶段边界放在一起，避免新 session 重复实现已经完成的功能，或把设计目标误认为已完成的行为。
