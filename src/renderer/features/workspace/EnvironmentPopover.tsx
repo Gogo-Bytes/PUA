@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { GitStatus } from '../../../shared/ipc/change-review';
+import { piUnavailableCapabilities } from '../../../shared/ipc/pi-capabilities';
 import { desktopClient } from '../../app/desktop-client';
 import { Button, Dialog, Icon, IconButton, Input, Popover } from '../../ui';
 import type { SidePanelKind } from './useSidePanelTabs';
@@ -8,6 +9,7 @@ import type { SidePanelKind } from './useSidePanelTabs';
 export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenPanel }: {
   session?: SessionInfo; sessions?: readonly SessionInfo[]; onSelectSession?(id: string): void; onOpenPanel(kind: SidePanelKind): void;
 }) {
+  const subagentsCapability = piUnavailableCapabilities.find(item => item.id === 'subagents');
   const [open, setOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<{ id: string; status?: GitStatus; error?: string }>();
   const [branchState, setBranchState] = useState<{ id: string; current: string; branches: string[] }>();
@@ -164,7 +166,7 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
       {snapshot?.id === session?.id && snapshot?.error && <p className="environment-note">暂时无法读取仓库；可打开 Review 查看错误并重试。</p>}
     </section>
     <section className="environment-section"><div className="environment-heading">Subagents</div>
-      <div className="environment-row is-unavailable"><Icon name="agents"/><span>子代理任务</span><small>Pi 未暴露</small></div>
+      <div className="environment-row is-unavailable" aria-disabled="true" title={subagentsCapability?.reason}><Icon name="agents"/><span>子代理任务</span><small>{subagentsCapability?.reason ?? '未接入'}</small></div>
     </section>
     <section className="environment-section"><div className="environment-heading">Background processes</div>
       {backgroundProcesses.length ? backgroundProcesses.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { setOpen(false); onSelectSession?.(item.id); }}>

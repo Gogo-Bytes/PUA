@@ -12,6 +12,13 @@ export interface PiCapabilityRecord {
   status: 'integrated' | 'protocol-ready' | 'needs-runtime-verification' | 'verified-not-exposed' | 'product-discussion';
 }
 
+/** Capabilities intentionally represented as unavailable when Pi has no confirmed protocol. */
+export interface PiUnavailableCapabilityRecord {
+  id: 'subagents';
+  status: 'verified-not-exposed';
+  reason: string;
+}
+
 export const piCapabilities: readonly PiCapabilityRecord[] = [
   { id: 'conversation.stream', rpcCommands: ['prompt'], status: 'integrated' },
   { id: 'conversation.queue', rpcCommands: ['steer', 'follow_up', 'clear_queue'], status: 'integrated' },
@@ -35,4 +42,12 @@ export const piCapabilities: readonly PiCapabilityRecord[] = [
   { id: 'resources.skills', rpcCommands: ['get_commands'], status: 'integrated' },
   { id: 'resources.promptTemplates', rpcCommands: ['get_commands'], status: 'integrated' },
   { id: 'extensions.ui', rpcCommands: ['extension_ui_response'], status: 'integrated' },
+] as const;
+
+export const piUnavailableCapabilities: readonly PiUnavailableCapabilityRecord[] = [
+  {
+    id: 'subagents',
+    status: 'verified-not-exposed',
+    reason: '当前 Pi 未暴露创建、列表或事件协议',
+  },
 ] as const;

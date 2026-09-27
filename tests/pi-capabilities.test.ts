@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { piCapabilities } from '../src/shared/ipc/pi-capabilities';
+import { piCapabilities, piUnavailableCapabilities } from '../src/shared/ipc/pi-capabilities';
 
 describe('Pi capability registry', () => {
   it('keeps capability ids unique and actionable', () => {
@@ -19,5 +19,12 @@ describe('Pi capability registry', () => {
     expect(piCapabilities.find(item => item.id === 'session.switch')?.status).toBe('verified-not-exposed');
     expect(piCapabilities.find(item => item.id === 'session.bash')?.status).toBe('verified-not-exposed');
     expect(piCapabilities.find(item => item.id === 'session.export')?.status).toBe('verified-not-exposed');
+  });
+
+  it('keeps unsupported capabilities explicit without inventing RPC commands', () => {
+    const subagents = piUnavailableCapabilities.find(item => item.id === 'subagents');
+    expect(subagents?.status).toBe('verified-not-exposed');
+    expect(subagents?.reason).toContain('创建、列表或事件协议');
+    expect(piCapabilities.some(item => item.id.toLowerCase().includes('subagent'))).toBe(false);
   });
 });

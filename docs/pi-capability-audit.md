@@ -55,7 +55,7 @@
 
 当前仓库可以证明 RPC 流、工具、队列、扩展 UI、会话命名、继续会话、消息级 Fork、`get_tree` 元数据刷新、原生 `compact`、自动策略开关、队列策略、`abort_retry`、原生 Clone、`get_session_stats` 和 session identity 恢复路径存在；本机 Pi 0.85.1 包的公开类型进一步显示 fork/tree、skills、prompt templates、HTML export 与 session stats 能力。usage 已按稳定 DTO 接入并做主进程边界校验。机器可读的 `src/shared/ipc/pi-capabilities.ts` 已同步这些已接入状态；HTML export 保持产品不纳入。`--no-session` 明确保留为 Pi 原生内存能力，不进入 durable task index。
 
-本轮本机 Pi RPC 核验（2026-09-19，`pi --mode rpc --offline --no-extensions --no-skills --no-prompt-templates`，临时 `--session-dir`）确认：`get_state` 返回稳定的 `sessionFile/sessionId/steeringMode/followUpMode`；`set_steering_mode`、`set_follow_up_mode`、`abort_retry` 返回无 data 的成功 ACK；`get_entries` 返回 `{ entries, leafId }`；对当前 `sessionFile` 调用 `switch_session` 返回 `{ cancelled: false }`。`get_entries` 已通过安全 DTO 接入树元数据；`switch_session` 不冒充任务切换，仍由每个 PUA 任务的独立 Pi identity/进程负责恢复，因此登记为“已核验但未暴露”。
+本轮本机 Pi RPC 核验（2026-09-19，`pi --mode rpc --offline --no-extensions --no-skills --no-prompt-templates`，临时 `--session-dir`）确认：`get_state` 返回稳定的 `sessionFile/sessionId/steeringMode/followUpMode`；`set_steering_mode`、`set_follow_up_mode`、`abort_retry` 返回无 data 的成功 ACK；`get_entries` 返回 `{ entries, leafId }`；对当前 `sessionFile` 调用 `switch_session` 返回 `{ cancelled: false }`。`get_entries` 已通过安全 DTO 接入树元数据；`switch_session` 不冒充任务切换，仍由每个 PUA 任务的独立 Pi identity/进程负责恢复，因此登记为“已核验但未暴露”。Subagents 继续登记为不可用边界：`src/shared/ipc/pi-capabilities.ts` 的 `piUnavailableCapabilities` 明确记录当前 Pi 未暴露创建、列表或事件协议，Environment 浮窗直接引用该原因；没有新增伪造 RPC 命令。
 
 ## Pi 0.85.1 RPC 命令映射（静态核验）
 
