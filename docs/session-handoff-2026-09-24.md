@@ -1,8 +1,8 @@
 # PUA 新 Session 交接材料
 
-更新时间：2026-09-26
+更新时间：2026-09-27
 当前分支：`main`
-当前提交：`438a7ca test(browser): add real WebContentsView acceptance`
+当前提交：`1998b55 test(terminal): cover docked PTY switching`
 工作区状态：干净，`main` 已推送到 `origin/main`。
 
 这份文档是给下一次开发 session 的启动材料。它把用户要求、当前实现、剩余风险和下一阶段边界放在一起，避免新 session 重复实现已经完成的功能，或把设计目标误认为已完成的行为。
@@ -69,7 +69,7 @@
 
 ### 真实桌面验收（2026-09-25）
 
-- `npm run test:desktop` 已通过：真实 Electron 隔离窗口覆盖原生 RPC 对话、精确回复/代码/工具剪贴板、长流跟随/跳转/缩放/后台恢复、退出 transcript、队列/停止、Git Review 引用、PTY 兼容终端、沙箱与清理。
+- `npm run test:desktop` 已通过：真实 Electron 隔离窗口覆盖原生 RPC 对话、精确回复/代码/工具剪贴板、长流跟随/跳转/缩放/后台恢复、退出 transcript、队列/停止、Git Review 引用、PTY 兼容终端及主工作区↔右侧 Terminal dock 切换、沙箱与清理。
 - `npm run test:pi` 已通过：使用已安装 Pi 的隔离 profile，覆盖 RPC handshake、官方 `modal-editor.ts` / `rpc-demo.ts` 扩展 UI、超时/零超时/确认交互，以及归档任务后从项目菜单启动兼容终端；未发起模型请求，也未修改用户配置。
 - `npm run test:ipc` 已通过：真实 sandbox preload、隔离 userData、窗口 sender 拒绝、输入校验和事件取消订阅。
 - `npm run test:lifecycle` 已通过：`close`、`handshake`、`renderer`、`host`、`terminal-close` 五种场景均为 3 个进程启动、3 个进程停止。
@@ -98,7 +98,7 @@
 1. 全量 `npm test` 已恢复绿灯：89 个文件、2794 个断言全部通过（2026-09-25）。后续若出现失败，应记录新的文件/断言，不再沿用旧的 84/2778 历史数字。
 2. Electron/Pi/IPC/生命周期以及 Browser 面板已完成一轮隔离自动验收；完整人工视觉验收、跨平台发布矩阵、签名/公证和长时间运行验证仍未完成。
 3. formatter/完整 lint、跨平台 release matrix、签名/公证和长时间运行验证仍是独立门禁。
-4. 主工作区兼容终端的真实 Electron/Pi 验收已完成；右侧 Terminal 标签与主工作区之间的完整切换矩阵仍需单独验收，不要为了截图临时启动第二个 PTY。
+4. 主工作区兼容终端及右侧 Terminal dock 的真实 Electron/Pi 验收已完成；不要为了截图临时启动第二个 PTY。更广泛的长时间 PTY 压力、跨平台终端矩阵仍未完成。
 5. Subagents 仍是能力缺口，下一阶段只能做能力重新核验或入口文案/禁用态完善，不能直接编造 RPC。
 
 ## 5. 最近阶段和证据
@@ -109,6 +109,7 @@
 - `93999f3`：将 Electron/Pi/lifecycle smoke 适配到当前项目资源授权、Review 多标签、右侧面板和项目菜单入口，并完成真实验收。`npm test` 89/89 文件、2794/2794 断言；`typecheck`、`typecheck:tests`、`check:boundaries`、`test:desktop`、`test:pi`、`test:ipc`、`test:lifecycle` 全部通过；已 push 到 `origin/main`。
 - `5560dc0`：移除生产侧栏已退休项目过滤器 CSS；`check:protected` 56/56、`npm run verify` 和 `npm run package` 通过，并对打包产物重跑桌面 smoke；已 push 到 `origin/main`。
 - `2026-09-26 Browser 验收阶段`：新增 `npm run test:browser`，覆盖 loopback 导航/历史、隔离 WebContentsView、URL guard、隐藏 bounds 与关闭销毁；修复 Browser tab 切换时原生视图 bounds 未恢复。`npm test` 89/89 文件、2794/2794 断言，Browser smoke、Browser 定向测试、类型检查与边界检查通过。
+- `1998b55`：扩展 `test:desktop` 覆盖同一 PTY/xterm 在主工作区与右侧 Terminal dock 之间切换、关闭面板后恢复，确认不创建第二个终端；已 push 到 `origin/main`。
 - `aadf60a`：明确 Subagents 当前 Pi RPC 不可用，不伪造能力。
 - `ea3418d`：真实托管后台终端投影。
 - `da79cb8`：受保护的 commit/push 流程。
