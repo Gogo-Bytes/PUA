@@ -25,12 +25,13 @@ afterEach(cleanup);
 describe('inspector data boundary', () => {
   it('keeps the review hierarchy visible around real branch and file data', async () => {
     render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
-    expect(screen.getByText('审查')).toBeTruthy();
-    await screen.findByText('变更文件');
+    expect(screen.queryByText('审查')).toBeNull();
+    await screen.findByRole('region', { name: 'tracked.ts' });
     expect(document.querySelector('.review-files')).toBeTruthy();
-    await screen.findByText('分支');
     expect(screen.getAllByText('main').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('M')).toBeTruthy();
+    expect(screen.queryByText('只读仓库快照')).toBeNull();
+    expect(screen.queryByText('分支比较未接入')).toBeNull();
   });
 
   it('bounds eager loading and concurrency, then loads the next explicit batch', async () => {
@@ -72,9 +73,10 @@ describe('inspector data boundary', () => {
     expect(screen.queryByRole('button', { name: '预览' })).toBeNull(); expect(screen.queryByRole('button', { name: '源码' })).toBeNull();
     fireEvent.click(screen.getAllByRole('button', { name: '引用文件到草稿' })[0]); expect(onReference).toHaveBeenCalledWith('请检查这个文件的变更：@"/repo/tracked.ts" ');
     fireEvent.click(screen.getAllByRole('button', { name: '复制差异输出' })[0]); await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(expect.stringContaining('@@ -8,2 +8,2 @@')));
-    fireEvent.click(screen.getByRole('tab', { name: /暂存区 · 1/ })); expect(screen.queryByRole('button', { name: /notes.md/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' })); expect(screen.queryByRole('button', { name: /notes.md/ })).toBeNull();
     await waitFor(() => expect(desktop.fileDiff).toHaveBeenLastCalledWith('s1', 'tracked.ts', 'index'));
-    await screen.findByText(/HEAD → 暂存区/); expect(screen.getAllByText(/非原子快照/).length).toBeGreaterThan(0);
+    await screen.findByText(/HEAD → 暂存区/);
+    expect(screen.queryByText(/非原子快照/)).toBeNull();
   });
   it.each([
     { text: combinedConflict, index: 'M', worktree: 'M', scope: 'worktree', truncated: false },
@@ -86,7 +88,7 @@ describe('inspector data boundary', () => {
     vi.mocked(desktop.fileDiff).mockResolvedValue({ kind: 'diff', text, truncated });
     const { container } = render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
     await screen.findByRole('button', { name: 'conflict.txt' });
-    if (scope === 'index') fireEvent.click(screen.getByRole('tab', { name: '暂存区 · 1' }));
+    if (scope === 'index') fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' }));
     expect((await screen.findByLabelText('原始冲突 patch')).textContent).toBe(text);
     expect(screen.getByText('冲突 · 原始 patch')).toBeTruthy();
     expect(container.querySelector('.addition-text, .deletion-text, .line-number, .diff-sign')).toBeNull();
@@ -113,7 +115,7 @@ describe('inspector data boundary', () => {
     vi.mocked(desktop.fileDiff).mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; })).mockResolvedValueOnce({ kind: 'symlink', truncated: false, text: '符号链接 → /outside' });
     render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
     await screen.findByRole('button', { name: 'tracked.ts' });
-    fireEvent.click(screen.getByRole('tab', { name: /暂存区 · 1/ }));
+    fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' }));
     await screen.findByText('符号链接 → /outside');
     await act(async () => resolveOld({ kind: 'untracked', truncated: false, text: 'stale secret' })); expect(screen.queryByText('stale secret')).toBeNull(); expect(screen.queryByRole('button', { name: '预览' })).toBeNull();
     vi.mocked(desktop.gitStatus).mockRejectedValueOnce(new Error('git unavailable'));

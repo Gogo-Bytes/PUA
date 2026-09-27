@@ -29,6 +29,10 @@ try {
   await popup.waitFor({ state: 'hidden' });
   await panel.getByRole('tab', { name: 'Review', exact: true }).waitFor();
   await panel.locator('diffs-container pre').first().waitFor();
+  assert.equal(await panel.getByText('只读仓库快照', { exact: true }).count(), 0);
+  assert.equal(await panel.getByText('分支比较未接入', { exact: true }).count(), 0);
+  assert.equal(await panel.locator('.review-toolbar').count(), 1);
+  assert.equal(await panel.locator('.review-branch').count(), 1);
   await page.screenshot({ path: `${output}/review-light.png` });
   await panel.getByRole('button', { name: '打开右侧标签页' }).click();
   await page.getByRole('menuitem', { name: 'Browser', exact: true }).click();
