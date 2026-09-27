@@ -2,7 +2,7 @@
 
 更新时间：2026-09-27
 当前分支：`main`
-当前提交：`3ab1c05 feat(review): align change panel hierarchy`
+当前提交：`5a7424e feat(review): align full review page with codex layout`
 工作区状态：干净，`main` 已推送到 `origin/main`。
 
 这份文档是给下一次开发 session 的启动材料。它把用户要求、当前实现、剩余风险和下一阶段边界放在一起，避免新 session 重复实现已经完成的功能，或把设计目标误认为已完成的行为。
@@ -112,6 +112,7 @@
 - `1998b55`：扩展 `test:desktop` 覆盖同一 PTY/xterm 在主工作区与右侧 Terminal dock 之间切换、关闭面板后恢复，确认不创建第二个终端；已 push 到 `origin/main`。
 - `c40d36e`：将 Subagents 的不可用边界登记到共享 Pi 能力表；Environment 浮窗直接引用“当前 Pi 未暴露创建、列表或事件协议”的原因并标注 `aria-disabled`，回归测试确保没有伪造 subagent RPC；定向测试、类型检查、边界检查和生产构建通过，已 push 到 `origin/main`。
 - `3ab1c05`：按 Codex Review 参考收敛生产 Review 的视觉层级；保留真实 Git snapshot/scope/diff 边界，增加审查标题、比较方向、分支摘要、文件状态标记、增删统计、选中行和操作区；12 项 inspector 测试、类型检查、边界检查和生产构建通过，已 push 到 `origin/main`。
+- `5a7424e`：按用户补充截图重排 Review 完整页面骨架；移除无价值的审查标题、只读快照和未接入提示，范围切换改为无文字图标按钮，文件列表与选中文件 diff 分离；完整 Vitest 89/89 文件、2796/2796 断言，类型检查、生产构建、保护/边界检查和 workspace preview 通过，已 push 到 `origin/main`。
 - `aadf60a`：明确 Subagents 当前 Pi RPC 不可用，不伪造能力。
 - `ea3418d`：真实托管后台终端投影。
 - `da79cb8`：受保护的 commit/push 流程。
