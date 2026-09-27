@@ -23,6 +23,16 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('inspector data boundary', () => {
+  it('keeps the review hierarchy visible around real branch and file data', async () => {
+    render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
+    expect(screen.getByText('审查')).toBeTruthy();
+    await screen.findByText('变更文件');
+    expect(document.querySelector('.review-files')).toBeTruthy();
+    await screen.findByText('分支');
+    expect(screen.getAllByText('main').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('M')).toBeTruthy();
+  });
+
   it('bounds eager loading and concurrency, then loads the next explicit batch', async () => {
     const files = Array.from({ length: 8 }, (_, index) => ({ path: `${index}.ts`, index: 'M', worktree: 'M' }));
     vi.mocked(desktop.gitStatus).mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: '', files });

@@ -2,7 +2,7 @@
 
 更新时间：2026-09-27
 当前分支：`main`
-当前提交：`c40d36e feat(capabilities): record unavailable subagents boundary`
+当前提交：`REPLACE_CURRENT_COMMIT`
 工作区状态：干净，`main` 已推送到 `origin/main`。
 
 这份文档是给下一次开发 session 的启动材料。它把用户要求、当前实现、剩余风险和下一阶段边界放在一起，避免新 session 重复实现已经完成的功能，或把设计目标误认为已完成的行为。
@@ -111,6 +111,7 @@
 - `2026-09-26 Browser 验收阶段`：新增 `npm run test:browser`，覆盖 loopback 导航/历史、隔离 WebContentsView、URL guard、隐藏 bounds 与关闭销毁；修复 Browser tab 切换时原生视图 bounds 未恢复。`npm test` 89/89 文件、2794/2794 断言，Browser smoke、Browser 定向测试、类型检查与边界检查通过。
 - `1998b55`：扩展 `test:desktop` 覆盖同一 PTY/xterm 在主工作区与右侧 Terminal dock 之间切换、关闭面板后恢复，确认不创建第二个终端；已 push 到 `origin/main`。
 - `c40d36e`：将 Subagents 的不可用边界登记到共享 Pi 能力表；Environment 浮窗直接引用“当前 Pi 未暴露创建、列表或事件协议”的原因并标注 `aria-disabled`，回归测试确保没有伪造 subagent RPC；定向测试、类型检查、边界检查和生产构建通过，已 push 到 `origin/main`。
+- `REPLACE_CURRENT_COMMIT`：按 Codex Review 参考收敛生产 Review 的视觉层级；保留真实 Git snapshot/scope/diff 边界，增加审查标题、比较方向、分支摘要、文件状态标记、增删统计、选中行和操作区；12 项 inspector 测试、类型检查、边界检查和生产构建通过，已 push 到 `origin/main`。
 - `aadf60a`：明确 Subagents 当前 Pi RPC 不可用，不伪造能力。
 - `ea3418d`：真实托管后台终端投影。
 - `da79cb8`：受保护的 commit/push 流程。
