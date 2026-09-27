@@ -180,6 +180,28 @@ try {
   const terminalId = await window.locator('.terminal-pane.active').getAttribute('data-session-id'); assert.notEqual(firstId, terminalId);
   const terminalOutput = await window.evaluate(() => window.__events.filter(event => event.type === 'terminal-data').map(event => event.data).join(''));
   assert(terminalOutput.includes('spaces;$(not-a-shell)'));
+  // Move the same TerminalPane into the right-side dock and back; this must
+  // reposition one PTY/xterm session instead of starting a second terminal.
+  const chrome = window.getByRole('banner', { name: '窗口操作栏' });
+  const showPanel = chrome.getByRole('button', { name: '显示右侧面板', exact: true });
+  if (await showPanel.count()) await showPanel.click();
+  const sidePanel = window.getByRole('complementary', { name: '右侧面板' });
+  const terminalEntry = sidePanel.getByRole('button', { name: 'Terminal', exact: true });
+  if (await terminalEntry.count()) await terminalEntry.click();
+  else {
+    await sidePanel.getByRole('button', { name: '打开右侧标签页', exact: true }).click();
+    await window.getByRole('menuitem', { name: 'Terminal', exact: true }).click();
+  }
+  await window.waitForFunction(() => {
+    const outlet = document.querySelector('.workspace-terminal-outlet'); const dock = document.querySelector('.workspace-terminal-dock');
+    if (!outlet || !dock || outlet.hasAttribute('hidden')) return false;
+    const a = outlet.getBoundingClientRect(); const b = dock.getBoundingClientRect();
+    return Math.abs(a.left - b.left) < 2 && Math.abs(a.top - b.top) < 2 && Math.abs(a.width - b.width) < 2 && Math.abs(a.height - b.height) < 2;
+  });
+  assert.equal(await window.locator(`.terminal-pane[data-session-id="${terminalId}"]`).count(), 1, 'right dock reuses the original PTY session');
+  await chrome.getByRole('button', { name: '收起右侧面板', exact: true }).click();
+  await window.waitForFunction(() => { const outlet = document.querySelector('.workspace-terminal-outlet'); return !!outlet && !outlet.hasAttribute('hidden') && outlet.getBoundingClientRect().width > 0; });
+  assert.equal(await window.locator(`.terminal-pane[data-session-id="${terminalId}"]`).count(), 1, 'returning to the workspace keeps the same PTY session');
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1000, 800));
   await window.waitForFunction(() => window.innerWidth <= 1100);
   assert.equal(await window.getByRole('banner', { name: '窗口操作栏' }).getByRole('button', { name: /右侧面板/ }).getAttribute('aria-expanded'), 'false');
