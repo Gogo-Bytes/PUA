@@ -5,6 +5,8 @@ import '../../../component-preview/test-setup';
 import { TaskDetailsPanel, useSidePanelTabs } from '../../../../src/renderer/features/workspace';
 import { SidePanelHost } from '../../../../src/renderer/features/workspace';
 import { UIProvider } from '../../../../src/renderer/ui';
+import type { DesktopAPI } from '../../../../src/shared/ipc/desktop-api';
+import { installDesktopFake } from '../../../desktop-bridge-fake';
 
 it('shows only the task projection and keeps Pi-specific controls in their native area', () => {
   const open = vi.fn(), rename = vi.fn(), archive = vi.fn(), pin = vi.fn();
@@ -34,4 +36,17 @@ it('starts with launchers and keeps review mounted when another tab is active', 
   expect(screen.getByRole('tab', { name: 'Review' }).getAttribute('aria-selected')).toBe('true');
   fireEvent.click(screen.getByRole('button', { name: '关闭 Review 标签页' }));
   expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
+});
+
+it('surfaces Pi policy failures and reports them to the workspace error channel', async () => {
+  const reportError = vi.fn();
+  installDesktopFake({
+    getChatAutoSettings: vi.fn().mockResolvedValue({ autoCompaction: true, autoRetry: true, steeringMode: 'one-at-a-time', followUpMode: 'one-at-a-time' }),
+    setChatAutoRetry: vi.fn().mockRejectedValue(new Error('Pi 暂时不可用')),
+  } as unknown as DesktopAPI);
+  render(<UIProvider><TaskDetailsPanel task={{ id: 's1', cwd: '/work/pua', title: '调查', kind: 'chat', processStatus: 'running', activity: 'idle', pinned: false }} runtime={null} onOpenProject={vi.fn()} onRename={vi.fn()} onArchive={vi.fn()} onError={reportError}/></UIProvider>);
+  const checkboxes = await screen.findAllByRole('checkbox');
+  fireEvent.click(checkboxes[1]);
+  expect((await screen.findByRole('alert')).textContent).toContain('Pi 暂时不可用');
+  expect(reportError).toHaveBeenCalledWith('Error: Pi 暂时不可用');
 });

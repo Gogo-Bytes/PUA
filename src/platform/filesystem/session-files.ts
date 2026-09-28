@@ -11,6 +11,10 @@ function isWithin(root: string, candidate: string): boolean {
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 }
 
+function sameFileIdentity(left: { dev: number | bigint; ino: number | bigint }, right: { dev: number | bigint; ino: number | bigint }): boolean {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
 /** Read-only directory listing constrained to a session root; links and special files are omitted. */
 export async function listSessionFiles(cwd: string, relativePath: string): Promise<SessionFileListing> {
   if (relativePath.startsWith('/') || relativePath.includes('\\') || /^[a-zA-Z]:/.test(relativePath) || (relativePath !== '' && relativePath.split('/').some(part => !part || part === '..' || part === '.'))) {
@@ -26,25 +30,33 @@ export async function listSessionFiles(cwd: string, relativePath: string): Promi
     if (!info.isDirectory() || info.isSymbolicLink()) throw new Error('目录不存在或不可访问');
   }
   const canonical = await realpath(current);
-  if (!isWithin(root, canonical) || !(await lstat(canonical)).isDirectory()) throw new Error('目录超出会话工作区范围');
+  const canonicalInfo = await lstat(canonical);
+  if (!isWithin(root, canonical) || !canonicalInfo.isDirectory()) throw new Error('目录超出会话工作区范围');
 
   const entries: SessionFileListing['entries'] = [];
   const directory = await opendir(canonical);
   let scanned = 0;
   let truncated = false;
-  for await (const item of directory) {
-    scanned += 1;
-    if (scanned > MAX_DIRECTORY_SCAN) { truncated = true; break; }
-    const name = item.name;
-    if (name === '.' || name === '..') continue;
-    const fullPath = path.join(canonical, name);
-    const info = await lstat(fullPath);
-    if (info.isSymbolicLink() || (!info.isFile() && !info.isDirectory())) continue;
-    const itemPath = relativePath ? `${relativePath}/${name}` : name;
-    if (itemPath.length > 4096) continue;
-    entries.push({ name, path: itemPath, kind: info.isDirectory() ? 'directory' : 'file' });
-    if (entries.length > MAX_ENTRIES) { truncated = true; break; }
-  }
+  try {
+    // Re-check the directory identity after opening it. If an ancestor or the
+    // final component was swapped during validation, never enumerate the new
+    // object under the old workspace decision.
+    const openedInfo = await lstat(canonical);
+    if (!sameFileIdentity(canonicalInfo, openedInfo)) throw new Error('目录在读取前发生变化，请重试');
+    for await (const item of directory) {
+      scanned += 1;
+      if (scanned > MAX_DIRECTORY_SCAN) { truncated = true; break; }
+      const name = item.name;
+      if (name === '.' || name === '..') continue;
+      const fullPath = path.join(canonical, name);
+      const info = await lstat(fullPath);
+      if (info.isSymbolicLink() || (!info.isFile() && !info.isDirectory())) continue;
+      const itemPath = relativePath ? `${relativePath}/${name}` : name;
+      if (itemPath.length > 4096) continue;
+      entries.push({ name, path: itemPath, kind: info.isDirectory() ? 'directory' : 'file' });
+      if (entries.length > MAX_ENTRIES) { truncated = true; break; }
+    }
+  } finally { try { await directory.close(); } catch { /* async iteration may already close the handle */ } }
   entries.sort((left, right) => Number(right.kind === 'directory') - Number(left.kind === 'directory') || left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }));
   return { path: relativePath, entries: entries.slice(0, MAX_ENTRIES), truncated };
 }
@@ -66,6 +78,8 @@ export async function readSessionFile(cwd: string, relativePath: string): Promis
   const limit = 256 * 1024;
   const handle = await open(canonical, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
+    const openedInfo = await handle.stat();
+    if (!sameFileIdentity(info, openedInfo) || !openedInfo.isFile()) throw new Error('文件在读取前发生变化，请重试');
     const buffer = Buffer.alloc(limit + 1);
     const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
     const slice = buffer.subarray(0, Math.min(bytesRead, limit));

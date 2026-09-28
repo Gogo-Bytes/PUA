@@ -46,7 +46,7 @@ export function SidePanelHost({ task, cwd, runtime, panels, changes, terminalDoc
     </div> : <div className="workspace-panel-content">
       {tabs.map(tab => <div key={tab.id} role="tabpanel" id={`${idPrefix}-panel-${tab.id}`} aria-labelledby={`${idPrefix}-tab-${tab.id}`} tabIndex={0} hidden={panels.active !== tab.id}>
         {tab.id === 'review' ? changes : tab.id === 'terminal' ? task?.kind === 'terminal' ? <div className="workspace-terminal-dock" ref={terminalDockRef} aria-label="兼容终端"/> : <div className="workspace-panel-unavailable"><Icon name="terminal"/><h2>Terminal</h2><p>终端面板复用当前兼容终端的唯一 PTY。请先切换到兼容终端会话。</p></div> : tab.id === 'files' ? <FilesPanel task={task}/> : tab.id === 'browser' ? <BrowserPanel/> : tab.id === 'side-chat' ? <SideChatPanel cwd={cwd} runtime={runtime} active={panels.active === 'side-chat'} onError={reportError}/> : tab.id === 'task' && task
-          ? <TaskDetailsPanel task={task} runtime={runtime} onOpenProject={onOpenProject} onRename={onRename} onArchive={onArchive} onTogglePinned={onTogglePinned} onClone={onClone}/>
+          ? <TaskDetailsPanel task={task} runtime={runtime} onOpenProject={onOpenProject} onRename={onRename} onArchive={onArchive} onTogglePinned={onTogglePinned} onClone={onClone} onError={reportError}/>
           : <div className="workspace-panel-unavailable"><Icon name={tab.icon}/><h2>{tab.label}</h2><span>尚未接入</span><p>{unavailable[tab.id]}</p></div>}
       </div>)}
     </div>}

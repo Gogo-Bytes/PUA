@@ -8,6 +8,7 @@ import type { NativePiSessionIdentity } from '../../shared/ipc/pi-session.js';
 
 type SessionCreation = Pick<ReturnType<typeof composeMain>, 'createSession'> & {
   session: Pick<ReturnType<typeof composeMain>['session'], 'get' | 'start' | 'close'>;
+  activity: ReturnType<typeof composeMain>['activity'];
   restoreChatSession?: ReturnType<typeof composeMain>['restoreChatSession'];
   chatIdentity?(id: string): NativePiSessionIdentity | undefined;
   waitForChatIdentity?(id: string, timeoutMs?: number, previous?: NativePiSessionIdentity): Promise<NativePiSessionIdentity>;
@@ -40,6 +41,7 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
   const persisted = new Map<string, PersistedChatSession>();
   type PendingSession = { session: SessionInfo; durable: boolean; pinned: boolean; lastActivityAt: number; identity?: NativePiSessionIdentity };
   const pending = new Map<string, PendingSession>();
+  const cloneInFlight = new Set<string>();
   const mutations = new Map<string, Promise<void>>();
   const persistenceRetries = new Map<string, ReturnType<typeof setTimeout>>();
   const persistenceRetryAttempts = new Map<string, number>();
@@ -166,6 +168,10 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       await restoreReady;
       const source = capabilities.session.get(id);
       if (!source || source.kind !== 'chat') throw new Error('只有 Pi 对话可以创建原生副本');
+      if (source.lifecycle.phase !== 'running' || capabilities.activity(id) !== 'idle') throw new Error('会话正在处理，完成当前操作后再创建副本');
+      if (cloneInFlight.has(id)) throw new Error('当前会话的副本正在创建');
+      cloneInFlight.add(id);
+      try {
       if (!capabilities.chatIdentity || !capabilities.waitForChatIdentity) throw new Error('Pi 克隆能力尚未就绪');
       const sourceIdentity = capabilities.chatIdentity(id);
       if (!sourceIdentity) throw new Error('当前会话尚未保存 Pi 历史，无法创建副本');
@@ -205,6 +211,9 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         }
       } finally {
         unwrapSessionResult(await capabilities.session.close(probe.id));
+      }
+      } finally {
+        cloneInFlight.delete(id);
       }
     },
     async recordChatMessage(id: string, identity: NativePiSessionIdentity): Promise<void> {

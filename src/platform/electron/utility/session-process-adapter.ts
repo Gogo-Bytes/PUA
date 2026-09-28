@@ -34,6 +34,7 @@ interface ProcessResource {
   closed?: Promise<{ exitCode: number }>;
   treeCleanup?: Promise<void>;
   activity: SessionActivity;
+  autoRetry: boolean;
   nativeIdentity?: NativePiSessionIdentity;
   expectedIdentity?: ChatSessionIdentity;
   pending: Map<string, { resolve(value?: unknown): void; reject(error: Error): void; command: RpcOperation['type'] }>;
@@ -86,7 +87,7 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
     if (options.kind === 'chat' && options.startMode === 'new' && options.initialThinkingLevel) args.push('--thinking', options.initialThinkingLevel);
     let resolveHostExit!: () => void;
     const hostExit = new Promise<void>(resolve => { resolveHostExit = resolve; });
-    this.resources.set(id, { id, runtime: { ...runtime, args }, ...(managedIdentity ? { expectedIdentity: managedIdentity } : {}), cols: options.cols ?? 100, rows: options.rows ?? 30, hostEnded: false, hostExit, resolveHostExit, exitCode: 0, invalidated: false, activity: 'idle', pending: new Map(), payloads: new Map(), sources: new Map() });
+    this.resources.set(id, { id, runtime: { ...runtime, args }, ...(managedIdentity ? { expectedIdentity: managedIdentity } : {}), cols: options.cols ?? 100, rows: options.rows ?? 30, hostEnded: false, hostExit, resolveHostExit, exitCode: 0, invalidated: false, activity: 'idle', autoRetry: true, pending: new Map(), payloads: new Map(), sources: new Map() });
     this.diagnostics.register(id, options.kind);
   }
   forget(id: string): void { this.resources.delete(id); }
@@ -369,16 +370,20 @@ export class SessionProcessAdapter implements SessionProcessPort, ConversationRu
   async setThinkingLevel(id: string, level: string): Promise<void> { await this.request(this.resource(id), { type: 'set-thinking-level', level }); }
   async getSessionStats(id: string): Promise<ConversationSessionStats> { return sessionStats(await this.request<unknown>(this.resource(id), { type: 'get-session-stats' })); }
   async getAutoSettings(id: string): Promise<ConversationAutoSettings> {
-    const state = await this.request<Record<string, unknown>>(this.resource(id), { type: 'get-auto-settings' });
+    const resource = this.resource(id);
+    const state = await this.request<Record<string, unknown>>(resource, { type: 'get-auto-settings' });
     // Pi exposes auto-compaction in get_state. Auto-retry has no read RPC in the
-    // supported protocol, whose documented default is enabled; the toggle still
-    // delegates the write to Pi and remains session-scoped in the UI.
+    // supported protocol, so retain the last accepted setting for this process.
     const mode = (value: unknown): 'all' | 'one-at-a-time' => value === 'all' ? 'all' : 'one-at-a-time';
-    return { autoCompaction: state.autoCompactionEnabled !== false, autoRetry: true, steeringMode: mode(state.steeringMode), followUpMode: mode(state.followUpMode) };
+    return { autoCompaction: state.autoCompactionEnabled !== false, autoRetry: resource.autoRetry, steeringMode: mode(state.steeringMode), followUpMode: mode(state.followUpMode) };
   }
   async compact(id: string, customInstructions?: string): Promise<void> { await this.request(this.resource(id), { type: 'compact', ...(customInstructions === undefined ? {} : { customInstructions }) }); }
   async setAutoCompaction(id: string, enabled: boolean): Promise<void> { await this.request(this.resource(id), { type: 'set-auto-compaction', enabled }); }
-  async setAutoRetry(id: string, enabled: boolean): Promise<void> { await this.request(this.resource(id), { type: 'set-auto-retry', enabled }); }
+  async setAutoRetry(id: string, enabled: boolean): Promise<void> {
+    const resource = this.resource(id);
+    await this.request(resource, { type: 'set-auto-retry', enabled });
+    if (this.accepts(resource)) resource.autoRetry = enabled;
+  }
   async setSteeringMode(id: string, mode: ConversationQueueMode): Promise<void> { await this.request(this.resource(id), { type: 'set-steering-mode', mode }); }
   async setFollowUpMode(id: string, mode: ConversationQueueMode): Promise<void> { await this.request(this.resource(id), { type: 'set-follow-up-mode', mode }); }
 

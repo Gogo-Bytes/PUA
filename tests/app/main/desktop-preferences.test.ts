@@ -60,6 +60,22 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     expect(store.upsert).toHaveBeenCalledWith(expect.objectContaining({ title: 'project · 副本', piSessionId: 'pi-clone', sessionFile: '/fake/pi-clone.jsonl', archived: false, pinned: false }));
     expect(preferences.getBootstrap().restoredSessions).toEqual([expect.objectContaining({ id: restored.id, title: 'project · 副本' })]);
   });
+  it('rejects cloning while the source is busy and serializes concurrent clone requests', async () => {
+    const h = harness();
+    h.capabilities.activity.mockReturnValue('responding');
+    await expect(h.preferences.cloneSession('id', h.capabilities)).rejects.toThrow('会话正在处理');
+    expect(h.capabilities.conversation.clone).not.toHaveBeenCalled();
+
+    h.capabilities.activity.mockReturnValue('idle');
+    const clone = h.capabilities.conversation.clone as unknown as ReturnType<typeof vi.fn>;
+    let release!: (value: { cancelled: boolean }) => void;
+    clone.mockReturnValueOnce(new Promise(resolve => { release = resolve; }));
+    const first = h.preferences.cloneSession('id', h.capabilities);
+    await Promise.resolve();
+    await expect(h.preferences.cloneSession('id', h.capabilities)).rejects.toThrow('副本正在创建');
+    release({ cancelled: false });
+    await first;
+  });
   it('archives by default, restores from Pi identity, pins metadata, and permanently deletes only after Pi cleanup succeeds', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'pua-preferences-'));
     try {

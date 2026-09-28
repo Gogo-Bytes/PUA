@@ -34,7 +34,7 @@ async function running(emit: (event: SessionEvent) => void = () => {}) {
   const host = fake.hosts[0]; host.emit('spawn'); host.emit('message', { type: 'event', event: { type: 'session-info', id: chat.id, processStatus: 'running' } });
   return { sessions, id: chat.id, host };
 }
-function reply(host: typeof fake.hosts[number]) { const request = host.postMessage.mock.calls.at(-1)![0]; host.emit('message', { type: 'response', requestId: request.requestId, success: true }); }
+function reply(host: typeof fake.hosts[number], data?: unknown) { const request = host.postMessage.mock.calls.at(-1)![0]; host.emit('message', { type: 'response', requestId: request.requestId, success: true, ...(data === undefined ? {} : { data }) }); }
 
 describe('SessionProcessAdapter resource contract through main composition', () => {
   it('uses a Pi session identity for new chats and records every accepted prompt activity', async () => {
@@ -49,6 +49,17 @@ describe('SessionProcessAdapter resource contract through main composition', () 
     const second = sessions.conversation.send(chat.id, sendIntent('second', [], 'prompt')); reply(host); await second;
     expect(accepted).toHaveBeenCalledTimes(2);
     const closed = sessions.session.close(chat.id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
+  });
+
+  it('retains the accepted auto-retry policy for the lifetime of a process resource', async () => {
+    const { sessions, host, id } = await running();
+    const initial = sessions.conversation.getAutoSettings(id); reply(host, { autoCompactionEnabled: true, steeringMode: 'one-at-a-time', followUpMode: 'one-at-a-time' });
+    await expect(initial).resolves.toMatchObject({ autoRetry: true });
+    const update = sessions.conversation.setAutoRetry(id, false); reply(host);
+    await update;
+    const reread = sessions.conversation.getAutoSettings(id); reply(host, { autoCompactionEnabled: true, steeringMode: 'one-at-a-time', followUpMode: 'one-at-a-time' });
+    await expect(reread).resolves.toMatchObject({ autoRetry: false });
+    const closed = sessions.session.close(id).then(unwrapSessionResult); host.emit('exit', 0); await closed;
   });
 
   it('does not keep Conversation sending while durable activity metadata is still writing', async () => {

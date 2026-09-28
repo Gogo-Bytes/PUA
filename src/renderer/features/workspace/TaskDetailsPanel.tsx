@@ -11,21 +11,29 @@ export interface TaskDetailsPanelProps {
   onArchive(): void | Promise<void>;
   onTogglePinned?(): void | Promise<void>;
   onClone?(): void | Promise<void>;
+  onError?(message: string): void;
 }
 
 /** Read-only task projection. Pi transcript and credentials remain outside the renderer. */
-export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArchive, onTogglePinned, onClone }: TaskDetailsPanelProps) {
+export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArchive, onTogglePinned, onClone, onError }: TaskDetailsPanelProps) {
   const [busy, setBusy] = useState<'archive' | 'pin' | 'clone' | null>(null);
   const [autoSettings, setAutoSettings] = useState<{ autoCompaction: boolean; autoRetry: boolean; steeringMode?: ChatQueueMode; followUpMode?: ChatQueueMode } | null>(null);
   const [autoBusy, setAutoBusy] = useState<'compaction' | 'retry' | null>(null);
+  const [autoError, setAutoError] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     setAutoSettings(null);
+    setAutoError(null);
     if (task.kind !== 'chat' || task.processStatus === 'exited' || !isDesktopAvailable()) return () => { active = false; };
-    try { void desktopClient.getChatAutoSettings(task.id).then(value => { if (active) setAutoSettings(value); }).catch(() => { /* Pi may be unavailable while reconnecting. */ }); }
-    catch { /* A test/legacy bridge may not expose the optional Pi policy RPC yet. */ }
+    const report = (reason: unknown) => {
+      const message = String(reason);
+      if (active) setAutoError(message);
+      onError?.(message);
+    };
+    try { void desktopClient.getChatAutoSettings(task.id).then(value => { if (active) setAutoSettings(value); }).catch(report); }
+    catch (error) { report(error); }
     return () => { active = false; };
-  }, [task.id, task.kind, task.processStatus]);
+  }, [onError, task.id, task.kind, task.processStatus]);
   const run = async (kind: 'archive' | 'pin' | 'clone', action: () => void | Promise<void>) => {
     if (busy) return;
     setBusy(kind);
@@ -34,20 +42,24 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
   const toggleAuto = async (kind: 'compaction' | 'retry', enabled: boolean) => {
     if (!autoSettings || autoBusy) return;
     setAutoBusy(kind);
+    setAutoError(null);
     try {
       if (kind === 'compaction') await desktopClient.setChatAutoCompaction(task.id, enabled);
       else await desktopClient.setChatAutoRetry(task.id, enabled);
       setAutoSettings(current => current ? { ...current, [kind === 'compaction' ? 'autoCompaction' : 'autoRetry']: enabled } : current);
-    } finally { setAutoBusy(null); }
+    } catch (error) { const message = String(error); setAutoError(message); onError?.(message); }
+    finally { setAutoBusy(null); }
   };
   const setQueueMode = async (kind: 'steering' | 'followUp', mode: ChatQueueMode) => {
     if (!autoSettings || autoBusy) return;
     setAutoBusy(kind === 'steering' ? 'compaction' : 'retry');
+    setAutoError(null);
     try {
       if (kind === 'steering') await desktopClient.setChatSteeringMode(task.id, mode);
       else await desktopClient.setChatFollowUpMode(task.id, mode);
       setAutoSettings(current => current ? { ...current, [kind === 'steering' ? 'steeringMode' : 'followUpMode']: mode } : current);
-    } finally { setAutoBusy(null); }
+    } catch (error) { const message = String(error); setAutoError(message); onError?.(message); }
+    finally { setAutoBusy(null); }
   };
   const activity = task.activity === 'idle' ? '就绪' : task.activity === 'responding' ? '处理中' : task.activity === 'compacting' ? '压缩上下文' : task.activity === 'retrying' ? '重试中' : '等待输入';
   const process = task.processStatus === 'starting' ? '连接中' : task.processStatus === 'running' ? '运行中' : '已退出';
@@ -68,6 +80,7 @@ export function TaskDetailsPanel({ task, runtime, onOpenProject, onRename, onArc
     </dl>
     {task.kind === 'chat' && <section className="task-details-settings" aria-label="Pi 自动策略">
       <div className="task-details-settings-heading"><strong>Pi 自动策略</strong><span className="ui-meta">由 Pi 当前会话控制</span></div>
+      {autoError && <p className="form-error" role="alert">{autoError}</p>}
       {!autoSettings ? <p className="task-details-note">正在读取当前策略…</p> : <>
         <label className="task-details-toggle"><Checkbox checked={autoSettings.autoCompaction} disabled={!!autoBusy} onCheckedChange={checked => void toggleAuto('compaction', checked)}/><span><strong>自动压缩上下文</strong><small>上下文接近上限时自动压缩，保持长任务可继续。</small></span></label>
         <label className="task-details-toggle"><Checkbox checked={autoSettings.autoRetry} disabled={!!autoBusy} onCheckedChange={checked => void toggleAuto('retry', checked)}/><span><strong>自动重试临时错误</strong><small>遇到限流或服务暂时不可用时由 Pi 自动重试。</small></span></label>
