@@ -158,7 +158,7 @@ describe('App composition before/after: real owners and panes, only in-memory ho
     fireEvent.click(screen.getByRole('button', { name: '添加文件引用' })); await create('terminal');
     fireEvent.click(screen.getByRole('button', { name: '关闭 Session 2' })); await flush(); expect(terminal.instances[0].disposed).toBe(true);
     open(); filter('model'); await act(async () => pending.resolve(['/old.txt']));
-    expect(terminal.instances.map(instance => instance.pastes)).toEqual([[], []]); expect(screen.queryByRole('dialog')).toBeNull(); shortcut(); expect(query().value).toBe(''); expect(desktop.write).not.toHaveBeenCalled();
+    expect(terminal.instances.map(instance => instance.pastes)).toEqual([[], []]); expect(screen.getByRole('dialog', { name: '终端命令' })).toBeTruthy(); expect(query().value).toBe('model'); close(); expect(desktop.write).not.toHaveBeenCalled();
   });
   it('search hide retains text/found; close fallback leaves it open; close button clears then hides then focuses', async () => {
     await mount('terminal'); fireEvent.click(screen.getByRole('button', { name: '搜索终端历史' }));

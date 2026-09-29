@@ -2,8 +2,16 @@
 
 更新时间：2026-09-27
 当前分支：`main`
-当前提交：`5a7424e feat(review): align full review page with codex layout`
+当前提交：见仓库 HEAD（本文由早期阶段保留，最新事实以代码、测试和 Git 历史为准）
 工作区状态：干净，`main` 已推送到 `origin/main`。
+
+## 2026-09-29 续接记录
+
+- `b6e7119` 将 Markdown/GFM/高亮渲染按需加载；首屏 renderer bundle 从约 1.52 MB 降至约 1.17 MB。
+- `aa90ee2` 将 Terminal 面板改为按需加载，并清理右侧已实现 Terminal/Side chat 的错误“未接入”标记。
+- `9c6b44d` 移除 Terminal feature barrel 对重型 `TerminalPane` 的运行时 re-export；Terminal runtime 进入独立约 423 KB chunk，首屏 renderer bundle 进一步降至约 746 KB（gzip 约 250 KB）。
+- Markdown、Terminal 的动态加载均保留单一 PTY/xterm 与会话状态 owner；加载占位不创建会话、不改变 IPC 或安全边界。
+- 当前仍不能直接实施的产品差异：分支比较的基准/三点比较语义尚未确定；Subagents 需要 Pi 暴露创建、列表和事件协议，当前仅能保持明确禁用态。云端分享、HTML 导出、用户主动 bash、多窗口同步和自动永久清理仍按既有产品决定排除。
 
 这份文档是给下一次开发 session 的启动材料。它把用户要求、当前实现、剩余风险和下一阶段边界放在一起，避免新 session 重复实现已经完成的功能，或把设计目标误认为已完成的行为。
 

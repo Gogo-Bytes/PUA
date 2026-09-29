@@ -56,7 +56,7 @@ async function create(kind: 'chat' | 'terminal' = 'chat') {
   }
   fireEvent.click(screen.getByRole('button', { name: '打开兼容终端' }));
   const button = screen.getByRole('button', { name: '打开兼容终端 ↗' });
-  await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); await flush();
+  await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false)); fireEvent.click(button); await waitFor(() => expect(desktop.startSession).toHaveBeenCalledWith('s2')); await flush();
 }
 async function mount(kind: 'chat' | 'terminal' = 'chat') {
   const view = render(<App />); await screen.findByTitle('/one'); selectProject('/one'); await create('chat'); if (kind === 'terminal') await create(kind); return view;

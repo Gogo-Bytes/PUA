@@ -31,6 +31,13 @@ Review 的 unchanged 展开已接入：`fileDiffContents` 通过同一份最新 
 
 ## 未完成与所需信息
 
+## 2026-09-29 续接结果
+
+- 全量回归已恢复通过：当前 `npm test` 目标为 89 个测试文件、2799 个测试；保护清单、类型检查、导入边界和生产构建均通过。
+- Markdown 与 Terminal 已按能力动态加载；Terminal barrel 不再把 xterm 运行时依赖带入首屏，生产 renderer 主 chunk 约 746 KB minified / 250 KB gzip，Markdown 与 Terminal 分别保留独立 chunk。
+- 右侧 Terminal、Side chat、worktree、commit/push 与后台兼容终端均已接入；Subagents 仍因当前 Pi 没有创建、列表或事件协议而保持明确不可用。
+- 分支比较仍未实现，因为需要先确定基准分支和 merge-base/三点比较语义；在该语义确定前不会把任意本地或远端分支伪装成 Review 基准。
+
 本次截图阶段验证：70 项 UI/Git/保护清单专项 + 24 项真实 App workspace 回归通过；production/tests/preview 类型、import boundaries、56 项保护清单及生产构建通过。独立浮窗、标签键盘与关闭焦点、浅深色、700px 响应式、无外网请求通过；构建后的 Fake Desktop 使用生产 CSP 同样通过。原工作台浏览器脚本另外覆盖 360–1440px、草稿/附件、引用和面板收放。没有运行真实 Pi/Git 或重启用户 Electron。全量结果另列下方，不将专项等同于全量通过。
 
 全量 Vitest：2695 passed / 16 failed；与先前 `/tmp/pua-ui-final.json` 的 2672 passed / 24 failed 对比，剩余失败身份均在旧基线，未增加新的失败身份。剩余集中在 App 静态 ownership/旧控件查询、command-palette 和 settings 既有断言。并非全量绿灯，也不能仅凭失败身份相同证明所有旧场景无回归。构建保留 chunk-size 警告；DiffSurface 单独懒加载，本地语法 chunks 已产出。

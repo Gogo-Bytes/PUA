@@ -64,17 +64,22 @@ export function useSessionInput({ active, activeId, dismissAfterInsert, reportEr
   const setDraft = (text: string) => { if (activeId) replaceDraft(activeId, text); };
   // Render snapshot append is intentional; async attachment completion retains this target ID,
   // but resolves its still-live handle from the registry at completion (never a disposed object).
-  const insertCommand = (text: string) => {
+  const insertCommand = (text: string): boolean => {
     if (active?.kind === 'chat') setDraft(draft ? `${draft}\n${text}` : text);
-    else handle()?.paste(text);
+    else {
+      const terminal = handle();
+      if (!terminal) { reportError('终端仍在加载，请稍候再试。'); return false; }
+      terminal.paste(text);
+    }
     dismissAfterInsert(); // Only normal synchronous return dismisses; throw must retain query/open.
+    return true;
   };
   const chooseTerminalReferences = async () => {
     try { const paths = await desktopClient.chooseAttachments(); if (paths.length) insertCommand(referencePaths(paths)); }
     catch (error) { reportError(String(error)); }
   };
   const reference = (text: string) => {
-    if (active?.kind === 'terminal') insertCommand(text);
+    if (active?.kind === 'terminal') { if (!insertCommand(text)) return; }
     else {
       setDraft(draft ? `${draft}\n${text}` : text);
       document.querySelector<HTMLTextAreaElement>('.chat-pane.active textarea')?.focus();
