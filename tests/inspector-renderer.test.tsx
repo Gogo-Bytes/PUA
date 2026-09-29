@@ -105,7 +105,7 @@ describe('inspector data boundary', () => {
     const { container } = render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
     await screen.findByRole('button', { name: 'notes.md' }); await screen.findByText(/工作区未跟踪文本快照/);
     expect(screen.getByText(/内容已截断/)).toBeTruthy(); expect(screen.getByLabelText('未跟踪文件源码快照').textContent).toContain('# Real notes');
-    fireEvent.click(screen.getByRole('tab', { name: '预览' })); expect(screen.getByRole('heading', { name: 'Real notes' })).toBeTruthy(); expect(container.querySelector('img')).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: '预览' })); expect(await screen.findByRole('heading', { name: 'Real notes' })).toBeTruthy(); expect(container.querySelector('img')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '复制文件快照' })); await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(source));
     expect(desktop.fileDiff).toHaveBeenCalledTimes(1);
   });

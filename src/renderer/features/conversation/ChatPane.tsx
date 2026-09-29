@@ -1,8 +1,7 @@
 import { Textarea, SearchSelect, Select } from '../../ui';
 import { desktopClient } from '../../app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
-import { MarkdownView, CopyButton, SourceView } from '../content';
-export { MarkdownView } from '../content';
+import { CopyButton, LazyMarkdownView as MarkdownView, SourceView } from '../content';
 import { Button, Collapsible, Dialog, Icon } from '../../ui';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatAttachment, ChatBlock, ChatCommand, ChatMessage, ChatSessionStats, ExtensionUIRequest, ExtensionUIResponse, ToolActivity } from '../../../shared/ipc/conversation';

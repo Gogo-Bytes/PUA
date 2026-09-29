@@ -31,7 +31,7 @@
 
 `ChatMessageProps`（现位于 `renderer/features/conversation/ChatMessage.tsx`）：`role` 为 user / assistant / system / custom / summary，`author` 必传，`metadata`、`children` 正文、`actions` 均为 ReactNode。字符串始终作为文本；调用方可通过正文 slot 提供已审核的受控渲染器。`streaming` 展示状态并将正文标记 aria-busy，不对每个 token 创建 live region；`error` 保留正文并复用静态 Message。角色、流式和失败标签可通过 `labels` 配置。作者与角色默认视觉隐藏但保留可访问文字，metadata 独立展示；actions 始终可见（键盘、触屏无需 hover）。用户正文右对齐浅底，助手使用裸正文。字符串保留换行，React slot 按正常块排版；段落、章节、列表、代码、引用、表格与链接样式仅作用于正文。排版规则见 [注意力层级](typography-and-hierarchy.md)。
 
-隔离预览不直接复用生产 `features/content/MarkdownView`；生产同一 ChatMessage 接受调用方传入的已审核正文。ContentView 迁移未改变渲染实现，也未新增不受控 HTML 渲染或桥接后门。
+隔离预览不直接复用生产 `features/content/MarkdownView`；生产同一 ChatMessage 接受调用方传入的已审核正文。生产 ChatPane 与 GitPanel 通过 `LazyMarkdownView` 按需加载 Markdown、GFM 和代码着色依赖，加载占位只表示渲染尚未完成，不改变数据所有权、IPC 边界或安全策略。ContentView 迁移未改变渲染实现，也未新增不受控 HTML 渲染或桥接后门。
 
 正文支持受控 React 内容中的 mark 高亮、kbd 快捷键、ins/del 变更行、dl 术语、details 折叠、figure/figcaption 与脚注锚点。`ui-code-keyword/string/number/comment` 为调用方已审核语法片段的配色类；不自动解析或执行代码。静态任务清单以图标加明确文字表达完成/待检查，不伪装成可操作的复选框。完整样例位于预览 `DocumentExamples.tsx`，不从模块入口导出。
 

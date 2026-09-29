@@ -4,7 +4,7 @@ import type { ChangedFile, DiffScope, FileDiff, GitStatus } from '../../../share
 import { filesForScope } from './scope';
 import { referencePaths } from '../workspace';
 import { Button, DiffView, Icon, IconButton, Tabs } from '../../ui';
-import { CopyButton, MarkdownView, SourceView } from '../content';
+import { CopyButton, LazyMarkdownView as MarkdownView, SourceView } from '../content';
 import { isConflictPatch, parseDiffLines } from './diff-lines';
 
 type Result = { diff: FileDiff; receivedAt: string } | { error: string };

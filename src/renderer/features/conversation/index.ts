@@ -1,4 +1,5 @@
-export { ChatPane, ToolCard, ExtensionDialog, MarkdownView } from './ChatPane';
+export { ChatPane, ToolCard, ExtensionDialog } from './ChatPane';
+export { MarkdownView } from '../content';
 export { ToolExecutionCard, type ToolExecutionCardProps } from './ToolExecutionCard';
 export { ChatMessage, type ChatMessageProps, type ChatMessageLabels, type ChatRole } from './ChatMessage';
 export { Composer, type ComposerProps, type ComposerAttachment, type ComposerLabels, type ComposerSubmission } from './Composer';

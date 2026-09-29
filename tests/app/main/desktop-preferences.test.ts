@@ -64,10 +64,10 @@ describe('desktop preferences workflow with real PreferencesApplication and Fake
     const h = harness();
     h.capabilities.activity.mockReturnValue('responding');
     await expect(h.preferences.cloneSession('id', h.capabilities)).rejects.toThrow('会话正在处理');
-    expect(h.capabilities.conversation.clone).not.toHaveBeenCalled();
+    expect((h.capabilities.conversation as unknown as { clone: ReturnType<typeof vi.fn> }).clone).not.toHaveBeenCalled();
 
     h.capabilities.activity.mockReturnValue('idle');
-    const clone = h.capabilities.conversation.clone as unknown as ReturnType<typeof vi.fn>;
+    const clone = (h.capabilities.conversation as unknown as { clone: ReturnType<typeof vi.fn> }).clone;
     let release!: (value: { cancelled: boolean }) => void;
     clone.mockReturnValueOnce(new Promise(resolve => { release = resolve; }));
     const first = h.preferences.cloneSession('id', h.capabilities);

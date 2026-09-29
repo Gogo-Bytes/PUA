@@ -88,7 +88,7 @@ describe('production workspace navigation', () => {
     expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('second draft');
     fireEvent.click(screen.getByRole('button', { name: '会话 1' }));
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(firstDraft);
-    expect((firstDraft as HTMLTextAreaElement).value).toBe('unfinished first'); expect(screen.getByText('context.txt')).toBeTruthy(); expect(screen.getByText('background reply')).toBeTruthy();
+    expect((firstDraft as HTMLTextAreaElement).value).toBe('unfinished first'); expect(screen.getByText('context.txt')).toBeTruthy(); expect(await screen.findByText('background reply')).toBeTruthy();
     expect(container.querySelector('[data-session-id="s1"]')).toBe(firstPane);
     expect(desktop.startSession).toHaveBeenCalledTimes(3);
     vi.mocked(desktop.closeSession).mockResolvedValueOnce(false);
