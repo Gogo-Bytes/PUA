@@ -54,11 +54,11 @@
 
 ### 截图驱动的面板接入（2026-09-22）
 
-Environment 是 WorkspaceChrome 中的独立非模态浮窗，不占用右侧布局；仅打开时读取当前 session 的 GitStatus 与本地分支列表，晚到结果按 session/关闭清理丢弃。Changes 打开 Review 标签，任务详情打开原 TaskDetailsPanel。分支仅支持查看本地分支和空闲 Chat + 干净工作区下的切换；IPC 使用 session ID 解析仓库，切换前确认任务空闲并重新检查 porcelain 状态，dirty worktree 或活动 Pi/Terminal 一律拒绝。创建/删除分支、worktree、commit/push、subagents/后台进程仍未接入。
+Environment 是 WorkspaceChrome 中的独立非模态浮窗，不占用右侧布局；仅打开时读取当前 session 的 GitStatus、分支和工作树列表，晚到结果按 session/关闭清理丢弃。Changes 打开 Review 标签，任务详情打开原 TaskDetailsPanel。分支切换、创建/安全删除、worktree 创建/移除、commit/push 和窗口内后台兼容终端均经真实 IPC 接入；切换、工作树和提交前确认任务空闲并重新检查 porcelain 状态，dirty worktree 或活动 Pi/Terminal 一律拒绝。Subagents 仍显示 Pi 当前未暴露创建、列表或事件协议的不可用原因。
 
-SidePanelHost 是右侧多标签宿主；无标签显示 Review、Terminal、Browser、Files、Side chat。Files 接入只读会话目录浏览和 UTF-8 文本预览；文件 IPC 只接受 session ID + 相对路径，由主进程从 session capability 解析 cwd，路径不允许逃逸、不跟随符号链接，预览限制 256 KB。Browser 使用主进程 `WebContentsView`，为每个视图创建独立的非持久 Session，不注入 preload、禁用 Node，并拒绝权限、下载和新窗口；远程地址仅允许 HTTPS，HTTP 仅允许 loopback 开发服务，renderer 只能通过校验后的窄 IPC 操作导航与视图边界。子视图 bounds 由主进程夹限在宿主窗口内，tab 隐藏/面板卸载时隐藏并销毁。Terminal tab 复用当前 Terminal Session 的唯一 `TerminalPane`/xterm/PTY 订阅，由 `TerminalOutlet` 只调整视口几何在主工作区和右侧 dock 之间显示；不创建第二个终端、不重复 `startSession`，也不绕过 Session 的 Terminal 独占策略。Side chat 仍是说明入口，不伪造宿主能力。tab 列表按 session/draft 隔离，切 tab 保持已打开 Review 挂载，切会话重置内容投影；全关后回到入口。面板宽度默认 560、最小 280、最大 1000，仍保留 center 360 最小约束与响应式隐藏。
+SidePanelHost 是右侧多标签宿主；无标签显示 Review、Terminal、Browser、Files、Side chat。Files 接入只读会话目录浏览和 UTF-8 文本预览；文件 IPC 只接受 session ID + 相对路径，由主进程从 session capability 解析 cwd，路径不允许逃逸、不跟随符号链接，预览限制 256 KB。Browser 使用主进程 `WebContentsView`，为每个视图创建独立的非持久 Session，不注入 preload、禁用 Node，并拒绝权限、下载和新窗口；远程地址仅允许 HTTPS，HTTP 仅允许 loopback 开发服务，renderer 只能通过校验后的窄 IPC 操作导航与视图边界。子视图 bounds 由主进程夹限在宿主窗口内，tab 隐藏/面板卸载时隐藏并销毁。Terminal tab 复用当前 Terminal Session 的唯一 `TerminalPane`/xterm/PTY 订阅，由 `TerminalOutlet` 只调整视口几何在主工作区和右侧 dock 之间显示；不创建第二个终端、不重复 `startSession`，也不绕过 Session 的 Terminal 独占策略。xterm 与 addon 仅在存在终端面板时动态加载，不进入聊天首屏。Side chat 仍是独立 Pi 会话入口。tab 列表按 session/draft 隔离，切 tab 保持已打开 Review 挂载，切会话重置内容投影；全关后回到入口。面板宽度默认 560、最小 280、最大 1000，仍保留 center 360 最小约束与响应式隐藏。
 
-Review 使用连续多文件展示，移除旧 inspector 内卡片。每批 5 个文件、最多 3 并发 fileDiff；刷新/比较范围/会话身份变化清理旧请求结果。集合来自已授权 gitStatus，宿主读取边界不变；结果 Map 不把特殊文件名当对象原型。工作区/暂存区是真实范围；分支比较尚未接入。计数仅按已返回 hunk，截断显式标注，冲突不展示错误双边统计。原文复制、路径引用、未跟踪 Markdown 安全预览保留。UI 库选型与限制见 `docs/research/diff-viewer-selection.md`。
+Review 使用连续多文件展示，移除旧 inspector 内卡片。每批 5 个文件、最多 3 并发 fileDiff；刷新/比较范围/会话身份变化清理旧请求结果。集合来自已授权 gitStatus，宿主读取边界不变；结果 Map 不把特殊文件名当对象原型。工作区/暂存区是真实范围，分支比较仍是独立待决能力，不把当前分支与任意远端或默认分支混为一谈。计数仅按已返回 hunk，截断显式标注，冲突不展示错误双边统计。原文复制、路径引用、未跟踪 Markdown 安全预览保留。UI 库选型与限制见 `docs/research/diff-viewer-selection.md`。
 
 ### Tailwind / shadcn 生产迁移（2026-09-22）
 

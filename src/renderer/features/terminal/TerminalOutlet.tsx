@@ -1,8 +1,9 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { lazy, Suspense, useEffect, useRef, type RefObject } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
-import { TerminalPane } from './TerminalPane';
 import type { TerminalHandle } from './TerminalPane';
 import type { ResolvedTheme } from './terminal-theme';
+
+const TerminalPane = lazy(() => import('./TerminalPane').then(module => ({ default: module.TerminalPane })));
 
 interface Props {
   sessions: SessionInfo[]; activeId?: string | null; platform: string; fontSize: number; theme: ResolvedTheme;
@@ -36,6 +37,8 @@ export function TerminalOutlet({ sessions, activeId, platform, fontSize, theme, 
   }, [activeTerminal, activeId, docked, stageRef, dockRef]);
 
   return <div className="workspace-terminal-outlet" ref={hostRef} hidden>
-    {sessions.filter(session => session.kind === 'terminal').map(session => <TerminalPane key={session.id} session={session} active={session.id === activeId} fontSize={fontSize} theme={theme} platform={platform} onReady={onReady} onExit={onExit} onError={onError}/>)}
+    <Suspense fallback={<div className="terminal-pane terminal-pane-loading" aria-label="正在加载终端"/>}>
+      {sessions.filter(session => session.kind === 'terminal').map(session => <TerminalPane key={session.id} session={session} active={session.id === activeId} fontSize={fontSize} theme={theme} platform={platform} onReady={onReady} onExit={onExit} onError={onError}/>)}
+    </Suspense>
   </div>;
 }

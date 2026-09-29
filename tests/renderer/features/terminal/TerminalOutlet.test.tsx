@@ -15,9 +15,9 @@ function Harness({ docked }: { docked: boolean }) {
   return <><div ref={stage} data-testid="stage"/><div ref={dock} data-testid="dock"/><TerminalOutlet sessions={[terminal]} activeId="term-1" platform="darwin" fontSize={14} theme="light" docked={docked} stageRef={stage} dockRef={dock} onReady={() => {}} onExit={() => {}} onError={() => {}}/></>;
 }
 
-it('repositions the same terminal pane between the workspace and right-side Terminal tab', () => {
+it('repositions the same terminal pane between the workspace and right-side Terminal tab', async () => {
   const { rerender } = render(<Harness docked={false}/>);
-  const pane = screen.getByTestId('single-pty');
+  const pane = await screen.findByTestId('single-pty');
   const stage = screen.getByTestId('stage'); const dock = screen.getByTestId('dock');
   stage.getBoundingClientRect = () => ({ x: 10, y: 50, left: 10, top: 50, right: 510, bottom: 450, width: 500, height: 400, toJSON() {} });
   dock.getBoundingClientRect = () => ({ x: 700, y: 50, left: 700, top: 50, right: 1000, bottom: 450, width: 300, height: 400, toJSON() {} });
