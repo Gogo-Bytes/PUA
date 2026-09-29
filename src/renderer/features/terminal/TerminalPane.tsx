@@ -8,13 +8,7 @@ import { ImageAddon } from '@xterm/addon-image';
 import { modifiedEnter } from './terminal-keys';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import { terminalThemes, type ResolvedTheme } from './terminal-theme';
-
-export interface TerminalHandle {
-  focus(): void;
-  paste(text: string): void;
-  search(text: string, backwards?: boolean): boolean;
-  clearSearch(): void;
-}
+import type { TerminalHandle } from './terminal-types';
 
 interface Props {
   session: SessionInfo;

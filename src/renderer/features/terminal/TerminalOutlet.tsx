@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, type RefObject } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
-import type { TerminalHandle } from './TerminalPane';
+import type { TerminalHandle } from './terminal-types';
 import type { ResolvedTheme } from './terminal-theme';
 
 const TerminalPane = lazy(() => import('./TerminalPane').then(module => ({ default: module.TerminalPane })));
