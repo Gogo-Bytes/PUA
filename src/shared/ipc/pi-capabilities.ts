@@ -14,7 +14,7 @@ export interface PiCapabilityRecord {
 
 /** Capabilities intentionally represented as unavailable when Pi has no confirmed protocol. */
 export interface PiUnavailableCapabilityRecord {
-  id: 'subagents';
+  id: 'collaboration.participants';
   status: 'verified-not-exposed';
   reason: string;
 }
@@ -46,8 +46,8 @@ export const piCapabilities: readonly PiCapabilityRecord[] = [
 
 export const piUnavailableCapabilities: readonly PiUnavailableCapabilityRecord[] = [
   {
-    id: 'subagents',
+    id: 'collaboration.participants',
     status: 'verified-not-exposed',
-    reason: '当前 Pi 未暴露创建、列表或事件协议',
+    reason: '当前 Pi 未暴露可验证的协作参与者身份或跨会话消息事件',
   },
 ] as const;

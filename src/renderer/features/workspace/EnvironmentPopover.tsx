@@ -5,11 +5,12 @@ import { piUnavailableCapabilities } from '../../../shared/ipc/pi-capabilities';
 import { desktopClient } from '../../app/desktop-client';
 import { Button, Dialog, Icon, IconButton, Input, Popover } from '../../ui';
 import type { SidePanelKind } from './useSidePanelTabs';
+import { activeProjectCollaborationSessions, collaborationActivityLabel } from './collaboration';
 
 export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenPanel }: {
   session?: SessionInfo; sessions?: readonly SessionInfo[]; onSelectSession?(id: string): void; onOpenPanel(kind: SidePanelKind): void;
 }) {
-  const subagentsCapability = piUnavailableCapabilities.find(item => item.id === 'subagents');
+  const collaborationCapability = piUnavailableCapabilities.find(item => item.id === 'collaboration.participants');
   const [open, setOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<{ id: string; status?: GitStatus; error?: string }>();
   const [branchState, setBranchState] = useState<{ id: string; current: string; branches: string[] }>();
@@ -48,6 +49,7 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
   const worktrees = worktreeState?.id === session?.id ? worktreeState : undefined;
   const taskBusy = !!session && (session.kind === 'terminal' || session.activity !== 'idle');
   const backgroundProcesses = (sessions ?? []).filter(item => item.kind === 'terminal' && item.processStatus !== 'exited');
+  const collaborationSessions = activeProjectCollaborationSessions(sessions ?? [], session);
   const openPanel = (kind: SidePanelKind) => { setOpen(false); onOpenPanel(kind); };
   const switchBranch = async (branch: string) => {
     if (!session || branch === branches?.current || branchBusy) return;
@@ -165,8 +167,11 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
       <Button variant="ghost" className="environment-row" disabled={!session || !status || taskBusy} onClick={() => { setCommitError(undefined); setCommitOpen(true); }}><Icon name="branch"/><span>Commit or push</span><small>{status?.files.length ? `${status.files.length} 个文件待提交` : '推送当前分支'}</small></Button>
       {snapshot?.id === session?.id && snapshot?.error && <p className="environment-note">暂时无法读取仓库；可打开 Review 查看错误并重试。</p>}
     </section>
-    <section className="environment-section"><div className="environment-heading">Subagents</div>
-      <div className="environment-row is-unavailable" aria-disabled="true" title={subagentsCapability?.reason}><Icon name="agents"/><span>子代理任务</span><small>{subagentsCapability?.reason ?? '未接入'}</small></div>
+    <section className="environment-section"><div className="environment-heading">Collaboration</div>
+      {collaborationSessions.length ? collaborationSessions.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { setOpen(false); onSelectSession?.(item.id); }}>
+        <Icon name="agents"/><span>{item.title}</span><small>{collaborationActivityLabel(item.activity)}</small>
+      </Button>) : <div className="environment-row is-unavailable" aria-disabled="true" title={collaborationCapability?.reason}><Icon name="agents"/><span>暂无协作活动</span><small>仅显示本窗口内的活动会话</small></div>}
+      <p className="environment-note">{collaborationCapability?.reason ?? 'Pi 未提供参与者身份事件'}</p>
     </section>
     <section className="environment-section"><div className="environment-heading">Background processes</div>
       {backgroundProcesses.length ? backgroundProcesses.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { setOpen(false); onSelectSession?.(item.id); }}>

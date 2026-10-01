@@ -22,9 +22,9 @@ describe('Pi capability registry', () => {
   });
 
   it('keeps unsupported capabilities explicit without inventing RPC commands', () => {
-    const subagents = piUnavailableCapabilities.find(item => item.id === 'subagents');
-    expect(subagents?.status).toBe('verified-not-exposed');
-    expect(subagents?.reason).toContain('创建、列表或事件协议');
+    const participants = piUnavailableCapabilities.find(item => item.id === 'collaboration.participants');
+    expect(participants?.status).toBe('verified-not-exposed');
+    expect(participants?.reason).toContain('参与者身份');
     expect(piCapabilities.some(item => item.id.toLowerCase().includes('subagent'))).toBe(false);
   });
 });
