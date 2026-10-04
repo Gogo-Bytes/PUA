@@ -40,7 +40,7 @@ test('lifecycle gate: real npm execution propagates failed substeps and never re
     const isolated = { ...scripts };
     // Preserve the actual npm dependency/&& graph. Stub only leaves, never run
     // real typecheck/build/smokes/package operations from this wiring test.
-    const leaves = ['check:protected', 'check:boundaries', 'typecheck', 'typecheck:tests', 'test', 'build'];
+    const leaves = ['check:protected', 'check:boundaries', 'lint', 'typecheck', 'typecheck:tests', 'test', 'build'];
     for (const leaf of leaves) isolated[leaf] = `node probe.mjs ${leaf}`;
     for (const smoke of ['ipc', 'lifecycle']) writeFileSync(path.join(temporary, `scripts/smoke-${smoke}.mjs`), `process.argv[2] = '${smoke}'; await import('../probe.mjs');`);
     writeFileSync(path.join(temporary, 'node_modules/.bin/electron-builder'), `#!/bin/sh\nexec "${process.execPath}" "${temporary}/probe.mjs" packager\n`, { mode: 0o755 });
