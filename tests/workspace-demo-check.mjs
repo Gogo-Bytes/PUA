@@ -11,10 +11,18 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.setDefaultTimeout(8000);
   page.on('pageerror', error => results.errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') results.errors.push(message.text()); });
-  page.on('response', response => { if (response.status() >= 400) results.requests.push({ url: response.url(), status: response.status() }); });
+  page.on('console', message => {
+    if (message.type() === 'error') results.errors.push(message.text());
+  });
+  page.on('response', response => {
+    if (response.status() >= 400) results.requests.push({ url: response.url(), status: response.status() });
+  });
   await page.goto('http://127.0.0.1:4181/workspace-preview.html');
-  await page.evaluate(() => { window.desktop.writeClipboard = async () => { throw new Error('TEST ONLY: clipboard rejected'); }; });
+  await page.evaluate(() => {
+    window.desktop.writeClipboard = async () => {
+      throw new Error('TEST ONLY: clipboard rejected');
+    };
+  });
   const projects = page.getByRole('navigation', { name: '项目', exact: true });
   await projects.getByTitle('/test/workspace/PUA', { exact: true }).click();
   await page.keyboard.press('Escape');
@@ -39,10 +47,20 @@ try {
     await page.locator('.chat-pane.active').waitFor();
   }
   await create('建立第一个验收会话');
-  assert.deepEqual(await page.evaluate(() => window.__workspacePreviewLaunchOptions?.[0]), {
-    cwd: '/test/workspace/PUA', kind: 'chat', startMode: 'new', projectTrust: 'default',
-    initialModel: { provider: 'openai-codex', id: 'gpt-5.5' }, initialThinkingLevel: 'high', cols: 100, rows: 30,
-  }, '首条消息创建 session 时应用预先选择的模型和思考程度');
+  assert.deepEqual(
+    await page.evaluate(() => window.__workspacePreviewLaunchOptions?.[0]),
+    {
+      cwd: '/test/workspace/PUA',
+      kind: 'chat',
+      startMode: 'new',
+      projectTrust: 'default',
+      initialModel: { provider: 'openai-codex', id: 'gpt-5.5' },
+      initialThinkingLevel: 'high',
+      cols: 100,
+      rows: 30,
+    },
+    '首条消息创建 session 时应用预先选择的模型和思考程度',
+  );
   const editor = page.getByRole('textbox', { name: '发送消息', exact: true });
   assert.equal(await page.locator('.ui-composer').count(), 1);
   assert.equal(await page.locator('.composer,.chat-message,.tool-card,details.tool-card').count(), 0);
@@ -59,7 +77,9 @@ try {
   // The injected in-memory clipboard rejects. Then substitute an in-memory fake success, never navigator.clipboard.
   await page.getByRole('button', { name: '复制回复' }).click();
   await page.getByRole('alert').filter({ hasText: '复制失败' }).first().waitFor();
-  await page.evaluate(() => { window.desktop.writeClipboard = async () => ({ ok: true, value: null }); });
+  await page.evaluate(() => {
+    window.desktop.writeClipboard = async () => ({ ok: true, value: null });
+  });
   await page.getByRole('button', { name: '复制回复' }).click();
   await page.getByRole('button', { name: '复制回复' }).getByText('已复制', { exact: true }).waitFor();
   await editor.fill('A 草稿');
@@ -88,10 +108,13 @@ try {
   await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === '搜索与命令');
   const separator = page.getByRole('separator', { name: '调整项目栏宽度' });
   const before = Number(await separator.getAttribute('aria-valuenow'));
-  await separator.focus(); await separator.press('ArrowRight');
+  await separator.focus();
+  await separator.press('ArrowRight');
   assert.equal(Number(await separator.getAttribute('aria-valuenow')), before + 16);
   await separator.press('ArrowLeft');
-  results.interactions.push('inline rename; tool expansion; fake copy failure/success; attachments; cwd identity; persistent A→B→A drafts; Shift+Enter/send; palette focus; keyboard resize');
+  results.interactions.push(
+    'inline rename; tool expansion; fake copy failure/success; attachments; cwd identity; persistent A→B→A drafts; Shift+Enter/send; palette focus; keyboard resize',
+  );
   for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width: 1440, height: 900 });
     const settings = page.getByRole('button', { name: '桌面设置', exact: true });
@@ -104,11 +127,21 @@ try {
       await page.setViewportSize({ width, height: width === 1440 ? 900 : 800 });
       await page.waitForTimeout(300);
       const layout = await page.evaluate(() => {
-        const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { width: r.width, height: r.height, bottom: r.bottom }; };
+        const rect = selector => {
+          const r = document.querySelector(selector).getBoundingClientRect();
+          return { width: r.width, height: r.height, bottom: r.bottom };
+        };
         const latest = document.querySelector('.chat-pane.active .jump-latest');
         const latestRect = latest?.getBoundingClientRect();
         const listRect = document.querySelector('.chat-pane.active .message-list')?.getBoundingClientRect();
-        return { width: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth, composer: rect('.chat-pane.active .ui-composer'), transcript: rect('.chat-pane.active .chat-transcript'), rightHidden: document.querySelector('.ui-workspace-right').inert, jumpLatestClear: !latestRect || !listRect || latestRect.top >= listRect.bottom };
+        return {
+          width: innerWidth,
+          overflow: document.documentElement.scrollWidth > innerWidth,
+          composer: rect('.chat-pane.active .ui-composer'),
+          transcript: rect('.chat-pane.active .chat-transcript'),
+          rightHidden: document.querySelector('.ui-workspace-right').inert,
+          jumpLatestClear: !latestRect || !listRect || latestRect.top >= listRect.bottom,
+        };
       });
       assert(!layout.overflow);
       assert(layout.jumpLatestClear, '回到最新按钮不能遮挡消息正文');
@@ -126,13 +159,19 @@ try {
     const taskToolbar = page.locator('.workspace-chrome');
     assert.equal(await taskToolbar.getByRole('button', { name: '收起右侧面板', exact: true }).getAttribute('aria-expanded'), 'true');
     const panel = page.getByRole('complementary', { name: '右侧面板', exact: true });
-    if (await panel.getByRole('button', { name: 'Review', exact: true }).count()) await panel.getByRole('button', { name: 'Review', exact: true }).click();
+    if (await panel.getByRole('button', { name: 'Review', exact: true }).count())
+      await panel.getByRole('button', { name: 'Review', exact: true }).click();
+    await panel.getByRole('button', { name: 'docs/context.md', exact: true }).click();
     await page.getByRole('tab', { name: '预览', exact: true }).click();
     await page.getByRole('heading', { name: '测试文档', exact: true }).waitFor();
     await page.getByRole('region', { name: 'docs/context.md', exact: true }).getByRole('button', { name: '引用文件到草稿' }).click();
     assert.match(await editor.inputValue(), /docs\/context.md/);
     await taskToolbar.getByRole('button', { name: '收起右侧面板', exact: true }).click();
-    assert(await page.getByRole('button', { name: '显示右侧面板', exact: true }).evaluateAll(nodes => nodes.some(node => node === document.activeElement)));
+    assert(
+      await page
+        .getByRole('button', { name: '显示右侧面板', exact: true })
+        .evaluateAll(nodes => nodes.some(node => node === document.activeElement)),
+    );
     await page.setViewportSize({ width: 1440, height: 900 });
     await taskToolbar.getByRole('button', { name: '显示右侧面板', exact: true }).click();
     await panel.getByRole('tab', { name: 'Review', exact: true }).waitFor();
