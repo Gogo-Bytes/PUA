@@ -18,10 +18,17 @@ function expandedSteps(name: string, ancestors: string[] = []): string[] {
 test('lifecycle gate: verify and release entries reach both smokes after exactly one build, without recursion', () => {
   for (const name of ['verify', 'package', 'dist', 'test:lifecycle']) {
     const steps = expandedSteps(name);
-    expect(steps.filter(step => step === 'node scripts/smoke-lifecycle.mjs'), name).toHaveLength(1);
-    expect(steps.filter(step => step === 'tsc -p tsconfig.main.json'), name).toHaveLength(1);
+    expect(
+      steps.filter(step => step === 'node scripts/smoke-lifecycle.mjs'),
+      name,
+    ).toHaveLength(1);
+    expect(
+      steps.filter(step => step === 'tsc -p tsconfig.main.json'),
+      name,
+    ).toHaveLength(1);
     expect(steps.indexOf('node scripts/smoke-lifecycle.mjs')).toBeGreaterThan(steps.indexOf('vite build'));
-    if (name !== 'test:lifecycle') expect(steps.indexOf('node scripts/smoke-ipc.mjs')).toBeLessThan(steps.indexOf('node scripts/smoke-lifecycle.mjs'));
+    if (name !== 'test:lifecycle')
+      expect(steps.indexOf('node scripts/smoke-ipc.mjs')).toBeLessThan(steps.indexOf('node scripts/smoke-lifecycle.mjs'));
     if (name === 'package' || name === 'dist') {
       expect(scripts[name]).toMatch(/^npm run verify && electron-builder(?: --dir)?$/);
       expect(steps.at(-1)).toMatch(/^electron-builder/);
@@ -40,19 +47,30 @@ test('lifecycle gate: real npm execution propagates failed substeps and never re
     const isolated = { ...scripts };
     // Preserve the actual npm dependency/&& graph. Stub only leaves, never run
     // real typecheck/build/smokes/package operations from this wiring test.
-    const leaves = ['check:protected', 'check:boundaries', 'lint', 'typecheck', 'typecheck:tests', 'test', 'build'];
+    const leaves = ['check:protected', 'check:boundaries', 'lint', 'format:check', 'typecheck', 'typecheck:tests', 'test', 'build'];
     for (const leaf of leaves) isolated[leaf] = `node probe.mjs ${leaf}`;
-    for (const smoke of ['ipc', 'lifecycle']) writeFileSync(path.join(temporary, `scripts/smoke-${smoke}.mjs`), `process.argv[2] = '${smoke}'; await import('../probe.mjs');`);
-    writeFileSync(path.join(temporary, 'node_modules/.bin/electron-builder'), `#!/bin/sh\nexec "${process.execPath}" "${temporary}/probe.mjs" packager\n`, { mode: 0o755 });
+    for (const smoke of ['ipc', 'lifecycle'])
+      writeFileSync(path.join(temporary, `scripts/smoke-${smoke}.mjs`), `process.argv[2] = '${smoke}'; await import('../probe.mjs');`);
+    writeFileSync(
+      path.join(temporary, 'node_modules/.bin/electron-builder'),
+      `#!/bin/sh\nexec "${process.execPath}" "${temporary}/probe.mjs" packager\n`,
+      { mode: 0o755 },
+    );
     writeFileSync(path.join(temporary, 'package.json'), JSON.stringify({ type: 'module', scripts: isolated }));
     for (const entry of ['verify', 'package', 'dist']) {
       for (const fail of ['', ...leaves, 'ipc', 'lifecycle']) {
         writeFileSync(log, '');
         const result = spawnSync('npm', ['run', entry], {
-          cwd: temporary, encoding: 'utf8', timeout: 15000,
+          cwd: temporary,
+          encoding: 'utf8',
+          timeout: 15000,
           env: { ...process.env, GATE_LOG: log, GATE_FAIL: fail, npm_config_update_notifier: 'false' },
         });
-        const steps: string[] = readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+        const steps: string[] = readFileSync(log, 'utf8')
+          .trim()
+          .split('\n')
+          .filter(Boolean)
+          .map(line => JSON.parse(line));
         expect(result.error, `${entry}/${fail}: ${result.stderr}`).toBeUndefined();
         if (fail) {
           expect(result.status, `${entry}/${fail}: ${result.stdout}\n${result.stderr}`).not.toBe(0);
@@ -64,5 +82,7 @@ test('lifecycle gate: real npm execution propagates failed substeps and never re
         }
       }
     }
-  } finally { rmSync(temporary, { recursive: true, force: true }); }
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
 }, 60000);

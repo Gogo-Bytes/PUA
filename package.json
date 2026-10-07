@@ -9,6 +9,8 @@
     "dev": "npm run build && electron .",
     "build": "tsc -p tsconfig.main.json && vite build --config vite.preload.config.ts && vite build",
     "lint": "eslint .",
+    "format:check": "node scripts/check-format.mjs",
+    "format:write": "node scripts/check-format.mjs --write",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:desktop": "npm run build && node scripts/smoke-desktop.mjs",
@@ -24,7 +26,7 @@
     "check:protected": "node scripts/check-protected.ts",
     "check:boundaries": "node scripts/check-boundaries.ts",
     "test:ipc": "npm run build && node scripts/smoke-ipc.mjs",
-    "verify:baseline": "npm run check:protected && npm run check:boundaries && npm run lint && npm run typecheck && npm run typecheck:tests && npm test && npm run build",
+    "verify:baseline": "npm run check:protected && npm run check:boundaries && npm run lint && npm run format:check && npm run typecheck && npm run typecheck:tests && npm test && npm run build",
     "verify": "npm run verify:baseline && node scripts/smoke-ipc.mjs && node scripts/smoke-lifecycle.mjs"
   },
   "dependencies": {
@@ -64,6 +66,7 @@
     "eslint": "^9.39.5",
     "jsdom": "^26.1.0",
     "playwright": "^1.58.0",
+    "prettier": "3.9.9",
     "tailwindcss": "4.3.3",
     "typescript": "^5.9.0",
     "typescript-eslint": "^8.71.0",
