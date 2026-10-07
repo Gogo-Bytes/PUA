@@ -21,6 +21,7 @@
     "package": "npm run verify && electron-builder --dir",
     "dist": "npm run verify && electron-builder",
     "test:lifecycle": "npm run build && node scripts/smoke-lifecycle.mjs",
+    "test:lifecycle:stress": "npm run build && node scripts/smoke-lifecycle.mjs --repeat=10",
     "dev:components": "vite --config tests/component-preview/vite.config.ts",
     "typecheck:tests": "tsc -p tsconfig.tests.json --noEmit",
     "check:protected": "node scripts/check-protected.ts",

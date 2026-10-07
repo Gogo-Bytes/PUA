@@ -53,6 +53,7 @@ npm run typecheck
 npm test                # 不调用模型的单元测试
 npm run test:desktop    # 真实 Electron + PTY，使用离线 fixture
 npm run test:pi         # 本机真实 Pi + 官方 modal-editor 示例，隔离配置且不调用模型
+npm run test:lifecycle:stress # 10 轮真实 Electron 生命周期压力验证，共 50 个清理场景
 npm run package         # 本平台未签名的应用目录
 npm run dist            # 本平台安装包；发布签名/公证需另外配置
 ```
