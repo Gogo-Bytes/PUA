@@ -33,7 +33,17 @@ jobs:
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm run typecheck:tests
-      - run: npm test -- --reporter=default --reporter=github-actions
+      - name: Test
+        shell: bash
+        run: |
+          set +e
+          npm test -- --reporter=default --reporter=github-actions > vitest.log 2>&1
+          status=$?
+          cat vitest.log
+          if [ "$status" -ne 0 ]; then
+            node -e 'const s=require("node:fs").readFileSync("vitest.log","utf8").slice(-6000);console.log("::error title=Vitest output::"+s.replaceAll("%","%25").replaceAll("\r","%0D").replaceAll("\n","%0A"))'
+          fi
+          exit "$status"
       - run: npm run build
       - if: runner.os == 'macOS'
         run: node scripts/smoke-ipc.mjs
