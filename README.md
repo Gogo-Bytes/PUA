@@ -60,6 +60,8 @@ npm run dist            # 本平台安装包；发布签名/公证需另外配�
 
 `test:pi` 可用 `PI_DESKTOP_TEST_PI` / `PI_DESKTOP_TEST_NODE` 指定测试安装路径，要求该 Pi 包包含官方 `examples/extensions/modal-editor.ts`。不要将测试视为已验证真实 OAuth 或付费模型调用。
 
+CI 在 macOS、Windows 和 Linux 上运行代码检查、测试与构建；macOS 另运行 IPC 和生命周期烟测。这是跨平台代码门禁，安装、升级、卸载及 Windows/Linux 的真实桌面生命周期仍需分别验收。
+
 ## 已知边界
 
 - 原生对话以本机 Pi **0.85.1** 为当前协议测试基线。RPC capability handshake 失败会明确报错；不会静默退回终端或解析 ANSI 猜状态。

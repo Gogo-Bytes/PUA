@@ -18,7 +18,7 @@ function changedFiles() {
     ...git('ls-files', '--others', '--exclude-standard', '-z'),
   ];
   const base = process.env.FORMAT_BASE_REF;
-  if (base) return [...new Set([...git('diff', '--name-only', '-z', `${base}...HEAD`), ...working])];
+  if (base && !/^0+$/.test(base)) return [...new Set([...git('diff', '--name-only', '-z', `${base}...HEAD`), ...working])];
   if (working.length) return [...new Set(working)];
 
   try {
