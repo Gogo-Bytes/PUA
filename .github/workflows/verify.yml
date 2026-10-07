@@ -27,7 +27,14 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run verify:baseline
+      - run: npm run check:protected
+      - run: npm run check:boundaries
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run typecheck:tests
+      - run: npm test
+      - run: npm run build
       - if: runner.os == 'macOS'
         run: node scripts/smoke-ipc.mjs
       - if: runner.os == 'macOS'
