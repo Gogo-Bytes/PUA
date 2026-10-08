@@ -3,6 +3,10 @@
   "version": "0.3.0",
   "private": true,
   "description": "A desktop workspace for your own Pi agent — no fork, no reduced toolset.",
+  "author": {
+    "name": "GuoGan",
+    "email": "163803821+HandsomeGanzige@users.noreply.github.com"
+  },
   "type": "module",
   "main": "dist/app/main/bootstrap.js",
   "scripts": {
