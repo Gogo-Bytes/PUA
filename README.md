@@ -10,9 +10,11 @@ PUA（**Pi Universal App**）给你已经在用的 **Pi coding agent** 一个原
 
 ## 开始使用
 
-需要 Node.js **22.19+**、npm，以及你自己安装的 Pi。桌面应用不会替你安装或更新 Pi。
+需要 Node.js **22.19+**、npm，以及你自己安装的 Pi。桌面应用不会替你安装或更新 Pi。克隆源码后即可在本机运行：
 
 ```bash
+git clone https://github.com/Gogo-Bytes/PUA.git
+cd PUA
 npm ci
 npm run dev
 ```
@@ -44,9 +46,24 @@ Windows 需要 Pi 本身要求的 Git Bash（或你已有的 Pi shell 配置）�
 - Electron renderer 的 sandbox / context isolation / IPC 校验仅保护桌面界面；**Pi 和扩展仍具有当前用户权限，不是沙箱运行**。
 - 明确的新 chat 可以并行；恢复须先关闭其他会话。兼容终端（包括 `--no-session`）与所有其他托管会话互斥，关闭清理完成后才释放占用。外部启动的 Pi 不受此约束；请勿在外部同时恢复同一会话。桌面不迁移或锁定 Pi 历史文件。
 
-## 验证与构建
+## 从源码构建应用
 
 > 产品界面名称统一为 **PUA — Pi Universal App**。为避免破坏既有安装数据，本次仍保留 npm 包标识 `pi-desktop`、Electron app ID 与用户数据路径；打包产品名的迁移另行设计。
+
+```bash
+npm run package         # 运行完整验证，并生成本平台应用目录
+npm run dist            # 运行完整验证，并生成本平台安装包
+```
+
+macOS Apple Silicon 执行 `npm run package` 后，可直接打开自构建的应用：
+
+```bash
+open "release/mac-arm64/Pi Desktop.app"
+```
+
+Intel Mac 的应用目录为 `release/mac/Pi Desktop.app`。`npm run dist` 的 DMG/ZIP、Windows 的 NSIS 安装包与 Linux 的 AppImage/DEB 均在 `release/` 下。当前以开发者自行构建和运行为目标，项目不配置发布签名或公证。
+
+需要检查代码或桌面行为时，可单独运行：
 
 ```bash
 npm run typecheck
@@ -54,13 +71,11 @@ npm test                # 不调用模型的单元测试
 npm run test:desktop    # 真实 Electron + PTY，使用离线 fixture
 npm run test:pi         # 本机真实 Pi + 官方 modal-editor 示例，隔离配置且不调用模型
 npm run test:lifecycle:stress # 10 轮真实 Electron 生命周期压力验证，共 50 个清理场景
-npm run package         # 本平台未签名的应用目录
-npm run dist            # 本平台安装包；发布签名/公证需另外配置
 ```
 
 `test:pi` 可用 `PI_DESKTOP_TEST_PI` / `PI_DESKTOP_TEST_NODE` 指定测试安装路径，要求该 Pi 包包含官方 `examples/extensions/modal-editor.ts`。不要将测试视为已验证真实 OAuth 或付费模型调用。
 
-CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未签名安装包打包；macOS 另运行 IPC、生命周期及打包应用烟测。Linux 和 Windows 的打包应用烟测已加入门禁，结果见[验证记录](docs/validation.md)。macOS Developer ID 签名与公证的手动工作流见[发布说明](docs/macos-release.md)；签名实跑及安装、升级、卸载仍需验收。
+CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未签名安装包打包；macOS 另运行 IPC、生命周期及打包应用烟测。Linux 和 Windows 的打包应用烟测已加入门禁，结果见[验证记录](docs/validation.md)。这些检查验证了从源码打包及离线启动；安装、升级、卸载仍需实机验收。
 
 ## 已知边界
 
