@@ -53,6 +53,15 @@ jobs:
       - if: runner.os == 'macOS'
         run: node scripts/smoke-lifecycle.mjs
       - name: Package unsigned installers
+        shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --publish never
+        run: |
+          set +e
+          npx electron-builder --publish never > package.log 2>&1
+          status=$?
+          cat package.log
+          if [ "$status" -ne 0 ]; then
+            node -e 'const s=require("node:fs").readFileSync("package.log","utf8").replace(/\u001b\[[0-9;]*m/g,"");const lines=s.split(/\r?\n/);const errors=lines.filter(line=>/error|failed|cannot|ENOENT|ERR_|⨯/i.test(line));const detail=(errors.length?errors.slice(-15):lines.slice(-25)).join("\n").slice(-3000);console.log("::error title=Packaging failure::"+detail.replaceAll("%","%25").replaceAll("\r","%0D").replaceAll("\n","%0A"))'
+          fi
+          exit "$status"
