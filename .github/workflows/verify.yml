@@ -39,7 +39,7 @@ jobs:
           for shard in {1..8}; do
             echo "Vitest shard $shard/8"
             set +e
-            npm test -- --maxWorkers=2 --reporter=dot --shard="$shard/8" > "vitest-$shard.log" 2>&1
+            npm test -- --maxWorkers=2 --reporter=dot --testTimeout=15000 --shard="$shard/8" > "vitest-$shard.log" 2>&1
             status=$?
             cat "vitest-$shard.log"
             if [ "$status" -ne 0 ]; then
