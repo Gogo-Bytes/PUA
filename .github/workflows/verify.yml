@@ -52,3 +52,7 @@ jobs:
         run: node scripts/smoke-ipc.mjs
       - if: runner.os == 'macOS'
         run: node scripts/smoke-lifecycle.mjs
+      - name: Package unsigned installers
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --publish never
