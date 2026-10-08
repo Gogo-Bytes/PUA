@@ -40,7 +40,7 @@
   "tests/component-preview/browser-check.mjs": "f70ffa5200f5c15ab2a9b9c942c4e2927a522f6ab6f443a14104eaaede5cce41",
   "tests/component-preview/choice-controls-check.mjs": "7507c5c6d49e8c1f83dc8820bd64bbddbd5fd6a2541835da2321927fc9254a32",
   "tests/component-preview/composer-controls-check.mjs": "2f3b4bdda5ee4f31cdf4f08e486fa0f51c22e2468e88fcc1f8aca5ecaf09bd9a",
-  "tests/component-preview/density-check.mjs": "7e59736244c0f5caf50089766a3648f0d7cfee2964369df487771e95d903b542",
+  "tests/component-preview/density-check.mjs": "1f8e8ab6a81423b1b186443b9eeeeef1250242168edea22293d9ba6ffd80a8d9",
   "tests/component-preview/fixtures.ts": "eb13ddabbce324d6856d755e3b68463858efb0b7f2dd18b8250919414455b75d",
   "tests/component-preview/index.html": "6889ba5e8d845764569ea61421f2eca87ac5b0fde7f11f62e9a531ffccc0c0f6",
   "tests/component-preview/navigation-controls-check.mjs": "f559de5fc43bb87caee5a024e6e048ccf9f573c6827d733b04bb03fbbe83475d",
@@ -51,7 +51,7 @@
   "tests/component-preview/test-setup.ts": "f78c242957535f28921b2e579c18930c02855a064ee9bf3c8a4b9f7ffa4a2e9f",
   "tests/component-preview/tooltip-check.mjs": "e67e312960d1e618af5d9bcfc7ba39bd2d454127b06eedd92c5d62c74a228d6f",
   "tests/component-preview/tsconfig.json": "b0573fd01234fb011d9859a11dee723f20ae48434ab623970b67c4d3c8bc1991",
-  "tests/component-preview/typography-check.mjs": "e49a4a7534d3bc3e46af4e48f8f2ac0483b516ab0f8db5739eb4210ea6a1585b",
+  "tests/component-preview/typography-check.mjs": "9fba833bed681f5684bb23337d39f307e8a2148306f8653c5c612280ded832d8",
   "tests/component-preview/vite.config.ts": "1ddede1a7d7c3cafa0351b68af38eea1d6ff5d54ef9de4f14fad827cc50321aa",
   "tests/component-primitives.test.tsx": "e1e4362c23e9b2d141b55d2f0825f31b8c7c7c64a9ce905ee0b5372eb5748d17",
   "tests/component-resizable-workspace.test.tsx": "5777b7605d8d52cee24df029586a60f8820537090b688188d3f9032325772d4f"
