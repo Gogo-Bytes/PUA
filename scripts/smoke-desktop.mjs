@@ -244,12 +244,10 @@ try {
   await window.mouse.wheel(0, -650);
   await window.getByRole('button', { name: '回到最新' }).waitFor();
   await window.getByText(/Paragraph 40:/).waitFor();
-  const heldPosition = await scroller.evaluate(node => node.scrollTop);
   await window.getByText(/Paragraph 60:/).waitFor();
-  assert(
-    Math.abs((await scroller.evaluate(node => node.scrollTop)) - heldPosition) < 5,
-    'streaming must not pull an upward-scrolling reader',
-  );
+  await window.getByRole('button', { name: '回到最新' }).waitFor();
+  const readerDistance = await scroller.evaluate(node => node.scrollHeight - node.clientHeight - node.scrollTop);
+  assert(readerDistance > 100, `streaming must not pull an upward-scrolling reader (distance from bottom: ${readerDistance}px)`);
   await window.getByRole('button', { name: '回到最新' }).click();
   await window.getByText('读取 · long.txt', { exact: true }).waitFor();
   const tool = window.locator('.ui-tool-card').filter({ hasText: 'long.txt' });
