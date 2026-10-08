@@ -41,7 +41,14 @@ for (const file of files) {
   const options = { ...(await prettier.resolveConfig(absolute)), filepath: absolute };
   if (await prettier.check(source, options)) continue;
   unformatted.push(file);
-  if (write) writeFileSync(absolute, await prettier.format(source, options));
+  if (write) {
+    let formatted = source;
+    for (let pass = 0; pass < 5 && !(await prettier.check(formatted, options)); pass++) {
+      formatted = await prettier.format(formatted, options);
+    }
+    if (!(await prettier.check(formatted, options))) throw new Error(`Formatter did not converge: ${file}`);
+    writeFileSync(absolute, formatted);
+  }
 }
 
 if (unformatted.length) {
