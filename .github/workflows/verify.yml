@@ -84,4 +84,12 @@ jobs:
         shell: bash
         run: |
           test -f 'release/win-unpacked/Pi Desktop.exe'
-          PI_DESKTOP_TEST_EXECUTABLE="$PWD/release/win-unpacked/Pi Desktop.exe" node scripts/smoke-desktop.mjs
+          executable="$(node -p 'require("node:path").resolve("release/win-unpacked/Pi Desktop.exe")')"
+          set +e
+          PI_DESKTOP_TEST_EXECUTABLE="$executable" node scripts/smoke-desktop.mjs > desktop-smoke.log 2>&1
+          status=$?
+          cat desktop-smoke.log
+          if [ "$status" -ne 0 ]; then
+            node -e 'const s=require("node:fs").readFileSync("desktop-smoke.log","utf8").replace(/\u001b\[[0-9;]*m/g,"");const detail=s.split(/\r?\n/).slice(-40).join("\n").slice(-3000);console.log("::error title=Windows desktop smoke failure::"+detail.replaceAll("%","%25").replaceAll("\r","%0D").replaceAll("\n","%0A"))'
+          fi
+          exit "$status"
