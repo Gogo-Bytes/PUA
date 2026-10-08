@@ -73,3 +73,15 @@ jobs:
           apps=(release/mac*/"Pi Desktop.app"/Contents/MacOS/"Pi Desktop")
           test "${#apps[@]}" -eq 1
           PI_DESKTOP_TEST_EXECUTABLE="$PWD/${apps[0]}" node scripts/smoke-desktop.mjs
+      - name: Smoke packaged Linux app
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          test -x release/linux-unpacked/pi-desktop
+          PI_DESKTOP_TEST_EXECUTABLE="$PWD/release/linux-unpacked/pi-desktop" xvfb-run -a node scripts/smoke-desktop.mjs
+      - name: Smoke packaged Windows app
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          test -f 'release/win-unpacked/Pi Desktop.exe'
+          PI_DESKTOP_TEST_EXECUTABLE="$PWD/release/win-unpacked/Pi Desktop.exe" node scripts/smoke-desktop.mjs
