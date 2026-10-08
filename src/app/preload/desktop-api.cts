@@ -8,7 +8,10 @@ const api: DesktopBridge = {
   chooseFile: () => ipcRenderer.invoke(invokeChannels.chooseFile),
   chooseAttachments: () => ipcRenderer.invoke(invokeChannels.chooseAttachments),
   removeChatAttachment: (id, attachmentId) => ipcRenderer.invoke(invokeChannels.removeChatAttachment, id, attachmentId),
-  chooseChatAttachments: (id, paths) => paths ? ipcRenderer.invoke(invokeChannels.chooseChatAttachments, id, paths) : ipcRenderer.invoke(invokeChannels.chooseChatAttachments, id),
+  chooseChatAttachments: (id, paths) =>
+    paths
+      ? ipcRenderer.invoke(invokeChannels.chooseChatAttachments, id, paths)
+      : ipcRenderer.invoke(invokeChannels.chooseChatAttachments, id),
   savePreferences: value => ipcRenderer.invoke(invokeChannels.savePreferences, value),
   inspectProjectResources: cwd => ipcRenderer.invoke(invokeChannels.inspectProjectResources, cwd),
   createSession: options => ipcRenderer.invoke(invokeChannels.createSession, options),
@@ -42,16 +45,22 @@ const api: DesktopBridge = {
   onSessionEvent: callback => {
     const listener = (_event: unknown, value: unknown) => callback(value);
     ipcRenderer.on(eventChannels.onSessionEvent, listener);
-    return () => { ipcRenderer.removeListener(eventChannels.onSessionEvent, listener); };
+    return () => {
+      ipcRenderer.removeListener(eventChannels.onSessionEvent, listener);
+    };
   },
   onBrowserViewState: callback => {
     const listener = (_event: unknown, value: unknown) => callback(value as BrowserViewState);
     ipcRenderer.on(eventChannels.onBrowserViewState, listener);
-    return () => { ipcRenderer.removeListener(eventChannels.onBrowserViewState, listener); };
+    return () => {
+      ipcRenderer.removeListener(eventChannels.onBrowserViewState, listener);
+    };
   },
   openExternal: url => ipcRenderer.invoke(invokeChannels.openExternal, url),
   openProject: id => ipcRenderer.invoke(invokeChannels.openProject, id),
   gitStatus: id => ipcRenderer.invoke(invokeChannels.gitStatus, id),
+  gitBranchComparison: id => ipcRenderer.invoke(invokeChannels.gitBranchComparison, id),
+  gitBranchFileDiff: (id, path) => ipcRenderer.invoke(invokeChannels.gitBranchFileDiff, id, path),
   gitBranches: id => ipcRenderer.invoke(invokeChannels.gitBranches, id),
   switchGitBranch: (id, branch) => ipcRenderer.invoke(invokeChannels.switchGitBranch, id, branch),
   createGitBranch: (id, branch) => ipcRenderer.invoke(invokeChannels.createGitBranch, id, branch),

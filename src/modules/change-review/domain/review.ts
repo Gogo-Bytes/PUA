@@ -22,6 +22,14 @@ export interface RepositoryWorktrees {
   readonly current: string;
   readonly worktrees: readonly RepositoryWorktree[];
 }
+/** Committed changes on HEAD since its common ancestor with the repository baseline. */
+export interface BranchComparison {
+  readonly root: string;
+  readonly current: string;
+  readonly baseline: string;
+  readonly files: readonly ReviewFile[];
+  readonly capturedAt: string;
+}
 export interface ReviewPreview {
   readonly text: string;
   readonly kind: 'diff' | 'untracked' | 'binary' | 'symlink';
@@ -37,19 +45,27 @@ export type AuthorizedPreview =
   | { readonly kind: 'tracked'; readonly root: string; readonly path: string; readonly originalPath?: string; readonly scope: ReviewScope };
 
 export class ReviewFailure extends Error {
-  constructor(readonly code: 'INVALID_SCOPE' | 'STATUS_CHANGED') { super(code); }
+  constructor(readonly code: 'INVALID_SCOPE' | 'STATUS_CHANGED') {
+    super(code);
+  }
 }
 export function reviewScope(scope: unknown): ReviewScope {
   if (scope !== 'worktree' && scope !== 'index') throw new ReviewFailure('INVALID_SCOPE');
   return scope;
 }
 export function reviewFilesForScope(files: readonly ReviewFile[], scope: ReviewScope): ReviewFile[] {
-  return files.filter(file => scope === 'index' ? ![' ', '?', '!'].includes(file.index) : file.index === '?' || file.worktree !== ' ');
+  return files.filter(file => (scope === 'index' ? ![' ', '?', '!'].includes(file.index) : file.index === '?' || file.worktree !== ' '));
 }
 export function authorizePreview(snapshot: RepositorySnapshot, path: string, scope: ReviewScope): AuthorizedPreview {
   const file = reviewFilesForScope(snapshot.files, scope).find(file => file.path === path);
   if (!file) throw new ReviewFailure('STATUS_CHANGED');
   return file.index === '?' && scope === 'worktree'
     ? { kind: 'untracked', root: snapshot.root, path: file.path }
-    : { kind: 'tracked', root: snapshot.root, path: file.path, scope, ...(file.originalPath !== undefined ? { originalPath: file.originalPath } : {}) };
+    : {
+        kind: 'tracked',
+        root: snapshot.root,
+        path: file.path,
+        scope,
+        ...(file.originalPath !== undefined ? { originalPath: file.originalPath } : {}),
+      };
 }

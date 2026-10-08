@@ -4,7 +4,9 @@
 
 ## 2026-10-08 当前验证
 
-当前代码门禁已包含保护集合、边界、ESLint、格式、生产与测试类型检查、Vitest、构建、IPC 和生命周期 smoke。`npm run verify` 在本机 macOS arm64 通过：90 个测试文件、2801 项测试；`npm run test:lifecycle:stress` 的 50 个清理场景、离线真实 Pi smoke、源应用桌面 smoke 和浏览器 smoke 也通过。隔离组件及工作台预览脚本分别通过；冻结的密度/排版浏览器脚本仍有与已批准样式不一致的旧断言，未改写保护清单。
+当前代码门禁已包含保护集合、边界、ESLint、格式、生产与测试类型检查、Vitest、构建、IPC 和生命周期 smoke。`npm run verify` 在本机 macOS arm64 通过：90 个测试文件、2801 项测试；`npm run test:lifecycle:stress` 的 50 个清理场景、离线真实 Pi smoke、源应用桌面 smoke 和浏览器 smoke 也通过。隔离组件及工作台预览脚本分别通过；已按用户批准的新 UI 更新密度/排版浏览器断言和精确保护 hash，两份脚本现均通过。
+
+当前分支比较使用与参照分支的共同祖先，只显示已提交变更；工作区与暂存区仍独立。本机 `npm run verify` 通过（91 个测试文件、2810 项测试，含构建、IPC 与生命周期 smoke）；实仓库临时 fixture 验证了缺少 `origin/HEAD` 时唯一 `main` 参照、换行文件名、未提交文件排除与清单成员准入。隔离工作台及生产 CSP 预览均通过，验证了基线标签和 patch 展示。
 
 提交 `c9f054c` 的 [三平台代码门禁](https://github.com/Gogo-Bytes/PUA/actions/runs/37732712968) 全部通过。提交 `b0a7226` 的 [三平台安装包门禁](https://github.com/Gogo-Bytes/PUA/actions/runs/37734339796) 全部通过：macOS 生成未签名 DMG/ZIP，并以打包 `.app` 运行离线桌面 smoke；Linux 生成 AppImage/DEB；Windows 生成 NSIS 安装包。提交 `8730ea7` 的[打包应用 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37735041287) 中，macOS 与 Linux 烟测通过；Windows 的代码门禁和 NSIS 打包通过，启动烟测失败。提交 `8a83b64` 修正 Windows 可执行路径传递并增加诊断；[下一次 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37736209625) 表明打包应用已运行到终端，失败原因为烟测在首个 PTY ready 片段到达时就读取完整参数回显。提交 `09d25cf` 改为等待完整回显，本机桌面 smoke 已通过；[最新 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37737356235) 三平台全部通过，包括各平台实际打包应用的离线桌面 smoke。以上不等于安装、升级、卸载、签名、公证、真实 Pi/OAuth 或付费模型的跨平台验收。
 

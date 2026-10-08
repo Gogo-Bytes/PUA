@@ -10,6 +10,13 @@ export interface GitStatus {
   files: ChangedFile[];
   capturedAt: string;
 }
+export interface GitBranchComparison {
+  root: string;
+  current: string;
+  baseline: string;
+  files: ChangedFile[];
+  capturedAt: string;
+}
 export interface GitBranches {
   current: string;
   branches: string[];

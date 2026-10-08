@@ -14,19 +14,43 @@ function boundedText(value: unknown, max: number, label: string): string {
 }
 
 export function validSize(cols: unknown, rows: unknown): cols is number {
-  return Number.isInteger(cols) && Number.isInteger(rows) && Number(cols) >= 2 && Number(cols) <= 1000 && Number(rows) >= 2 && Number(rows) <= 1000;
+  return (
+    Number.isInteger(cols) &&
+    Number.isInteger(rows) &&
+    Number(cols) >= 2 &&
+    Number(cols) <= 1000 &&
+    Number(rows) >= 2 &&
+    Number(rows) <= 1000
+  );
 }
 
 export function validatePreferences(value: unknown): Preferences {
   if (!value || typeof value !== 'object') throw new Error('无效设置');
   const v = value as Record<string, unknown>;
-  if (typeof v.piPath !== 'string' || typeof v.nodePath !== 'string' ||
-      !Array.isArray(v.args) || !Array.from(v.args).every(arg => typeof arg === 'string' && !arg.includes('\0')) ||
-      typeof v.fontSize !== 'number' || !Number.isFinite(v.fontSize) || v.fontSize < 10 || v.fontSize > 28 ||
-      !Array.isArray(v.recentProjects) || !Array.from(v.recentProjects).every(p => typeof p === 'string') ||
-      v.piPath.includes('\0') || v.nodePath.includes('\0')) throw new Error('设置格式错误：字体范围为 10–28，参数应为 JSON 字符串数组。');
+  if (
+    typeof v.piPath !== 'string' ||
+    typeof v.nodePath !== 'string' ||
+    !Array.isArray(v.args) ||
+    !Array.from(v.args).every(arg => typeof arg === 'string' && !arg.includes('\0')) ||
+    typeof v.fontSize !== 'number' ||
+    !Number.isFinite(v.fontSize) ||
+    v.fontSize < 10 ||
+    v.fontSize > 28 ||
+    !Array.isArray(v.recentProjects) ||
+    !Array.from(v.recentProjects).every(p => typeof p === 'string') ||
+    v.piPath.includes('\0') ||
+    v.nodePath.includes('\0')
+  )
+    throw new Error('设置格式错误：字体范围为 10–28，参数应为 JSON 字符串数组。');
   if (v.theme !== undefined && !['system', 'light', 'dark'].includes(v.theme as string)) throw new Error('无效外观主题');
-  return { theme: (v.theme ?? 'system') as Preferences['theme'], piPath: v.piPath, nodePath: v.nodePath, args: [...v.args], fontSize: v.fontSize, recentProjects: [...new Set(v.recentProjects as string[])].slice(0, 20) };
+  return {
+    theme: (v.theme ?? 'system') as Preferences['theme'],
+    piPath: v.piPath,
+    nodePath: v.nodePath,
+    args: [...v.args],
+    fontSize: v.fontSize,
+    recentProjects: [...new Set(v.recentProjects as string[])].slice(0, 20),
+  };
 }
 
 export function validateCreateSessionOptions(value: unknown): CreateSessionOptions {
@@ -37,22 +61,44 @@ export function validateCreateSessionOptions(value: unknown): CreateSessionOptio
   if (kind !== 'chat' && kind !== 'terminal') throw new Error('无效会话类型');
   if (startMode !== 'new' && startMode !== 'continue' && startMode !== 'resume') throw new Error('无效会话模式');
   if (projectTrust !== 'default' && projectTrust !== 'approve' && projectTrust !== 'decline') throw new Error('无效信任选项');
-  if (kind === 'terminal' ? !validSize(cols, rows) :
-      (cols !== undefined && !validSize(cols, 2)) || (rows !== undefined && !validSize(2, rows))) throw new Error('无效终端尺寸');
+  if (
+    kind === 'terminal'
+      ? !validSize(cols, rows)
+      : (cols !== undefined && !validSize(cols, 2)) || (rows !== undefined && !validSize(2, rows))
+  )
+    throw new Error('无效终端尺寸');
   const initialModel = v.initialModel;
-  if (initialModel !== undefined && (kind !== 'chat' || startMode !== 'new' || !initialModel || typeof initialModel !== 'object' || Array.isArray(initialModel))) throw new Error('无效初始模型');
+  if (
+    initialModel !== undefined &&
+    (kind !== 'chat' || startMode !== 'new' || !initialModel || typeof initialModel !== 'object' || Array.isArray(initialModel))
+  )
+    throw new Error('无效初始模型');
   let model: CreateSessionOptions['initialModel'];
   if (initialModel !== undefined) {
     const selected = initialModel as Record<string, unknown>;
     const provider = boundedText(selected.provider, 128, '模型提供方');
     const id = boundedText(selected.id, 256, '模型 ID');
-    if (!/^[\w.-]+$/.test(provider) || provider.startsWith('-') || !id || /[\s\0]/.test(id) || id.startsWith('-')) throw new Error('无效初始模型');
+    if (!/^[\w.-]+$/.test(provider) || provider.startsWith('-') || !id || /[\s\0]/.test(id) || id.startsWith('-'))
+      throw new Error('无效初始模型');
     model = { provider, id };
   }
   const thinking = v.initialThinkingLevel;
   const thinkingLevels = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
-  if (thinking !== undefined && (kind !== 'chat' || startMode !== 'new' || !thinkingLevels.includes(thinking as typeof thinkingLevels[number]))) throw new Error('无效初始思考程度');
-  return { cwd, kind, startMode, projectTrust, ...(model ? { initialModel: model } : {}), ...(thinking !== undefined ? { initialThinkingLevel: thinking as CreateSessionOptions['initialThinkingLevel'] } : {}), cols: cols as number | undefined, rows: rows as number | undefined };
+  if (
+    thinking !== undefined &&
+    (kind !== 'chat' || startMode !== 'new' || !thinkingLevels.includes(thinking as (typeof thinkingLevels)[number]))
+  )
+    throw new Error('无效初始思考程度');
+  return {
+    cwd,
+    kind,
+    startMode,
+    projectTrust,
+    ...(model ? { initialModel: model } : {}),
+    ...(thinking !== undefined ? { initialThinkingLevel: thinking as CreateSessionOptions['initialThinkingLevel'] } : {}),
+    cols: cols as number | undefined,
+    rows: rows as number | undefined,
+  };
 }
 
 export function validateDiffScope(scope: unknown): DiffScope {
@@ -89,19 +135,29 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   closeSession: idArgs,
   restoreArchivedSession: idArgs,
   deleteArchivedSession: idArgs,
-  setSessionPinned: tuple<'setSessionPinned'>(2, (id, pinned) => [text(id), typeof pinned === 'boolean' ? pinned : (() => { throw new Error('无效置顶状态'); })()]),
+  setSessionPinned: tuple<'setSessionPinned'>(2, (id, pinned) => [
+    text(id),
+    typeof pinned === 'boolean'
+      ? pinned
+      : (() => {
+          throw new Error('无效置顶状态');
+        })(),
+  ]),
   searchHistory: tuple<'searchHistory'>(1, value => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('无效历史搜索参数');
     const input = value as Record<string, unknown>;
     const query = boundedText(input.query, 200, '搜索词').trim();
     if (!query) throw new Error('搜索词不能为空');
     const limit = input.limit === undefined ? undefined : input.limit;
-    if (limit !== undefined && (!Number.isSafeInteger(limit) || Number(limit) < 1 || Number(limit) > 50)) throw new Error('无效搜索结果数量');
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || Number(limit) < 1 || Number(limit) > 50))
+      throw new Error('无效搜索结果数量');
     return [{ query, limit: limit as number | undefined }];
   }),
   stopChat: idArgs,
   openProject: idArgs,
   gitStatus: idArgs,
+  gitBranchComparison: idArgs,
+  gitBranchFileDiff: tuple<'gitBranchFileDiff'>(2, (id, filename) => [text(id), boundedText(filename, 4096, '文件路径')]),
   gitBranches: idArgs,
   switchGitBranch: tuple<'switchGitBranch'>(2, (id, branch) => [text(id), boundedText(branch, 255, '分支名称')]),
   createGitBranch: tuple<'createGitBranch'>(2, (id, branch) => [text(id), boundedText(branch, 255, '分支名称')]),
@@ -129,14 +185,45 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
   getChatAutoSettings: idArgs,
   setChatModel: tuple<'setChatModel'>(3, (id, provider, modelId) => [text(id), text(provider), text(modelId)]),
   setChatThinkingLevel: tuple<'setChatThinkingLevel'>(2, (id, level) => [text(id), text(level)]),
-  compactChatSession: tuple<'compactChatSession'>(2, (id, customInstructions) => [text(id), customInstructions === undefined ? undefined : boundedText(customInstructions, 8 * 1024 * 1024, '压缩说明')]),
-  setChatAutoCompaction: tuple<'setChatAutoCompaction'>(2, (id, enabled) => [text(id), typeof enabled === 'boolean' ? enabled : (() => { throw new Error('无效自动压缩设置'); })()]),
-  setChatAutoRetry: tuple<'setChatAutoRetry'>(2, (id, enabled) => [text(id), typeof enabled === 'boolean' ? enabled : (() => { throw new Error('无效自动重试设置'); })()]),
-  setChatSteeringMode: tuple<'setChatSteeringMode'>(2, (id, mode) => [text(id), mode === 'all' || mode === 'one-at-a-time' ? mode : (() => { throw new Error('无效引导队列策略'); })()]),
-  setChatFollowUpMode: tuple<'setChatFollowUpMode'>(2, (id, mode) => [text(id), mode === 'all' || mode === 'one-at-a-time' ? mode : (() => { throw new Error('无效后续队列策略'); })()]),
+  compactChatSession: tuple<'compactChatSession'>(2, (id, customInstructions) => [
+    text(id),
+    customInstructions === undefined ? undefined : boundedText(customInstructions, 8 * 1024 * 1024, '压缩说明'),
+  ]),
+  setChatAutoCompaction: tuple<'setChatAutoCompaction'>(2, (id, enabled) => [
+    text(id),
+    typeof enabled === 'boolean'
+      ? enabled
+      : (() => {
+          throw new Error('无效自动压缩设置');
+        })(),
+  ]),
+  setChatAutoRetry: tuple<'setChatAutoRetry'>(2, (id, enabled) => [
+    text(id),
+    typeof enabled === 'boolean'
+      ? enabled
+      : (() => {
+          throw new Error('无效自动重试设置');
+        })(),
+  ]),
+  setChatSteeringMode: tuple<'setChatSteeringMode'>(2, (id, mode) => [
+    text(id),
+    mode === 'all' || mode === 'one-at-a-time'
+      ? mode
+      : (() => {
+          throw new Error('无效引导队列策略');
+        })(),
+  ]),
+  setChatFollowUpMode: tuple<'setChatFollowUpMode'>(2, (id, mode) => [
+    text(id),
+    mode === 'all' || mode === 'one-at-a-time'
+      ? mode
+      : (() => {
+          throw new Error('无效后续队列策略');
+        })(),
+  ]),
   respondToExtensionUI: tuple<'respondToExtensionUI'>(2, (id, response) => [text(id), extensionResponse(response)]),
   sendChatMessage: tuple<'sendChatMessage'>(2, (id, input) => {
-    const value = input && typeof input === 'object' ? input as Record<string, unknown> : {};
+    const value = input && typeof input === 'object' ? (input as Record<string, unknown>) : {};
     const message = boundedText(value.text ?? '', 8 * 1024 * 1024, '消息');
     if (!Array.isArray(value.attachmentIds) || value.attachmentIds.length > 20) throw new Error('无效附件');
     const attachmentIds = Array.from(value.attachmentIds).map(item => boundedText(item, 128, '附件 id'));
@@ -163,21 +250,36 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
     return [url.href];
   }),
   fileDiff: tuple<'fileDiff'>(3, (id, filename, scope) => {
-    const sessionId = text(id); const file = text(filename);
+    const sessionId = text(id);
+    const file = text(filename);
     return [sessionId, file, validateDiffScope(scope)];
   }),
   fileDiffContents: tuple<'fileDiffContents'>(3, (id, filename, scope) => {
-    const sessionId = text(id); const file = text(filename);
+    const sessionId = text(id);
+    const file = text(filename);
     return [sessionId, file, validateDiffScope(scope)];
   }),
   listSessionFiles: tuple<'listSessionFiles'>(2, (id, relativePath) => {
     const path = boundedText(relativePath, 4096, '目录路径');
-    if (path.startsWith('/') || path.includes('\\') || /^[a-zA-Z]:/.test(path) || (path !== '' && path.split('/').some(part => !part || part === '..' || part === '.'))) throw new Error('无效目录路径');
+    if (
+      path.startsWith('/') ||
+      path.includes('\\') ||
+      /^[a-zA-Z]:/.test(path) ||
+      (path !== '' && path.split('/').some(part => !part || part === '..' || part === '.'))
+    )
+      throw new Error('无效目录路径');
     return [text(id), path];
   }),
   readSessionFile: tuple<'readSessionFile'>(2, (id, relativePath) => {
     const path = boundedText(relativePath, 4096, '文件路径');
-    if (!path || path.startsWith('/') || path.includes('\\') || /^[a-zA-Z]:/.test(path) || path.split('/').some(part => !part || part === '..' || part === '.')) throw new Error('无效文件路径');
+    if (
+      !path ||
+      path.startsWith('/') ||
+      path.includes('\\') ||
+      /^[a-zA-Z]:/.test(path) ||
+      path.split('/').some(part => !part || part === '..' || part === '.')
+    )
+      throw new Error('无效文件路径');
     return [text(id), path];
   }),
   createBrowserView: tuple<'createBrowserView'>(0, () => []),
@@ -185,7 +287,12 @@ export const requestParsers: { [K in RequestMethod]: (args: unknown[]) => Reques
     if (bounds === null) return [text(id), null];
     if (!bounds || typeof bounds !== 'object' || Array.isArray(bounds)) throw new Error('无效浏览器视图位置');
     const value = bounds as Record<string, unknown>;
-    if (!['x', 'y', 'width', 'height'].every(key => Number.isSafeInteger(value[key]) && Number(value[key]) >= 0 && Number(value[key]) <= 16384)) throw new Error('无效浏览器视图位置');
+    if (
+      !['x', 'y', 'width', 'height'].every(
+        key => Number.isSafeInteger(value[key]) && Number(value[key]) >= 0 && Number(value[key]) <= 16384,
+      )
+    )
+      throw new Error('无效浏览器视图位置');
     return [text(id), { x: value.x as number, y: value.y as number, width: value.width as number, height: value.height as number }];
   }),
   navigateBrowser: tuple<'navigateBrowser'>(2, (id, url) => [text(id), boundedText(url, 4096, '网址')]),

@@ -8,14 +8,20 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
-  const errors = [], external = [];
+  const errors = [],
+    external = [];
   page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  page.on('request', request => { if (/^https?:/.test(request.url()) && !request.url().startsWith(`${baseURL}/`)) external.push(request.url()); });
+  page.on('console', message => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  page.on('request', request => {
+    if (/^https?:/.test(request.url()) && !request.url().startsWith(`${baseURL}/`)) external.push(request.url());
+  });
   await page.goto(`${baseURL}/workspace-preview.html`);
   await page.getByRole('navigation', { name: '项目' }).getByRole('button', { name: 'PUA', exact: true }).first().click();
   const input = page.getByRole('textbox', { name: '发送消息', exact: true });
-  await input.fill('隔离面板预览'); await input.press('Enter');
+  await input.fill('隔离面板预览');
+  await input.press('Enter');
   const mainSessionId = await page.locator('.session-stage .chat-pane.active').getAttribute('data-session-id');
   const panel = page.getByRole('complementary', { name: '右侧面板', exact: true });
   await panel.getByRole('button', { name: 'Review', exact: true }).waitFor();
@@ -33,14 +39,20 @@ try {
   assert.equal(await panel.getByText('分支比较未接入', { exact: true }).count(), 0);
   assert.equal(await panel.locator('.review-toolbar').count(), 1);
   assert.equal(await panel.locator('.review-branch').count(), 1);
+  await panel.getByRole('button', { name: '比较当前分支' }).click();
+  await panel.getByText('origin/main', { exact: true }).waitFor();
+  await panel.getByText('共同祖先 → 当前分支 HEAD', { exact: true }).waitFor();
+  await panel.getByRole('button', { name: '查看工作区变更' }).click();
   await page.screenshot({ path: `${output}/review-light.png` });
   await panel.getByRole('button', { name: '打开右侧标签页' }).click();
   await page.getByRole('menuitem', { name: 'Browser', exact: true }).click();
   const address = panel.getByRole('textbox', { name: '浏览器地址' });
-  await address.fill('https://preview.example'); await address.press('Enter');
+  await address.fill('https://preview.example');
+  await address.press('Enter');
   await page.waitForFunction(() => document.querySelector('[aria-label="浏览器地址"]')?.value === 'https://preview.example/');
   await panel.getByRole('tab', { name: 'Browser', exact: true }).focus();
-  await page.keyboard.press('ArrowLeft'); await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('Enter');
   assert.equal(await panel.getByRole('tab', { name: 'Review', exact: true }).getAttribute('aria-selected'), 'true');
   await panel.locator('diffs-container pre').first().waitFor();
   await panel.getByRole('button', { name: '关闭 Browser 标签页' }).click();
@@ -81,11 +93,14 @@ try {
   await popup.waitFor();
   await popup.getByRole('button', { name: /test-only.*本地分支/ }).click();
   const blockedBranch = popup.getByRole('button', { name: /^main/ });
-  await blockedBranch.waitFor(); assert.equal(await blockedBranch.isDisabled(), true);
+  await blockedBranch.waitFor();
+  assert.equal(await blockedBranch.isDisabled(), true);
   assert.match(await popup.innerText(), /工作区有未提交改动/);
-  await page.keyboard.press('Escape'); await popup.waitFor({ state: 'hidden' });
+  await page.keyboard.press('Escape');
+  await popup.waitFor({ state: 'hidden' });
   await page.evaluate(() => window.__workspacePreviewSetGitClean?.(true));
-  await page.getByRole('button', { name: '环境与任务信息', exact: true }).click(); await popup.waitFor();
+  await page.getByRole('button', { name: '环境与任务信息', exact: true }).click();
+  await popup.waitFor();
   await popup.getByRole('button', { name: /test-only.*本地分支/ }).click();
   await popup.getByRole('button', { name: /^main/ }).click();
   await popup.getByRole('button', { name: /main.*本地分支/ }).waitFor();
@@ -109,6 +124,9 @@ try {
   await page.getByRole('separator', { name: '调整右侧面板宽度' }).waitFor({ state: 'hidden' });
   assert(await page.getByRole('button', { name: '收起右侧面板', exact: true }).evaluate(node => node === document.activeElement));
   await page.screenshot({ path: `${output}/narrow.png` });
-  assert.deepEqual(errors, []); assert.deepEqual(external, []);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(external, []);
   console.log(`PASS isolated panels, popover, multi-tab review, lazy diff, light/dark, no external requests: ${output}`);
-} finally { await browser.close(); }
+} finally {
+  await browser.close();
+}

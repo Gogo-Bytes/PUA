@@ -1,8 +1,15 @@
 import type { DesktopResult, WireValue } from './desktop-result.js';
-import type { DiffScope, FileDiff, FileDiffContents, GitBranches, GitStatus, GitWorktrees } from './change-review.js';
+import type { DiffScope, FileDiff, FileDiffContents, GitBranchComparison, GitBranches, GitStatus, GitWorktrees } from './change-review.js';
 import type {
-  ChatAttachment, ChatCommand, ChatDelivery, ExtensionUIResponse, ProjectTrust, SessionActivity,
-  SessionEvent, SessionKind, SessionProcessStatus,
+  ChatAttachment,
+  ChatCommand,
+  ChatDelivery,
+  ExtensionUIResponse,
+  ProjectTrust,
+  SessionActivity,
+  SessionEvent,
+  SessionKind,
+  SessionProcessStatus,
 } from './conversation.js';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -65,7 +72,12 @@ export interface HistorySearchResult {
 }
 
 export type ChatQueueMode = 'all' | 'one-at-a-time';
-export interface ChatAutoSettings { autoCompaction: boolean; autoRetry: boolean; steeringMode?: ChatQueueMode; followUpMode?: ChatQueueMode }
+export interface ChatAutoSettings {
+  autoCompaction: boolean;
+  autoRetry: boolean;
+  steeringMode?: ChatQueueMode;
+  followUpMode?: ChatQueueMode;
+}
 
 export interface CreateSessionOptions {
   cwd: string;
@@ -82,12 +94,42 @@ export interface CreateSessionOptions {
 
 export type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
-export interface ProjectResourceInfo { hasResources: boolean; paths: string[]; skills?: ChatCommand[]; prompts?: ChatCommand[] }
-export interface SessionFileEntry { name: string; path: string; kind: 'file' | 'directory' }
-export interface SessionFileListing { path: string; entries: SessionFileEntry[]; truncated: boolean }
-export interface SessionFilePreview { path: string; text: string; truncated: boolean }
-export interface BrowserViewBounds { x: number; y: number; width: number; height: number }
-export interface BrowserViewState { id: string; url: string; title: string; canGoBack: boolean; canGoForward: boolean; loading: boolean; error?: string }
+export interface ProjectResourceInfo {
+  hasResources: boolean;
+  paths: string[];
+  skills?: ChatCommand[];
+  prompts?: ChatCommand[];
+}
+export interface SessionFileEntry {
+  name: string;
+  path: string;
+  kind: 'file' | 'directory';
+}
+export interface SessionFileListing {
+  path: string;
+  entries: SessionFileEntry[];
+  truncated: boolean;
+}
+export interface SessionFilePreview {
+  path: string;
+  text: string;
+  truncated: boolean;
+}
+export interface BrowserViewBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+export interface BrowserViewState {
+  id: string;
+  url: string;
+  title: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  loading: boolean;
+  error?: string;
+}
 
 export interface DesktopAPI {
   bootstrap(): Promise<Bootstrap>;
@@ -132,6 +174,8 @@ export interface DesktopAPI {
   openExternal(url: string): Promise<void>;
   openProject(id: string): Promise<void>;
   gitStatus(id: string): Promise<GitStatus>;
+  gitBranchComparison(id: string): Promise<GitBranchComparison>;
+  gitBranchFileDiff(id: string, path: string): Promise<FileDiff>;
   gitBranches(id: string): Promise<GitBranches>;
   switchGitBranch(id: string, branch: string): Promise<GitStatus>;
   createGitBranch(id: string, branch: string): Promise<GitStatus>;
@@ -168,5 +212,7 @@ export type DesktopBridge = {
 };
 
 declare global {
-  interface Window { desktop?: DesktopBridge }
+  interface Window {
+    desktop?: DesktopBridge;
+  }
 }

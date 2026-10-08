@@ -1,50 +1,140 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ChangeReviewApplication, ReviewFailure, type ReviewRepositoryPort, type RepositorySnapshot, type ReviewScope } from '../../../src/modules/change-review/index';
+import {
+  ChangeReviewApplication,
+  ReviewFailure,
+  type ReviewRepositoryPort,
+  type RepositorySnapshot,
+  type ReviewScope,
+} from '../../../src/modules/change-review/index';
 
 function harness() {
-  const snapshot: RepositorySnapshot = { root: '/repo', branch: 'main', capturedAt: 'observed', files: [{ path: 'new\nname', originalPath: 'old\nname', index: 'R', worktree: ' ' }, { path: '-new', index: '?', worktree: '?' }] };
-  const port = { captureSnapshot: vi.fn<ReviewRepositoryPort['captureSnapshot']>().mockResolvedValue(snapshot), readAuthorizedPreview: vi.fn<ReviewRepositoryPort['readAuthorizedPreview']>().mockResolvedValue({ text: 'preview', kind: 'diff', truncated: false }), readAuthorizedContents: vi.fn<ReviewRepositoryPort['readAuthorizedContents']>().mockResolvedValue({ oldFile: { name: 'old', contents: 'before' }, newFile: { name: 'new', contents: 'after' } }), listBranches: vi.fn<ReviewRepositoryPort['listBranches']>().mockResolvedValue(['main']), switchBranch: vi.fn<ReviewRepositoryPort['switchBranch']>(), createBranch: vi.fn<ReviewRepositoryPort['createBranch']>(), deleteBranch: vi.fn<ReviewRepositoryPort['deleteBranch']>(), listWorktrees: vi.fn<ReviewRepositoryPort['listWorktrees']>().mockResolvedValue({ current: '/repo', worktrees: [{ path: '/repo', head: 'abc', branch: 'main', current: true }] }), createWorktree: vi.fn<ReviewRepositoryPort['createWorktree']>().mockResolvedValue({ current: '/repo', worktrees: [{ path: '/repo', head: 'abc', branch: 'main', current: true }] }), deleteWorktree: vi.fn<ReviewRepositoryPort['deleteWorktree']>().mockResolvedValue({ current: '/repo', worktrees: [{ path: '/repo', head: 'abc', branch: 'main', current: true }] }), commitChanges: vi.fn<ReviewRepositoryPort['commitChanges']>().mockResolvedValue({ ...snapshot, files: [] }), pushChanges: vi.fn<ReviewRepositoryPort['pushChanges']>().mockResolvedValue({ ...snapshot, files: [] }) };
+  const snapshot: RepositorySnapshot = {
+    root: '/repo',
+    branch: 'main',
+    capturedAt: 'observed',
+    files: [
+      { path: 'new\nname', originalPath: 'old\nname', index: 'R', worktree: ' ' },
+      { path: '-new', index: '?', worktree: '?' },
+    ],
+  };
+  const port = {
+    compareBranch: vi.fn<ReviewRepositoryPort['compareBranch']>().mockResolvedValue({
+      root: '/repo',
+      current: 'feature',
+      baseline: 'main',
+      capturedAt: 'observed',
+      files: [{ path: 'branch.ts', index: 'M', worktree: ' ' }],
+    }),
+    readBranchPreview: vi
+      .fn<ReviewRepositoryPort['readBranchPreview']>()
+      .mockResolvedValue({ text: 'branch patch', kind: 'diff', truncated: false }),
+    captureSnapshot: vi.fn<ReviewRepositoryPort['captureSnapshot']>().mockResolvedValue(snapshot),
+    readAuthorizedPreview: vi
+      .fn<ReviewRepositoryPort['readAuthorizedPreview']>()
+      .mockResolvedValue({ text: 'preview', kind: 'diff', truncated: false }),
+    readAuthorizedContents: vi
+      .fn<ReviewRepositoryPort['readAuthorizedContents']>()
+      .mockResolvedValue({ oldFile: { name: 'old', contents: 'before' }, newFile: { name: 'new', contents: 'after' } }),
+    listBranches: vi.fn<ReviewRepositoryPort['listBranches']>().mockResolvedValue(['main']),
+    switchBranch: vi.fn<ReviewRepositoryPort['switchBranch']>(),
+    createBranch: vi.fn<ReviewRepositoryPort['createBranch']>(),
+    deleteBranch: vi.fn<ReviewRepositoryPort['deleteBranch']>(),
+    listWorktrees: vi
+      .fn<ReviewRepositoryPort['listWorktrees']>()
+      .mockResolvedValue({ current: '/repo', worktrees: [{ path: '/repo', head: 'abc', branch: 'main', current: true }] }),
+    createWorktree: vi
+      .fn<ReviewRepositoryPort['createWorktree']>()
+      .mockResolvedValue({ current: '/repo', worktrees: [{ path: '/repo', head: 'abc', branch: 'main', current: true }] }),
+    deleteWorktree: vi
+      .fn<ReviewRepositoryPort['deleteWorktree']>()
+      .mockResolvedValue({ current: '/repo', worktrees: [{ path: '/repo', head: 'abc', branch: 'main', current: true }] }),
+    commitChanges: vi.fn<ReviewRepositoryPort['commitChanges']>().mockResolvedValue({ ...snapshot, files: [] }),
+    pushChanges: vi.fn<ReviewRepositoryPort['pushChanges']>().mockResolvedValue({ ...snapshot, files: [] }),
+  };
   return { snapshot, port, review: new ChangeReviewApplication(port) };
 }
 describe('ChangeReviewApplication fresh membership authorization', () => {
+  it('authorizes branch previews from a fresh committed comparison', async () => {
+    const h = harness();
+    await expect(h.review.branchPreview('/cwd', 'branch.ts')).resolves.toMatchObject({ text: 'branch patch' });
+    expect(h.port.readBranchPreview).toHaveBeenCalledExactlyOnceWith('/cwd', 'branch.ts');
+    await expect(h.review.branchPreview('/cwd', 'uncommitted.ts')).rejects.toThrow('分支文件状态已变化');
+    expect(h.port.readBranchPreview).toHaveBeenCalledOnce();
+  });
   it('rejects invalid scope before any port effect with a stable domain failure', async () => {
-    const h = harness(); await expect(h.review.preview({ cwd: '/cwd', path: '-new', scope: 'bad' as ReviewScope })).rejects.toEqual(new ReviewFailure('INVALID_SCOPE'));
-    expect(h.port.captureSnapshot).not.toHaveBeenCalled(); expect(h.port.readAuthorizedPreview).not.toHaveBeenCalled();
+    const h = harness();
+    await expect(h.review.preview({ cwd: '/cwd', path: '-new', scope: 'bad' as ReviewScope })).rejects.toEqual(
+      new ReviewFailure('INVALID_SCOPE'),
+    );
+    expect(h.port.captureSnapshot).not.toHaveBeenCalled();
+    expect(h.port.readAuthorizedPreview).not.toHaveBeenCalled();
   });
   it('passes observations through, without adding a cache or a clock', async () => {
-    const h = harness(); expect(await h.review.snapshot('/cwd')).toBe(h.snapshot); expect(h.port.captureSnapshot).toHaveBeenCalledExactlyOnceWith('/cwd');
+    const h = harness();
+    expect(await h.review.snapshot('/cwd')).toBe(h.snapshot);
+    expect(h.port.captureSnapshot).toHaveBeenCalledExactlyOnceWith('/cwd');
   });
   it('uses destination membership and passes rename source only for the authorized tracked diff', async () => {
-    const h = harness(); await h.review.preview({ cwd: '/cwd', path: 'new\nname', scope: 'index' });
-    expect(h.port.readAuthorizedPreview).toHaveBeenCalledExactlyOnceWith({ kind: 'tracked', root: '/repo', path: 'new\nname', originalPath: 'old\nname', scope: 'index' });
+    const h = harness();
+    await h.review.preview({ cwd: '/cwd', path: 'new\nname', scope: 'index' });
+    expect(h.port.readAuthorizedPreview).toHaveBeenCalledExactlyOnceWith({
+      kind: 'tracked',
+      root: '/repo',
+      path: 'new\nname',
+      originalPath: 'old\nname',
+      scope: 'index',
+    });
   });
   it('authorizes both-side content through the same fresh snapshot membership check', async () => {
     const h = harness();
-    await expect(h.review.contents({ cwd: '/cwd', path: 'new\nname', scope: 'index' })).resolves.toEqual({ oldFile: { name: 'old', contents: 'before' }, newFile: { name: 'new', contents: 'after' } });
-    expect(h.port.readAuthorizedContents).toHaveBeenCalledExactlyOnceWith({ kind: 'tracked', root: '/repo', path: 'new\nname', originalPath: 'old\nname', scope: 'index' });
+    await expect(h.review.contents({ cwd: '/cwd', path: 'new\nname', scope: 'index' })).resolves.toEqual({
+      oldFile: { name: 'old', contents: 'before' },
+      newFile: { name: 'new', contents: 'after' },
+    });
+    expect(h.port.readAuthorizedContents).toHaveBeenCalledExactlyOnceWith({
+      kind: 'tracked',
+      root: '/repo',
+      path: 'new\nname',
+      originalPath: 'old\nname',
+      scope: 'index',
+    });
   });
   it.each(['old\nname', '../outside', 'missing'])('rejects absent destination %s before reading', async path => {
-    const h = harness(); await expect(h.review.preview({ cwd: '/cwd', path, scope: 'index' })).rejects.toMatchObject({ code: 'STATUS_CHANGED' }); expect(h.port.readAuthorizedPreview).not.toHaveBeenCalled();
+    const h = harness();
+    await expect(h.review.preview({ cwd: '/cwd', path, scope: 'index' })).rejects.toMatchObject({ code: 'STATUS_CHANGED' });
+    expect(h.port.readAuthorizedPreview).not.toHaveBeenCalled();
   });
   it('scope changes and lost membership are checked against each latest snapshot', async () => {
-    const h = harness(); await h.review.preview({ cwd: '/cwd', path: '-new', scope: 'worktree' });
+    const h = harness();
+    await h.review.preview({ cwd: '/cwd', path: '-new', scope: 'worktree' });
     expect(h.port.readAuthorizedPreview).toHaveBeenCalledExactlyOnceWith({ kind: 'untracked', root: '/repo', path: '-new' });
     await expect(h.review.preview({ cwd: '/cwd', path: '-new', scope: 'index' })).rejects.toMatchObject({ code: 'STATUS_CHANGED' });
     h.port.captureSnapshot.mockResolvedValue({ ...h.snapshot, files: [] });
     await expect(h.review.preview({ cwd: '/cwd', path: '-new', scope: 'worktree' })).rejects.toMatchObject({ code: 'STATUS_CHANGED' });
-    expect(h.port.captureSnapshot).toHaveBeenCalledTimes(3); expect(h.port.readAuthorizedPreview).toHaveBeenCalledOnce();
+    expect(h.port.captureSnapshot).toHaveBeenCalledTimes(3);
+    expect(h.port.readAuthorizedPreview).toHaveBeenCalledOnce();
   });
   it('awaits snapshot before read, propagates port failures without retry', async () => {
-    const h = harness(); let resolve!: (value: RepositorySnapshot) => void;
-    h.port.captureSnapshot.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    const h = harness();
+    let resolve!: (value: RepositorySnapshot) => void;
+    h.port.captureSnapshot.mockReturnValueOnce(
+      new Promise(done => {
+        resolve = done;
+      }),
+    );
     const input = { cwd: '/cwd', path: '-new', scope: 'worktree' as const };
-    const pending = h.review.preview(input); expect(h.port.readAuthorizedPreview).not.toHaveBeenCalled();
-    input.path = 'caller-changed'; resolve(h.snapshot); await pending;
+    const pending = h.review.preview(input);
+    expect(h.port.readAuthorizedPreview).not.toHaveBeenCalled();
+    input.path = 'caller-changed';
+    resolve(h.snapshot);
+    await pending;
     expect(h.port.readAuthorizedPreview).toHaveBeenCalledExactlyOnceWith({ kind: 'untracked', root: '/repo', path: '-new' });
-    const error = new Error('IO failed'); h.port.captureSnapshot.mockRejectedValueOnce(error);
+    const error = new Error('IO failed');
+    h.port.captureSnapshot.mockRejectedValueOnce(error);
     await expect(h.review.preview({ cwd: '/cwd', path: '-new', scope: 'worktree' })).rejects.toBe(error);
     h.port.readAuthorizedPreview.mockRejectedValueOnce(error);
     await expect(h.review.preview({ cwd: '/cwd', path: '-new', scope: 'worktree' })).rejects.toBe(error);
-    expect(h.port.captureSnapshot).toHaveBeenCalledTimes(3); expect(h.port.readAuthorizedPreview).toHaveBeenCalledTimes(2);
+    expect(h.port.captureSnapshot).toHaveBeenCalledTimes(3);
+    expect(h.port.readAuthorizedPreview).toHaveBeenCalledTimes(2);
   });
 });

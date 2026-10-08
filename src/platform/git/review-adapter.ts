@@ -3,7 +3,17 @@ import { constants } from 'node:fs';
 import { lstat, open, readlink, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import type { AuthorizedPreview, ReviewContents, ReviewFile, ReviewPreview, RepositorySnapshot, RepositoryWorktree, RepositoryWorktrees, ReviewRepositoryPort } from '../../modules/change-review/index.js';
+import type {
+  AuthorizedPreview,
+  BranchComparison,
+  ReviewContents,
+  ReviewFile,
+  ReviewPreview,
+  RepositorySnapshot,
+  RepositoryWorktree,
+  RepositoryWorktrees,
+  ReviewRepositoryPort,
+} from '../../modules/change-review/index.js';
 
 const exec = promisify(execFile);
 const previewLimit = 200_000;
@@ -12,7 +22,11 @@ const gitEnv = { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '
 
 async function git(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await exec('git', ['--no-pager', '--literal-pathspecs', '-c', 'core.quotePath=false', ...args], {
-    cwd, env: gitEnv, encoding: 'utf8', timeout: 10_000, maxBuffer: args[0] === 'diff' ? previewLimit + 1 : contentsLimit,
+    cwd,
+    env: gitEnv,
+    encoding: 'utf8',
+    timeout: 10_000,
+    maxBuffer: args[0] === 'diff' && !args.includes('--name-status') ? previewLimit + 1 : contentsLimit,
     windowsHide: true,
   });
   return stdout;
@@ -27,7 +41,11 @@ export function parseStatus(output: string): ReviewFile[] {
     if (!record) continue;
     if (record.length < 4 || record[2] !== ' ') throw new Error('无法解析 Git 状态');
     const status = record.slice(0, 2);
-    const file: { path: string; index: string; worktree: string; originalPath?: string } = { path: record.slice(3), index: status[0], worktree: status[1] };
+    const file: { path: string; index: string; worktree: string; originalPath?: string } = {
+      path: record.slice(3),
+      index: status[0],
+      worktree: status[1],
+    };
     if (/[RC]/.test(status)) {
       const original = parts[++index];
       if (!original) throw new Error('Git 重命名状态缺少原路径');
@@ -48,6 +66,81 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
       git(root, ['symbolic-ref', '--short', '-q', 'HEAD']).catch(() => git(root, ['rev-parse', '--short', 'HEAD'])),
     ]);
     return { root, branch: branch.trimEnd() || 'detached HEAD', files: parseStatus(status), capturedAt: this.capturedAt() };
+  }
+
+  private async branchBase(root: string): Promise<{ baseline: string; ancestor: string; current: string }> {
+    const current = (await git(root, ['symbolic-ref', '--short', '-q', 'HEAD']).catch(() => '')).trimEnd();
+    if (!current) throw new Error('当前处于 detached HEAD，无法比较分支。');
+    const remoteHead = (await git(root, ['symbolic-ref', '-q', 'refs/remotes/origin/HEAD']).catch(() => '')).trimEnd();
+    let baseline = remoteHead.startsWith('refs/remotes/origin/') ? remoteHead : '';
+    if (!baseline) {
+      const remoteCandidates = (
+        await git(root, ['for-each-ref', '--format=%(refname)', 'refs/remotes/origin/main', 'refs/remotes/origin/master'])
+      )
+        .trimEnd()
+        .split(/\r?\n/)
+        .filter(Boolean);
+      if (remoteCandidates.length > 1) throw new Error('存在多个可能的参照分支；请设置 origin/HEAD。');
+      if (remoteCandidates.length === 1) baseline = remoteCandidates[0];
+    }
+    if (!baseline) {
+      const localCandidates = (await git(root, ['for-each-ref', '--format=%(refname)', 'refs/heads/main', 'refs/heads/master']))
+        .trimEnd()
+        .split(/\r?\n/)
+        .filter(Boolean);
+      if (localCandidates.length === 1) baseline = localCandidates[0];
+    }
+    if (!baseline) throw new Error('无法确定参照分支；请在仓库中设置 origin/HEAD，或仅保留一个 main/master 基线。');
+    const ancestor = (await git(root, ['merge-base', baseline, 'HEAD'])).trimEnd();
+    if (!/^[0-9a-f]{40,64}$/i.test(ancestor)) throw new Error('无法确定分支共同祖先。');
+    return { baseline: baseline.replace(/^refs\/(?:remotes|heads)\//, ''), ancestor, current };
+  }
+
+  async compareBranch(cwd: string): Promise<BranchComparison> {
+    const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).replace(/\r?\n$/, '');
+    const { baseline, ancestor, current } = await this.branchBase(root);
+    const output = await git(root, ['diff', '--name-status', '-z', '--no-renames', '--ignore-submodules=all', ancestor, 'HEAD']);
+    const parts = output.split('\0');
+    const files: ReviewFile[] = [];
+    for (let i = 0; i < parts.length - 1; i += 2) {
+      const status = parts[i],
+        filename = parts[i + 1];
+      if (!/^[AMDMT]$/.test(status) || !filename) throw new Error('无法解析分支差异列表');
+      files.push({ path: filename, index: status, worktree: ' ' });
+    }
+    return { root, current, baseline, files, capturedAt: this.capturedAt() };
+  }
+
+  async readBranchPreview(cwd: string, filename: string): Promise<ReviewPreview> {
+    const comparison = await this.compareBranch(cwd);
+    if (!comparison.files.some(file => file.path === filename)) throw new Error('分支文件状态已变化，请刷新比较。');
+    const { ancestor } = await this.branchBase(comparison.root);
+    try {
+      const output = await git(comparison.root, [
+        'diff',
+        '--no-ext-diff',
+        '--no-textconv',
+        '--no-color',
+        '--ignore-submodules=all',
+        '--no-renames',
+        ancestor,
+        'HEAD',
+        '--',
+        filename,
+      ]);
+      if (!output) throw new Error('分支文件状态已变化，请刷新比较。');
+      return truncate(output, /^Binary files /m.test(output) ? 'binary' : 'diff');
+    } catch (error) {
+      const failure = error as { code?: string; message?: string; stdout?: unknown };
+      if (
+        failure.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' &&
+        failure.message?.includes('stdout') &&
+        typeof failure.stdout === 'string'
+      ) {
+        return { ...truncate(failure.stdout, 'diff'), truncated: true };
+      }
+      throw error;
+    }
   }
 
   async listBranches(cwd: string): Promise<string[]> {
@@ -114,8 +207,10 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
     if (branches.includes(candidate)) throw new Error('本地分支已存在，请使用其他工作树分支名称。');
     const slug = candidate.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'worktree';
     const target = path.resolve(path.dirname(root), `${path.basename(root)}-${slug}`);
-    try { await lstat(target); throw new Error('工作树目标目录已存在，请先移除或使用其他分支名称。'); }
-    catch (error) {
+    try {
+      await lstat(target);
+      throw new Error('工作树目标目录已存在，请先移除或使用其他分支名称。');
+    } catch (error) {
       const code = (error as { code?: string }).code;
       if (code !== 'ENOENT') throw error;
     }
@@ -177,8 +272,15 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
       try {
         const opened = await fd.stat();
         const current = await lstat(fullPath);
-        if (!opened.isFile() || current.isSymbolicLink() || !insideRoot(await realpath(fullPath)) ||
-            opened.dev !== info.dev || opened.ino !== info.ino || opened.dev !== current.dev || opened.ino !== current.ino) {
+        if (
+          !opened.isFile() ||
+          current.isSymbolicLink() ||
+          !insideRoot(await realpath(fullPath)) ||
+          opened.dev !== info.dev ||
+          opened.ino !== info.ino ||
+          opened.dev !== current.dev ||
+          opened.ino !== current.ino
+        ) {
           throw new Error('预览文件在读取前发生变化，请刷新。');
         }
         const { bytesRead } = await fd.read(buffer, 0, buffer.length, 0);
@@ -187,19 +289,32 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
         const result = truncate(bytes.toString('utf8'), 'untracked');
         result.truncated ||= info.size > previewLimit;
         return result;
-      } finally { await fd.close(); }
+      } finally {
+        await fd.close();
+      }
     }
     try {
       const diff = await git(repositoryRoot, [
-        'diff', '--no-ext-diff', '--no-textconv', '--no-color', '--ignore-submodules=all',
-        ...(selection.scope === 'index' ? ['--cached'] : []), '--', filename, ...(selection.originalPath ? [selection.originalPath] : []),
+        'diff',
+        '--no-ext-diff',
+        '--no-textconv',
+        '--no-color',
+        '--ignore-submodules=all',
+        ...(selection.scope === 'index' ? ['--cached'] : []),
+        '--',
+        filename,
+        ...(selection.originalPath ? [selection.originalPath] : []),
       ]);
       return truncate(diff || '没有可显示的文本差异（文件可能已变化，或为子模块）。', /^Binary files /m.test(diff) ? 'binary' : 'diff');
     } catch (error) {
       const failure = error as { code?: string; message?: string; stdout?: unknown };
       // execFile kills the read-only Git child on overflow and returns the bounded prefix.
       // An oversized patch is a valid truncated preview, not a failed Git operation.
-      if (failure.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' && failure.message?.includes('stdout') && typeof failure.stdout === 'string') {
+      if (
+        failure.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' &&
+        failure.message?.includes('stdout') &&
+        typeof failure.stdout === 'string'
+      ) {
         return { ...truncate(failure.stdout, 'diff'), truncated: true };
       }
       throw error;
@@ -210,12 +325,16 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
   async readAuthorizedContents(selection: AuthorizedPreview): Promise<ReviewContents> {
     if (selection.kind !== 'tracked') throw new Error('未跟踪文件没有 Git 双侧内容');
     const oldPath = selection.originalPath ?? selection.path;
-    const oldObject = selection.scope === 'index' ? await this.gitTreeBlob(selection.root, 'HEAD', oldPath) : await this.indexBlob(selection.root, oldPath);
+    const oldObject =
+      selection.scope === 'index' ? await this.gitTreeBlob(selection.root, 'HEAD', oldPath) : await this.indexBlob(selection.root, oldPath);
     const newObject = selection.scope === 'index' ? await this.indexBlob(selection.root, selection.path) : null;
     const oldFile = oldObject ? { name: oldPath, contents: await this.readBlob(selection.root, oldObject) } : null;
-    const newFile = selection.scope === 'index'
-      ? newObject ? { name: selection.path, contents: await this.readBlob(selection.root, newObject) } : null
-      : await this.readWorkingFile(selection.root, selection.path);
+    const newFile =
+      selection.scope === 'index'
+        ? newObject
+          ? { name: selection.path, contents: await this.readBlob(selection.root, newObject) }
+          : null
+        : await this.readWorkingFile(selection.root, selection.path);
     return { oldFile, newFile };
   }
 
@@ -232,7 +351,9 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
       if (!record) return null;
       const match = record.match(/^[^ ]+ blob ([0-9a-f]+)\t/);
       return match?.[1] ?? null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   private async indexBlob(root: string, filename: string): Promise<string | null> {
@@ -248,7 +369,9 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
     const relative = path.relative(root, fullPath);
     if (relative.startsWith('..' + path.sep) || relative === '..' || path.isAbsolute(relative)) throw new Error('文件不在当前仓库内');
     let info;
-    try { info = await lstat(fullPath); } catch (error) {
+    try {
+      info = await lstat(fullPath);
+    } catch (error) {
       if ((error as { code?: string }).code === 'ENOENT') return null;
       throw error;
     }
@@ -261,14 +384,24 @@ export class GitReviewAdapter implements ReviewRepositoryPort {
     try {
       const opened = await fd.stat();
       const current = await lstat(fullPath);
-      if (!opened.isFile() || current.isSymbolicLink() || opened.dev !== info.dev || opened.ino !== info.ino || opened.dev !== current.dev || opened.ino !== current.ino) throw new Error('预览文件在读取前发生变化，请刷新。');
+      if (
+        !opened.isFile() ||
+        current.isSymbolicLink() ||
+        opened.dev !== info.dev ||
+        opened.ino !== info.ino ||
+        opened.dev !== current.dev ||
+        opened.ino !== current.ino
+      )
+        throw new Error('预览文件在读取前发生变化，请刷新。');
       const buffer = Buffer.alloc(contentsLimit + 1);
       const { bytesRead } = await fd.read(buffer, 0, buffer.length, 0);
       const bytes = buffer.subarray(0, bytesRead);
       if (bytes.includes(0)) throw new Error('二进制文件不提供双侧文本内容');
       if (bytesRead > contentsLimit) throw new Error('文件过大，无法展开完整上下文');
       return { name: filename, contents: bytes.toString('utf8') };
-    } finally { await fd.close(); }
+    } finally {
+      await fd.close();
+    }
   }
 }
 
@@ -279,14 +412,22 @@ function validateBranch(branch: string): string {
 }
 
 function parseWorktrees(output: string, root: string): RepositoryWorktree[] {
-  return output.split(/\r?\n\r?\n/).filter(Boolean).map(block => {
-    const lines = block.split(/\r?\n/);
-    const worktreePath = lines.find(line => line.startsWith('worktree '))?.slice('worktree '.length);
-    const head = lines.find(line => line.startsWith('HEAD '))?.slice('HEAD '.length);
-    const branchRef = lines.find(line => line.startsWith('branch '))?.slice('branch '.length);
-    if (!worktreePath || !head) throw new Error('无法解析 Git 工作树');
-    return { path: worktreePath, head, ...(branchRef ? { branch: branchRef.replace(/^refs\/heads\//, '') } : {}), current: path.resolve(worktreePath) === path.resolve(root) };
-  });
+  return output
+    .split(/\r?\n\r?\n/)
+    .filter(Boolean)
+    .map(block => {
+      const lines = block.split(/\r?\n/);
+      const worktreePath = lines.find(line => line.startsWith('worktree '))?.slice('worktree '.length);
+      const head = lines.find(line => line.startsWith('HEAD '))?.slice('HEAD '.length);
+      const branchRef = lines.find(line => line.startsWith('branch '))?.slice('branch '.length);
+      if (!worktreePath || !head) throw new Error('无法解析 Git 工作树');
+      return {
+        path: worktreePath,
+        head,
+        ...(branchRef ? { branch: branchRef.replace(/^refs\/heads\//, '') } : {}),
+        current: path.resolve(worktreePath) === path.resolve(root),
+      };
+    });
 }
 
 function truncate(text: string, kind: ReviewPreview['kind']) {

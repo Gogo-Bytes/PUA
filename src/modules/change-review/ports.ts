@@ -1,7 +1,16 @@
-import type { AuthorizedPreview, RepositorySnapshot, RepositoryWorktrees, ReviewContents, ReviewPreview } from './domain/review.js';
+import type {
+  AuthorizedPreview,
+  BranchComparison,
+  RepositorySnapshot,
+  RepositoryWorktrees,
+  ReviewContents,
+  ReviewPreview,
+} from './domain/review.js';
 
 export interface ReviewRepositoryPort {
   captureSnapshot(cwd: string): Promise<RepositorySnapshot>;
+  compareBranch(cwd: string): Promise<BranchComparison>;
+  readBranchPreview(cwd: string, path: string): Promise<ReviewPreview>;
   readAuthorizedPreview(selection: AuthorizedPreview): Promise<ReviewPreview>;
   readAuthorizedContents(selection: AuthorizedPreview): Promise<ReviewContents>;
   listBranches(cwd: string): Promise<string[]>;

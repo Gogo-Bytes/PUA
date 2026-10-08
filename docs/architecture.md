@@ -237,6 +237,8 @@ preload buildStart 的迁移清单只 rm `dist/main/` 下的 `sessions.js`、`ex
 
 ## Change Review：规则与 Git Adapter 有限提取
 
+当前 Review 另提供已提交分支比较：main 侧 Git Adapter 从 `origin/HEAD`（或唯一的 origin/main、origin/master、本地 main/master）确定参照，计算与当前 HEAD 的共同祖先；Change Review 用例按最新比较清单授权每个文件预览，renderer 只展示参照分支、当前分支和差异。未提交工作区/暂存区仍由原范围独立展示。无法确定参照或处于 detached HEAD 时明确失败；比较是只读快照，后续文件读取会重新检查清单，但不提供跨请求原子性。
+
 当前调用链：`app/main/bootstrap.ts → platform/electron/ipc/register-desktop-ipc.ts → modules/change-review/index.ts`；ready 中装配一个 `ChangeReviewApplication` 与 `platform/git/review-adapter.ts`，构造不查询仓库。旧 `main/git.ts` 已删除，生产与测试旧 import 清零，无兼容转发源。
 
 | 规则 / 数据 / IO | 唯一 owner |

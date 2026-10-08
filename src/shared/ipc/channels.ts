@@ -43,6 +43,8 @@ export const invokeChannels = {
   openExternal: 'desktop:external',
   openProject: 'desktop:project',
   gitStatus: 'desktop:git-status',
+  gitBranchComparison: 'desktop:git-branch-comparison',
+  gitBranchFileDiff: 'desktop:git-branch-file-diff',
   gitBranches: 'desktop:git-branches',
   switchGitBranch: 'desktop:git-branch-switch',
   createGitBranch: 'desktop:git-branch-create',

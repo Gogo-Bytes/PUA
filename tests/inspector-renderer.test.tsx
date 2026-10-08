@@ -5,7 +5,9 @@ let desktop: DesktopAPI;
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GitPanel } from '../src/renderer/features/change-review';
-vi.mock('../src/renderer/ui/DiffView', () => ({ DiffView: ({ text }: { text: string }) => <pre aria-label="文件差异（左侧原行号，右侧新行号）">{text}</pre> }));
+vi.mock('../src/renderer/ui/DiffView', () => ({
+  DiffView: ({ text }: { text: string }) => <pre aria-label="文件差异（左侧原行号，右侧新行号）">{text}</pre>,
+}));
 import { CopyButton, MarkdownView } from '../src/renderer/features/content';
 import { ToolCard } from '../src/renderer/features/conversation';
 import type { FileDiff } from '../src/shared/ipc/change-review';
@@ -13,16 +15,47 @@ import combinedConflict from './fixtures/combined-conflict.patch?raw';
 
 beforeEach(() => {
   desktop = installDesktopFake({
-    gitStatus: vi.fn().mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: '2026-01-01T00:00:00Z', files: [
-      { path: 'tracked.ts', index: 'M', worktree: 'M' }, { path: 'notes.md', index: '?', worktree: '?' },
-    ] }),
-    fileDiff: vi.fn().mockResolvedValue({ kind: 'diff', truncated: false, text: '--- a/tracked.ts\n+++ b/tracked.ts\n@@ -8,2 +8,2 @@\n same\n-old\n+new' }),
-    writeClipboard: vi.fn().mockResolvedValue(undefined), openExternal: vi.fn().mockResolvedValue(undefined),
+    gitStatus: vi.fn().mockResolvedValue({
+      root: '/repo',
+      branch: 'main',
+      capturedAt: '2026-01-01T00:00:00Z',
+      files: [
+        { path: 'tracked.ts', index: 'M', worktree: 'M' },
+        { path: 'notes.md', index: '?', worktree: '?' },
+      ],
+    }),
+    gitBranchComparison: vi.fn().mockResolvedValue({
+      root: '/repo',
+      current: 'feature',
+      baseline: 'origin/main',
+      capturedAt: '2026-01-01T00:00:00Z',
+      files: [{ path: 'branch.ts', index: 'M', worktree: ' ' }],
+    }),
+    gitBranchFileDiff: vi
+      .fn()
+      .mockResolvedValue({ kind: 'diff', truncated: false, text: '--- a/branch.ts\n+++ b/branch.ts\n@@ -1 +1 @@\n-old\n+new' }),
+    fileDiff: vi.fn().mockResolvedValue({
+      kind: 'diff',
+      truncated: false,
+      text: '--- a/tracked.ts\n+++ b/tracked.ts\n@@ -8,2 +8,2 @@\n same\n-old\n+new',
+    }),
+    writeClipboard: vi.fn().mockResolvedValue(undefined),
+    openExternal: vi.fn().mockResolvedValue(undefined),
   } as unknown as DesktopAPI);
 });
 afterEach(cleanup);
 
 describe('inspector data boundary', () => {
+  it('labels the baseline and shows committed branch changes without reading the worktree diff', async () => {
+    render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
+    await screen.findByRole('button', { name: 'tracked.ts' });
+    fireEvent.click(screen.getByRole('button', { name: '比较当前分支' }));
+    await screen.findByRole('button', { name: 'branch.ts' });
+    expect(screen.getByText('origin/main')).toBeTruthy();
+    expect(screen.getByText('共同祖先 → 当前分支 HEAD')).toBeTruthy();
+    expect(desktop.gitBranchFileDiff).toHaveBeenCalledExactlyOnceWith('s1', 'branch.ts');
+    expect(desktop.fileDiff).not.toHaveBeenCalledWith('s1', 'branch.ts', expect.anything());
+  });
   it('keeps the review hierarchy visible around real branch and file data', async () => {
     render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
     expect(screen.queryByText('审查')).toBeNull();
@@ -39,7 +72,7 @@ describe('inspector data boundary', () => {
     vi.mocked(desktop.gitStatus).mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: '', files });
     const pending: ((value: FileDiff) => void)[] = [];
     vi.mocked(desktop.fileDiff).mockImplementation(() => new Promise(resolve => pending.push(resolve)));
-    render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}}/>);
+    render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
     await waitFor(() => expect(desktop.fileDiff).toHaveBeenCalledTimes(3));
     const diff: FileDiff = { kind: 'binary', text: 'binary', truncated: false };
     await act(async () => pending.splice(0).forEach(resolve => resolve(diff)));
@@ -52,28 +85,46 @@ describe('inspector data boundary', () => {
     expect(screen.getAllByRole('region')).toHaveLength(8);
   });
   it('never displays a prior session response after switching session identity', async () => {
-    vi.mocked(desktop.gitStatus).mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: '', files: [{ path: 'constructor', index: 'M', worktree: 'M' }] });
+    vi.mocked(desktop.gitStatus).mockResolvedValue({
+      root: '/repo',
+      branch: 'main',
+      capturedAt: '',
+      files: [{ path: 'constructor', index: 'M', worktree: 'M' }],
+    });
     let old!: (diff: FileDiff) => void;
-    vi.mocked(desktop.fileDiff).mockImplementationOnce(() => new Promise(resolve => { old = resolve; })).mockResolvedValue({ kind: 'binary', text: 'new session', truncated: false });
+    vi.mocked(desktop.fileDiff)
+      .mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            old = resolve;
+          }),
+      )
+      .mockResolvedValue({ kind: 'binary', text: 'new session', truncated: false });
     const props = { onClose() {}, onReference() {} };
-    const { rerender } = render(<GitPanel sessionId="s1" {...props}/>);
+    const { rerender } = render(<GitPanel sessionId="s1" {...props} />);
     await waitFor(() => expect(desktop.fileDiff).toHaveBeenCalledTimes(1));
-    rerender(<GitPanel sessionId="s2" {...props}/>);
+    rerender(<GitPanel sessionId="s2" {...props} />);
     await screen.findByText('new session');
     await act(async () => old({ kind: 'binary', text: 'old session secret', truncated: false }));
     expect(screen.queryByText('old session secret')).toBeNull();
     expect(desktop.fileDiff).toHaveBeenLastCalledWith('s2', 'constructor', 'worktree');
   });
   it('shows actual hunk counts and numbers, distinguishes scope, and references without sending', async () => {
-    const onReference = vi.fn(); const { container } = render(<GitPanel sessionId="s1" onClose={() => {}} onReference={onReference} />);
+    const onReference = vi.fn();
+    const { container } = render(<GitPanel sessionId="s1" onClose={() => {}} onReference={onReference} />);
     await screen.findByRole('button', { name: 'tracked.ts' });
-    await screen.findAllByText('+1'); expect(screen.getAllByText('−1')).toHaveLength(2);
+    await screen.findAllByText('+1');
+    expect(screen.getAllByText('−1')).toHaveLength(2);
     expect(desktop.fileDiff).toHaveBeenCalledWith('s1', 'tracked.ts', 'worktree');
     expect(container.querySelector('.ui-diff-view')).toBeNull(); // Diff surface is browser-tested, mocked here for IPC ownership.
-    expect(screen.queryByRole('button', { name: '预览' })).toBeNull(); expect(screen.queryByRole('button', { name: '源码' })).toBeNull();
-    fireEvent.click(screen.getAllByRole('button', { name: '引用文件到草稿' })[0]); expect(onReference).toHaveBeenCalledWith('请检查这个文件的变更：@"/repo/tracked.ts" ');
-    fireEvent.click(screen.getAllByRole('button', { name: '复制差异输出' })[0]); await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(expect.stringContaining('@@ -8,2 +8,2 @@')));
-    fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' })); expect(screen.queryByRole('button', { name: /notes.md/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: '预览' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '源码' })).toBeNull();
+    fireEvent.click(screen.getAllByRole('button', { name: '引用文件到草稿' })[0]);
+    expect(onReference).toHaveBeenCalledWith('请检查这个文件的变更：@"/repo/tracked.ts" ');
+    fireEvent.click(screen.getAllByRole('button', { name: '复制差异输出' })[0]);
+    await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(expect.stringContaining('@@ -8,2 +8,2 @@')));
+    fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' }));
+    expect(screen.queryByRole('button', { name: /notes.md/ })).toBeNull();
     await waitFor(() => expect(desktop.fileDiff).toHaveBeenLastCalledWith('s1', 'tracked.ts', 'index'));
     await screen.findByText(/HEAD → 暂存区/);
     expect(screen.queryByText(/非原子快照/)).toBeNull();
@@ -83,43 +134,77 @@ describe('inspector data boundary', () => {
     { text: combinedConflict.replace('diff --cc', 'diff --combined'), index: 'M', worktree: 'M', scope: 'worktree', truncated: true },
     { text: combinedConflict.slice(combinedConflict.indexOf('@@@')), index: 'M', worktree: 'M', scope: 'worktree', truncated: false },
     { text: '@@ -1 +1 @@\n-old\n+new', index: 'U', worktree: 'U', scope: 'index', truncated: true },
-  ])('shows raw conflict output without invalid counts, line numbers or two-sided source ($scope)', async ({ text, index, worktree, scope, truncated }) => {
-    vi.mocked(desktop.gitStatus).mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: '2026-01-01T00:00:00Z', files: [{ path: 'conflict.txt', index, worktree }] });
-    vi.mocked(desktop.fileDiff).mockResolvedValue({ kind: 'diff', text, truncated });
-    const { container } = render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
-    await screen.findByRole('button', { name: 'conflict.txt' });
-    if (scope === 'index') fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' }));
-    expect((await screen.findByLabelText('原始冲突 patch')).textContent).toBe(text);
-    expect(screen.getByText('冲突 · 原始 patch')).toBeTruthy();
-    expect(container.querySelector('.addition-text, .deletion-text, .line-number, .diff-sign')).toBeNull();
-    expect(screen.queryByText(/HEAD → 暂存区|暂存区 → 工作区|计数仅涵盖/)).toBeNull();
-    expect(screen.queryByLabelText('文件差异（左侧原行号，右侧新行号）')).toBeNull();
-    expect(screen.queryByRole('button', { name: '源码' })).toBeNull();
-    fireEvent.click(screen.getAllByRole('button', { name: '复制差异输出' })[0]);
-    await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(text));
-  });
+  ])(
+    'shows raw conflict output without invalid counts, line numbers or two-sided source ($scope)',
+    async ({ text, index, worktree, scope, truncated }) => {
+      vi.mocked(desktop.gitStatus).mockResolvedValue({
+        root: '/repo',
+        branch: 'main',
+        capturedAt: '2026-01-01T00:00:00Z',
+        files: [{ path: 'conflict.txt', index, worktree }],
+      });
+      vi.mocked(desktop.fileDiff).mockResolvedValue({ kind: 'diff', text, truncated });
+      const { container } = render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
+      await screen.findByRole('button', { name: 'conflict.txt' });
+      if (scope === 'index') fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' }));
+      expect((await screen.findByLabelText('原始冲突 patch')).textContent).toBe(text);
+      expect(screen.getByText('冲突 · 原始 patch')).toBeTruthy();
+      expect(container.querySelector('.addition-text, .deletion-text, .line-number, .diff-sign')).toBeNull();
+      expect(screen.queryByText(/HEAD → 暂存区|暂存区 → 工作区|计数仅涵盖/)).toBeNull();
+      expect(screen.queryByLabelText('文件差异（左侧原行号，右侧新行号）')).toBeNull();
+      expect(screen.queryByRole('button', { name: '源码' })).toBeNull();
+      fireEvent.click(screen.getAllByRole('button', { name: '复制差异输出' })[0]);
+      await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(text));
+    },
+  );
   it('renders preview/source solely from untracked text returned by fileDiff, never reconstructs a tracked file', async () => {
     const source = '# Real notes\n\nactual content\n\n![remote](https://example.com/secret.png)';
-    vi.mocked(desktop.gitStatus).mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: '', files: [{ path: 'notes.md', index: '?', worktree: '?' }] });
+    vi.mocked(desktop.gitStatus).mockResolvedValue({
+      root: '/repo',
+      branch: 'main',
+      capturedAt: '',
+      files: [{ path: 'notes.md', index: '?', worktree: '?' }],
+    });
     vi.mocked(desktop.fileDiff).mockResolvedValue({ kind: 'untracked', truncated: true, text: source });
     const { container } = render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
-    await screen.findByRole('button', { name: 'notes.md' }); await screen.findByText(/工作区未跟踪文本快照/);
-    expect(screen.getByText(/内容已截断/)).toBeTruthy(); expect(screen.getByLabelText('未跟踪文件源码快照').textContent).toContain('# Real notes');
-    fireEvent.click(screen.getByRole('tab', { name: '预览' })); expect(await screen.findByRole('heading', { name: 'Real notes' })).toBeTruthy(); expect(container.querySelector('img')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '复制文件快照' })); await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(source));
+    await screen.findByRole('button', { name: 'notes.md' });
+    await screen.findByText(/工作区未跟踪文本快照/);
+    expect(screen.getByText(/内容已截断/)).toBeTruthy();
+    expect(screen.getByLabelText('未跟踪文件源码快照').textContent).toContain('# Real notes');
+    fireEvent.click(screen.getByRole('tab', { name: '预览' }));
+    expect(await screen.findByRole('heading', { name: 'Real notes' })).toBeTruthy();
+    expect(container.querySelector('img')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '复制文件快照' }));
+    await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith(source));
     expect(desktop.fileDiff).toHaveBeenCalledTimes(1);
   });
   it('ignores stale scope requests and visibly reports failures; binary/symlink results have no file preview', async () => {
-    vi.mocked(desktop.gitStatus).mockResolvedValue({ root: '/repo', branch: 'main', capturedAt: '', files: [{ path: 'tracked.ts', index: 'M', worktree: 'M' }] });
+    vi.mocked(desktop.gitStatus).mockResolvedValue({
+      root: '/repo',
+      branch: 'main',
+      capturedAt: '',
+      files: [{ path: 'tracked.ts', index: 'M', worktree: 'M' }],
+    });
     let resolveOld!: (value: FileDiff) => void;
-    vi.mocked(desktop.fileDiff).mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; })).mockResolvedValueOnce({ kind: 'symlink', truncated: false, text: '符号链接 → /outside' });
+    vi.mocked(desktop.fileDiff)
+      .mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveOld = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({ kind: 'symlink', truncated: false, text: '符号链接 → /outside' });
     render(<GitPanel sessionId="s1" onClose={() => {}} onReference={() => {}} />);
     await screen.findByRole('button', { name: 'tracked.ts' });
     fireEvent.click(screen.getByRole('button', { name: '查看暂存区变更' }));
     await screen.findByText('符号链接 → /outside');
-    await act(async () => resolveOld({ kind: 'untracked', truncated: false, text: 'stale secret' })); expect(screen.queryByText('stale secret')).toBeNull(); expect(screen.queryByRole('button', { name: '预览' })).toBeNull();
+    await act(async () => resolveOld({ kind: 'untracked', truncated: false, text: 'stale secret' }));
+    expect(screen.queryByText('stale secret')).toBeNull();
+    expect(screen.queryByRole('button', { name: '预览' })).toBeNull();
     vi.mocked(desktop.gitStatus).mockRejectedValueOnce(new Error('git unavailable'));
-    fireEvent.click(screen.getByRole('button', { name: '刷新' })); await screen.findByRole('alert'); expect(screen.getByText('Error: git unavailable')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '刷新' }));
+    await screen.findByRole('alert');
+    expect(screen.getByText('Error: git unavailable')).toBeTruthy();
     expect(screen.queryByText('符号链接 → /outside')).toBeNull();
   });
 });
@@ -128,17 +213,36 @@ describe('real content actions', () => {
   it('keeps clipboard and external link errors visible instead of reporting success', async () => {
     vi.mocked(desktop.writeClipboard).mockRejectedValue(new Error('clipboard denied'));
     vi.mocked(desktop.openExternal).mockRejectedValue(new Error('blocked protocol'));
-    render(<><CopyButton text="actual output" label="复制内容" /><MarkdownView text="[real](https://example.com)" /></>);
-    fireEvent.click(screen.getByRole('button', { name: '复制内容' })); await screen.findByText(/clipboard denied/); expect(screen.queryByText('已复制')).toBeNull();
-    fireEvent.click(screen.getByRole('link', { name: 'real' })); await screen.findByText(/blocked protocol/);
+    render(
+      <>
+        <CopyButton text="actual output" label="复制内容" />
+        <MarkdownView text="[real](https://example.com)" />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '复制内容' }));
+    await screen.findByText(/clipboard denied/);
+    expect(screen.queryByText('已复制')).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: 'real' }));
+    await screen.findByText(/blocked protocol/);
   });
   it('retains unknown tool arguments, images, output and source boundaries in the real disclosure', async () => {
-    const tool = { id: 'custom', name: 'extension_custom', arguments: { arbitrary: 'value' }, status: 'success' as const, output: 'one\ntwo', images: [{ type: 'image' as const, mimeType: 'image/png', data: 'eA==' }] };
+    const tool = {
+      id: 'custom',
+      name: 'extension_custom',
+      arguments: { arbitrary: 'value' },
+      status: 'success' as const,
+      output: 'one\ntwo',
+      images: [{ type: 'image' as const, mimeType: 'image/png', data: 'eA==' }],
+    };
     const { container } = render(<ToolCard tool={tool} />);
     expect(container.querySelector('.ui-collapsible > button')?.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(screen.getByText('extension_custom')); await waitFor(() => expect(container.querySelector('.ui-collapsible > button')?.getAttribute('aria-expanded')).toBe('true'));
-    expect(screen.getByText(/"arbitrary": "value"/)).toBeTruthy(); expect(screen.getByText(/工具返回快照 · 2 行输出/)).toBeTruthy(); expect(screen.getByText(/不代表当前磁盘文件/)).toBeTruthy();
+    fireEvent.click(screen.getByText('extension_custom'));
+    await waitFor(() => expect(container.querySelector('.ui-collapsible > button')?.getAttribute('aria-expanded')).toBe('true'));
+    expect(screen.getByText(/"arbitrary": "value"/)).toBeTruthy();
+    expect(screen.getByText(/工具返回快照 · 2 行输出/)).toBeTruthy();
+    expect(screen.getByText(/不代表当前磁盘文件/)).toBeTruthy();
     expect((await screen.findByRole('img', { name: '工具结果图片' })).getAttribute('src')).toBe('data:image/png;base64,eA==');
-    fireEvent.click(screen.getByRole('button', { name: '复制工具输出' })); await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith('one\ntwo'));
+    fireEvent.click(screen.getByRole('button', { name: '复制工具输出' }));
+    await waitFor(() => expect(desktop.writeClipboard).toHaveBeenCalledWith('one\ntwo'));
   });
 });
