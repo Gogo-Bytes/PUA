@@ -60,7 +60,7 @@ npm run dist            # 本平台安装包；发布签名/公证需另外配�
 
 `test:pi` 可用 `PI_DESKTOP_TEST_PI` / `PI_DESKTOP_TEST_NODE` 指定测试安装路径，要求该 Pi 包包含官方 `examples/extensions/modal-editor.ts`。不要将测试视为已验证真实 OAuth 或付费模型调用。
 
-CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未签名安装包打包；macOS 另运行 IPC、生命周期及打包应用烟测。Linux 和 Windows 的打包应用烟测已加入门禁，结果见[验证记录](docs/validation.md)。安装、升级、卸载、签名及真实 Pi 在 Windows/Linux 上的行为仍需分别验收。
+CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未签名安装包打包；macOS 另运行 IPC、生命周期及打包应用烟测。Linux 和 Windows 的打包应用烟测已加入门禁，结果见[验证记录](docs/validation.md)。macOS Developer ID 签名与公证的手动工作流见[发布说明](docs/macos-release.md)；签名实跑及安装、升级、卸载仍需验收。
 
 ## 已知边界
 

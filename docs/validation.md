@@ -14,6 +14,8 @@
 
 Environment 的协作区只投影本窗口同项目中由 PUA 管理的其他活动 Pi 会话。当前 Pi RPC 未提供可验证的参与者身份或跨会话消息事件；界面不把并行会话推断为代理成员，也不伪造参与者消息。
 
+macOS arm64/x64 的手动 Developer ID 签名、公证、附票、Gatekeeper 与打包应用烟测工作流已接入，配置和凭据见[发布说明](macos-release.md)。本机以签名配置成功生成未签名 arm64 DMG/ZIP，打包应用离线烟测通过，验证了配置加载与打包路径。本机 `security find-identity -v -p codesigning` 未发现可用身份，Apple 公证环境变量也未配置；因此尚无签名、公证或安装验收结果，不能把未签名安装包门禁视为已发布候选包。
+
 以下章节是历史批次的当时记录；其“未运行”说明不覆盖本节当前验证。
 
 ## 累计架构 checkpoint：strict Pi 有限收尾
