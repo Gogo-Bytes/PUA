@@ -2,6 +2,8 @@
 
 状态：已实现的原生对话优先架构。产品行为见 [README](../README.md)，技术取舍与协议细节见 [原生对话技术设计](native-chat-design.md)。
 
+截至 2026-10-08 的运行和三平台 CI 结果见[当前验证](validation.md#2026-10-08-当前验证)。下文迁移 checkpoint 中的“未运行”是各批次当时的验证限制，不代表当前候选树仍未执行这些检查。
+
 ## 选型
 
 **Electron + React/TypeScript + Pi RPC + 显式 PTY 兼容入口**。

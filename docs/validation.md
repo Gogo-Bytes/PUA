@@ -2,6 +2,18 @@
 
 产品名称为 **PUA — Pi Universal App**。为保持 app id 和用户数据路径，本次打包产物名称仍为 `Pi Desktop.app`。
 
+## 2026-10-08 当前验证
+
+当前代码门禁已包含保护集合、边界、ESLint、格式、生产与测试类型检查、Vitest、构建、IPC 和生命周期 smoke。`npm run verify` 在本机 macOS arm64 通过：90 个测试文件、2801 项测试；`npm run test:lifecycle:stress` 的 50 个清理场景、离线真实 Pi smoke、源应用桌面 smoke 和浏览器 smoke 也通过。隔离组件及工作台预览脚本分别通过；冻结的密度/排版浏览器脚本仍有与已批准样式不一致的旧断言，未改写保护清单。
+
+提交 `c9f054c` 的 [三平台代码门禁](https://github.com/Gogo-Bytes/PUA/actions/runs/37732712968) 全部通过。提交 `b0a7226` 的 [三平台安装包门禁](https://github.com/Gogo-Bytes/PUA/actions/runs/37734339796) 全部通过：macOS 生成未签名 DMG/ZIP，并以打包 `.app` 运行离线桌面 smoke；Linux 生成 AppImage/DEB；Windows 生成 NSIS 安装包。提交 `8730ea7` 的[打包应用 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37735041287) 中，macOS 与 Linux 烟测通过；Windows 的代码门禁和 NSIS 打包通过，启动烟测失败。提交 `8a83b64` 修正 Windows 可执行路径传递并增加诊断；[下一次 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37736209625) 表明打包应用已运行到终端，失败原因为烟测在首个 PTY ready 片段到达时就读取完整参数回显。提交 `09d25cf` 改为等待完整回显，本机桌面 smoke 已通过；[最新 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37737356235) 三平台全部通过，包括各平台实际打包应用的离线桌面 smoke。以上不等于安装、升级、卸载、签名、公证、真实 Pi/OAuth 或付费模型的跨平台验收。
+
+`npm audit --omit=dev` 当前报告 0 项生产依赖漏洞。完整 `npm audit` 报告 12 项开发/打包工具链告警（9 moderate、3 high），尚未升级相关依赖；不能将生产依赖结果表述为整个依赖树零告警。
+
+Environment 的协作区只投影本窗口同项目中由 PUA 管理的其他活动 Pi 会话。当前 Pi RPC 未提供可验证的参与者身份或跨会话消息事件；界面不把并行会话推断为代理成员，也不伪造参与者消息。
+
+以下章节是历史批次的当时记录；其“未运行”说明不覆盖本节当前验证。
+
 ## 累计架构 checkpoint：strict Pi 有限收尾
 
 HEAD 仍为 `a4fb717`，累计 dirty/new/deleted 均保留；下方 0.3 记录是历史实测，不代表当前完整候选树通过桌面/发布验收。本次协议安全修正与后续未完成包见 [Strict Pi 状态](architecture.md#strict-pi-response有限协议收尾)。
