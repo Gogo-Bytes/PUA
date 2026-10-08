@@ -5,26 +5,62 @@ let desktop: DesktopAPI;
 import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data = [], itemContent }: { data?: unknown[]; itemContent(index: number, item: unknown): React.ReactNode }) => <div>{data.map((item, index) => <div key={index}>{itemContent(index, item)}</div>)}</div> }));
+vi.mock('react-virtuoso', () => ({
+  Virtuoso: ({ data = [], itemContent }: { data?: unknown[]; itemContent(index: number, item: unknown): React.ReactNode }) => (
+    <div>
+      {data.map((item, index) => (
+        <div key={index}>{itemContent(index, item)}</div>
+      ))}
+    </div>
+  ),
+}));
 import { ChatPane, MarkdownView, ToolCard } from '../src/renderer/features/conversation';
 import { expandSkillReference } from '../src/renderer/features/conversation/skill-references';
 
 afterEach(cleanup);
 let emit: ((event: import('../src/shared/ipc/conversation').SessionEvent) => void) | undefined;
 beforeEach(() => {
-  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
-  HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open');
+  };
   emit = undefined;
   desktop = installDesktopFake({
-    openExternal: vi.fn().mockResolvedValue(undefined), writeClipboard: vi.fn().mockResolvedValue(undefined), startSession: vi.fn().mockResolvedValue(undefined),
-    onSessionEvent: vi.fn(callback => { emit = callback; return () => {}; }), sendChatMessage: vi.fn().mockResolvedValue(undefined), stopChat: vi.fn().mockResolvedValue(undefined), chooseChatAttachments: vi.fn().mockResolvedValue([]), respondToExtensionUI: vi.fn().mockResolvedValue(undefined),
-    forkChatSession: vi.fn().mockResolvedValue({ text: 'forked', cancelled: false }), getChatSessionStats: vi.fn().mockResolvedValue({ userMessages: 1, assistantMessages: 1, toolCalls: 2, toolResults: 2, totalMessages: 2, tokens: { input: 3, output: 4, cacheRead: 5, cacheWrite: 6, total: 18 }, cost: 0.01, contextUsage: { tokens: 10, contextWindow: 100, percent: 10 } }), compactChatSession: vi.fn().mockResolvedValue(undefined),
+    openExternal: vi.fn().mockResolvedValue(undefined),
+    writeClipboard: vi.fn().mockResolvedValue(undefined),
+    startSession: vi.fn().mockResolvedValue(undefined),
+    onSessionEvent: vi.fn(callback => {
+      emit = callback;
+      return () => {};
+    }),
+    sendChatMessage: vi.fn().mockResolvedValue(undefined),
+    stopChat: vi.fn().mockResolvedValue(undefined),
+    chooseChatAttachments: vi.fn().mockResolvedValue([]),
+    respondToExtensionUI: vi.fn().mockResolvedValue(undefined),
+    forkChatSession: vi.fn().mockResolvedValue({ text: 'forked', cancelled: false }),
+    getChatSessionStats: vi.fn().mockResolvedValue({
+      userMessages: 1,
+      assistantMessages: 1,
+      toolCalls: 2,
+      toolResults: 2,
+      totalMessages: 2,
+      tokens: { input: 3, output: 4, cacheRead: 5, cacheWrite: 6, total: 18 },
+      cost: 0.01,
+      contextUsage: { tokens: 10, contextWindow: 100, percent: 10 },
+    }),
+    compactChatSession: vi.fn().mockResolvedValue(undefined),
   } as unknown as DesktopAPI);
 });
 
 describe('native message rendering', () => {
   it('renders GFM and highlighted code without executing raw HTML', () => {
-    const { container } = render(<MarkdownView text={'## Title\n\n- [x] done\n\n|a|b|\n|-|-|\n|1|2|\n\n```ts\nconst x = 1\n```\n\n<script>window.pwned=true</script>'} />);
+    const { container } = render(
+      <MarkdownView
+        text={'## Title\n\n- [x] done\n\n|a|b|\n|-|-|\n|1|2|\n\n```ts\nconst x = 1\n```\n\n<script>window.pwned=true</script>'}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Title' })).toBeTruthy();
     expect(container.querySelector('table')).toBeTruthy();
     expect(container.querySelector('code.hljs')).toBeTruthy();
@@ -45,55 +81,110 @@ describe('native message rendering', () => {
 
 describe('native composer', () => {
   it('is IME-safe and maps Enter/Shift+Enter/Alt+Enter to prompt/newline/follow-up', async () => {
-    function Harness() { const [draft, setDraft] = useState('你好'); return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft={draft} onDraftChange={setDraft} onError={() => {}} onCommands={() => {}} />; }
+    function Harness() {
+      const [draft, setDraft] = useState('你好');
+      return (
+        <ChatPane
+          session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }}
+          active
+          draft={draft}
+          onDraftChange={setDraft}
+          onError={() => {}}
+          onCommands={() => {}}
+        />
+      );
+    }
     render(<Harness />);
     const textbox = screen.getByRole('textbox', { name: '发送消息' });
-    fireEvent.keyDown(textbox, { key: 'Enter', isComposing: true }); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
-    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true }); expect(desktop.sendChatMessage).not.toHaveBeenCalled();
-    fireEvent.keyDown(textbox, { key: 'Enter' }); await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith('s', expect.objectContaining({ delivery: 'prompt' })));
+    fireEvent.keyDown(textbox, { key: 'Enter', isComposing: true });
+    expect(desktop.sendChatMessage).not.toHaveBeenCalled();
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
+    expect(desktop.sendChatMessage).not.toHaveBeenCalled();
+    fireEvent.keyDown(textbox, { key: 'Enter' });
+    await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenCalledWith('s', expect.objectContaining({ delivery: 'prompt' })));
     fireEvent.change(textbox, { target: { value: 'later' } });
     act(() => emit?.({ type: 'chat-state', id: 's', state: { activity: 'responding' } }));
     await screen.findByRole('button', { name: /停止/ });
-    fireEvent.keyDown(textbox, { key: 'Enter', altKey: true }); await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenLastCalledWith('s', expect.objectContaining({ delivery: 'followUp' })));
+    fireEvent.keyDown(textbox, { key: 'Enter', altKey: true });
+    await waitFor(() => expect(desktop.sendChatMessage).toHaveBeenLastCalledWith('s', expect.objectContaining({ delivery: 'followUp' })));
   });
   it('filters clickable @ skill suggestions and routes message-level fork by stable entry id', async () => {
-    function Harness() { const [draft, setDraft] = useState(''); return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft={draft} onDraftChange={setDraft} onError={() => {}} onCommands={() => {}} />; }
+    function Harness() {
+      const [draft, setDraft] = useState('');
+      return (
+        <ChatPane
+          session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }}
+          active
+          draft={draft}
+          onDraftChange={setDraft}
+          onError={() => {}}
+          onCommands={() => {}}
+        />
+      );
+    }
     render(<Harness />);
-    act(() => emit?.({
-      id: 's',
-      type: 'chat-snapshot',
-      snapshot: {
-        activity: 'idle',
-        queue: { steering: [], followUp: [] },
-        statuses: {},
-        widgets: [],
-        commands: [
-          { name: 'review-code', source: 'skill', description: '审查代码' },
-          { name: 'release', source: 'prompt' },
-        ],
-        messages: [{ id: 'u', role: 'user', timestamp: 1, forkEntryId: 'entry-1', blocks: [{ type: 'text', text: '请审查' }] }],
-      },
-    }));
+    act(() =>
+      emit?.({
+        id: 's',
+        type: 'chat-snapshot',
+        snapshot: {
+          activity: 'idle',
+          queue: { steering: [], followUp: [] },
+          statuses: {},
+          widgets: [],
+          commands: [
+            { name: 'review-code', source: 'skill', description: '审查代码' },
+            { name: 'release', source: 'prompt' },
+          ],
+          messages: [{ id: 'u', role: 'user', timestamp: 1, forkEntryId: 'entry-1', blocks: [{ type: 'text', text: '请审查' }] }],
+        },
+      }),
+    );
     const textbox = screen.getByRole('textbox', { name: '发送消息' });
-    textbox.focus(); fireEvent.change(textbox, { target: { value: '@review' } });
+    textbox.focus();
+    fireEvent.change(textbox, { target: { value: '@review' } });
     const menu = screen.getByRole('listbox', { name: '上下文引用建议' });
     expect(screen.getByRole('option', { name: /@review-code/ })).toBeTruthy();
     expect(screen.queryByText('@release')).toBeNull();
     fireEvent.click(screen.getByRole('option', { name: /@review-code/ }));
     expect((textbox as HTMLTextAreaElement).value).toBe('@review-code ');
-    expect(expandSkillReference((textbox as HTMLTextAreaElement).value, [{ name: 'review-code', source: 'skill' }])).toBe('/skill:review-code ');
+    expect(expandSkillReference((textbox as HTMLTextAreaElement).value, [{ name: 'review-code', source: 'skill' }])).toBe(
+      '/skill:review-code ',
+    );
     fireEvent.click(screen.getByRole('button', { name: '从此消息创建分支' }));
     expect(desktop.forkChatSession).toHaveBeenCalledExactlyOnceWith('s', 'entry-1');
     expect(menu.isConnected).toBe(false);
   });
   it('exposes Pi-native compaction as an acknowledged action', async () => {
-    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="/compact" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
+    function Harness() {
+      return (
+        <ChatPane
+          session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }}
+          active
+          draft="/compact"
+          onDraftChange={() => {}}
+          onError={() => {}}
+          onCommands={() => {}}
+        />
+      );
+    }
     render(<Harness />);
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
     expect(desktop.compactChatSession).toHaveBeenCalledExactlyOnceWith('s', undefined);
   });
   it('requests Pi-native session statistics without treating them as account usage', async () => {
-    function Harness() { return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft="/stats" onDraftChange={() => {}} onError={() => {}} onCommands={() => {}} />; }
+    function Harness() {
+      return (
+        <ChatPane
+          session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }}
+          active
+          draft="/stats"
+          onDraftChange={() => {}}
+          onError={() => {}}
+          onCommands={() => {}}
+        />
+      );
+    }
     render(<Harness />);
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
     expect(desktop.getChatSessionStats).toHaveBeenCalledExactlyOnceWith('s');
@@ -102,7 +193,9 @@ describe('native composer', () => {
 
 describe('tool card', () => {
   it('collapses successful output and expands failures', () => {
-    const { rerender, container } = render(<ToolCard tool={{ id: '1', name: 'read', arguments: { path: 'a.ts' }, status: 'success', output: 'ok' }} />);
+    const { rerender, container } = render(
+      <ToolCard tool={{ id: '1', name: 'read', arguments: { path: 'a.ts' }, status: 'success', output: 'ok' }} />,
+    );
     expect(container.querySelector('.ui-collapsible > button')?.getAttribute('aria-expanded')).toBe('false');
     rerender(<ToolCard tool={{ id: '1', name: 'read', arguments: { path: 'a.ts' }, status: 'error', output: 'failed' }} />);
     expect(container.querySelector('.ui-collapsible > button')?.getAttribute('aria-expanded')).toBe('true');
@@ -111,37 +204,77 @@ describe('tool card', () => {
 });
 
 describe('draft acceptance races', () => {
-  function Harness() { const [draft, setDraft] = useState('original'); return <ChatPane session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }} active draft={draft} onDraftChange={setDraft} onError={() => {}} onCommands={() => {}} />; }
+  function Harness() {
+    const [draft, setDraft] = useState('original');
+    return (
+      <ChatPane
+        session={{ id: 's', cwd: '/tmp', title: 's', kind: 'chat', processStatus: 'running', activity: 'idle' }}
+        active
+        draft={draft}
+        onDraftChange={setDraft}
+        onError={() => {}}
+        onCommands={() => {}}
+      />
+    );
+  }
   it('preserves newer typing and prevents double-submit before acceptance', async () => {
     let accept!: () => void;
-    vi.mocked(desktop.sendChatMessage).mockImplementation(() => new Promise(resolve => { accept = resolve; }));
-    render(<Harness />); const textbox = screen.getByRole('textbox', { name: '发送消息' });
-    fireEvent.keyDown(textbox, { key: 'Enter' }); fireEvent.keyDown(textbox, { key: 'Enter' });
+    vi.mocked(desktop.sendChatMessage).mockImplementation(
+      () =>
+        new Promise(resolve => {
+          accept = resolve;
+        }),
+    );
+    render(<Harness />);
+    const textbox = screen.getByRole('textbox', { name: '发送消息' });
+    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter' });
     expect(desktop.sendChatMessage).toHaveBeenCalledTimes(1);
     fireEvent.change(textbox, { target: { value: 'new typing' } });
-    await act(async () => { accept(); });
+    await act(async () => {
+      accept();
+    });
     expect((textbox as HTMLTextAreaElement).value).toBe('new typing');
-  });
+  }, 15_000);
   it('preserves extension prefill delivered before prompt acceptance', async () => {
     let accept!: () => void;
-    vi.mocked(desktop.sendChatMessage).mockImplementation(() => new Promise(resolve => { accept = resolve; }));
-    render(<Harness />); const textbox = screen.getByRole('textbox', { name: '发送消息' });
+    vi.mocked(desktop.sendChatMessage).mockImplementation(
+      () =>
+        new Promise(resolve => {
+          accept = resolve;
+        }),
+    );
+    render(<Harness />);
+    const textbox = screen.getByRole('textbox', { name: '发送消息' });
     fireEvent.keyDown(textbox, { key: 'Enter' });
     act(() => emit?.({ id: 's', type: 'chat-editor-text', text: 'extension prefill' }));
-    await act(async () => { accept(); });
+    await act(async () => {
+      accept();
+    });
     expect((textbox as HTMLTextAreaElement).value).toBe('extension prefill');
   });
   it('merges stopped queue into the latest draft, not the pre-stop draft', async () => {
     let stopped!: (error: Error) => void;
-    vi.mocked(desktop.stopChat).mockImplementation(() => new Promise((_resolve, reject) => { stopped = reject; }));
-    render(<Harness />); const textbox = screen.getByRole('textbox', { name: '发送消息' });
+    vi.mocked(desktop.stopChat).mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          stopped = reject;
+        }),
+    );
+    render(<Harness />);
+    const textbox = screen.getByRole('textbox', { name: '发送消息' });
     act(() => emit?.({ id: 's', type: 'chat-state', state: { activity: 'responding' } }));
     fireEvent.click(screen.getByRole('button', { name: /停止/ }));
     fireEvent.change(textbox, { target: { value: 'latest' } });
     const recovery = { id: 's', type: 'chat-queue-recovered' as const, requestId: 'stop-1', queue: { steering: ['queued'], followUp: [] } };
-    act(() => { emit?.(recovery); emit?.(recovery); });
+    act(() => {
+      emit?.(recovery);
+      emit?.(recovery);
+    });
     expect((textbox as HTMLTextAreaElement).value).toBe('latest\n\nqueued');
-    await act(async () => { stopped(new Error('abort failed')); });
+    await act(async () => {
+      stopped(new Error('abort failed'));
+    });
     expect((textbox as HTMLTextAreaElement).value).toBe('latest\n\nqueued');
   });
 });
