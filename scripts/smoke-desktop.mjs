@@ -80,7 +80,20 @@ try {
   await window.locator('.chat-pane.active').waitFor();
   await window.getByRole('heading', { name: '启动确认' }).waitFor();
   await window.getByRole('dialog').getByRole('button', { name: '确认', exact: true }).click();
-  await window.getByRole('heading', { name: '原生回复' }).waitFor();
+  try {
+    await window.getByRole('heading', { name: '原生回复' }).waitFor({ timeout: 30000 });
+  } catch (error) {
+    const snapshot = await window
+      .evaluate(() => ({
+        headings: [...document.querySelectorAll('h1, h2, h3')].map(node => node.textContent),
+        alerts: [...document.querySelectorAll('[role="alert"]')].map(node => node.textContent),
+        eventTypes: window.__events.map(event => event.type).slice(-30),
+        activeChatText: document.querySelector('.chat-pane.active')?.textContent?.slice(-1000),
+      }))
+      .catch(() => undefined);
+    console.error('Startup response diagnostic:', JSON.stringify({ snapshot, pageErrors: errors }));
+    throw error;
+  }
   const firstId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
   await window.locator('code.hljs').first().waitFor();
   assert.equal(await window.locator('code.hljs').count(), 1);
