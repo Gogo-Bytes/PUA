@@ -8,7 +8,7 @@
 
 提交 `c9f054c` 的 [三平台代码门禁](https://github.com/Gogo-Bytes/PUA/actions/runs/37732712968) 全部通过。提交 `b0a7226` 的 [三平台安装包门禁](https://github.com/Gogo-Bytes/PUA/actions/runs/37734339796) 全部通过：macOS 生成未签名 DMG/ZIP，并以打包 `.app` 运行离线桌面 smoke；Linux 生成 AppImage/DEB；Windows 生成 NSIS 安装包。提交 `8730ea7` 的[打包应用 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37735041287) 中，macOS 与 Linux 烟测通过；Windows 的代码门禁和 NSIS 打包通过，启动烟测失败。提交 `8a83b64` 修正 Windows 可执行路径传递并增加诊断；[下一次 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37736209625) 表明打包应用已运行到终端，失败原因为烟测在首个 PTY ready 片段到达时就读取完整参数回显。提交 `09d25cf` 改为等待完整回显，本机桌面 smoke 已通过；[最新 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37737356235) 三平台全部通过，包括各平台实际打包应用的离线桌面 smoke。以上不等于安装、升级、卸载、签名、公证、真实 Pi/OAuth 或付费模型的跨平台验收。
 
-`npm audit --omit=dev` 当前报告 0 项生产依赖漏洞。完整 `npm audit` 报告 12 项开发/打包工具链告警（9 moderate、3 high），尚未升级相关依赖；不能将生产依赖结果表述为整个依赖树零告警。
+提交 `04aa873` 将 electron-builder 固定到 26.17.0，并将 `source-map-js`、`brace-expansion` 更新到修复版本。本机 `npm ci`、完整 `verify`（90 文件、2801 项测试）、未签名 DMG/ZIP 打包和打包应用烟测通过；[三平台 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37738825920) 也全部通过，包括各平台安装包和打包应用离线烟测。`npm audit --omit=dev` 报告 0 项生产依赖漏洞；完整 `npm audit` 尚有 8 项 moderate、0 项 high/critical，均来自 electron-builder → `@electron/get` → `global-agent` → `roarr` → `sprintf-js` 的开发打包链，当前稳定版无不降级的自动修复。不能将生产依赖结果表述为整个依赖树零告警。
 
 Environment 的协作区只投影本窗口同项目中由 PUA 管理的其他活动 Pi 会话。当前 Pi RPC 未提供可验证的参与者身份或跨会话消息事件；界面不把并行会话推断为代理成员，也不伪造参与者消息。
 
