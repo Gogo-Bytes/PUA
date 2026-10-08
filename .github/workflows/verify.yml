@@ -65,3 +65,11 @@ jobs:
             node -e 'const s=require("node:fs").readFileSync("package.log","utf8").replace(/\u001b\[[0-9;]*m/g,"");const lines=s.split(/\r?\n/);const errors=lines.filter(line=>/error|failed|cannot|ENOENT|ERR_|⨯/i.test(line));const detail=(errors.length?errors.slice(-15):lines.slice(-25)).join("\n").slice(-3000);console.log("::error title=Packaging failure::"+detail.replaceAll("%","%25").replaceAll("\r","%0D").replaceAll("\n","%0A"))'
           fi
           exit "$status"
+      - name: Smoke packaged macOS app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          shopt -s nullglob
+          apps=(release/mac*/"Pi Desktop.app"/Contents/MacOS/"Pi Desktop")
+          test "${#apps[@]}" -eq 1
+          PI_DESKTOP_TEST_EXECUTABLE="$PWD/${apps[0]}" node scripts/smoke-desktop.mjs
