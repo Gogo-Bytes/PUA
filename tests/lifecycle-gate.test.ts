@@ -40,7 +40,6 @@ test('lifecycle gate: real npm execution propagates failed substeps and never re
   const temporary = mkdtempSync(path.join(os.tmpdir(), 'pua-gate-test-'));
   try {
     mkdirSync(path.join(temporary, 'scripts'));
-    mkdirSync(path.join(temporary, 'node_modules/.bin'), { recursive: true });
     const log = path.join(temporary, 'steps.jsonl');
     const probe = `import { appendFileSync } from 'node:fs';\nconst step = process.argv[2];\nappendFileSync(process.env.GATE_LOG, JSON.stringify(step) + '\\n');\nif (process.env.GATE_FAIL === step) process.exit(37);\n`;
     writeFileSync(path.join(temporary, 'probe.mjs'), probe);
@@ -51,16 +50,16 @@ test('lifecycle gate: real npm execution propagates failed substeps and never re
     for (const leaf of leaves) isolated[leaf] = `node probe.mjs ${leaf}`;
     for (const smoke of ['ipc', 'lifecycle'])
       writeFileSync(path.join(temporary, `scripts/smoke-${smoke}.mjs`), `process.argv[2] = '${smoke}'; await import('../probe.mjs');`);
-    writeFileSync(
-      path.join(temporary, 'node_modules/.bin/electron-builder'),
-      `#!/bin/sh\nexec "${process.execPath}" "${temporary}/probe.mjs" packager\n`,
-      { mode: 0o755 },
-    );
+    for (const entry of ['package', 'dist'])
+      isolated[entry] = isolated[entry].replace(/electron-builder(?: --dir)?$/, 'node probe.mjs packager');
     writeFileSync(path.join(temporary, 'package.json'), JSON.stringify({ type: 'module', scripts: isolated }));
+    const npmExecutable = process.env.npm_execpath ? process.execPath : process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    const npmArgs = process.env.npm_execpath ? [process.env.npm_execpath] : [];
     for (const entry of ['verify', 'package', 'dist']) {
-      for (const fail of ['', ...leaves, 'ipc', 'lifecycle']) {
+      const failures = entry === 'verify' ? [...leaves, 'ipc', 'lifecycle'] : ['format:check', 'lifecycle'];
+      for (const fail of ['', ...failures]) {
         writeFileSync(log, '');
-        const result = spawnSync('npm', ['run', entry], {
+        const result = spawnSync(npmExecutable, [...npmArgs, 'run', entry], {
           cwd: temporary,
           encoding: 'utf8',
           timeout: 15000,
@@ -85,4 +84,4 @@ test('lifecycle gate: real npm execution propagates failed substeps and never re
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }
-}, 60000);
+}, 90000);

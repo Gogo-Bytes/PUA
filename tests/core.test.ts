@@ -16,10 +16,19 @@ import type { SessionInfo } from '../src/shared/ipc/desktop-api';
 describe('terminal transport', () => {
   it('pauses until xterm has consumed the high-water backlog', () => {
     const calls: string[] = [];
-    const flow = new OutputFlow(() => calls.push('pause'), () => calls.push('resume'), 100, 20);
-    flow.sent(70); flow.sent(40); flow.sent(20);
+    const flow = new OutputFlow(
+      () => calls.push('pause'),
+      () => calls.push('resume'),
+      100,
+      20,
+    );
+    flow.sent(70);
+    flow.sent(40);
+    flow.sent(20);
     expect(calls).toEqual(['pause']);
-    flow.acknowledge(NaN); flow.acknowledge(-100); flow.acknowledge(100);
+    flow.acknowledge(NaN);
+    flow.acknowledge(-100);
+    flow.acknowledge(100);
     expect(calls).toEqual(['pause']);
     flow.acknowledge(10);
     expect(calls).toEqual(['pause', 'resume']);
@@ -57,13 +66,16 @@ describe('user-owned Pi runtime', () => {
     expect(() => resolveRuntime({ piPath: '/definitely/not/pi', nodePath: '', args: [] })).toThrow('未找到 Pi');
   });
   it('expands home but does not interpret shell expressions', () => {
-    expect(expandHome('~/project', '/home/test')).toBe('/home/test/project');
+    expect(expandHome('~/project', '/home/test')).toBe(path.join('/home/test', 'project'));
     expect(expandHome('$(pwd)')).toBe('$(pwd)');
   });
 });
 
 describe('async session closure', () => {
-  const initial: SessionWorkspace<SessionInfo> = { sessions: ['A', 'B', 'C'].map(id => ({ id, cwd: '/project', title: id, kind: 'chat', processStatus: 'running', activity: 'idle' })), activeId: 'A' };
+  const initial: SessionWorkspace<SessionInfo> = {
+    sessions: ['A', 'B', 'C'].map(id => ({ id, cwd: '/project', title: id, kind: 'chat', processStatus: 'running', activity: 'idle' })),
+    activeId: 'A',
+  };
   it('reconciles out-of-order close responses without selecting a removed tab', () => {
     const next = removeSession(removeSession(initial, 'B'), 'A');
     expect(next.sessions.map(session => session.id)).toEqual(['C']);
@@ -94,6 +106,8 @@ describe('desktop preferences, separate from Pi config', () => {
       await Promise.all([store.write({ ...defaults, fontSize: 16 }), store.write({ ...defaults, fontSize: 18 })]);
       expect((await store.read()).fontSize).toBe(18);
       expect(JSON.parse(await readFile(file, 'utf8'))).not.toHaveProperty('auth');
-    } finally { await rm(directory, { recursive: true, force: true }); }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });

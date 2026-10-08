@@ -11,49 +11,90 @@ import type { SessionEvent } from '../src/shared/ipc/conversation';
 
 describe('strict RPC JSONL transport', () => {
   it('handles arbitrary UTF-8 chunks, CRLF, and Unicode separators without splitting them', () => {
-    const values: unknown[] = []; const decoder = new JsonlDecoder(value => values.push(value));
+    const values: unknown[] = [];
+    const decoder = new JsonlDecoder(value => values.push(value));
     const input = Buffer.from('{"text":"你\u2028好"}\r\n{"value":2}\n');
-    decoder.push(input.subarray(0, 10)); decoder.push(input.subarray(10, 13)); decoder.push(input.subarray(13)); decoder.end();
+    decoder.push(input.subarray(0, 10));
+    decoder.push(input.subarray(10, 13));
+    decoder.push(input.subarray(13));
+    decoder.end();
     expect(values).toEqual([{ text: '你\u2028好' }, { value: 2 }]);
   });
   it('parses an EOF fragment and rejects malformed or oversized records', () => {
-    const values: unknown[] = []; const decoder = new JsonlDecoder(value => values.push(value), 12); decoder.push('{"ok":true}'); decoder.end(); expect(values).toEqual([{ ok: true }]);
+    const values: unknown[] = [];
+    const decoder = new JsonlDecoder(value => values.push(value), 12);
+    decoder.push('{"ok":true}');
+    decoder.end();
+    expect(values).toEqual([{ ok: true }]);
     expect(() => new JsonlDecoder(() => {}).push('{bad}\n')).toThrow('Malformed Pi RPC JSON');
     expect(() => new JsonlDecoder(() => {}, 3).push('1234')).toThrow('exceeds');
   });
-  it('retains only the bounded stderr tail', () => { const tail = new TailBuffer(8); tail.append('abcdefghijklmnop'); expect(Buffer.byteLength(tail.toString())).toBeLessThanOrEqual(8); });
+  it('retains only the bounded stderr tail', () => {
+    const tail = new TailBuffer(8);
+    tail.append('abcdefghijklmnop');
+    expect(Buffer.byteLength(tail.toString())).toBeLessThanOrEqual(8);
+  });
 });
 
 describe('chat reducer', () => {
   const id = 'session';
   type WithoutId<T> = T extends unknown ? Omit<T, 'id'> : never;
-  const apply = (state: ReturnType<typeof emptyChatState>, event: WithoutId<SessionEvent>) => reduceChatEvent(state, { ...event, id } as SessionEvent);
+  const apply = (state: ReturnType<typeof emptyChatState>, event: WithoutId<SessionEvent>) =>
+    reduceChatEvent(state, { ...event, id } as SessionEvent);
   it('assembles indexed deltas and treats message_end as authoritative', () => {
     let state = emptyChatState();
-    state = apply(state, { type: 'chat-message-start', message: { id: 'm', role: 'assistant', blocks: [], timestamp: 1, streaming: true } });
+    state = apply(state, {
+      type: 'chat-message-start',
+      message: { id: 'm', role: 'assistant', blocks: [], timestamp: 1, streaming: true },
+    });
     state = apply(state, { type: 'chat-message-delta', messageId: 'm', blockIndex: 0, blockType: 'text', delta: 'part' });
-    state = apply(state, { type: 'chat-message-end', message: { id: 'm', role: 'assistant', blocks: [{ type: 'text', text: 'final' }], timestamp: 1 } });
-    expect(state.messages).toHaveLength(1); expect(state.messages[0].blocks[0]).toEqual({ type: 'text', text: 'final' });
+    state = apply(state, {
+      type: 'chat-message-end',
+      message: { id: 'm', role: 'assistant', blocks: [{ type: 'text', text: 'final' }], timestamp: 1 },
+    });
+    expect(state.messages).toHaveLength(1);
+    expect(state.messages[0].blocks[0]).toEqual({ type: 'text', text: 'final' });
   });
   it('correlates an out-of-order tool update and preserves a terminal result', () => {
-    let state = emptyChatState(); state = apply(state, { type: 'chat-message-start', message: { id: 'm', role: 'assistant', blocks: [], timestamp: 1 } });
-    state = apply(state, { type: 'chat-tool', messageId: 'm', blockIndex: 1, tool: { id: 't', name: 'bash', arguments: {}, status: 'success', output: 'ok' } });
-    state = apply(state, { type: 'chat-tool', messageId: 'm', blockIndex: 1, tool: { id: 't', name: 'bash', arguments: {}, status: 'running', output: '' } });
+    let state = emptyChatState();
+    state = apply(state, { type: 'chat-message-start', message: { id: 'm', role: 'assistant', blocks: [], timestamp: 1 } });
+    state = apply(state, {
+      type: 'chat-tool',
+      messageId: 'm',
+      blockIndex: 1,
+      tool: { id: 't', name: 'bash', arguments: {}, status: 'success', output: 'ok' },
+    });
+    state = apply(state, {
+      type: 'chat-tool',
+      messageId: 'm',
+      blockIndex: 1,
+      tool: { id: 't', name: 'bash', arguments: {}, status: 'running', output: '' },
+    });
     expect(state.messages[0].blocks[1]).toMatchObject({ type: 'tool', tool: { status: 'success', output: 'ok' } });
   });
 });
 
 describe('chat attachment policy', () => {
   it('allows only supported image types', () => {
-    expect(imageMimeType('screen.PNG')).toBe('image/png'); expect(imageMimeType('notes.txt')).toBeUndefined();
+    expect(imageMimeType('screen.PNG')).toBe('image/png');
+    expect(imageMimeType('notes.txt')).toBeUndefined();
   });
 });
 
 describe('project resource trust detection', () => {
   it('detects ancestor Pi/agent resources and exposes safe skill names for pre-session @ suggestions', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'pua-resources-')); const child = path.join(root, 'src');
-    try { await mkdir(path.join(root, '.agents/skills/review-code'), { recursive: true }); await mkdir(child); const result = await inspectProjectResources(child); expect(result.hasResources).toBe(true); expect(result.paths.some(value => value.endsWith('.agents/skills'))).toBe(true); expect(result.skills).toEqual([{ name: 'review-code', source: 'skill' }]); }
-    finally { await rm(root, { recursive: true, force: true }); }
+    const root = await mkdtemp(path.join(os.tmpdir(), 'pua-resources-'));
+    const child = path.join(root, 'src');
+    try {
+      await mkdir(path.join(root, '.agents/skills/review-code'), { recursive: true });
+      await mkdir(child);
+      const result = await inspectProjectResources(child);
+      expect(result.hasResources).toBe(true);
+      expect(result.paths.some(value => value.endsWith(path.join('.agents', 'skills')))).toBe(true);
+      expect(result.skills).toEqual([{ name: 'review-code', source: 'skill' }]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });
 
