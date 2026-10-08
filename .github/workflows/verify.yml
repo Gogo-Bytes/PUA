@@ -41,7 +41,7 @@ jobs:
           status=$?
           cat vitest.log
           if [ "$status" -ne 0 ]; then
-            node -e 'const s=require("node:fs").readFileSync("vitest.log","utf8").slice(-6000);console.log("::error title=Vitest output::"+s.replaceAll("%","%25").replaceAll("\r","%0D").replaceAll("\n","%0A"))'
+            node -e 'const s=require("node:fs").readFileSync("vitest.log","utf8").replace(/\u001b\[[0-9;]*m/g,"");const lines=s.split(/\r?\n/);const failures=lines.filter(line=>/^\s*(?:FAIL|Failed Tests|Failed Suites|Test Files|Tests\s|Errors\s|Error:|AssertionError:|TimeoutError:)/.test(line));const detail=failures.length?failures.join("\n").slice(0,3000):lines.slice(-30).join("\n").slice(-3000);console.log("::error title=Vitest failures::"+detail.replaceAll("%","%25").replaceAll("\r","%0D").replaceAll("\n","%0A"))'
           fi
           exit "$status"
       - run: npm run build
