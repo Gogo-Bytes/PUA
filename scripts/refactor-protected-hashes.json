@@ -31,7 +31,7 @@
   "src/renderer/ui/ui.css": "7e4bb24d8e86fb47f6668433fac576eb5306add1ea497cbc8ae2aed09a04b569",
   "tests/component-composer.test.tsx": "2a3ce8eb1670bc9ef2952e29e2abc2adb04716f73e2624edb4af0ea6652d73dc",
   "tests/component-inline-rename.test.tsx": "0f83895e614d6d51996e86302103e2d9ca06b9f93e0a56d45e4ee0655fdb7211",
-  "tests/component-modules.test.tsx": "1702e6c7330dbc0199888fecd15cc472a25392c3a63947213871f0aab9e88913",
+  "tests/component-modules.test.tsx": "92ae070279816a2897b0dd72619aa05c3657e6a8b43d3ea2646e235a56e0820f",
   "tests/component-motion.test.tsx": "12ee921332cf0d6bd5603dd93d22d16f055991ccb94fe904fc555f3ab38ef113",
   "tests/component-notifications.test.tsx": "caf635f18adca180996e9b81e957577f809f0f31d27b30549ae4a04f5b84816e",
   "tests/component-preview/CompletionExamples.tsx": "90e6b1ad3971d090518e531f4c373dce8bd9965370f976dbf38ae08a49089608",
