@@ -10,7 +10,14 @@ PUA（**Pi Universal App**）给你已经在用的 **Pi coding agent** 一个原
 
 ## 开始使用
 
-需要 Node.js **22.19+**、npm，以及你自己安装的 Pi。桌面应用不会替你安装或更新 Pi。克隆源码后即可在本机运行：
+需要 Node.js **22.19+**、npm，以及你自己安装的 Pi。桌面应用不会替你安装或更新 Pi。尚未安装 Pi 时，可先安装 PUA 当前验证的 **0.85.1** 版本；已有 Pi 的用户无需重装。Pi 的其他安装方式与登录步骤见[官方快速入门](https://pi.dev/docs/latest/quickstart)。
+
+```bash
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.85.1
+pi --version
+```
+
+克隆 PUA 源码后在本机运行：
 
 ```bash
 git clone https://github.com/Gogo-Bytes/PUA.git
@@ -32,7 +39,7 @@ Windows 需要 Pi 本身要求的 Git Bash（或你已有的 Pi shell 配置）�
 - RPC 扩展基础 UI：select、confirm、input、editor、notify、status、widget、title 和编辑器预填。
 - 项目资源检测与明确的“沿用 Pi 决定 / 本次信任 / 本次不加载”选项；PUA 不读取或改写 `trust.json`。
 - 新会话、继续最近会话、独立运行标签与后台更新；原生历史选择器首期保留在兼容终端。
-- Git 变更审查：未暂存/已暂存范围、真实 diff、未跟踪文件预览，文件引用直接回填当前输入框。面板只读并显示整个仓库变更。
+- Git 变更审查：未暂存、已暂存及当前分支的已提交变更；分支范围从默认分支的共同祖先比较。真实 diff、未跟踪文件预览和文件引用回填当前输入框；面板只读。
 - 显式兼容终端保留 Pi 原生 TUI、自定义编辑器、登录、设置、历史选择、终端搜索、图片 addon 与 PTY 背压。
 - Electron renderer 继续启用 sandbox/context isolation；RPC 在独立 utility process 中解析和归一化。
 
@@ -90,6 +97,8 @@ CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未�
 - 0.1 初始研究仅使用本机文档；0.2 补充 Electron/Tauri 与 Codex Desktop 对照；0.3 的原生对话技术决策与协议边界单独记录。Windows/Linux 真机发行、签名、公证和自动更新仍未验收。
 
 详见 [原生对话技术设计](docs/native-chat-design.md)、[研究与兼容矩阵](research.md)、[Codex Desktop 对照研究](docs/codex-desktop-study.md)、[现行架构说明](docs/architecture.md)、[目标架构](docs/target-architecture.md)、[验证记录](docs/validation.md)。
+
+参与开发请看[贡献指南](CONTRIBUTING.md)。
 
 ## 许可证
 
