@@ -90,7 +90,7 @@ CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未�
 - 原生历史恢复、模型/思考选择、会话树、消息级 fork/clone、压缩和当前 Pi 会话 token/cost 统计已通过 RPC 接入；OAuth/凭据管理仍由 Pi 自身和兼容终端负责。
 - RPC 明确不支持任意 `ctx.ui.custom()`、自定义 editor/header/footer/theme 或 TUI renderer。扩展业务逻辑仍可运行，但这些呈现能力必须使用兼容终端。
 - Git 面板显示会话**启动目录**所属仓库的手动刷新快照。若在 Pi 内切换了工作目录，面板不会伪装已同步；请另开对应项目。文本预览有显示上限，文件及 Pi 能力不受限制。
-- 已验证 macOS arm64 的真实 Electron/PTY 和 Pi 0.85.1 自定义编辑器、`/settings`、`/quit`；其他 OS/架构、真实 OAuth、完整扩展生态仍待验证。
+- 已在 macOS arm64 本机验证真实 Electron/PTY 和 Pi 0.85.1 自定义编辑器、`/settings`、`/quit`；Intel Mac、Windows 和 Linux 的 CI 已通过离线打包应用烟测，真实 Pi 交互、OAuth 和完整扩展生态仍待这些平台的人工验收。
 - xterm 不等价于全部现代终端协议；默认声明 addon 已支持的 iTerm2 图片协议，**不宣称支持 Kitty graphics 或完整 Kitty keyboard**。用户 Pi 设置/显式环境覆盖仍优先。图片 addon 上游标明 IIP alpha、SIXEL beta；图片粘贴与大图显示仍需专项验收。
 - 终端搜索范围为当前 20,000 行滚动缓冲；完整历史仍在 Pi 原生会话中。关闭窗口会结束进程，不提供后台常驻或崩溃自动恢复。关闭时清理可发现的后代（含 Pi bash detached 子组）；已经 daemonize/reparent 脱离父子树的扩展进程仍按扩展自身生命周期管理。
 - 附加 CLI 参数存入桌面设置，勿填写 API key。软件没有凭据编辑器，不复制 `auth.json`。

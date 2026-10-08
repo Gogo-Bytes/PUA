@@ -16,6 +16,8 @@ Environment 的协作区只投影本窗口同项目中由 PUA 管理的其他活
 
 提交 `c0d12c7` 的[三平台 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37752795818) 全部通过。macOS 本机与 CI 的未签名打包和离线启动验证支持开发者自行构建；签名、公证与公开发布不属于当前阶段。
 
+提交 `cff0c30` 的[四平台 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37776477500) 全部通过：Apple Silicon Mac、Intel Mac、Linux 与 Windows 均完成代码门禁、未签名打包及打包应用离线烟测；两个 Mac runner 还通过 IPC 与生命周期 smoke。Intel Mac 的验证来自 CI 虚拟机，不包含真实 Pi 登录、模型或系统输入法人工操作。
+
 以下章节是历史批次的当时记录；其“未运行”说明不覆盖本节当前验证。
 
 ## 累计架构 checkpoint：strict Pi 有限收尾
