@@ -58,7 +58,7 @@ jobs:
           fs.writeFileSync(process.argv[2], key, { mode: 0o600 });
           NODE
           export APPLE_API_KEY="$key_path"
-          npx electron-builder --config build/macos-release.cjs --mac --publish never
+          npx electron-builder --config build/macos-release.mjs --mac --publish never
       - name: Verify signed and notarized app
         shell: bash
         run: |

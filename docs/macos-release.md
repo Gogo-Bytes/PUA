@@ -1,6 +1,6 @@
 # macOS 签名候选包
 
-`.github/workflows/macos-signed.yml` 由 Actions 手动触发，在 macOS 15 arm64 与 Intel x64 各自运行完整 `verify`，再以 `build/macos-release.cjs` 生成 Developer ID 签名、公证并附票的 DMG/ZIP。工作流检查 `codesign`、`stapler`、Gatekeeper 和打包应用离线烟测，只把安装包保存为工作流 artifact；不会创建公开 GitHub Release。日常三平台 CI 继续验证未签名安装包。
+`.github/workflows/macos-signed.yml` 由 Actions 手动触发，在 macOS 15 arm64 与 Intel x64 各自运行完整 `verify`，再以 `build/macos-release.mjs` 生成 Developer ID 签名、公证并附票的 DMG/ZIP。工作流检查 `codesign`、`stapler`、Gatekeeper 和打包应用离线烟测，只把安装包保存为工作流 artifact；不会创建公开 GitHub Release。日常三平台 CI 继续验证未签名安装包。
 
 ## 仓库 Secrets
 
@@ -22,7 +22,7 @@
 
 ```sh
 npm run verify
-npx electron-builder --config build/macos-release.cjs --mac --publish never
+npx electron-builder --config build/macos-release.mjs --mac --publish never
 codesign --verify --deep --strict --verbose=2 'release/mac-arm64/Pi Desktop.app'
 xcrun stapler validate 'release/mac-arm64/Pi Desktop.app'
 spctl --assess --verbose --type exec 'release/mac-arm64/Pi Desktop.app'

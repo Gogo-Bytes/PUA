@@ -1,7 +1,8 @@
 // The ordinary package.json build stays unsigned for the cross-platform CI matrix.
-const { build } = require('../package.json');
+import packageJson from '../package.json' with { type: 'json' };
 
-module.exports = {
+const { build } = packageJson;
+export default {
   ...build,
   mac: {
     ...build.mac,
