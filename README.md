@@ -90,3 +90,7 @@ CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未�
 - 0.1 初始研究仅使用本机文档；0.2 补充 Electron/Tauri 与 Codex Desktop 对照；0.3 的原生对话技术决策与协议边界单独记录。Windows/Linux 真机发行、签名、公证和自动更新仍未验收。
 
 详见 [原生对话技术设计](docs/native-chat-design.md)、[研究与兼容矩阵](research.md)、[Codex Desktop 对照研究](docs/codex-desktop-study.md)、[现行架构说明](docs/architecture.md)、[目标架构](docs/target-architecture.md)、[验证记录](docs/validation.md)。
+
+## 许可证
+
+PUA 原创代码使用 [MIT 许可证](LICENSE)。改编自 shadcn/ui 的组件保留其[原版权与许可声明](src/renderer/ui/SHADCN-LICENSE.txt)；其他第三方依赖遵循各自许可证。

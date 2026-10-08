@@ -2,6 +2,7 @@
   "name": "pi-desktop",
   "version": "0.3.0",
   "private": true,
+  "license": "MIT",
   "description": "A desktop workspace for your own Pi agent — no fork, no reduced toolset.",
   "author": {
     "name": "GuoGan",
@@ -86,7 +87,9 @@
     },
     "files": [
       "dist/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE",
+      "src/renderer/ui/SHADCN-LICENSE.txt"
     ],
     "asarUnpack": [
       "node_modules/node-pty/**/*"
