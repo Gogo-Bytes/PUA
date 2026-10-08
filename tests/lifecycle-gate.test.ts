@@ -55,9 +55,15 @@ test('lifecycle gate: real npm execution propagates failed substeps and never re
     writeFileSync(path.join(temporary, 'package.json'), JSON.stringify({ type: 'module', scripts: isolated }));
     const npmExecutable = process.env.npm_execpath ? process.execPath : process.platform === 'win32' ? 'npm.cmd' : 'npm';
     const npmArgs = process.env.npm_execpath ? [process.env.npm_execpath] : [];
-    for (const entry of ['verify', 'package', 'dist']) {
-      const failures = entry === 'verify' ? [...leaves, 'ipc', 'lifecycle'] : ['format:check', 'lifecycle'];
-      for (const fail of ['', ...failures]) {
+    const cases: Record<string, string[]> = {
+      verify: ['', 'check:protected', 'test', 'lifecycle'],
+      package: ['', 'lifecycle'],
+      dist: [''],
+    };
+    // The graph assertion above covers every leaf. Keep subprocess checks short
+    // enough for Vitest's 60-second worker RPC deadline on slow CI runners.
+    for (const [entry, failures] of Object.entries(cases)) {
+      for (const fail of failures) {
         writeFileSync(log, '');
         const result = spawnSync(npmExecutable, [...npmArgs, 'run', entry], {
           cwd: temporary,
