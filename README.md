@@ -82,6 +82,12 @@ npm run test:lifecycle:stress # 10 轮真实 Electron 生命周期压力验证�
 
 `test:pi` 可用 `PI_DESKTOP_TEST_PI` / `PI_DESKTOP_TEST_NODE` 指定测试安装路径，要求该 Pi 包包含官方 `examples/extensions/modal-editor.ts`。不要将测试视为已验证真实 OAuth 或付费模型调用。
 
+macOS Apple Silicon 自行构建应用后，也可让同一套离线测试直接运行打包产物（Intel Mac 将路径中的 `mac-arm64` 改为 `mac`）：
+
+```bash
+PI_DESKTOP_TEST_EXECUTABLE="$PWD/release/mac-arm64/Pi Desktop.app/Contents/MacOS/Pi Desktop" node scripts/smoke-pi.mjs
+```
+
 CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未签名安装包打包；macOS 另运行 IPC、生命周期及打包应用烟测。Linux 和 Windows 的打包应用烟测已加入门禁，结果见[验证记录](docs/validation.md)。这些检查验证了从源码打包及离线启动；安装、升级、卸载仍需实机验收。
 
 ## 已知边界

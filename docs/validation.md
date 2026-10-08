@@ -18,6 +18,8 @@ Environment 的协作区只投影本窗口同项目中由 PUA 管理的其他活
 
 提交 `cff0c30` 的[四平台 CI](https://github.com/Gogo-Bytes/PUA/actions/runs/37776477500) 全部通过：Apple Silicon Mac、Intel Mac、Linux 与 Windows 均完成代码门禁、未签名打包及打包应用离线烟测；两个 Mac runner 还通过 IPC 与生命周期 smoke。Intel Mac 的验证来自 CI 虚拟机，不包含真实 Pi 登录、模型或系统输入法人工操作。
 
+本机 macOS arm64 额外以自构建 `.app` 执行 `scripts/smoke-pi.mjs`，隔离配置下的真实 Pi 0.85.1 RPC、官方扩展 UI 与兼容终端 `modal-editor.ts` 均通过；源码应用的同一脚本也通过。两条路径都不调用模型或读取用户 Pi 配置，不构成真实登录、模型与输入法验收。
+
 以下章节是历史批次的当时记录；其“未运行”说明不覆盖本节当前验证。
 
 ## 累计架构 checkpoint：strict Pi 有限收尾
