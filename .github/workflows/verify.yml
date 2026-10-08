@@ -73,6 +73,16 @@ jobs:
           apps=(release/mac*/"Pi Desktop.app"/Contents/MacOS/"Pi Desktop")
           test "${#apps[@]}" -eq 1
           PI_DESKTOP_TEST_EXECUTABLE="$PWD/${apps[0]}" node scripts/smoke-desktop.mjs
+      - name: Smoke packaged macOS app with offline Pi
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.85.1
+          test "$(pi --version)" = '0.85.1'
+          shopt -s nullglob
+          apps=(release/mac*/"Pi Desktop.app"/Contents/MacOS/"Pi Desktop")
+          test "${#apps[@]}" -eq 1
+          PI_DESKTOP_TEST_EXECUTABLE="$PWD/${apps[0]}" node scripts/smoke-pi.mjs
       - name: Smoke packaged Linux app
         if: runner.os == 'Linux'
         shell: bash
