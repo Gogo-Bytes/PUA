@@ -2,6 +2,10 @@
 
 产品名称为 **PUA — Pi Universal App**。为保持 app id 和用户数据路径，本次打包产物名称仍为 `Pi Desktop.app`。
 
+## 2026-10-09 文档审查基线
+
+本次仅整理文档并记录后续架构问题，没有修改生产代码。`npm run typecheck`、`npm run lint`、`npm run check:boundaries`、`npm run check:protected` 和 `npm test` 均通过；本次测试为 92 个测试文件、2811 个测试。后续问题和建议实施顺序见 [架构后续问题](architecture-followups.md)。
+
 ## 2026-10-08 当前验证
 
 当前代码门禁已包含保护集合、边界、ESLint、格式、生产与测试类型检查、Vitest、构建、IPC 和生命周期 smoke。`npm run verify` 在本机 macOS arm64 通过：90 个测试文件、2801 项测试；`npm run test:lifecycle:stress` 的 50 个清理场景、离线真实 Pi smoke、源应用桌面 smoke 和浏览器 smoke 也通过。隔离组件及工作台预览脚本分别通过；已按用户批准的新 UI 更新密度/排版浏览器断言和精确保护 hash，两份脚本现均通过。

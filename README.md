@@ -102,7 +102,7 @@ CI 在 macOS、Windows 和 Linux 上运行代码检查、测试、构建和未�
 - 附加 CLI 参数存入桌面设置，勿填写 API key。软件没有凭据编辑器，不复制 `auth.json`。
 - 0.1 初始研究仅使用本机文档；0.2 补充 Electron/Tauri 与 Codex Desktop 对照；0.3 的原生对话技术决策与协议边界单独记录。Windows/Linux 真机发行、签名、公证和自动更新仍未验收。
 
-详见 [原生对话技术设计](docs/native-chat-design.md)、[研究与兼容矩阵](research.md)、[Codex Desktop 对照研究](docs/codex-desktop-study.md)、[现行架构说明](docs/architecture.md)、[目标架构](docs/target-architecture.md)、[验证记录](docs/validation.md)。
+文档入口见 [项目文档索引](docs/README.md)。核心材料包括 [原生对话技术设计](docs/native-chat-design.md)、[现行架构说明](docs/architecture.md)、[目标架构](docs/target-architecture.md)、[架构后续问题](docs/architecture-followups.md) 和 [验证记录](docs/validation.md)。早期 Pi 调研仍保留在仓库根目录 `research.md`，仅作历史背景。
 
 参与开发请看[贡献指南](CONTRIBUTING.md)。
 
