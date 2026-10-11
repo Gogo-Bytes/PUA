@@ -28,6 +28,7 @@
     "test:lifecycle": "npm run build && node scripts/smoke-lifecycle.mjs",
     "test:lifecycle:stress": "npm run build && node scripts/smoke-lifecycle.mjs --repeat=10",
     "dev:components": "vite --config tests/component-preview/vite.config.ts",
+    "dev:workspace": "vite --config tests/workspace-preview.config.ts",
     "typecheck:tests": "tsc -p tsconfig.tests.json --noEmit",
     "check:protected": "node scripts/check-protected.ts",
     "check:boundaries": "node scripts/check-boundaries.ts",

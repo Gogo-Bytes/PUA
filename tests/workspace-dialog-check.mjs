@@ -10,10 +10,12 @@ try {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('console', message => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
   await page.goto('http://127.0.0.1:4181/workspace-preview.html');
   const projects = page.getByRole('navigation', { name: '项目', exact: true });
-  await page.getByRole('textbox', { name: '筛选项目和会话' }).waitFor();
+  await projects.waitFor();
   await projects.getByTitle('/test/workspace/PUA', { exact: true }).click();
   await page.keyboard.press('Escape');
   const draft = page.getByRole('region', { name: '新对话', exact: true });
@@ -29,7 +31,9 @@ try {
   assert.equal(await editor.inputValue(), '尚未发送的草稿');
   assert.equal(await page.locator('.workspace-session-row').count(), 0);
 
-  const opener = page.getByRole('button', { name: '在 PUA 中打开兼容终端（/test/workspace/PUA）', exact: true });
+  const projectActions = projects.getByRole('button', { name: 'PUA 更多操作（/test/workspace/PUA）', exact: true });
+  await projectActions.click();
+  const opener = page.getByRole('menuitem', { name: '打开兼容终端', exact: true });
   await opener.click();
   const dialog = page.getByRole('dialog');
   assert(await page.getByRole('textbox', { name: '项目文件夹' }).evaluate(node => node === document.activeElement));
@@ -46,7 +50,10 @@ try {
   await page.screenshot({ path: `${output}/pending-dialog.png` });
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'detached' });
-  await page.waitForFunction(label => document.activeElement?.getAttribute('aria-label') === label, await opener.getAttribute('aria-label'));
+  await page.waitForFunction(
+    label => document.activeElement?.getAttribute('aria-label') === label,
+    await projectActions.getAttribute('aria-label'),
+  );
   assert.deepEqual(errors, []);
   console.log('PASS: lazy project draft creates no empty history; terminal-only Dialog traps focus and restores its opener.', output);
 } finally {
