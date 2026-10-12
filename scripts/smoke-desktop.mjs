@@ -97,6 +97,8 @@ try {
   const firstId = await window.locator('.chat-pane.active').getAttribute('data-session-id');
   await window.locator('code.hljs').first().waitFor();
   assert.equal(await window.locator('code.hljs').count(), 1);
+  const workSummary = window.getByRole('button', { name: '展开思考和工作过程', exact: true });
+  if (await workSummary.count()) await workSummary.click();
   await window.getByText('读取 · README.md').first().waitFor();
   await window.getByText('运行 · printf final-authoritative', { exact: true }).first().waitFor();
   assert.equal(await window.getByText('ghost', { exact: true }).count(), 0);
@@ -163,7 +165,7 @@ try {
   await window.getByText('startup status retained', { exact: true }).waitFor();
   await window.getByRole('textbox', { name: '发送消息' }).fill('/mock-prefill');
   await window.getByRole('button', { name: '发送', exact: false }).click();
-  await window.waitForFunction(() => document.querySelector('textarea[aria-label="发送消息"]')?.value === '预填草稿');
+  await window.waitForFunction(() => document.querySelector('.chat-pane.active textarea[aria-label="发送消息"]')?.value === '预填草稿');
   await window.getByRole('textbox', { name: '发送消息' }).fill('/mock-timeout');
   await window.getByRole('button', { name: '发送', exact: false }).click();
   await window.waitForFunction(() => window.__events.some(e => e.type === 'extension-ui-closed' && e.requestId.startsWith('timeout-')));
@@ -207,7 +209,9 @@ try {
   await window.getByRole('textbox', { name: '发送消息' }).press('Alt+Enter');
   await window.getByText(/后续 · follow later/).waitFor();
   await window.getByRole('button', { name: '停止', exact: false }).click();
-  await window.waitForFunction(() => document.querySelector('textarea[aria-label="发送消息"]')?.value.includes('steer this'));
+  await window.waitForFunction(() =>
+    document.querySelector('.chat-pane.active textarea[aria-label="发送消息"]')?.value.includes('steer this'),
+  );
 
   await window.getByRole('textbox', { name: '发送消息' }).fill('/mock-zero');
   await window.getByRole('button', { name: '发送', exact: false }).click();
@@ -249,6 +253,12 @@ try {
   const readerDistance = await scroller.evaluate(node => node.scrollHeight - node.clientHeight - node.scrollTop);
   assert(readerDistance > 100, `streaming must not pull an upward-scrolling reader (distance from bottom: ${readerDistance}px)`);
   await window.getByRole('button', { name: '回到最新' }).click();
+  await window.getByText(/Paragraph 100:/).waitFor();
+  const workSummaries = window.locator('.chat-pane.active .worked-summary > .ui-collapsible > button');
+  for (let index = 0, count = await workSummaries.count(); index < count; index += 1) {
+    const summary = workSummaries.nth(index);
+    if ((await summary.getAttribute('aria-expanded')) !== 'true') await summary.click();
+  }
   await window.getByText('读取 · long.txt', { exact: true }).waitFor();
   const tool = window.locator('.ui-tool-card').filter({ hasText: 'long.txt' });
   await tool.getByRole('button').click();

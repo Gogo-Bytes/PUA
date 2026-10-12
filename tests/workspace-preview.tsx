@@ -11,6 +11,48 @@ import '../src/renderer/app/production.css';
 const listeners = new Set<(event: SessionEvent) => void>();
 const browserListeners = new Set<(state: BrowserViewState) => void>();
 const sessions = new Map<string, SessionInfo>();
+const mockSessions: SessionInfo[] = [
+  {
+    id: 'mock-working',
+    cwd: '/test/workspace/PUA',
+    title: '修复工作台交互',
+    kind: 'chat',
+    processStatus: 'running',
+    activity: 'responding',
+    pinned: true,
+    lastActivityAt: 4,
+  },
+  {
+    id: 'mock-review',
+    cwd: '/test/workspace/PUA',
+    title: '检查渲染结果',
+    kind: 'chat',
+    processStatus: 'running',
+    activity: 'idle',
+    lastActivityAt: 3,
+  },
+  {
+    id: 'mock-done',
+    cwd: '/test/other/PUA',
+    title: '完成待检查的示例',
+    kind: 'chat',
+    processStatus: 'exited',
+    activity: 'idle',
+    exitCode: 0,
+    lastActivityAt: 2,
+  },
+  {
+    id: 'mock-error',
+    cwd: '/test/other/PUA',
+    title: '失败示例',
+    kind: 'chat',
+    processStatus: 'exited',
+    activity: 'idle',
+    exitCode: 1,
+    lastActivityAt: 1,
+  },
+];
+mockSessions.forEach(session => sessions.set(session.id, session));
 let preferences: Preferences = {
   piPath: 'TEST ONLY / no executable',
   nodePath: '',
@@ -42,6 +84,19 @@ const bootstrap: DesktopAPI['bootstrap'] = async () => ({
   runtime: { executable: 'TEST ONLY', args: [], source: 'MOCK / NOT ELECTRON' },
   home: '/test',
   platform: 'darwin',
+  restoredSessions: mockSessions,
+  archivedSessions: [
+    {
+      id: 'mock-archived',
+      cwd: '/test/empty',
+      title: '已归档示例',
+      kind: 'chat',
+      processStatus: 'exited',
+      activity: 'idle',
+      archived: true,
+      lastActivityAt: 0,
+    },
+  ],
 });
 installDesktopFake({
   bootstrap,
@@ -109,12 +164,16 @@ installDesktopFake({
                 text: '建议把来源紧随文件名，对话保留执行摘要。**同一路径可能对应不同时间的内容**，不要把工具快照当作当前文件。',
               },
               {
+                type: 'thinking',
+                text: '先确认数据来源，再区分工作区快照、暂存区和当前磁盘内容。这个过程默认折叠，用户展开后才查看细节。',
+              },
+              {
                 type: 'tool',
                 tool: { id: `${id}-read`, name: 'read', arguments: { path: 'docs/context.md' }, status: 'success', output: source },
               },
               {
                 type: 'text',
-                text: '### 保持阅读连续\n\n- 工具结果展开查看参数与返回。\n- 检查区区分工作区与暂存范围。\n- 引用只加入当前会话草稿。\n\n```ts\nconst source = "tool snapshot";\nconst currentFile = false;\n```\n\n这是浏览器测试数据，不是 Pi 的真实回复。',
+                text: '### 保持阅读连续\n\n- [x] 工具结果展开查看参数与返回。\n- [ ] 检查区区分工作区与暂存范围。\n- [x] 引用只加入当前会话草稿。\n\n| 来源 | 是否实时 |\n| --- | --- |\n| 工具快照 | 否 |\n| 工作区 | 是 |\n\n> 这是一个隔离的 mock 结果。\n\n```ts\nconst source = "tool snapshot";\nconst currentFile = false;\n```\n\n这是浏览器测试数据，不是 Pi 的真实回复。',
               },
             ],
           },
@@ -125,8 +184,37 @@ installDesktopFake({
     sessions.delete(id);
     return true;
   },
-  searchHistory: async () => [],
-  restoreArchivedSession: async id => sessions.get(id)!,
+  searchHistory: async ({ query, limit = 30 }) => {
+    const normalized = query.trim().toLocaleLowerCase();
+    if (!normalized) return [];
+    return [...sessions.values()]
+      .filter(session => session.title.toLocaleLowerCase().includes(normalized))
+      .slice(0, limit)
+      .map(session => ({
+        taskId: session.id,
+        title: session.title,
+        cwd: session.cwd,
+        entryId: `${session.id}-entry`,
+        role: 'user' as const,
+        snippet: `Mock 命中：${session.title}`,
+        timestamp: session.lastActivityAt ?? 0,
+        archived: !!session.archived,
+        query,
+      }));
+  },
+  restoreArchivedSession: async id => {
+    const restored = {
+      id,
+      cwd: '/test/empty',
+      title: '已归档示例',
+      kind: 'chat' as const,
+      processStatus: 'running' as const,
+      activity: 'idle' as const,
+      lastActivityAt: Date.now(),
+    };
+    sessions.set(id, restored);
+    return restored;
+  },
   deleteArchivedSession: async id => {
     sessions.delete(id);
   },

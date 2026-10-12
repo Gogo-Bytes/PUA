@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChangedFile, DiffScope, FileDiff, GitBranchComparison, GitStatus } from '../../../shared/ipc/change-review';
 import { filesForScope } from './scope';
 import { referencePaths } from '../workspace';
-import { Button, DiffView, Icon, IconButton, Tabs } from '../../ui';
+import { Button, DiffView, Icon, IconButton, Tabs, Tooltip } from '../../ui';
 import { CopyButton, LazyMarkdownView as MarkdownView, SourceView } from '../content';
 import { isConflictPatch, parseDiffLines } from './diff-lines';
 
@@ -20,6 +20,7 @@ function Review({ sessionId, theme = 'light', onReference }: Parameters<typeof G
   const [comparison, setComparison] = useState<GitBranchComparison | null>(null);
   const [comparisonError, setComparisonError] = useState('');
   const [scope, setScope] = useState<ReviewMode>('worktree');
+  const [allExpanded, setAllExpanded] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -61,10 +62,15 @@ function Review({ sessionId, theme = 'light', onReference }: Parameters<typeof G
   return (
     <aside className="git-panel" aria-label="文件与 Git 检查区">
       <div className="review-toolbar">
+        <div className="review-toolbar-branch" aria-label="分支比较">
+          <span>{scope === 'branch' ? comparison?.current || '当前分支' : status?.branch || 'Git'}</span>
+          <Icon name="forward" />
+          <span>{scope === 'branch' ? comparison?.baseline || '参照分支' : scope === 'index' ? '暂存区' : '工作区'}</span>
+        </div>
         <div className="review-scope" role="group" aria-label="变更范围">
           {(['worktree', 'index'] as const).map(value => (
+            <Tooltip key={value} content={`查看${value === 'index' ? '暂存区' : '工作区'}变更`}>
             <Button
-              key={value}
               variant="ghost"
               className={scope === value ? 'is-active' : ''}
               aria-label={`查看${value === 'index' ? '暂存区' : '工作区'}变更`}
@@ -73,7 +79,9 @@ function Review({ sessionId, theme = 'light', onReference }: Parameters<typeof G
             >
               <Icon name={value === 'index' ? 'branch' : 'review'} />
             </Button>
+            </Tooltip>
           ))}
+          <Tooltip content="比较当前分支">
           <Button
             variant="ghost"
             className={scope === 'branch' ? 'is-active' : ''}
@@ -83,15 +91,19 @@ function Review({ sessionId, theme = 'light', onReference }: Parameters<typeof G
           >
             <Icon name="branch" />
           </Button>
+          </Tooltip>
         </div>
+        <Tooltip content={allExpanded ? '全部收起' : '全部展开'}>
+          <IconButton
+            icon={allExpanded ? 'down' : 'chevron'}
+            label={allExpanded ? '全部收起文件' : '全部展开文件'}
+            variant="ghost"
+            onClick={() => setAllExpanded(value => !value)}
+          />
+        </Tooltip>
+        <Tooltip content={busy ? '刷新中…' : '刷新'}>
         <IconButton icon="refresh" label={busy ? '刷新中…' : '刷新'} disabled={busy} variant="ghost" onClick={() => void refresh()} />
-      </div>
-      <div className="review-branch" aria-label="分支比较">
-        <span className="review-branch-ref">{scope === 'branch' ? comparison?.baseline || '参照分支' : status?.branch || 'Git'}</span>
-        <Icon name="forward" />
-        <span className="review-branch-target" aria-label={scope === 'branch' ? '当前分支' : scope === 'index' ? '暂存区' : '工作区'}>
-          {scope === 'branch' ? comparison?.current || '当前分支' : <Icon name={scope === 'index' ? 'branch' : 'review'} />}
-        </span>
+        </Tooltip>
       </div>
       <div className="inspector-scroll">
         {error && (
@@ -127,6 +139,7 @@ function Review({ sessionId, theme = 'light', onReference }: Parameters<typeof G
             sessionId={sessionId}
             scope={scope}
             theme={theme}
+            allExpanded={allExpanded}
             onReference={onReference}
           />
         )}
@@ -141,6 +154,7 @@ function ReviewFiles({
   sessionId,
   scope,
   theme,
+  allExpanded,
   onReference,
 }: {
   status: GitStatus;
@@ -148,6 +162,7 @@ function ReviewFiles({
   sessionId: string;
   scope: ReviewMode;
   theme: 'light' | 'dark';
+  allExpanded: boolean;
   onReference(text: string): void;
 }) {
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -183,34 +198,16 @@ function ReviewFiles({
   }, [sessionId, scope, status, limit]);
   const visible = files.slice(0, limit);
   const loading = visible.some(file => !results.get(file.path));
-  const totals = visible.reduce(
-    (summary, file) => {
-      const result = results.get(file.path);
-      if (!result || 'error' in result) return summary;
-      if (result.diff.kind === 'untracked') return { added: summary.added + result.diff.text.split('\n').length, deleted: summary.deleted };
-      if (result.diff.kind !== 'diff' || isConflictPatch(result.diff.text, file)) return summary;
-      const rows = parseDiffLines(result.diff.text, file);
-      return {
-        added: summary.added + rows.filter(row => row.kind === 'addition').length,
-        deleted: summary.deleted + rows.filter(row => row.kind === 'deletion').length,
-      };
-    },
-    { added: 0, deleted: 0 },
-  );
   const [selectedPath, setSelectedPath] = useState(files[0]?.path);
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(files.map(file => file.path)));
+  useEffect(() => {
+    setExpandedPaths(allExpanded ? new Set(files.map(file => file.path)) : new Set());
+  }, [allExpanded, files]);
   useEffect(() => {
     setSelectedPath(current => (files.some(file => file.path === current) ? current : files[0]?.path));
   }, [files]);
-  const selectedFile = visible.find(file => file.path === selectedPath);
   return (
     <div className="review-files" aria-label="变更文件">
-      <div className="review-overview">
-        <strong>{status.branch || '本地变更'}</strong>
-        <div className="review-overview-counts">
-          {totals.added > 0 && <span className="addition-text">+{totals.added}</span>}
-          {totals.deleted > 0 && <span className="deletion-text">−{totals.deleted}</span>}
-        </div>
-      </div>
       <div className="review-file-list">
         {visible.map(file => (
           <ReviewFile
@@ -218,16 +215,24 @@ function ReviewFiles({
             file={file}
             result={results.get(file.path)}
             selected={selectedPath === file.path}
+            expanded={expandedPaths.has(file.path)}
             onSelect={() => setSelectedPath(file.path)}
+            onToggle={() =>
+              setExpandedPaths(current => {
+                const next = new Set(current);
+                next.has(file.path) ? next.delete(file.path) : next.add(file.path);
+                return next;
+              })
+            }
+            sessionId={sessionId}
+            scope={scope}
+            theme={theme}
             onReference={() =>
               onReference(`请检查这个文件的变更：${referencePaths([status.root.replace(/[\\/]$/, '') + '/' + file.path])}`)
             }
           />
         ))}
       </div>
-      {selectedFile && (
-        <ReviewFileDetail file={selectedFile} result={results.get(selectedFile.path)} sessionId={sessionId} scope={scope} theme={theme} />
-      )}
       {limit < files.length && (
         <Button className="review-load-more" disabled={loading} onClick={() => setLimit(current => current + PAGE_SIZE)}>
           {loading ? '读取差异…' : `继续加载 ${Math.min(PAGE_SIZE, files.length - limit)} 个文件`} · 共 {files.length} 个
@@ -241,16 +246,25 @@ function ReviewFile({
   file,
   result,
   selected,
+  expanded,
   onSelect,
+  onToggle,
   onReference,
+  sessionId,
+  scope,
+  theme,
 }: {
   file: ChangedFile;
   result?: Result;
   selected: boolean;
+  expanded: boolean;
   onSelect(): void;
+  onToggle(): void;
   onReference(): void;
+  sessionId: string;
+  scope: ReviewMode;
+  theme: 'light' | 'dark';
 }) {
-  const [expanded, setExpanded] = useState(true);
   const diff = result && 'diff' in result ? result.diff : null;
   const conflict = diff?.kind === 'diff' && isConflictPatch(diff.text, file);
   const rows = diff?.kind === 'diff' && !conflict ? parseDiffLines(diff.text) : [];
@@ -267,10 +281,10 @@ function ReviewFile({
         <Button
           variant="ghost"
           aria-label={file.path}
-          aria-expanded={selected && expanded}
+          aria-expanded={expanded}
           onClick={() => {
             onSelect();
-            setExpanded(true);
+            onToggle();
           }}
           title={file.originalPath ? `${file.originalPath} → ${file.path}` : file.path}
         >
@@ -290,6 +304,7 @@ function ReviewFile({
           {diff && <CopyButton text={diff.text} label={diff.kind === 'untracked' ? '复制文件快照' : '复制差异输出'} />}
         </div>
       </div>
+      {expanded && <ReviewFileDetail file={file} result={result} sessionId={sessionId} scope={scope} theme={theme} />}
     </section>
   );
 }

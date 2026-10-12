@@ -1,10 +1,19 @@
-import type { Bootstrap, CreateSessionOptions, HistorySearchOptions, HistorySearchResult, Preferences, SessionInfo } from '../../shared/ipc/desktop-api.js';
+import type {
+  Bootstrap,
+  CreateSessionOptions,
+  HistorySearchOptions,
+  HistorySearchResult,
+  Preferences,
+  SessionInfo,
+} from '../../shared/ipc/desktop-api.js';
+import path from 'node:path';
 import type { PreferencesApplication } from '../../modules/preferences/index.js';
 import type { resolveRuntime as ResolveRuntime } from '../../platform/pi/runtime/discovery.js';
 import { unwrapSessionResult } from './session-mapper.js';
 import type { composeMain } from './composition.js';
 import type { PersistedChatSession, WorkspaceSessionStore } from './workspace-session-store.js';
 import type { NativePiSessionIdentity } from '../../shared/ipc/pi-session.js';
+import { discoverNativePiSessions } from './pi-session-discovery.js';
 
 type SessionCreation = Pick<ReturnType<typeof composeMain>, 'createSession'> & {
   session: Pick<ReturnType<typeof composeMain>['session'], 'get' | 'start' | 'close'>;
@@ -30,16 +39,37 @@ interface DesktopPreferencesDependencies {
   home: string;
   platform: string;
   sessionStore?: WorkspaceSessionStore;
-  listModels?(runtime: import('../../shared/ipc/desktop-api.js').RuntimeInfo, cwd: string): Promise<import('../../shared/ipc/conversation.js').ChatModel[]>;
+  listModels?(
+    runtime: import('../../shared/ipc/desktop-api.js').RuntimeInfo,
+    cwd: string,
+  ): Promise<import('../../shared/ipc/conversation.js').ChatModel[]>;
+  discoverNativeSessions?(home: string): Promise<PersistedChatSession[]>;
 }
 
 /** Runtime/bootstrap mapping and cross-Session compensation; preferences state lives in the module. */
-export function createDesktopPreferences({ application, resolveRuntime, validateChatArguments, home, platform, sessionStore, listModels = async () => { throw new Error('Pi 模型目录读取器尚未配置'); } }: DesktopPreferencesDependencies) {
+export function createDesktopPreferences({
+  application,
+  resolveRuntime,
+  validateChatArguments,
+  home,
+  platform,
+  sessionStore,
+  listModels = async () => {
+    throw new Error('Pi 模型目录读取器尚未配置');
+  },
+  discoverNativeSessions = discoverNativePiSessions,
+}: DesktopPreferencesDependencies) {
   let restoredSessions: SessionInfo[] = [];
   let archivedSessions: SessionInfo[] = [];
   let restorer: SessionRestoration | undefined;
   const persisted = new Map<string, PersistedChatSession>();
-  type PendingSession = { session: SessionInfo; durable: boolean; pinned: boolean; lastActivityAt: number; identity?: NativePiSessionIdentity };
+  type PendingSession = {
+    session: SessionInfo;
+    durable: boolean;
+    pinned: boolean;
+    lastActivityAt: number;
+    identity?: NativePiSessionIdentity;
+  };
   const pending = new Map<string, PendingSession>();
   const cloneInFlight = new Set<string>();
   const mutations = new Map<string, Promise<void>>();
@@ -55,14 +85,23 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
   function getBootstrap(): Bootstrap {
     const preferences = application.read();
     const base = { preferences, home, platform, ...bootstrapSessions() };
-    try { return { ...base, runtime: resolveRuntime(preferences) }; }
-    catch (error) { return { ...base, runtime: null, runtimeError: (error as Error).message }; }
+    try {
+      return { ...base, runtime: resolveRuntime(preferences) };
+    } catch (error) {
+      return { ...base, runtime: null, runtimeError: (error as Error).message };
+    }
   }
   async function persistPending(id: string, entry: PendingSession): Promise<void> {
     if (!entry.identity || !entry.durable || !sessionStore) return;
     const record: PersistedChatSession = {
-      id, cwd: entry.session.cwd, title: entry.session.title, piSessionId: entry.identity.sessionId, sessionFile: entry.identity.sessionFile,
-      archived: false, pinned: entry.pinned, lastActivityAt: Date.now(),
+      id,
+      cwd: entry.session.cwd,
+      title: entry.session.title,
+      piSessionId: entry.identity.sessionId,
+      sessionFile: entry.identity.sessionFile,
+      archived: false,
+      pinned: entry.pinned,
+      lastActivityAt: Date.now(),
     };
     await sessionStore.upsert(record);
     // A newer accepted message owns the pending record. Its queued write will
@@ -85,13 +124,18 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       const merged = { ...current, title: record.title };
       if (persisted.get(id) === current) {
         persisted.set(id, merged);
-        restoredSessions = restoredSessions.map(item => item.id === id ? { ...item, title: record.title } : item);
-        archivedSessions = archivedSessions.map(item => item.id === id ? { ...item, title: record.title } : item);
+        restoredSessions = restoredSessions.map(item => (item.id === id ? { ...item, title: record.title } : item));
+        archivedSessions = archivedSessions.map(item => (item.id === id ? { ...item, title: record.title } : item));
       }
     } else {
       // Retry only the failed identity/activity fields; title, pin, and archive
       // metadata may have committed while the activity write was waiting.
-      const merged = { ...current, piSessionId: record.piSessionId, sessionFile: record.sessionFile, lastActivityAt: record.lastActivityAt };
+      const merged = {
+        ...current,
+        piSessionId: record.piSessionId,
+        sessionFile: record.sessionFile,
+        lastActivityAt: record.lastActivityAt,
+      };
       await sessionStore.upsert(merged);
       if (persisted.get(id) === current) persisted.set(id, merged);
     }
@@ -102,8 +146,12 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     const operation = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(work);
     mutations.set(id, operation);
     void operation.then(
-      () => { if (mutations.get(id) === operation) mutations.delete(id); },
-      () => { if (mutations.get(id) === operation) mutations.delete(id); },
+      () => {
+        if (mutations.get(id) === operation) mutations.delete(id);
+      },
+      () => {
+        if (mutations.get(id) === operation) mutations.delete(id);
+      },
     );
     return operation;
   }
@@ -124,7 +172,8 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       return;
     }
     persistenceRetryAttempts.set(id, attempt + 1);
-    const timer = setTimeout(() => {
+    const timer = setTimeout(
+      () => {
       persistenceRetries.delete(id);
       const entry = pending.get(id);
       const retryRecord = retryRecords.get(id);
@@ -136,7 +185,9 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         console.warn(`重试保存 Pi 会话 ${id} 失败: ${String(error)}`);
         schedulePersistenceRetry(id);
       });
-    }, Math.min(30_000, 1_000 * (2 ** attempt)));
+      },
+      Math.min(30_000, 1_000 * 2 ** attempt),
+    );
     timer.unref?.();
     persistenceRetries.set(id, timer);
   }
@@ -156,7 +207,15 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       const runtime = resolveRuntime(preferences);
       const session = await capabilities.createSession(runtime, options);
       const createdAt = Date.now();
-      pending.set(session.id, { session, durable: sessionStore !== undefined && options.kind === 'chat' && !runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session=')), pinned: false, lastActivityAt: createdAt });
+      pending.set(session.id, {
+        session,
+        durable:
+          sessionStore !== undefined &&
+          options.kind === 'chat' &&
+          !runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session=')),
+        pinned: false,
+        lastActivityAt: createdAt,
+      });
       await application.recordRecent(session.cwd, async error => {
         pending.delete(session.id);
         unwrapSessionResult(await capabilities.session.close(session.id));
@@ -168,7 +227,8 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       await restoreReady;
       const source = capabilities.session.get(id);
       if (!source || source.kind !== 'chat') throw new Error('只有 Pi 对话可以创建原生副本');
-      if (source.lifecycle.phase !== 'running' || capabilities.activity(id) !== 'idle') throw new Error('会话正在处理，完成当前操作后再创建副本');
+      if (source.lifecycle.phase !== 'running' || capabilities.activity(id) !== 'idle')
+        throw new Error('会话正在处理，完成当前操作后再创建副本');
       if (cloneInFlight.has(id)) throw new Error('当前会话的副本正在创建');
       cloneInFlight.add(id);
       try {
@@ -178,12 +238,19 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       const preferences = application.read();
       validateChatArguments(preferences.args);
       const runtime = resolveRuntime(preferences);
-      if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session='))) throw new Error('当前 Pi 配置为 --no-session，无法创建副本');
+        if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session=')))
+          throw new Error('当前 Pi 配置为 --no-session，无法创建副本');
       const probeId = newSessionId();
       if (!capabilities.restoreChatSession) throw new Error('Pi 克隆能力尚未就绪');
       const probe = await capabilities.restoreChatSession(runtime, {
-        id: probeId, cwd: source.cwd, title: source.title, piSessionId: sourceIdentity.sessionId, sessionFile: sourceIdentity.sessionFile,
-        archived: false, pinned: false, lastActivityAt: Date.now(),
+          id: probeId,
+          cwd: source.cwd,
+          title: source.title,
+          piSessionId: sourceIdentity.sessionId,
+          sessionFile: sourceIdentity.sessionFile,
+          archived: false,
+          pinned: false,
+          lastActivityAt: Date.now(),
       });
       try {
         unwrapSessionResult(capabilities.session.start(probe.id));
@@ -194,15 +261,24 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         if (result.cancelled) throw new Error('Pi 扩展取消了副本创建');
         const clonedIdentity = await capabilities.waitForChatIdentity(probe.id, 15_000, sourceIdentity);
         const cloned: PersistedChatSession = {
-          id: newSessionId(), cwd: source.cwd, title: `${source.title} · 副本`, piSessionId: clonedIdentity.sessionId, sessionFile: clonedIdentity.sessionFile,
-          archived: false, pinned: false, lastActivityAt: Date.now(),
+            id: newSessionId(),
+            cwd: source.cwd,
+            title: `${source.title} · 副本`,
+            piSessionId: clonedIdentity.sessionId,
+            sessionFile: clonedIdentity.sessionFile,
+            archived: false,
+            pinned: false,
+            lastActivityAt: Date.now(),
         };
         const session = await capabilities.restoreChatSession(runtime, cloned);
         try {
           if (sessionStore) {
             await sessionStore.upsert(cloned);
             persisted.set(cloned.id, cloned);
-            restoredSessions = [...restoredSessions.filter(item => item.id !== cloned.id), { ...session, archived: false, pinned: false, lastActivityAt: cloned.lastActivityAt }];
+              restoredSessions = [
+                ...restoredSessions.filter(item => item.id !== cloned.id),
+                { ...session, archived: false, pinned: false, lastActivityAt: cloned.lastActivityAt },
+              ];
           }
           return { ...session, archived: false, pinned: false, lastActivityAt: cloned.lastActivityAt };
         } catch (error) {
@@ -225,10 +301,15 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
           if (!current) return;
           const next = { ...current, piSessionId: identity.sessionId, sessionFile: identity.sessionFile, lastActivityAt: Date.now() };
           failedRecord = next;
-          try { await sessionStore.upsert(next); } catch (error) { schedulePersistenceRetry(id, next); throw error; }
+          try {
+            await sessionStore.upsert(next);
+          } catch (error) {
+            schedulePersistenceRetry(id, next);
+            throw error;
+          }
           persisted.set(id, next);
           clearPersistenceRetry(id);
-          restoredSessions = restoredSessions.map(item => item.id === id ? { ...item, lastActivityAt: next.lastActivityAt } : item);
+          restoredSessions = restoredSessions.map(item => (item.id === id ? { ...item, lastActivityAt: next.lastActivityAt } : item));
           return;
         }
         const current = pending.get(id);
@@ -251,7 +332,12 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         const record = persisted.get(id);
         if (!record) return;
         const next = { ...record, piSessionId: identity.sessionId, sessionFile: identity.sessionFile, lastActivityAt: Date.now() };
-        try { await sessionStore.upsert(next); } catch (error) { schedulePersistenceRetry(id, next); throw error; }
+        try {
+          await sessionStore.upsert(next);
+        } catch (error) {
+          schedulePersistenceRetry(id, next);
+          throw error;
+        }
         persisted.set(id, next);
         clearPersistenceRetry(id);
       });
@@ -261,20 +347,73 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       const run = (async () => {
         if (!sessionStore) return [];
         let records: PersistedChatSession[];
-        try { records = await sessionStore.read(); }
-        catch (error) { console.warn(`无法读取工作区会话索引: ${String(error)}`); return []; }
+        try {
+          records = await sessionStore.read();
+        } catch (error) {
+          console.warn(`无法读取工作区会话索引: ${String(error)}`);
+          return [];
+        }
+        // Pi owns transcript files. Merge files created from Pi itself into the
+        // small PUA metadata index so both entry points show the same sessions.
+        try {
+          const native = await discoverNativeSessions(home);
+          const byNative = new Map(records.map(record => [record.piSessionId, record]));
+          const placeholder = (record: PersistedChatSession) =>
+            !record.title.trim() || ['新建会话', '未命名会话', path.basename(record.cwd)].includes(record.title.trim());
+          for (const candidate of native) {
+            const current = byNative.get(candidate.piSessionId);
+            if (current) {
+              const next = {
+                ...current,
+                cwd: candidate.cwd,
+                sessionFile: candidate.sessionFile,
+                ...(placeholder(current) ? { title: candidate.title } : {}),
+                lastActivityAt: Math.max(current.lastActivityAt ?? 0, candidate.lastActivityAt ?? 0),
+              };
+              if (JSON.stringify(next) !== JSON.stringify(current)) {
+                records = records.map(item => (item.id === current.id ? next : item));
+                await sessionStore.upsert(next);
+              }
+              continue;
+            }
+            if (
+              records.some(
+                record => record.archived && (record.sessionFile === candidate.sessionFile || record.piSessionId === candidate.piSessionId),
+              )
+            )
+              continue;
+            records.push(candidate);
+            await sessionStore.upsert(candidate);
+          }
+        } catch (error) {
+          console.warn(`无法发现 Pi 本地会话: ${String(error)}`);
+        }
         if (!records.length) return [];
         const preferences = application.read();
         let runtime;
-        try { validateChatArguments(preferences.args); runtime = resolveRuntime(preferences); }
-        catch { return []; }
+        try {
+          validateChatArguments(preferences.args);
+          runtime = resolveRuntime(preferences);
+        } catch {
+          return [];
+        }
         if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session='))) return [];
         const restored: SessionInfo[] = [];
         const archived: SessionInfo[] = [];
         for (const record of records) {
           persisted.set(record.id, record);
           if (record.archived) {
-            archived.push({ id: record.id, cwd: record.cwd, title: record.title, kind: 'chat', processStatus: 'exited', activity: 'idle', archived: true, pinned: record.pinned, lastActivityAt: record.lastActivityAt });
+            archived.push({
+              id: record.id,
+              cwd: record.cwd,
+              title: record.title,
+              kind: 'chat',
+              processStatus: 'exited',
+              activity: 'idle',
+              archived: true,
+              pinned: record.pinned,
+              lastActivityAt: record.lastActivityAt,
+            });
             continue;
           }
           try {
@@ -293,7 +432,9 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       restoreReady = run.then(() => undefined);
       return run;
     },
-    whenReady: async (): Promise<void> => { await restoreReady; },
+    whenReady: async (): Promise<void> => {
+      await restoreReady;
+    },
     async verifySessionForStart(id: string): Promise<void> {
       const record = persisted.get(id);
       if (!record) return;
@@ -304,13 +445,29 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       await enqueueMutation(id, async () => {
         const entry = pending.get(id);
         if (entry?.identity && entry.durable && sessionStore) await persistPending(id, entry);
-        if (!sessionStore || !persisted.has(id)) { pending.delete(id); return; }
+        if (!sessionStore || !persisted.has(id)) {
+          pending.delete(id);
+          return;
+        }
         await sessionStore.archive(id, true);
         const record = persisted.get(id)!;
         const archived = { ...record, archived: true };
         persisted.set(id, archived);
         restoredSessions = restoredSessions.filter(session => session.id !== id);
-        archivedSessions = [...archivedSessions.filter(session => session.id !== id), { id, cwd: archived.cwd, title: archived.title, kind: 'chat', processStatus: 'exited', activity: 'idle', archived: true, pinned: archived.pinned, lastActivityAt: archived.lastActivityAt }];
+        archivedSessions = [
+          ...archivedSessions.filter(session => session.id !== id),
+          {
+            id,
+            cwd: archived.cwd,
+            title: archived.title,
+            kind: 'chat',
+            processStatus: 'exited',
+            activity: 'idle',
+            archived: true,
+            pinned: archived.pinned,
+            lastActivityAt: archived.lastActivityAt,
+          },
+        ];
       });
     },
     async restoreArchivedSession(id: string): Promise<SessionInfo> {
@@ -322,12 +479,14 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         const preferences = application.read();
         validateChatArguments(preferences.args);
         const runtime = resolveRuntime(preferences);
-        if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session='))) throw new Error('当前 Pi 配置为 --no-session，无法恢复归档历史');
+        if (runtime.args.some(arg => arg === '--no-session' || arg.startsWith('--no-session=')))
+          throw new Error('当前 Pi 配置为 --no-session，无法恢复归档历史');
         await (await import('./pi-session-file.js')).verifyPiSessionFile(record);
         const session = await restorer!.restoreChatSession(runtime, { ...record, archived: false });
         const next = { ...record, archived: false };
-        try { await sessionStore!.archive(id, false); }
-        catch (error) {
+        try {
+          await sessionStore!.archive(id, false);
+        } catch (error) {
           unwrapSessionResult(await restorer!.session.close(session.id));
           throw error;
         }
@@ -344,7 +503,13 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
       await enqueueMutation(id, async () => {
         const record = persisted.get(id);
         if (!record || !record.archived) throw new Error('只有归档会话可以永久删除');
-        await (await import('./pi-session-file.js')).permanentlyDeleteVerifiedPiSession(record, () => sessionStore!.remove(id), () => sessionStore!.upsert(record));
+        await (
+          await import('./pi-session-file.js')
+        ).permanentlyDeleteVerifiedPiSession(
+          record,
+          () => sessionStore!.remove(id),
+          () => sessionStore!.upsert(record),
+        );
         persisted.delete(id);
         archivedSessions = archivedSessions.filter(item => item.id !== id);
       });
@@ -358,8 +523,8 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         await sessionStore.setPinned(id, pinned);
         const next = { ...record, pinned };
         persisted.set(id, next);
-        restoredSessions = restoredSessions.map(item => item.id === id ? { ...item, pinned } : item);
-        archivedSessions = archivedSessions.map(item => item.id === id ? { ...item, pinned } : item);
+        restoredSessions = restoredSessions.map(item => (item.id === id ? { ...item, pinned } : item));
+        archivedSessions = archivedSessions.map(item => (item.id === id ? { ...item, pinned } : item));
       });
     },
     async searchHistory(options: HistorySearchOptions): Promise<HistorySearchResult[]> {
@@ -377,9 +542,19 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
         try {
           const snapshot = await readVerifiedPiSessionFile(record, Math.min(12 * 1024 * 1024, remainingBytes));
           scannedBytes += snapshot.size;
-          results.push(...parseSessionHistory(snapshot.content, {
-            taskId: record.id, title: record.title, cwd: record.cwd, archived: !!record.archived,
-          }, query, limit));
+          results.push(
+            ...parseSessionHistory(
+              snapshot.content,
+              {
+                taskId: record.id,
+                title: record.title,
+                cwd: record.cwd,
+                archived: !!record.archived,
+              },
+              query,
+              limit,
+            ),
+          );
         } catch {
           // Missing or concurrently removed history is not an IPC error; the index remains recoverable.
         }
@@ -388,17 +563,22 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
     },
     async renameSession(id: string, title: string): Promise<void> {
       await enqueueMutation(id, async () => {
-        if (!sessionStore || !persisted.has(id)) { const entry = pending.get(id); if (entry) pending.set(id, { ...entry, session: { ...entry.session, title } }); return; }
+        if (!sessionStore || !persisted.has(id)) {
+          const entry = pending.get(id);
+          if (entry) pending.set(id, { ...entry, session: { ...entry.session, title } });
+          return;
+        }
         const record = persisted.get(id);
         if (!record) return;
-        try { await sessionStore.rename(id, title); }
-        catch (error) {
+        try {
+          await sessionStore.rename(id, title);
+        } catch (error) {
           schedulePersistenceRetry(id, { ...record, title }, 'title');
           throw error;
         }
         if (record) persisted.set(id, { ...record, title });
-        restoredSessions = restoredSessions.map(session => session.id === id ? { ...session, title } : session);
-        archivedSessions = archivedSessions.map(session => session.id === id ? { ...session, title } : session);
+        restoredSessions = restoredSessions.map(session => (session.id === id ? { ...session, title } : session));
+        archivedSessions = archivedSessions.map(session => (session.id === id ? { ...session, title } : session));
       });
     },
     syncSession(session: import('../../modules/sessions/index.js').SessionSnapshot): void {
@@ -415,23 +595,47 @@ export function createDesktopPreferences({ application, resolveRuntime, validate
           return;
         }
         if (current.title === title) return;
-        try { await sessionStore.rename(session.id, title); }
-        catch (error) {
+        try {
+          await sessionStore.rename(session.id, title);
+        } catch (error) {
           schedulePersistenceRetry(session.id, { ...current, title }, 'title');
           throw error;
         }
         persisted.set(session.id, { ...current, title });
-        restoredSessions = restoredSessions.map(item => item.id === session.id ? { ...item, title } : item);
-        archivedSessions = archivedSessions.map(item => item.id === session.id ? { ...item, title } : item);
+        restoredSessions = restoredSessions.map(item => (item.id === session.id ? { ...item, title } : item));
+        archivedSessions = archivedSessions.map(item => (item.id === session.id ? { ...item, title } : item));
       }).catch(error => console.warn(`无法保存 Pi 会话标题 ${session.id}: ${String(error)}`));
     },
   };
 }
 
-const chatOwnedFlags = new Set(['--', '--mode', '--print', '-p', '--session', '--session-id', '--fork', '--continue', '-c', '--resume', '-r', '--approve', '-a', '--no-approve', '-na']);
+const chatOwnedFlags = new Set([
+  '--',
+  '--mode',
+  '--print',
+  '-p',
+  '--session',
+  '--session-id',
+  '--fork',
+  '--continue',
+  '-c',
+  '--resume',
+  '-r',
+  '--approve',
+  '-a',
+  '--no-approve',
+  '-na',
+]);
 
 /** Chat transport owns protocol, session selection, and per-run trust flags. */
 export function validateChatArguments(args: string[]): void {
-  const conflict = args.find(arg => chatOwnedFlags.has(arg) || arg.startsWith('--mode=') || arg.startsWith('--session=') || arg.startsWith('--session-id=') || arg.startsWith('--fork='));
+  const conflict = args.find(
+    arg =>
+      chatOwnedFlags.has(arg) ||
+      arg.startsWith('--mode=') ||
+      arg.startsWith('--session=') ||
+      arg.startsWith('--session-id=') ||
+      arg.startsWith('--fork='),
+  );
   if (conflict) throw new Error(`聊天模式不能使用附加参数 ${conflict}。请通过桌面会话与信任选项控制；兼容终端仍可使用原生参数。`);
 }

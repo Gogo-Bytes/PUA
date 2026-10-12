@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { ChatTreeNode } from '../../../shared/ipc/conversation';
 import { Button, DropdownMenu, Icon, IconButton, InlineRename } from '../../ui';
-import { groupProjects, projectName } from './selection';
+import { groupProjects } from './selection';
 import type { WorkspaceSessionInfo } from './useWorkspace';
 
 interface ProjectSidebarProps {
@@ -34,8 +34,29 @@ interface ProjectSidebarProps {
 
 /** Production navigation: projects own nested task rows; existing sessions are never represented as tabs. */
 export function ProjectSidebar({
-  sessions, recentProjects, activeId, activeProject, creatingProject, runtimeAvailable, collapsedProjects: persistedCollapsed, onCollapsedProjectsChange,
-  canNavigateBack = false, canNavigateForward = false, onNavigateBack, onNavigateForward, onNewConversation, onOpenTerminal, onOpenProject, onCopyProjectPath, onSelectSession, onTogglePinned, onCloseSession, onRenameSession, onForkSession, onSearch, onSettings,
+  sessions,
+  recentProjects,
+  activeId,
+  activeProject,
+  creatingProject,
+  runtimeAvailable,
+  collapsedProjects: persistedCollapsed,
+  onCollapsedProjectsChange,
+  canNavigateBack = false,
+  canNavigateForward = false,
+  onNavigateBack,
+  onNavigateForward,
+  onNewConversation,
+  onOpenTerminal,
+  onOpenProject,
+  onCopyProjectPath,
+  onSelectSession,
+  onTogglePinned,
+  onCloseSession,
+  onRenameSession,
+  onForkSession,
+  onSearch,
+  onSettings,
 }: ProjectSidebarProps) {
   const [recentOpen, setRecentOpen] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState<Set<string>>(new Set());
@@ -43,27 +64,79 @@ export function ProjectSidebar({
   const toggleProject = (cwd: string) => {
     const next = new Set(collapsed);
     next.has(cwd) ? next.delete(cwd) : next.add(cwd);
-    if (onCollapsedProjectsChange) onCollapsedProjectsChange([...next]); else setLocalCollapsed(next);
+    if (onCollapsedProjectsChange) onCollapsedProjectsChange([...next]);
+    else setLocalCollapsed(next);
   };
   const projects = groupProjects([...sessions], [...recentProjects]);
-  return <nav className="workspace-sidebar codex-sidebar" aria-label="项目">
+  return (
+    <nav className="workspace-sidebar codex-sidebar" aria-label="项目">
     <div className="codex-sidebar-brand">
-      <Button className="codex-brand-button" variant="ghost" aria-label="PUA 菜单" onClick={onSettings}><strong>PUA</strong><Icon name="down"/></Button>
-      <span className="codex-sidebar-actions"><IconButton icon="search" label="搜索与命令" variant="ghost" onClick={onSearch}/><IconButton icon="settings" label="桌面设置" variant="ghost" onClick={onSettings}/></span>
+        <Button className="codex-brand-button" variant="ghost" aria-label="PUA 菜单" onClick={onSettings}>
+          <strong>PUA</strong>
+          <Icon name="down" />
+        </Button>
+        <span className="codex-sidebar-actions">
+          <IconButton icon="search" label="搜索与命令" variant="ghost" onClick={onSearch} />
+          <IconButton icon="settings" label="桌面设置" variant="ghost" onClick={onSettings} />
+        </span>
     </div>
-    <Button className="codex-sidebar-new" variant="ghost" aria-label="新建会话" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(activeProject)}>
-      <Icon name="edit"/><span>{creatingProject && creatingProject === activeProject ? '正在创建…' : '新对话'}</span><Icon name="plus"/>
+      <Button
+        className="codex-sidebar-new"
+        variant="ghost"
+        aria-label="新建会话"
+        disabled={!runtimeAvailable || !!creatingProject}
+        onClick={() => onNewConversation(activeProject)}
+      >
+        <Icon name="edit" />
+        <span>{creatingProject && creatingProject === activeProject ? '正在创建…' : '新对话'}</span>
+        <Icon name="plus" />
     </Button>
     <div className="workspace-project-tree codex-project-tree">
-      <div className="codex-section-heading"><span>项目</span><IconButton icon="plus" label="打开项目并新建对话" variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation()}/></div>
-      {projects.length === 0 ? <p className="ui-meta">暂无项目</p> : projects.map(project => <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
+        <div className="codex-section-heading">
+          <span>项目</span>
+          <IconButton
+            icon="plus"
+            label="打开项目并新建对话"
+            variant="ghost"
+            disabled={!runtimeAvailable || !!creatingProject}
+            onClick={() => onNewConversation()}
+          />
+        </div>
+        {projects.length === 0 ? (
+          <p className="ui-meta">暂无项目</p>
+        ) : (
+          projects.map(project => (
+            <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line codex-project-line">
-          {project.sessions.length > 0 && <Button variant="ghost" className="workspace-project-collapse codex-project-folder-toggle" aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`} aria-expanded={!collapsed.has(project.cwd)} onClick={() => toggleProject(project.cwd)}><Icon name={collapsed.has(project.cwd) ? 'folder' : 'folderOpen'}/></Button>}
-          <Button variant="ghost" className="workspace-project-button codex-project-button" title={project.cwd} aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined} onClick={() => onNewConversation(project.cwd)}>
-            {project.sessions.length === 0 && <Icon name="folder"/>}<span>{project.name}</span>{creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话"/>}
+                {project.sessions.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    className="workspace-project-collapse codex-project-folder-toggle"
+                    aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`}
+                    aria-expanded={!collapsed.has(project.cwd)}
+                    onClick={() => toggleProject(project.cwd)}
+                  >
+                    <Icon name={collapsed.has(project.cwd) ? 'folder' : 'folderOpen'} />
           </Button>
-          <span className="codex-menu-tail"><span className="codex-menu-actions" aria-label={`${project.name} 操作`}>
-            <DropdownMenu className="codex-menu-action" icon="more" iconOnly label={`${project.name} 更多操作（${project.cwd}）`}
+                )}
+                <Button
+                  variant="ghost"
+                  className="workspace-project-button codex-project-button"
+                  title={project.cwd}
+                  aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined}
+                  onClick={() => onNewConversation(project.cwd)}
+                >
+                  {project.sessions.length === 0 && <Icon name="folder" />}
+                  <span>{project.name}</span>
+                  {creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话" />}
+                </Button>
+                <span className="codex-menu-tail">
+                  <span className="codex-menu-actions" aria-label={`${project.name} 操作`}>
+                    <DropdownMenu
+                      className="codex-menu-action"
+                      icon="more"
+                      iconOnly
+                      label={`${project.name} 更多操作（${project.cwd}）`}
               items={[
                 { value: 'open', label: '打开项目目录', disabled: !onOpenProject || !project.sessions.length },
                 { value: 'copy', label: '复制项目路径', disabled: !onCopyProjectPath },
@@ -73,51 +146,206 @@ export function ProjectSidebar({
                 if (value === 'open' && project.sessions[0]) onOpenProject?.(project.sessions[0].id);
                 if (value === 'copy') onCopyProjectPath?.(project.cwd);
                 if (value === 'terminal') onOpenTerminal?.(project.cwd);
-              }}/>
-            <IconButton className="codex-menu-action" icon="edit" label={`在 ${project.name} 中新建对话（${project.cwd}）`} variant="ghost" disabled={!runtimeAvailable || !!creatingProject} onClick={() => onNewConversation(project.cwd)}/>
-          </span></span>
+                      }}
+                    />
+                    <IconButton
+                      className="codex-menu-action"
+                      icon="edit"
+                      label={`在 ${project.name} 中新建对话（${project.cwd}）`}
+                      variant="ghost"
+                      disabled={!runtimeAvailable || !!creatingProject}
+                      onClick={() => onNewConversation(project.cwd)}
+                    />
+                  </span>
+                </span>
         </div>
-        {project.sessions.length > 0 && !collapsed.has(project.cwd) && <ul className="workspace-session-list" aria-label={`${project.name} 的会话`}>
-          {[...project.sessions].sort((a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false) || (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).map(session => <li key={session.id} className="workspace-session-item">
+              {project.sessions.length > 0 && !collapsed.has(project.cwd) && (
+                <ul className="workspace-session-list" aria-label={`${project.name} 的会话`}>
+                  {[...project.sessions]
+                    .sort(
+                      (a, b) =>
+                        Number(b.pinned ?? false) - Number(a.pinned ?? false) ||
+                        (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) ||
+                        a.id.localeCompare(b.id),
+                    )
+                    .map(session => (
+                      <li key={session.id} className="workspace-session-item">
             <div className="workspace-session-row codex-session-row" data-active={session.id === activeId || undefined}>
-            <InlineRename value={session.title} selected={session.id === activeId} selectionRole="button" current={session.id === activeId} labels={{ hint: `${sessionDescription(session)} · 双击或 F2 重命名`, input: name => `重命名 ${name}`, save: '保存', cancel: '取消', empty: '名称不能为空', failed: '重命名失败' }} onSelect={() => onSelectSession(session.id)} onRename={title => onRenameSession(session.id, title)}/>
+                          <InlineRename
+                            value={displaySessionTitle(session.title)}
+                            selected={session.id === activeId}
+                            selectionRole="button"
+                            current={session.id === activeId}
+                            labels={{
+                              hint: `${sessionDescription(session)} · 双击或 F2 重命名`,
+                              input: name => `重命名 ${name}`,
+                              save: '保存',
+                              cancel: '取消',
+                              empty: '名称不能为空',
+                              failed: '重命名失败',
+                            }}
+                            onSelect={() => onSelectSession(session.id)}
+                            onRename={title => onRenameSession(session.id, title)}
+                          />
             <span className="codex-menu-tail">
-            {session.needsAttention && <i className="workspace-session-attention" aria-label="需要关注">!</i>}
-            {session.activity !== 'idle' && session.processStatus !== 'exited' && <i className="ui-session-activity" aria-label="处理中"/>}
+                            {session.needsAttention && (
+                              <i className="workspace-session-attention" aria-label="需要关注">
+                                !
+                              </i>
+                            )}
+                            {session.activity !== 'idle' && session.processStatus !== 'exited' && (
+                              <i className="ui-session-activity" aria-label="处理中" />
+                            )}
+                            <span
+                              className={`codex-session-status codex-session-status-${sessionStatus(session).tone}`}
+                              aria-label={`状态：${sessionStatus(session).label}`}
+                            >
+                              {sessionStatus(session).label}
+                            </span>
             <span className="codex-menu-actions" aria-label={`${session.title} 操作`}>
-              {onTogglePinned && <IconButton className="codex-menu-action" icon="pin" aria-pressed={!!session.pinned} label={session.pinned ? `取消置顶 ${session.title}` : `置顶 ${session.title}`} variant="ghost" onClick={() => void onTogglePinned(session.id, !session.pinned)}/>}
-              <IconButton className="codex-menu-action" icon={session.kind === 'terminal' ? 'close' : 'archive'} label={`${session.kind === 'terminal' ? '关闭' : '归档'} ${session.title}`} variant="ghost" onClick={() => onCloseSession(session.id)}/>
+                              {onTogglePinned && (
+                                <IconButton
+                                  className="codex-menu-action"
+                                  icon="pin"
+                                  aria-pressed={!!session.pinned}
+                                  label={session.pinned ? `取消置顶 ${session.title}` : `置顶 ${session.title}`}
+                                  variant="ghost"
+                                  onClick={() => void onTogglePinned(session.id, !session.pinned)}
+                                />
+                              )}
+                              <IconButton
+                                className="codex-menu-action"
+                                icon="close"
+                                label={`关闭 ${displaySessionTitle(session.title)}`}
+                                variant="ghost"
+                                onClick={() => onCloseSession(session.id)}
+                              />
             </span>
             </span>
             </div>
-            {onForkSession && session.sessionTree?.length ? <TreeBranch nodes={session.sessionTree} onFork={entryId => void onForkSession(session.id, entryId)}/> : null}
-          </li>)}
-        </ul>}
-      </section>)}
+                        {onForkSession && session.sessionTree?.length ? (
+                          <TreeBranch nodes={session.sessionTree} onFork={entryId => void onForkSession(session.id, entryId)} />
+                        ) : null}
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </section>
+          ))
+        )}
     </div>
     <section className="workspace-recent codex-recent" aria-label="最近任务">
-      <Button variant="ghost" className="workspace-recent-toggle" aria-expanded={recentOpen} onClick={() => setRecentOpen(open => !open)}><Icon name="clock"/><span>最近</span><span aria-hidden="true">{recentOpen ? '⌄' : '›'}</span></Button>
-      {recentOpen && <ul className="workspace-recent-list" aria-label="最近任务列表">
-        {sessions.slice().sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id)).slice(0, 8).map(session => <li key={session.id} data-active={session.id === activeId || undefined}>
-          <Button variant="ghost" className="workspace-recent-item" aria-current={session.id === activeId ? 'page' : undefined} onClick={() => onSelectSession(session.id)}><Icon name={session.kind === 'terminal' ? 'code' : 'chat'}/><span><strong>{session.title}</strong><small>{projectName(session.cwd)}</small></span></Button>
-        </li>)}
+        <Button variant="ghost" className="workspace-recent-toggle" aria-expanded={recentOpen} onClick={() => setRecentOpen(open => !open)}>
+          <Icon name="clock" />
+          <span>最近</span>
+          <span aria-hidden="true">{recentOpen ? '⌄' : '›'}</span>
+        </Button>
+        {recentOpen && (
+          <ul className="workspace-recent-list" aria-label="最近任务列表">
+            {sessions
+              .slice()
+              .sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id))
+              .slice(0, 8)
+              .map(session => (
+                <li key={session.id} data-active={session.id === activeId || undefined}>
+                  <Button
+                    variant="ghost"
+                    className="workspace-recent-item"
+                    aria-current={session.id === activeId ? 'page' : undefined}
+                    onClick={() => onSelectSession(session.id)}
+                  >
+                    <span>{displaySessionTitle(session.title)}</span>
+                  </Button>
+                </li>
+              ))}
         {!sessions.length && <li className="ui-meta">暂无最近任务</li>}
-      </ul>}
+          </ul>
+        )}
     </section>
-    <div className="codex-sidebar-account"><span className="codex-account-avatar">PI</span><span><strong>本机 Pi</strong><small>{runtimeAvailable ? '已连接' : '尚未连接'}</small></span><IconButton icon="settings" label="账户设置" variant="ghost" onClick={onSettings}/></div>
-  </nav>;
+      <div className="codex-sidebar-account">
+        <span className="codex-account-avatar">PI</span>
+        <span>
+          <strong>本机 Pi</strong>
+          <small>{runtimeAvailable ? '已连接' : '尚未连接'}</small>
+        </span>
+        <IconButton icon="settings" label="账户设置" variant="ghost" onClick={onSettings} />
+      </div>
+    </nav>
+  );
 }
 
 function TreeBranch({ nodes, onFork, depth = 0 }: { nodes: readonly ChatTreeNode[]; onFork(entryId: string): void; depth?: number }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  return <ul className="workspace-session-branches" style={{ paddingLeft: `${12 + depth * 10}px` }}>{nodes.map(node => <li key={node.entryId}>
-    <span className="workspace-branch-row">{node.children.length > 0 && <Button variant="ghost" className="workspace-branch-collapse" aria-label={`${collapsed.has(node.entryId) ? '展开' : '折叠'}分支`} aria-expanded={!collapsed.has(node.entryId)} onClick={() => setCollapsed(current => { const next = new Set(current); next.has(node.entryId) ? next.delete(node.entryId) : next.add(node.entryId); return next; })}>{collapsed.has(node.entryId) ? '▸' : '▾'}</Button>}{node.forkable === false ? <span aria-current={node.active ? 'true' : undefined} style={node.active ? { fontWeight: 600 } : undefined}>{node.label || node.entryId}{node.active ? ' · 当前' : ''}</span> : <Button variant="ghost" aria-current={node.active ? 'true' : undefined} onClick={() => onFork(node.entryId)} title={node.active ? '当前活动分支；从此历史节点创建分支' : '从此历史节点创建分支'}>↗ {node.label || node.entryId}{node.active ? ' · 当前' : ''}</Button>}</span>
-    {node.children.length && !collapsed.has(node.entryId) ? <TreeBranch nodes={node.children} onFork={onFork} depth={depth + 1}/> : null}
-  </li>)}</ul>;
+  return (
+    <ul className="workspace-session-branches" style={{ paddingLeft: `${12 + depth * 10}px` }}>
+      {nodes.map(node => (
+        <li key={node.entryId}>
+          <span className="workspace-branch-row">
+            {node.children.length > 0 && (
+              <Button
+                variant="ghost"
+                className="workspace-branch-collapse"
+                aria-label={`${collapsed.has(node.entryId) ? '展开' : '折叠'}分支`}
+                aria-expanded={!collapsed.has(node.entryId)}
+                onClick={() =>
+                  setCollapsed(current => {
+                    const next = new Set(current);
+                    next.has(node.entryId) ? next.delete(node.entryId) : next.add(node.entryId);
+                    return next;
+                  })
+                }
+              >
+                {collapsed.has(node.entryId) ? '▸' : '▾'}
+              </Button>
+            )}
+            {node.forkable === false ? (
+              <span aria-current={node.active ? 'true' : undefined} style={node.active ? { fontWeight: 600 } : undefined}>
+                {node.label || node.entryId}
+                {node.active ? ' · 当前' : ''}
+              </span>
+            ) : (
+              <Button
+                variant="ghost"
+                aria-current={node.active ? 'true' : undefined}
+                onClick={() => onFork(node.entryId)}
+                title={node.active ? '当前活动分支；从此历史节点创建分支' : '从此历史节点创建分支'}
+              >
+                ↗ {node.label || node.entryId}
+                {node.active ? ' · 当前' : ''}
+              </Button>
+            )}
+          </span>
+          {node.children.length && !collapsed.has(node.entryId) ? (
+            <TreeBranch nodes={node.children} onFork={onFork} depth={depth + 1} />
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function sessionDescription(session: SessionInfo): string {
   const kind = session.kind === 'terminal' ? '兼容终端' : '对话';
-  const status = session.processStatus === 'starting' ? '连接中' : session.processStatus === 'exited' ? '已退出' : session.activity === 'idle' ? '就绪' : '处理中';
+  const status = sessionStatus(session).label;
   return `${kind} · ${status}`;
+}
+
+function displaySessionTitle(title: string): string {
+  return title.trim() || '未命名会话';
+}
+
+function sessionStatus(session: WorkspaceSessionInfo): { label: string; tone: 'working' | 'waiting' | 'done' | 'error' | 'ready' } {
+  if (session.processStatus === 'starting') return { label: '连接中', tone: 'working' };
+  if (session.processStatus === 'exited')
+    return {
+      label: session.exitCode && session.exitCode !== 0 ? '错误' : '完成待检查',
+      tone: session.exitCode && session.exitCode !== 0 ? 'error' : 'done',
+    };
+  if (session.activity === 'responding') return { label: '工作中', tone: 'working' };
+  if (session.activity === 'compacting') return { label: '压缩中', tone: 'working' };
+  if (session.activity === 'retrying') return { label: '重试中', tone: 'working' };
+  if (session.activity === 'waiting-input' || session.attentionKind === 'waiting-input') return { label: '等待输入', tone: 'waiting' };
+  if (session.attentionKind === 'notice' || session.attentionKind === 'exit') return { label: '错误', tone: 'error' };
+  if (session.needsAttention || session.attentionKind === 'completed') return { label: '完成待检查', tone: 'done' };
+  return { label: '就绪', tone: 'ready' };
 }

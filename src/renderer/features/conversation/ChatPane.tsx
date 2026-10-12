@@ -2,7 +2,7 @@ import { Textarea, SearchSelect, Select } from '../../ui';
 import { desktopClient } from '../../app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
 import { CopyButton, LazyMarkdownView as MarkdownView, SourceView } from '../content';
-import { Button, Collapsible, Dialog, Icon } from '../../ui';
+import { Button, Collapsible, Dialog, DropdownMenu, Icon } from '../../ui';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type {
   ChatAttachment,
@@ -217,6 +217,17 @@ export function ChatPane({
       stoppingRef.current = false;
     }
   };
+  const insertLocalCommand = (command: string) => {
+    const current = draftRef.current.text.trimEnd();
+    changeDraft(`${current}${current ? '\n' : ''}/${command} `);
+    requestAnimationFrame(() => textarea.current?.focus());
+  };
+  const availableCommandItems = state.commands
+    .filter(command => ['plan', 'goal'].includes(command.name.replace(/^\//, '')))
+    .map(command => ({
+      value: command.name.replace(/^\//, ''),
+      label: `${command.description || command.name} · 插入 /${command.name.replace(/^\//, '')}`,
+    }));
   const answerDialog = async (response: ExtensionUIResponse) => {
     try {
       await desktopClient.respondToExtensionUI(session.id, response);
@@ -358,7 +369,17 @@ export function ChatPane({
             });
           }}
           increaseViewportBy={500}
-          itemContent={(_, message) => <MessageView message={message} onFork={fork} />}
+          itemContent={(index, message) => {
+            const previousUser =
+              message.role === 'assistant'
+                ? state.messages
+                    .slice(0, index)
+                    .reverse()
+                    .find(item => item.role === 'user')
+                : undefined;
+            const elapsed = previousUser ? message.timestamp - previousUser.timestamp : undefined;
+            return <MessageView message={message} durationMs={elapsed} onFork={fork} />;
+          }}
         />
         {!atBottom && (
           <Button
@@ -403,6 +424,18 @@ export function ChatPane({
             editorRef={textarea}
             footerControls={
               <div className="chat-runtime-controls">
+                <DropdownMenu
+                  icon="more"
+                  iconOnly
+                  label="更多命令"
+                  disabled={unavailable}
+                  items={[
+                    ...availableCommandItems,
+                    { value: 'compact', label: '压缩上下文 · 插入 /compact' },
+                    { value: 'stats', label: '会话统计 · 插入 /stats' },
+                  ]}
+                  onAction={insertLocalCommand}
+                />
                 <SearchSelect
                   label="模型"
                   value={currentModel}
@@ -553,7 +586,15 @@ function SessionStatsDialog({ stats, onClose }: { stats: ChatSessionStats; onClo
   );
 }
 
-const MessageView = memo(function MessageView({ message, onFork }: { message: ChatMessage; onFork(entryId: string): void }) {
+const MessageView = memo(function MessageView({
+  message,
+  durationMs,
+  onFork,
+}: {
+  message: ChatMessage;
+  durationMs?: number;
+  onFork(entryId: string): void;
+}) {
   const text = message.blocks
     .filter((block): block is Extract<ChatBlock, { type: 'text' }> => block.type === 'text')
     .map(block => block.text)
@@ -580,28 +621,50 @@ const MessageView = memo(function MessageView({ message, onFork }: { message: Ch
       labels={{ user: '你', assistant: 'Pi', streaming: '正在回复…', failed: '回复失败' }}
       actions={actions}
     >
-      {message.blocks.map((block, index) =>
-        block.type === 'text' ? (
-          message.role === 'user' ? (
-            <div className="user-text" key={index}>
-              {block.text}
-            </div>
-          ) : (
-            <MarkdownView key={index} text={block.text} streaming={!!message.streaming} />
-          )
-        ) : block.type === 'thinking' ? (
-          <Collapsible title="思考过程" key={index}>
-            <MarkdownView text={block.text} streaming={!!message.streaming} />
-          </Collapsible>
-        ) : block.type === 'image' ? (
-          <img className="transcript-image" key={index} alt="消息图片" src={`data:${block.mimeType};base64,${block.data}`} />
+      {message.blocks
+        .filter(block => block.type !== 'thinking' && block.type !== 'tool')
+        .map((block, index) => renderMessageBlock(block, message.role, !!message.streaming, index))}
+      {message.blocks.some(block => block.type === 'thinking' || block.type === 'tool') && (
+        <div className="worked-summary">
+          <Collapsible title={`worked for ${formatWorkDuration(durationMs)}`} label="展开思考和工作过程">
+            <div className="worked-summary-content">
+              {message.blocks
+                .filter(block => block.type === 'thinking' || block.type === 'tool')
+                .map((block, index) =>
+                  block.type === 'thinking' ? (
+                    <MarkdownView key={`thinking-${index}`} text={block.text} streaming={!!message.streaming} />
         ) : (
           <ToolCard key={block.tool.id} tool={block.tool} />
         ),
       )}
+            </div>
+          </Collapsible>
+        </div>
+      )}
     </ConversationMessage>
   );
 });
+
+function renderMessageBlock(block: ChatBlock, role: ChatMessage['role'], streaming: boolean, index: number) {
+  if (block.type === 'text')
+    return role === 'user' ? (
+      <div className="user-text" key={index}>
+        {block.text}
+      </div>
+    ) : (
+      <MarkdownView key={index} text={block.text} streaming={streaming} />
+    );
+  if (block.type === 'image')
+    return <img className="transcript-image" key={index} alt="消息图片" src={`data:${block.mimeType};base64,${block.data}`} />;
+  return null;
+}
+
+function formatWorkDuration(durationMs: number | undefined): string {
+  const seconds = durationMs !== undefined && durationMs >= 0 ? Math.max(0, Math.round(durationMs / 1000)) : undefined;
+  if (seconds === undefined) return 'worked for unknown time';
+  const minutes = Math.floor(seconds / 60);
+  return minutes ? `${minutes}m ${seconds % 60}s` : `${seconds}s`;
+}
 
 export function ToolCard({ tool }: { tool: ToolActivity }) {
   const status = tool.status === 'pending' ? 'idle' : tool.status;
@@ -609,7 +672,7 @@ export function ToolCard({ tool }: { tool: ToolActivity }) {
     <ToolExecutionCard
       status={status}
       className={tool.status}
-      openOnError
+      openOnError={false}
       title={toolSummary(tool)}
       icon={<Icon name={tool.status === 'success' ? 'check' : tool.status === 'error' ? 'close' : 'code'} />}
       labels={{ statuses: { idle: '等待', running: '运行中', success: '完成', error: '失败' } }}
