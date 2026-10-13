@@ -5,9 +5,12 @@
 .workspace-panel-content > [role=tabpanel] { height: 100%; min-height: 0; }
 .workspace-panel-content > [role=tabpanel][hidden] { display: none; }
 .workspace-panel-content .task-details-panel { height: 100%; overflow: auto; padding: 16px; }
-.workspace-panel-empty { display: flex; flex-direction: column; gap: 8px; margin: auto 24px 22%; }
-.ui-provider .workspace-panel-empty > button { justify-content: flex-start; gap: 12px; min-height: 46px; padding: 10px 14px; border: 0; background: color-mix(in srgb, var(--ui-surface) 35%, transparent); }
-.workspace-panel-empty small { margin-left: auto; color: var(--ui-tertiary); font: var(--ui-font-meta); }
+.workspace-panel-empty { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.ui-provider .codex-tools-dashboard { padding: var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); overflow-y: auto; }
+.ui-provider .codex-dashboard-title { font: var(--ui-font-control); color: var(--ui-secondary); margin: 0; }
+.ui-provider .codex-tools-grid { display: grid; gap: var(--ui-space-2); }
+.ui-provider .codex-tool-card { justify-content: flex-start; gap: var(--ui-space-2); width: 100%; }
+.ui-provider .codex-tool-title { font: var(--ui-font-control); }
 .workspace-panel-unavailable { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 32px; color: var(--ui-secondary); text-align: center; }
 .workspace-panel-unavailable > .icon { width: 28px; height: 28px; }
 .workspace-panel-unavailable h2 { font: var(--ui-font-heading); margin: 16px 0 8px; }

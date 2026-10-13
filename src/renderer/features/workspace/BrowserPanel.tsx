@@ -70,7 +70,7 @@ export function BrowserPanel() {
     </form>
     {error && <div className="workspace-browser-error" role="alert">{error}</div>}
     {state?.loading && <div className="workspace-browser-loading" role="status">正在加载…</div>}
-    {!state?.url && !error && <div className="workspace-browser-empty"><Icon name="browser"/><span>输入网址以在隔离的浏览器视图中打开网页</span></div>}
     <div className="workspace-browser-surface" ref={surface} aria-label={state?.title || '网页内容'}/>
+    {!state?.url && !error && <div className="workspace-browser-empty"><Icon name="browser"/>输入网址打开浏览器</div>}
   </section>;
 }
