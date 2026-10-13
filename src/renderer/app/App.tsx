@@ -17,7 +17,7 @@ import {
 import { NewSessionDialog, RenameDialog } from '../features/sessions';
 import { SettingsDialog } from '../features/preferences';
 import { CommandPalette } from '../features/command-palette';
-import { Button, Input, Icon, ResizableWorkspace, ToastHost, UIProvider } from '../ui';
+import { Button, Input, Icon, ResizableWorkspace, IconButton, ToastHost, UIProvider } from '../ui';
 
 export function App() {
   const panelToggle = useRef<HTMLButtonElement>(null);
@@ -29,6 +29,7 @@ export function App() {
     setTimeout(() => panelToggle.current?.focus(), 0);
   };
   const [reviewOpen, setReviewOpen] = useState(true);
+  const [environmentOpen, setEnvironmentOpen] = useState(false);
   const [projectPanelOpen, setProjectPanelOpen] = useState(true);
   const { desktopPresentation, workspace, palette, input, launch, sessionActions, navigation } = useWorkspaceComposition(() => {});
   const { boot, theme, error } = desktopPresentation;
@@ -90,17 +91,7 @@ export function App() {
           rightOpen={reviewOpen}
           leftToggleRef={leftPanelToggle}
           rightToggleRef={panelToggle}
-          environment={
-            <EnvironmentPopover
-              session={active}
-              sessions={sessions}
-              onSelectSession={navigation.selectSession}
-              onOpenPanel={kind => {
-                panels.open(kind);
-                setReviewOpen(true);
-              }}
-            />
-          }
+          environment={<IconButton icon="environment" label="环境与任务信息" variant="ghost" aria-expanded={environmentOpen} aria-controls="workspace-environment" onClick={() => setEnvironmentOpen(open => !open)}/>}
           canNavigateBack={workspace.canNavigateBack}
           canNavigateForward={workspace.canNavigateForward}
           onToggleLeft={() => setProjectPanelOpen(open => !open)}
@@ -115,6 +106,7 @@ export function App() {
           onArchive={active ? () => workspace.closeSession(active.id) : undefined}
           onTogglePinned={active ? () => workspace.setSessionPinned(active.id, !active.pinned) : undefined}
         />
+        <div className="workspace-body">
         <ResizableWorkspace
           rightSize={{ initial: 560, min: 280, max: 1000 }}
           leftToggleRef={leftPanelToggle}
@@ -292,6 +284,17 @@ export function App() {
             </footer>
           )}
     </ResizableWorkspace>
+        <div id="workspace-environment" hidden={!environmentOpen}>
+          <EnvironmentPopover
+            open={environmentOpen}
+            onClose={() => setEnvironmentOpen(false)}
+            session={active}
+            sessions={sessions}
+            onSelectSession={navigation.selectSession}
+            onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}
+          />
+        </div>
+        </div>
         <TerminalOutlet
           sessions={sessions}
           activeId={activeId}

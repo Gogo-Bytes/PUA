@@ -87,7 +87,7 @@
   background: var(--ui-muted);
   color: var(--ui-text);
 }
-.ui-provider .workspace > .ui-workspace {
+.ui-provider .workspace > .workspace-body > .ui-workspace {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -95,16 +95,16 @@
   border: 0;
   border-radius: 0;
 }
-.ui-provider .workspace > .ui-workspace {
+.ui-provider .workspace > .workspace-body > .ui-workspace {
   position: relative;
 }
-.ui-provider .workspace > .ui-workspace > .ui-workspace-toolbar {
+.ui-provider .workspace > .workspace-body > .ui-workspace > .ui-workspace-toolbar {
   position: absolute;
   z-index: 20;
   inset: 0 auto auto 0;
   display: none;
 }
-.ui-provider .workspace > .ui-workspace:has(.ui-workspace-side[aria-hidden='true']) > .ui-workspace-toolbar {
+.ui-provider .workspace > .workspace-body > .ui-workspace:has(.ui-workspace-side[aria-hidden='true']) > .ui-workspace-toolbar {
   inset: 8px 8px auto;
   width: auto;
   height: auto;
@@ -116,11 +116,11 @@
   border: 0;
   pointer-events: none;
 }
-.ui-provider .workspace > .ui-workspace:has(.ui-workspace-side[aria-hidden='true']) > .ui-workspace-toolbar > .ui-button {
+.ui-provider .workspace > .workspace-body > .ui-workspace:has(.ui-workspace-side[aria-hidden='true']) > .ui-workspace-toolbar > .ui-button {
   pointer-events: auto;
   box-shadow: var(--ui-shadow);
 }
-.ui-provider .workspace > .ui-workspace:has(.ui-workspace-side[aria-hidden='true']) > .ui-workspace-toolbar > .ui-meta {
+.ui-provider .workspace > .workspace-body > .ui-workspace:has(.ui-workspace-side[aria-hidden='true']) > .ui-workspace-toolbar > .ui-meta {
   display: none;
 }
 .ui-provider .workspace .ui-workspace-grid {

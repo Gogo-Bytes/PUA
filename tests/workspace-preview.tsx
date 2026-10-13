@@ -52,6 +52,10 @@ const mockSessions: SessionInfo[] = [
     lastActivityAt: 1,
   },
 ];
+// Optional isolated scenario for the environment sidebar's background-process section.
+if (new URLSearchParams(window.location.search).has('background')) {
+  mockSessions.push({ id: 'mock-background-terminal', cwd: '/test/workspace/PUA', title: 'Mock 后台终端', kind: 'terminal', processStatus: 'running', activity: 'idle' });
+}
 mockSessions.forEach(session => sessions.set(session.id, session));
 let preferences: Preferences = {
   piPath: 'TEST ONLY / no executable',

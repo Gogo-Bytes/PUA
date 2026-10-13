@@ -1,17 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { SessionInfo } from '../../../shared/ipc/desktop-api';
 import type { GitStatus } from '../../../shared/ipc/change-review';
-import { piUnavailableCapabilities } from '../../../shared/ipc/pi-capabilities';
 import { desktopClient } from '../../app/desktop-client';
-import { Button, Dialog, Icon, IconButton, Input, Popover } from '../../ui';
+import { Button, Dialog, Icon, IconButton, Input } from '../../ui';
 import type { SidePanelKind } from './useSidePanelTabs';
-import { activeProjectCollaborationSessions, collaborationActivityLabel } from './collaboration';
 
-export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenPanel }: {
+export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenPanel, open = true, onClose }: {
+  open?: boolean; onClose?(): void;
   session?: SessionInfo; sessions?: readonly SessionInfo[]; onSelectSession?(id: string): void; onOpenPanel(kind: SidePanelKind): void;
 }) {
-  const collaborationCapability = piUnavailableCapabilities.find(item => item.id === 'collaboration.participants');
-  const [open, setOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<{ id: string; status?: GitStatus; error?: string }>();
   const [branchState, setBranchState] = useState<{ id: string; current: string; branches: string[] }>();
   const [showBranches, setShowBranches] = useState(false);
@@ -49,8 +46,7 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
   const worktrees = worktreeState?.id === session?.id ? worktreeState : undefined;
   const taskBusy = !!session && (session.kind === 'terminal' || session.activity !== 'idle');
   const backgroundProcesses = (sessions ?? []).filter(item => item.kind === 'terminal' && item.processStatus !== 'exited');
-  const collaborationSessions = activeProjectCollaborationSessions(sessions ?? [], session);
-  const openPanel = (kind: SidePanelKind) => { setOpen(false); onOpenPanel(kind); };
+  const openPanel = (kind: SidePanelKind) => { onClose?.(); onOpenPanel(kind); };
   const switchBranch = async (branch: string) => {
     if (!session || branch === branches?.current || branchBusy) return;
     setBranchBusy(true); setBranchError(undefined);
@@ -122,9 +118,10 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
     catch (error) { setCommitError(String(error)); }
     finally { setCommitBusy(false); }
   };
-  return <Popover label="环境与任务信息" icon="environment" open={open} onOpenChange={setOpen} className="environment-popover">
+  if (!open) return null;
+  return <aside className="environment-panel" aria-label="环境与任务信息">
     <section className="environment-section">
-      <div className="environment-heading"><span>Environment</span><IconButton icon="plus" label="添加环境（未接入）" disabled variant="ghost"/></div>
+      <div className="environment-heading"><span>Environment</span></div>
       <Button variant="ghost" className="environment-row" disabled={!session} onClick={() => openPanel('review')}>
         <Icon name="review"/><span>Changes</span><small>{status ? `${status.files.length} 个文件` : !session ? '选择会话' : snapshot?.error ? '读取失败' : '读取中…'}</small>
       </Button>
@@ -149,7 +146,7 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
       </div>}
       {!branches && branchError && <p className="environment-note" role="alert">无法读取本地分支：{branchError}</p>}
       <Button variant="ghost" className="environment-row" disabled={!session || !worktrees?.worktrees.length} aria-expanded={showWorktrees} onClick={() => setShowWorktrees(value => !value)}>
-        <Icon name="folder"/><span>Worktrees</span><small>{worktrees ? `${worktrees.worktrees.length} 个工作树` : worktreeError ? '读取失败' : '读取中…'}</small><Icon name="down"/>
+        <Icon name="folder"/><span>Worktrees</span><small>{worktrees ? `${worktrees.worktrees.length} 个工作树` : worktreeError ? '读取失败' : !session ? '选择会话' : '读取中…'}</small><Icon name="down"/>
       </Button>
       {showWorktrees && <div className="environment-branches" role="group" aria-label="本地工作树">
         {worktrees?.worktrees.map(item => <div key={item.path} className="environment-branch-row">
@@ -167,21 +164,15 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
       <Button variant="ghost" className="environment-row" disabled={!session || !status || taskBusy} onClick={() => { setCommitError(undefined); setCommitOpen(true); }}><Icon name="branch"/><span>Commit or push</span><small>{status?.files.length ? `${status.files.length} 个文件待提交` : '推送当前分支'}</small></Button>
       {snapshot?.id === session?.id && snapshot?.error && <p className="environment-note">暂时无法读取仓库；可打开 Review 查看错误并重试。</p>}
     </section>
-    <section className="environment-section"><div className="environment-heading">Collaboration</div>
-      {collaborationSessions.length ? collaborationSessions.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { setOpen(false); onSelectSession?.(item.id); }}>
-        <Icon name="agents"/><span>{item.title}</span><small>{collaborationActivityLabel(item.activity)}</small>
-      </Button>) : <div className="environment-row is-unavailable" aria-disabled="true" title={collaborationCapability?.reason}><Icon name="agents"/><span>暂无协作活动</span><small>仅显示本窗口内的活动会话</small></div>}
-      <p className="environment-note">{collaborationCapability?.reason ?? 'Pi 未提供参与者身份事件'}</p>
-    </section>
-    <section className="environment-section"><div className="environment-heading">Background processes</div>
-      {backgroundProcesses.length ? backgroundProcesses.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { setOpen(false); onSelectSession?.(item.id); }}>
+    {backgroundProcesses.length > 0 && <section className="environment-section"><div className="environment-heading">Background processes</div>
+      {backgroundProcesses.map(item => <Button key={item.id} variant="ghost" className="environment-row environment-process-row" onClick={() => { onClose?.(); onSelectSession?.(item.id); }}>
         <Icon name="terminal"/><span>{item.title}</span><small>{item.activity === 'idle' ? '就绪' : item.activity === 'waiting-input' ? '等待输入' : '运行中'}</small>
-      </Button>) : <div className="environment-row is-unavailable"><Icon name="terminal"/><span>暂无后台终端</span><small>窗口内</small></div>}
-    </section>
-    <section className="environment-section"><div className="environment-heading"><span>Sources</span><IconButton icon="plus" label="添加来源（未接入）" disabled variant="ghost"/></div>
-      <div className="environment-row" title={session?.cwd}><Icon name="folder"/><span>{session?.cwd || '尚未选择会话'}</span></div>
+      </Button>)}
+    </section>}
+    {session?.cwd && <section className="environment-section"><div className="environment-heading"><span>Sources</span></div>
+      <div className="environment-row" title={session?.cwd}><Icon name="folder"/><span>{session.cwd}</span></div>
       <Button variant="ghost" className="environment-row" disabled={!session} onClick={() => openPanel('task')}><Icon name="info"/><span>任务详情</span><Icon name="chevron"/></Button>
-    </section>
+    </section>}
     <Dialog open={!!deleteTarget} title="删除本地分支？" closeLabel="取消" closeDisabled={branchBusy} closeOnBackdrop={!branchBusy} onClose={() => setDeleteTarget(undefined)}>
       <p>将尝试安全删除 <strong>{deleteTarget}</strong>。如果分支包含尚未合并的提交，Git 会拒绝删除；不会强制删除。</p>
       {branchError && <p className="form-error" role="alert">{branchError}</p>}
@@ -200,5 +191,5 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
         {status?.files.length ? <><Button disabled={commitBusy || !commitMessage.trim()} onClick={() => void commit(false)}>提交</Button><Button variant="primary" busy={commitBusy} disabled={!commitMessage.trim()} onClick={() => void commit(true)}>提交并推送</Button></> : null}
       </div>
     </Dialog>
-  </Popover>;
+  </aside>;
 }
