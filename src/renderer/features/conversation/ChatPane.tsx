@@ -2,7 +2,7 @@ import { Textarea, SearchSelect, Select } from '../../ui';
 import { desktopClient } from '../../app/desktop-client';
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
 import { CopyButton, LazyMarkdownView as MarkdownView, SourceView } from '../content';
-import { Button, Collapsible, Dialog, DropdownMenu, Icon } from '../../ui';
+import { Button, Collapsible, Dialog, Icon } from '../../ui';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type {
   ChatAttachment,
@@ -419,23 +419,13 @@ export function ChatPane({
         )}
         <div className="composer-shell">
           <Composer
+            addMenuItems={[...availableCommandItems, { value: 'compact', label: '压缩上下文 · 插入 /compact' }, { value: 'stats', label: '会话统计 · 插入 /stats' }]}
+            onAddMenuAction={insertLocalCommand}
             suggestions={active ? suggestions : []}
             conversationKey={session.id}
             editorRef={textarea}
             footerControls={
               <div className="chat-runtime-controls">
-                <DropdownMenu
-                  icon="more"
-                  iconOnly
-                  label="更多命令"
-                  disabled={unavailable}
-                  items={[
-                    ...availableCommandItems,
-                    { value: 'compact', label: '压缩上下文 · 插入 /compact' },
-                    { value: 'stats', label: '会话统计 · 插入 /stats' },
-                  ]}
-                  onAction={insertLocalCommand}
-                />
                 <SearchSelect
                   label="模型"
                   value={currentModel}

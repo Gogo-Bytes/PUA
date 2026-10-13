@@ -21,6 +21,8 @@ export interface ComposerProps {
   onValueChange(value: string): void;
   attachments: readonly ComposerAttachment[];
   onAddAttachments?(): void;
+  addMenuItems?: readonly { value: string; label: string; disabled?: boolean }[];
+  onAddMenuAction?(value: string): void;
   onRemoveAttachment?(id: string): void;
   onSend?(submission: ComposerSubmission): void | Promise<void>;
   onQueue?(submission: ComposerSubmission): void | Promise<void>;
@@ -41,7 +43,7 @@ export interface ComposerProps {
 export function Composer(props: ComposerProps) {
   return <ComposerDraft key={props.conversationKey} {...props}/>;
 }
-function ComposerDraft({ conversationKey, value, onValueChange, attachments, onAddAttachments, onRemoveAttachment, onSend, onQueue, onStop, onFollowUp, editorRef, onEditorKeyDown, busy = false, disabled = false, queuedCount = 0, labels, footerControls, suggestions = [] }: ComposerProps) {
+function ComposerDraft({ conversationKey, value, onValueChange, attachments, onAddAttachments, addMenuItems = [], onAddMenuAction, onRemoveAttachment, onSend, onQueue, onStop, onFollowUp, editorRef, onEditorKeyDown, busy = false, disabled = false, queuedCount = 0, labels, footerControls, suggestions = [] }: ComposerProps) {
   const editor = useRef<HTMLTextAreaElement | null>(null);
   useLayoutEffect(() => { const node = editor.current; if (node) { node.style.height = '0px'; node.style.height = `${Math.min(160, Math.max(48, node.scrollHeight))}px`; } }, [value]);
   const text = { ...defaults, ...labels };
@@ -96,7 +98,7 @@ function ComposerDraft({ conversationKey, value, onValueChange, attachments, onA
     }}/>
     {attachments.length > 0 && <ul className="ui-composer-attachments" aria-label={text.attachments}>{attachments.map(item => <li key={item.id}><Icon name="file"/><span>{item.name}{item.detail && <small>{item.detail}</small>}</span>{onRemoveAttachment && <IconButton icon="close" label={text.removeAttachment(item.name)} variant="ghost" disabled={disabled} onClick={() => onRemoveAttachment(item.id)}/>}</li>)}</ul>}
     <div className="ui-composer-footer"><div className="ui-composer-controls">
-      {onAddAttachments && <DropdownMenu icon="plus" iconOnly label={text.addAttachments} disabled={disabled} items={[{ value: 'attachment', label: text.addAttachments }]} onAction={onAddAttachments}/>}
+      {onAddAttachments && <DropdownMenu icon="plus" iconOnly label={text.addAttachments} disabled={disabled} items={[{ value: 'attachment', label: text.addAttachments }, ...addMenuItems]} onAction={value => value === 'attachment' ? onAddAttachments() : onAddMenuAction?.(value)}/>}
       {footerControls}
       <span className="ui-composer-spacer" aria-hidden="true"/>
       {queuedCount > 0 && <span className="ui-meta">{text.queued(queuedCount)}</span>}

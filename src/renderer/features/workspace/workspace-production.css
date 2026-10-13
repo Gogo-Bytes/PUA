@@ -726,7 +726,6 @@
 .ui-provider :is(.codex-project-line, .codex-session-row):is(:hover, :focus-within) {
   --menu-row-bg: var(--ui-muted);
 }
-.ui-provider .codex-project-line:has([aria-current='page']),
 .ui-provider .codex-session-row[data-active] {
   --menu-row-bg: var(--ui-selected);
   color: var(--ui-text);
@@ -981,3 +980,6 @@
     padding-right: var(--ui-space-1);
   }
 }
+
+.ui-provider .codex-session-status { display:inline-flex; align-items:center; width:16px; height:16px; }
+.ui-provider .codex-session-status .icon { width:12px; height:12px; }

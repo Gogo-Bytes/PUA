@@ -108,25 +108,15 @@ export function ProjectSidebar({
           projects.map(project => (
             <section className="workspace-project-group" key={project.cwd} aria-label={project.name}>
         <div className="workspace-project-line codex-project-line">
-                {project.sessions.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    className="workspace-project-collapse codex-project-folder-toggle"
-                    aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`}
-                    aria-expanded={!collapsed.has(project.cwd)}
-                    onClick={() => toggleProject(project.cwd)}
-                  >
-                    <Icon name={collapsed.has(project.cwd) ? 'folder' : 'folderOpen'} />
-          </Button>
-                )}
                 <Button
                   variant="ghost"
                   className="workspace-project-button codex-project-button"
                   title={project.cwd}
-                  aria-current={activeProject === project.cwd && !activeId ? 'page' : undefined}
-                  onClick={() => onNewConversation(project.cwd)}
+                  aria-label={`${collapsed.has(project.cwd) ? '展开' : '折叠'} ${project.name}`}
+                  aria-expanded={!collapsed.has(project.cwd)}
+                  onClick={() => toggleProject(project.cwd)}
                 >
-                  {project.sessions.length === 0 && <Icon name="folder" />}
+                  <Icon name={collapsed.has(project.cwd) ? 'folder' : 'folderOpen'} />
                   <span>{project.name}</span>
                   {creatingProject === project.cwd && <span className="spinner" aria-label="正在创建对话" />}
                 </Button>
@@ -188,19 +178,12 @@ export function ProjectSidebar({
                             onRename={title => onRenameSession(session.id, title)}
                           />
             <span className="codex-menu-tail">
-                            {session.needsAttention && (
-                              <i className="workspace-session-attention" aria-label="需要关注">
-                                !
-                              </i>
-                            )}
-                            {session.activity !== 'idle' && session.processStatus !== 'exited' && (
-                              <i className="ui-session-activity" aria-label="处理中" />
-                            )}
                             <span
                               className={`codex-session-status codex-session-status-${sessionStatus(session).tone}`}
                               aria-label={`状态：${sessionStatus(session).label}`}
+                              title={sessionStatus(session).label}
                             >
-                              {sessionStatus(session).label}
+                              <Icon name={sessionStatus(session).tone === 'working' ? 'running' : sessionStatus(session).tone === 'done' ? 'success' : sessionStatus(session).tone === 'error' ? 'error' : sessionStatus(session).tone === 'waiting' ? 'warning' : 'clock'} />
                             </span>
             <span className="codex-menu-actions" aria-label={`${session.title} 操作`}>
                               {onTogglePinned && (

@@ -146,7 +146,11 @@ installDesktopFake({
         statuses: {},
         widgets: [],
         model: { provider: 'TEST ONLY', id: 'no-model' },
-        commands: [{ name: 'test-command', source: 'extension', description: '测试命令，仅插入草稿' }],
+        commands: [
+          { name: 'test-command', source: 'extension', description: '测试命令，仅插入草稿' },
+          { name: 'plan', source: 'extension', description: 'Mock plan 命令' },
+          { name: 'goal', source: 'extension', description: 'Mock goal 命令' },
+        ],
         messages: [
           {
             id: `${id}-user`,
