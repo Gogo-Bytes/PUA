@@ -71,10 +71,6 @@ export function ProjectSidebar({
   return (
     <nav className="workspace-sidebar codex-sidebar" aria-label="项目">
     <div className="codex-sidebar-brand">
-        <Button className="codex-brand-button" variant="ghost" aria-label="PUA 菜单" onClick={onSettings}>
-          <strong>PUA</strong>
-          <Icon name="down" />
-        </Button>
         <span className="codex-sidebar-actions">
           <IconButton icon="search" label="搜索与命令" variant="ghost" onClick={onSearch} />
           <IconButton icon="settings" label="桌面设置" variant="ghost" onClick={onSettings} />
