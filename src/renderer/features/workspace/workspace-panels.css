@@ -65,11 +65,22 @@
 .environment-worktree-option span,.environment-worktree-option small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .environment-worktree-option small { color:var(--ui-tertiary); }
 
-.ui-provider .workspace-body { display: flex; flex: 1; min-height: 0; min-width: 0; }
-.ui-provider .workspace-body > .ui-workspace { flex: 1; min-width: 0; }
-.ui-provider #workspace-environment:not([hidden]) { flex: 0 0 320px; min-height: 0; border-left: 1px solid var(--ui-border); background: var(--ui-canvas); }
-.ui-provider .environment-panel { height: 100%; overflow: auto; padding: var(--ui-space-3); }
-@media (max-width: 640px) {
-  .ui-provider .workspace-body:has(#workspace-environment:not([hidden])) > .ui-workspace { display: none; }
-  .ui-provider #workspace-environment:not([hidden]) { flex: 1; border-left: 0; }
+.ui-provider #workspace-environment:not([hidden]) {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  padding: var(--ui-space-3);
+  max-height: 45%;
+  min-height: 0;
+}
+.ui-provider .environment-panel {
+  width: 300px;
+  max-width: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-overlay);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow);
 }

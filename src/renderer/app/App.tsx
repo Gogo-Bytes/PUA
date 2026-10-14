@@ -106,7 +106,6 @@ export function App() {
           onArchive={active ? () => workspace.closeSession(active.id) : undefined}
           onTogglePinned={active ? () => workspace.setSessionPinned(active.id, !active.pinned) : undefined}
         />
-        <div className="workspace-body">
         <ResizableWorkspace
           rightSize={{ initial: 560, min: 280, max: 1000 }}
           leftToggleRef={leftPanelToggle}
@@ -190,6 +189,17 @@ export function App() {
             />
           }
         >
+        <div id="workspace-environment" hidden={!environmentOpen}>
+          <EnvironmentPopover
+            open={environmentOpen}
+            onClose={() => setEnvironmentOpen(false)}
+            session={active}
+            sessions={sessions}
+            onSelectSession={navigation.selectSession}
+            onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}
+          />
+        </div>
+
           {error && (
             <div className="error-banner" role="alert">
               <span>{error}</span>
@@ -284,17 +294,6 @@ export function App() {
             </footer>
           )}
     </ResizableWorkspace>
-        <div id="workspace-environment" hidden={!environmentOpen}>
-          <EnvironmentPopover
-            open={environmentOpen}
-            onClose={() => setEnvironmentOpen(false)}
-            session={active}
-            sessions={sessions}
-            onSelectSession={navigation.selectSession}
-            onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}
-          />
-        </div>
-        </div>
         <TerminalOutlet
           sessions={sessions}
           activeId={activeId}
