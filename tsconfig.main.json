@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext",
-    "strict": true, "skipLibCheck": true, "esModuleInterop": true,
-    "outDir": "dist", "rootDir": "src", "sourceMap": true
-  },
-  "include": ["src/shared", "src/modules", "src/app", "src/platform"]
-}
