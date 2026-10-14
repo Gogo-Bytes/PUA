@@ -6,7 +6,9 @@ import { desktopClient } from './desktop-client';
 import { GitPanel } from '../features/change-review';
 import {
   SidePanelHost,
-  EnvironmentPopover,
+  EnvironmentCard,
+  EnvironmentGitDialogs,
+  useEnvironmentController,
   useEnvironmentColumn,
   HistorySearchDialog,
   ProjectSidebar,
@@ -36,6 +38,14 @@ export function App() {
   const { boot, theme, error } = desktopPresentation;
   const { sessions, activeId, active, project } = workspace;
   const panels = useSidePanelTabs(activeId ?? `draft:${project ?? ''}`);
+  const environmentController = useEnvironmentController({
+    visible: environment.open && environment.visible,
+    session: active,
+    sessions,
+    onClose: environment.close,
+    onSelectSession: navigation.selectSession,
+    onOpenPanel: kind => { panels.open(kind); setReviewOpen(true); },
+  });
   const [workspaceView, setWorkspaceView] = useState(() => readWorkspaceView());
   const [historySearchOpen, setHistorySearchOpen] = useState(false);
   const attentionToasts = workspace.attentionEvents.map(event => ({
@@ -117,14 +127,10 @@ export function App() {
             toggleRef: environment.toggleRef,
             onVisibilityChange: environment.onVisibilityChange,
             content: visible => (
-              <EnvironmentPopover
-                open={visible}
-                onClose={environment.close}
-                session={active}
-                sessions={sessions}
-                onSelectSession={navigation.selectSession}
-                onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}
-              />
+              visible && <>
+                <EnvironmentCard view={environmentController.view} onIntent={environmentController.intent} />
+                <EnvironmentGitDialogs view={environmentController.git} onIntent={environmentController.gitIntent} />
+              </>
             ),
           }}
           rightSize={{ initial: 560, min: 280, max: 1000 }}

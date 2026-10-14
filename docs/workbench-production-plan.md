@@ -1,6 +1,6 @@
 # 工作台正式组件与接入方案
 
-状态：阶段 1 已实施并接入正式 App；阶段 2–5 未开始，本 session 到此停止。以用户确认的交互为准；当前 mock 页复用生产 App，视觉基本认可不代表所有布局行为已实现。保留工作区已有未提交改动，按职责逐阶段接入。
+状态：阶段 1 已获用户验收；阶段 2 已实施并接入正式 App，阶段 3–5 待顺序实施。以用户确认的交互为准；当前 mock 页复用生产 App，视觉基本认可不代表所有布局行为已实现。保留工作区已有未提交改动，按职责逐阶段接入。
 
 ## 分层与接口
 
@@ -85,7 +85,7 @@
 | 阶段 | 具体替换 | 完成条件 |
 | --- | --- | --- |
 | 1（已完成，2026-10-14） | 正式布局 Interface 与环境辅助列 | mock 横向关系、环境优先收起、拖动/键盘、焦点、窄窗恢复、手动关闭、长卡片与 reduced-motion 通过；隔离 Electron smoke 通过 |
-| 2 | 环境展示与读取/操作拆分 | mock 空/有内容与失败场景通过；桌面检查读取、切会话、关闭后晚到结果，不在真实仓库上自动提交或删除 |
+| 2（已完成，2026-10-14） | 环境展示与读取/操作拆分 | mock 读取失效、操作归属、关闭重开锁、失败与仅推送重试通过；隔离桌面读取、切会话及关闭后晚到结果通过 |
 | 3 | 项目导航与工具抽屉 | mock 菜单/状态/标签场景通过；桌面检查真实钉选、改名、归档，以及唯一 PTY 与 BrowserView 生命周期 |
 | 4 | 页面导航与设置页 | 设置进入/返回可恢复工作台状态；隐藏原生 BrowserView，设置保存和归档流程在隔离桌面数据中检查 |
 | 5 | 对话呈现与命令组合 | mock 多种富文本与过程折叠通过；桌面检查附件、命令、排队/停止和会话切换，不改变原提交身份语义 |
@@ -104,3 +104,12 @@
 候选树验证通过：`npm run typecheck`、`npm run typecheck:tests`、组件预览类型检查、`npm run check:boundaries`、`npm run build`、`tests/workspace-layout-check.mjs`、`scripts/smoke-workspace-layout.mjs`。Web 覆盖 1600/1300/1000/800/500 宽度、抽屉拖动及 Home/End、意图恢复/手动关闭、焦点、长卡片、输入与确认 Dialog Escape、草稿/session、明暗与 reduced-motion；隔离 Electron 覆盖 mock 对话/草稿身份和原生 BrowserView 几何及复用/销毁。没有新增或扩展单元测试。
 
 限制：完整 dirty 工作树的 tests 类型检查存在两处既有 preview `needsAttention` 类型错误，保留未修改；候选树同项通过。构建保留既有大 chunk 告警。未认证真实 Pi、完整 PTY、真实 Git 写流程或跨平台全矩阵；它们属于后续阶段/产品验收。预览与截图及复核命令见 [生产接入契约](../src/renderer/ui/production-integration.md#工作台正式布局阶段-1-验证2026-10-14)。
+
+
+## 阶段 2 实施记录（2026-10-14）
+
+用 `EnvironmentCardView`/`EnvironmentIntent` 和 `EnvironmentGitView`/`EnvironmentGitIntent` 明确展示与操作边界；EnvironmentCard 和 EnvironmentGitDialogs 只渲染投影、报告意图，`useEnvironmentController` 持读取、表单、确认与 Git continuation，App 装配现有布局。已删除 EnvironmentPopover 源码与导出。实际可见且目标存在时才读；身份/显示 scope 和读取 epoch 拒绝旧结果，所有操作固定原 session ID。只为正在进行的请求保留按 session 的锁，关闭重开或 A→B→A 仍 busy，完成即删除；旧错误/草稿/确认不回写新 scope。同目标可见时完成后重新读取当前快照。成功 commit 后 push 失败仅提供 push 重试，避免重复提交。
+
+新增隔离 web 验收 `tests/workspace-environment-check.mjs`，不新增单元测试：关闭/重开、A→B→A、旧请求与操作失败、同步锁、确认 Escape、提交后推送失败、来源/后台区真实显示均通过。`scripts/smoke-workspace-environment.mjs` 在临时 home/userData、显式 mock Pi 下保留真实 preload/IPC，只在测试启动器延迟返回真实读取 envelope，验证切会话、关闭和晚到结果；不使用真实用户仓库或执行 Git 写操作。独立只读 Review 未发现剩余源代码缺陷。类型/边界、构建和布局回归以仅含本阶段的候选树复核；完整 dirty 树的两处原预览类型错误保留。
+
+预览：`http://127.0.0.1:4183/workspace-preview.html`。截图保存在 `.agent-work/workbench-followup/stage2/`，包括环境、读取/操作失败、仅推送重试和桌面晚到结果场景；布局、Pi/PTY、业务 owner 和主进程安全校验未迁移。

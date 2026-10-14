@@ -54,7 +54,7 @@
 
 ### 截图驱动的面板接入（2026-09-22）
 
-2026-10-14 工作台方案阶段 1 更新：Environment 进入 ResizableWorkspace 的正常辅助网格列，横向顺序为项目导航 → 对话 → 环境卡片所在列 → 工具抽屉。列宽 300px、与对话间距 12px，无列级背景或边框；卡片靠顶部、按内容定高，最高占可用列高，长内容在卡片内滚动。已删除原对话顶部布局规则，不使用覆盖层，也不下移对话/Composer。环境展示与读取/操作仍使用既有 EnvironmentPopover，正式改名及拆分在方案阶段 2，尚未实施。
+2026-10-14 工作台方案阶段 1 更新：Environment 进入 ResizableWorkspace 的正常辅助网格列，横向顺序为项目导航 → 对话 → 环境卡片所在列 → 工具抽屉。列宽 300px、与对话间距 12px，无列级背景或边框；卡片靠顶部、按内容定高，最高占可用列高，长内容在卡片内滚动。已删除原对话顶部布局规则，不使用覆盖层，也不下移对话/Composer。2026-10-14 阶段 2 已将 EnvironmentPopover 替换为 EnvironmentCard、EnvironmentGitDialogs 和 useEnvironmentController；下方阶段 2 契约为当前事实。
 
 `ResizableWorkspaceProps.auxiliary` 只接受一个固定宽度、无独立拖动手柄的辅助列：`id`、`label`、`width`、`gap`、`open`、永久 `toggleRef`、`onVisibilityChange` 和 `content(visible)`。`open` 为调用方意图，`visible` 为 ui 的实际 fitting 结果；自动收起不回写 open。Workspace 的 `useEnvironmentColumn` 持展开意图与开关文案，无第二套尺寸测量。顶部图标以实际可见性设置 aria-expanded，并在空间不足时说明扩大窗口自动恢复；此时再次点击可撤销恢复意图。
 
@@ -91,3 +91,12 @@ Component Preview 四个浏览器脚本验证共同组件；Workspace Preview �
 - `scripts/smoke-workspace-layout.mjs` 使用临时 userData、临时 home 的启动器、显式 mock Pi 与 loopback 网页。验证真实 Electron 的布局/焦点、会话及草稿保留和原生 BrowserView bounds、隐藏/恢复/复用/销毁。不使用用户 Pi 或真实仓库，不执行 Git 写操作；不构成真实 Pi、PTY 或跨平台产品全矩阵认证。
 - 仅含阶段 1 的候选树通过 main/renderer/tests/component-preview 类型检查、AST 边界检查、生产构建、上述 web 与桌面 smoke。既有大 bundle 告警保留。完整 dirty 工作树的 tests 类型检查被用户预览数据中两处 `needsAttention` 非 SessionInfo 字段阻断，未修改或夹带这些改动。未新增/扩展单元测试，未运行全量单元测试。
 - 预览：`http://127.0.0.1:4183/workspace-preview.html`（保留用户样式与数据）；提交候选预览：`http://127.0.0.1:4184/workspace-preview.html`。截图位于 `.agent-work/workbench-stage1/` 与其 `candidate-web/`，已查看宽窗、窄窗、长卡片及明暗截图。端口由本地进程提供，重启后可用 `npm run dev:workspace -- --port 4183` 和 `PUA_PREVIEW_URL=http://127.0.0.1:4183 node tests/workspace-layout-check.mjs` 复核。
+
+
+### 工作台环境组件阶段 2 契约（2026-10-14）
+
+`EnvironmentCard` 接收只读展示投影 `EnvironmentCardView` 与受限 `EnvironmentIntent`；`EnvironmentGitDialogs` 接收确认 union `EnvironmentGitView` 与 `EnvironmentGitIntent`。两者没有 Desktop Client 或宿主调用。Workspace `useEnvironmentController` 拥有仓库读取快照、表单草稿、明确目标的确认和 Git 操作 continuation，App 组合它们；旧 EnvironmentPopover 源码/导出已删除。
+
+控制器只在实际显示且 session 存在于 Workspace 投影时读取。身份/显示 scope 对象使 A→B→A、关闭/重开也产生新生命周期；读取 epoch 同时拒绝刷新或 mutation 前的旧读取。每次操作捕获固定 session ID，commit→push 同样不重新指向当前会话。只缓存尚未结束的 operation token/kind，按 session 保持同步防重复锁，完成按 token 删除；新 scope 的错误/表单/确认独立，旧结果不发布，当前仍显示同目标时重新读快照。提交成功后推送失败将确认改为推送状态，不再重复 commit。真实主进程的 cwd、空闲、dirty worktree、路径与 Session 校验保持。
+
+`tests/workspace-environment-check.mjs` 使用隔离 Fake Desktop 与受控结果，覆盖显示门禁、关闭/切会话失效、同目标重开锁、失败与安全重试、确认 Escape 和真实区段投影。`scripts/smoke-workspace-environment.mjs` 使用临时 home/userData 与 mock Pi，在测试启动器延迟真实 IPC 读取结果，验证切会话和关闭目标后的晚到回包；不执行用户 Git 写入。截图位于 `.agent-work/workbench-followup/stage2/`。阶段 2 不构成真实 Pi、PTY、Git 写入或跨平台完整认证。
