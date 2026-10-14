@@ -7,7 +7,7 @@ export { Popover } from './Popover';
 export { PanelTabs } from './PanelTabs';
 export { SuggestionList, SuggestionOptions, type SuggestionItem } from './shadcn-suggestion-list';
 export { InlineRename } from './InlineRename';
-export { ResizableWorkspace } from './ResizableWorkspace';
+export { ResizableWorkspace, type ResizableWorkspaceProps, type WorkspaceAuxiliaryColumn } from './ResizableWorkspace';
 export * from './Message';
 export * from './Toast';
 export * from './Breadcrumbs';

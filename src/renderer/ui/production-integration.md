@@ -6,7 +6,7 @@
 
 用户已明确批准以当前 Component Preview 的组合交互页为生产设计基准，并要求实际替换与后续交互统一。此前“保留旧 DOM / 只换皮”的迁移约束已结束；不能再增加 transcript/nativeDetails 等生产视觉分支来恢复旧界面。Demo 的测试控制、模拟请求与 fixture 仍不得进入生产。
 
-生产 App 使用 ResizableWorkspace、带 InlineRename 的 ProjectSidebar、Breadcrumbs 与 InspectorHeader；ProjectNav/SessionTabs 仍作为预览与可复用组合保留。面板按容器空间收缩、先隐藏右侧再隐藏左侧，宽度偏好恢复；不再使用 1100px 的旧 Inspector overlay。检查器内 Escape 与关闭按钮恢复 toggle，输入框和本地菜单保留 Escape。Git scope 与 Markdown source/preview 使用共享 Tabs 的方向键导航。
+生产 App 使用 ResizableWorkspace、带 InlineRename 的 ProjectSidebar、Breadcrumbs 与 InspectorHeader；ProjectNav/SessionTabs 仍作为预览与可复用组合保留。面板按容器空间收缩：有环境辅助列时先隐藏环境，再压缩主要面板，仍不足时先隐藏右侧再隐藏左侧，宽度偏好恢复；不再使用 1100px 的旧 Inspector overlay。检查器内 Escape 与关闭按钮恢复 toggle，输入框和本地菜单保留 Escape。Git scope 与 Markdown source/preview 使用共享 Tabs 的方向键导航。
 
 会话 pane 仍以 session.id 常驻；Session/Conversation/Git/backend/IPC 所有权不变。视觉与交互允许调整，异步提交身份、草稿 revision、附件 token、安全 Content 渲染与 xterm 生命周期仍是回归约束。后续 UI 改动先在同一组件体系中实现，再供生产与预览共同消费。
 
@@ -54,7 +54,13 @@
 
 ### 截图驱动的面板接入（2026-09-22）
 
-Environment 以对话区右上角的卡片参与正常布局，按内容决定高度；不占独立侧栏，也不使用 Popover 覆盖对话。顶部图标切换显示，工具抽屉保持独立。卡片最高占对话区 45%，长内容在卡片内滚动，窄窗仍保留对话。仅显示时读取当前 session 的 GitStatus、分支和工作树列表，晚到结果按 session/关闭清理丢弃。Changes 打开 Git Diff 标签，任务详情打开原 TaskDetailsPanel。Collaboration 已移除；Background processes 仅有存活终端会话时显示，Sources 仅当前会话提供 cwd 时显示，不展示空态占位。分支切换、创建/安全删除、worktree 创建/移除、commit/push 仍经真实 IPC，主进程的空闲、dirty worktree 与会话隔离校验保持。
+2026-10-14 工作台方案阶段 1 更新：Environment 进入 ResizableWorkspace 的正常辅助网格列，横向顺序为项目导航 → 对话 → 环境卡片所在列 → 工具抽屉。列宽 300px、与对话间距 12px，无列级背景或边框；卡片靠顶部、按内容定高，最高占可用列高，长内容在卡片内滚动。已删除原对话顶部布局规则，不使用覆盖层，也不下移对话/Composer。环境展示与读取/操作仍使用既有 EnvironmentPopover，正式改名及拆分在方案阶段 2，尚未实施。
+
+`ResizableWorkspaceProps.auxiliary` 只接受一个固定宽度、无独立拖动手柄的辅助列：`id`、`label`、`width`、`gap`、`open`、永久 `toggleRef`、`onVisibilityChange` 和 `content(visible)`。`open` 为调用方意图，`visible` 为 ui 的实际 fitting 结果；自动收起不回写 open。Workspace 的 `useEnvironmentColumn` 持展开意图与开关文案，无第二套尺寸测量。顶部图标以实际可见性设置 aria-expanded，并在空间不足时说明扩大窗口自动恢复；此时再次点击可撤销恢复意图。
+
+fitting 先检查当前主要面板偏好宽度加环境列是否容纳；不足先移除环境，再沿用原主要面板压缩/右侧隐藏/左侧隐藏规则。拖动与方向键、Home/End 共享这一计算，调整上限允许使用环境列释放的空间。测量或拖动导致列收起时，先把列内焦点移到永久开关，再设 inert/aria-hidden；手动 Escape 关闭恢复开关，输入、IME、菜单与 Dialog 的 Escape 不连带关列。显式开关沿用有界 GSAP context；测量与拖动即时布局，系统 reduced-motion 立即就位。
+
+仅实际显示时读取当前 session 的 GitStatus、分支和工作树列表，原读取失效与 Git/会话校验不变。Changes 打开 Git Diff 标签，任务详情打开原 TaskDetailsPanel；Background processes 与 Sources 沿用既有真实投影。会话、草稿、附件、Pi、唯一 PTY、BrowserView 与 Git 的 owner 未调整。
 
 SidePanelHost 是右侧多标签宿主；无标签首页与添加菜单仅提供终端、浏览器和 Git Diff，共用同一入口清单；不展示 Suggested、伪造的快捷键或其他产品能力。浏览器空白页仅提示输入网址。Files 接入只读会话目录浏览和 UTF-8 文本预览；文件 IPC 只接受 session ID + 相对路径，由主进程从 session capability 解析 cwd，路径不允许逃逸、不跟随符号链接，预览限制 256 KB。Browser 使用主进程 `WebContentsView`，为每个视图创建独立的非持久 Session，不注入 preload、禁用 Node，并拒绝权限、下载和新窗口；远程地址仅允许 HTTPS，HTTP 仅允许 loopback 开发服务，renderer 只能通过校验后的窄 IPC 操作导航与视图边界。子视图 bounds 由主进程夹限在宿主窗口内，tab 隐藏/面板卸载时隐藏并销毁。Terminal tab 复用当前 Terminal Session 的唯一 `TerminalPane`/xterm/PTY 订阅，由 `TerminalOutlet` 只调整视口几何在主工作区和右侧 dock 之间显示；不创建第二个终端、不重复 `startSession`，也不绕过 Session 的 Terminal 独占策略。xterm 与 addon 仅在存在终端面板时动态加载，不进入聊天首屏。Side chat 仍是独立 Pi 会话入口。tab 列表按 session/draft 隔离，切 tab 保持已打开 Review 挂载，切会话重置内容投影；全关后回到入口。面板宽度默认 560、最小 280、最大 1000，仍保留 center 360 最小约束与响应式隐藏。
 
@@ -77,3 +83,11 @@ Review 使用连续多文件展示，移除旧 inspector 内卡片。每批 5 �
 本阶段验证：production/preview build、production/preview/tests typecheck、28 项 primitive/module 测试及新浏览器脚本通过，截图在 `/tmp/pua-shadcn-evidence`。全量测试为 2660 passed / 36 failed（9 个文件），包含旧项目 title 查询和 App 结构断言，尚未逐项归因；不可宣称全量回归通过。边界检查通过；`check:protected` 仍对旧冻结清单报告本轮新增 UI 文件和此前 UI 改动，未修改清单以掩盖差异。npm audit 报 Vitest/mocker 两项 moderate，本轮未升级测试框架。
 
 Component Preview 四个浏览器脚本验证共同组件；Workspace Preview 复用完整生产 App/production.css 和 Fake Desktop。运行 `node tests/workspace-demo-check.mjs` 检查生产布局、改名、调宽、面板恢复、消息/工具/输入、主题与 Dialog；`node tests/workspace-dialog-check.mjs` 覆盖 pending 表单焦点。两者只访问 127.0.0.1:4181。Electron 验证使用临时 userData 和本地 mock runtime，只查看空壳与 Settings，不创建会话或访问真实外部能力。
+
+
+### 工作台正式布局阶段 1 验证（2026-10-14）
+
+- `tests/workspace-layout-check.mjs` 在 Fake Desktop 的正式 App 上覆盖宽窗（1600×1000）、环境优先收起（1300）、主要面板压缩（1000）、右/左收起（800/500）、恢复、鼠标拖动、键盘 Home/End、手动关闭、焦点、长卡片 End 滚动、输入/确认 Dialog Escape、草稿/session 身份、深色与 reduced-motion。`?environment=long` 仅为测试入口的内存压力场景。浏览器无 page/console error、无外部请求。
+- `scripts/smoke-workspace-layout.mjs` 使用临时 userData、临时 home 的启动器、显式 mock Pi 与 loopback 网页。验证真实 Electron 的布局/焦点、会话及草稿保留和原生 BrowserView bounds、隐藏/恢复/复用/销毁。不使用用户 Pi 或真实仓库，不执行 Git 写操作；不构成真实 Pi、PTY 或跨平台产品全矩阵认证。
+- 仅含阶段 1 的候选树通过 main/renderer/tests/component-preview 类型检查、AST 边界检查、生产构建、上述 web 与桌面 smoke。既有大 bundle 告警保留。完整 dirty 工作树的 tests 类型检查被用户预览数据中两处 `needsAttention` 非 SessionInfo 字段阻断，未修改或夹带这些改动。未新增/扩展单元测试，未运行全量单元测试。
+- 预览：`http://127.0.0.1:4183/workspace-preview.html`（保留用户样式与数据）；提交候选预览：`http://127.0.0.1:4184/workspace-preview.html`。截图位于 `.agent-work/workbench-stage1/` 与其 `candidate-web/`，已查看宽窗、窄窗、长卡片及明暗截图。端口由本地进程提供，重启后可用 `npm run dev:workspace -- --port 4183` 和 `PUA_PREVIEW_URL=http://127.0.0.1:4183 node tests/workspace-layout-check.mjs` 复核。

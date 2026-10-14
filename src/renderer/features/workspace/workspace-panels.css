@@ -65,19 +65,13 @@
 .environment-worktree-option span,.environment-worktree-option small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .environment-worktree-option small { color:var(--ui-tertiary); }
 
-.ui-provider #workspace-environment:not([hidden]) {
-  display: flex;
-  justify-content: flex-end;
-  flex: 0 0 auto;
-  padding: var(--ui-space-3);
-  max-height: 45%;
-  min-height: 0;
-}
 .ui-provider .environment-panel {
   width: 300px;
   max-width: 100%;
+  max-height: 100%;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: var(--ui-space-3);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-overlay);

@@ -7,6 +7,7 @@ import { GitPanel } from '../features/change-review';
 import {
   SidePanelHost,
   EnvironmentPopover,
+  useEnvironmentColumn,
   HistorySearchDialog,
   ProjectSidebar,
   WorkspaceChrome,
@@ -29,7 +30,7 @@ export function App() {
     setTimeout(() => panelToggle.current?.focus(), 0);
   };
   const [reviewOpen, setReviewOpen] = useState(true);
-  const [environmentOpen, setEnvironmentOpen] = useState(false);
+  const environment = useEnvironmentColumn();
   const [projectPanelOpen, setProjectPanelOpen] = useState(true);
   const { desktopPresentation, workspace, palette, input, launch, sessionActions, navigation } = useWorkspaceComposition(() => {});
   const { boot, theme, error } = desktopPresentation;
@@ -91,7 +92,7 @@ export function App() {
           rightOpen={reviewOpen}
           leftToggleRef={leftPanelToggle}
           rightToggleRef={panelToggle}
-          environment={<IconButton icon="environment" label="环境与任务信息" variant="ghost" aria-expanded={environmentOpen} aria-controls="workspace-environment" onClick={() => setEnvironmentOpen(open => !open)}/>}
+          environment={<IconButton ref={environment.toggleRef} icon="environment" label={environment.label} title={environment.label} variant="ghost" aria-expanded={environment.visible} aria-controls="workspace-environment" onClick={environment.toggle}/>}
           canNavigateBack={workspace.canNavigateBack}
           canNavigateForward={workspace.canNavigateForward}
           onToggleLeft={() => setProjectPanelOpen(open => !open)}
@@ -107,6 +108,25 @@ export function App() {
           onTogglePinned={active ? () => workspace.setSessionPinned(active.id, !active.pinned) : undefined}
         />
         <ResizableWorkspace
+          auxiliary={{
+            id: 'workspace-environment',
+            label: '环境辅助列',
+            width: 300,
+            gap: 12,
+            open: environment.open,
+            toggleRef: environment.toggleRef,
+            onVisibilityChange: environment.onVisibilityChange,
+            content: visible => (
+              <EnvironmentPopover
+                open={visible}
+                onClose={environment.close}
+                session={active}
+                sessions={sessions}
+                onSelectSession={navigation.selectSession}
+                onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}
+              />
+            ),
+          }}
           rightSize={{ initial: 560, min: 280, max: 1000 }}
           leftToggleRef={leftPanelToggle}
           leftOpen={projectPanelOpen}
@@ -189,17 +209,6 @@ export function App() {
             />
           }
         >
-        <div id="workspace-environment" hidden={!environmentOpen}>
-          <EnvironmentPopover
-            open={environmentOpen}
-            onClose={() => setEnvironmentOpen(false)}
-            session={active}
-            sessions={sessions}
-            onSelectSession={navigation.selectSession}
-            onOpenPanel={kind => { panels.open(kind); setReviewOpen(true); }}
-          />
-        </div>
-
           {error && (
             <div className="error-banner" role="alert">
               <span>{error}</span>

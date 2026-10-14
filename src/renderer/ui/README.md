@@ -78,7 +78,7 @@
 
 - Dialog 是生产与预览唯一的 modal 实现（`shadcn-dialog.tsx`，Base UI composition）。库负责 Tab 循环、Escape 请求关闭、恢复 opener；可配置 closeLabel。需要输入初始焦点的调用方传入 `initialFocusRef`；焦点初始化/恢复是异步的，测试应等待焦点结果。嵌套菜单 Portal 归属 Popup，第一次 Escape 只关菜单。`closeOnBackdrop={false}` 保留不响应 backdrop 的语义，`closeDisabled` 阻止所有关闭请求。确认、危险操作、异步失败仍由调用方控制；示例在 `CompletionExamples.tsx / DialogExamples`。
 - InlineRename 支持双击/F2，labels 可配置输入提示、保存/取消和失败文案；SessionTabs 按 id 恢复焦点，忙碌编辑器可作为焦点目标。未增加改名菜单入口。
-- ResizableWorkspace 支持 rightOpen/onRightOpenChange、rightToggleRef、labels 和 toolbarActions；motionControls 默认为 false，仅预览显式开启重播测试控制。窄窗先隐藏右侧再隐藏左侧，保存宽度恢复；separator 即将移除前把焦点移到永久 toggle。原有 GSAP 有界 context 与中途反转策略保持。
+- ResizableWorkspace 导出 `ResizableWorkspaceProps` 与受限 `WorkspaceAuxiliaryColumn`，保留 rightOpen/onRightOpenChange、rightToggleRef、labels、toolbarActions 和默认关闭的预览动效控制。辅助列位于 main 与 right 之间，调用方持 open 意图；统一测量、拖动和收缩优先移除辅助列，再沿用右/左面板规则，空间恢复不改手动关闭意图。永久开关恢复焦点，隐藏列 inert；显式开关使用既有有界 GSAP context，尺寸变化即时布局，reduced-motion 立即就位。具体接口、生产组合与验证见 [接入契约](production-integration.md#截图驱动的面板接入2026-09-22)。
 
 ## 验证
 

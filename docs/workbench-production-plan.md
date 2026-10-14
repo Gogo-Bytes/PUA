@@ -1,6 +1,6 @@
 # 工作台正式组件与接入方案
 
-状态：设计阶段，尚未开始本方案的正式替换。以用户确认的交互为准；当前 mock 页复用生产 App，视觉基本认可不代表所有布局行为已实现。保留工作区已有未提交改动，按职责逐阶段接入。
+状态：阶段 1 已实施并接入正式 App；阶段 2–5 未开始，本 session 到此停止。以用户确认的交互为准；当前 mock 页复用生产 App，视觉基本认可不代表所有布局行为已实现。保留工作区已有未提交改动，按职责逐阶段接入。
 
 ## 分层与接口
 
@@ -84,7 +84,7 @@
 
 | 阶段 | 具体替换 | 完成条件 |
 | --- | --- | --- |
-| 1 | 正式布局 Interface 与环境辅助列 | mock 中三者横向关系正确，环境优先收起，拖动、焦点和窄窗恢复通过 |
+| 1（已完成，2026-10-14） | 正式布局 Interface 与环境辅助列 | mock 横向关系、环境优先收起、拖动/键盘、焦点、窄窗恢复、手动关闭、长卡片与 reduced-motion 通过；隔离 Electron smoke 通过 |
 | 2 | 环境展示与读取/操作拆分 | mock 空/有内容与失败场景通过；桌面检查读取、切会话、关闭后晚到结果，不在真实仓库上自动提交或删除 |
 | 3 | 项目导航与工具抽屉 | mock 菜单/状态/标签场景通过；桌面检查真实钉选、改名、归档，以及唯一 PTY 与 BrowserView 生命周期 |
 | 4 | 页面导航与设置页 | 设置进入/返回可恢复工作台状态；隐藏原生 BrowserView，设置保存和归档流程在隔离桌面数据中检查 |
@@ -93,3 +93,14 @@
 每阶段先通过正式展示 Interface 完成隔离 web 预览，再按已授权范围接入现有 App；完成所需 typecheck/build 和桌面 smoke/手动流程后只提交该阶段相关文件并推送。推送失败停止。用户已有未提交改动按文件与 hunk 保留，不整包提交。
 
 不新增或扩展单元测试。替换完成时移除旧实现、旧导出、废弃样式与 demo-only 文案，更新 UI 接入契约；不同时保留两套生产工作台，不引入 renderer/modules 聚合，也不复制后端安全规则。
+
+
+## 阶段 1 实施记录（2026-10-14）
+
+通过 `ResizableWorkspaceProps.auxiliary` 扩展既有布局，单一 fitting 计算主列偏好宽度、辅助列 300px、间距 12px 与拖动手柄。环境先自动收起，之后主要面板才压缩/收起。Workspace `useEnvironmentColumn` 持用户意图，ui 报告实际可见性；手动关闭撤销恢复意图。App 把既有环境内容放到辅助 slot，删除对话顶部旧布局规则，保留所有业务 owner 与宿主生命周期。环境控制器/展示拆分及正式名称调整留到阶段 2。
+
+提交只包含本阶段新增接口、组合、样式 hunk、隔离预览压力场景、浏览器/桌面验收脚本及文档；既有导航、主题、Composer、图标和预览数据未夹带。为确认不依赖未提交内容，另从 index 构造独立候选树验证。
+
+候选树验证通过：`npm run typecheck`、`npm run typecheck:tests`、组件预览类型检查、`npm run check:boundaries`、`npm run build`、`tests/workspace-layout-check.mjs`、`scripts/smoke-workspace-layout.mjs`。Web 覆盖 1600/1300/1000/800/500 宽度、抽屉拖动及 Home/End、意图恢复/手动关闭、焦点、长卡片、输入与确认 Dialog Escape、草稿/session、明暗与 reduced-motion；隔离 Electron 覆盖 mock 对话/草稿身份和原生 BrowserView 几何及复用/销毁。没有新增或扩展单元测试。
+
+限制：完整 dirty 工作树的 tests 类型检查存在两处既有 preview `needsAttention` 类型错误，保留未修改；候选树同项通过。构建保留既有大 chunk 告警。未认证真实 Pi、完整 PTY、真实 Git 写流程或跨平台全矩阵；它们属于后续阶段/产品验收。预览与截图及复核命令见 [生产接入契约](../src/renderer/ui/production-integration.md#工作台正式布局阶段-1-验证2026-10-14)。

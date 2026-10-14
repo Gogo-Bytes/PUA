@@ -119,7 +119,14 @@ export function EnvironmentPopover({ session, sessions, onSelectSession, onOpenP
     finally { setCommitBusy(false); }
   };
   if (!open) return null;
-  return <aside className="environment-panel" aria-label="环境与任务信息">
+  return <aside className="environment-panel" aria-label="环境与任务信息" tabIndex={0} onKeyDown={event => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing || event.keyCode === 229) return;
+    const target = event.target as Element;
+    // Portal events bubble through React even after the Dialog has detached.
+    if (!event.currentTarget.contains(target) || target.closest('input, textarea, select, [contenteditable], dialog, [role="dialog"], [role="menu"], [role="listbox"]')) return;
+    event.preventDefault();
+    onClose?.();
+  }}>
     <section className="environment-section">
       <div className="environment-heading"><span>Environment</span></div>
       <Button variant="ghost" className="environment-row" disabled={!session} onClick={() => openPanel('review')}>

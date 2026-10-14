@@ -14,3 +14,4 @@ export { readWorkspaceView, writeWorkspaceView, type WorkspaceViewPersistence } 
 export { SessionTabs, type WorkspaceSessionTab, type SessionTabsLabels, type SessionTabsProps } from './SessionTabs';
 export { referencePaths } from './reference-paths';
 export { SidePanelHost } from './SidePanelHost';
+export { useEnvironmentColumn } from './useEnvironmentColumn';

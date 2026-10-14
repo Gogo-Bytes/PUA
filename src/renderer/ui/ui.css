@@ -107,3 +107,16 @@
 .ui-diff-view diffs-container { --diffs-bg:var(--ui-canvas); --diffs-bg-separator-override:var(--ui-muted); }
 .ui-diff-view pre, .ui-raw-patch pre { overflow:auto; margin:0; padding:8px 12px; font:12px/1.8 var(--mono); }
 .ui-raw-patch small { display:block; padding:4px 12px; color:var(--ui-tertiary); font:var(--ui-font-meta); }
+
+.ui-provider .ui-workspace-auxiliary {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding-block: var(--ui-space-3);
+}
+.ui-provider .ui-workspace-auxiliary[aria-hidden='true'] {
+  padding: 0;
+  pointer-events: none;
+}

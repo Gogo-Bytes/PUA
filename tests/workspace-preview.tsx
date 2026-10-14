@@ -56,6 +56,12 @@ const mockSessions: SessionInfo[] = [
 if (new URLSearchParams(window.location.search).has('background')) {
   mockSessions.push({ id: 'mock-background-terminal', cwd: '/test/workspace/PUA', title: 'Mock 后台终端', kind: 'terminal', processStatus: 'running', activity: 'idle' });
 }
+// Stage 1 stress case: long content remains entirely in the in-memory adapter.
+if (new URLSearchParams(window.location.search).get('environment') === 'long') {
+  for (let index = 0; index < 30; index += 1) {
+    mockSessions.push({ id: `mock-long-terminal-${index}`, cwd: '/test/workspace/PUA', title: `后台任务 ${index + 1} · 长名称滚动预览`, kind: 'terminal', processStatus: 'running', activity: 'idle' });
+  }
+}
 mockSessions.forEach(session => sessions.set(session.id, session));
 let preferences: Preferences = {
   piPath: 'TEST ONLY / no executable',
