@@ -1,0 +1,129 @@
+.pua-ui {
+  color-scheme: light;
+  --pua-sidebar-bg: #eeeff4;
+  --pua-surface: #f9f9fc;
+  --pua-text: #4f536b;
+  --pua-muted: #787c90;
+  --pua-hover: #e4e5ed;
+  --pua-selected: #dcdfe9;
+  --pua-menu-bg: #fafafd;
+  --pua-menu-hover: #e9eaf1;
+  --pua-border: #d5d7e1;
+  --pua-accent: #8d47f8;
+  --pua-danger: #c44150;
+  --pua-focus: #8c83c4;
+  --pua-shadow: 0 8px 28px #20223918, 0 1px 4px #2022390b;
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  color: var(--pua-text);
+}
+.pua-ui[data-theme='dark'] {
+  color-scheme: dark;
+  --pua-sidebar-bg: #242435;
+  --pua-surface: #202030;
+  --pua-text: #d1d3e5;
+  --pua-muted: #9295af;
+  --pua-hover: #303044;
+  --pua-selected: #39394f;
+  --pua-menu-bg: #2c2c3e;
+  --pua-menu-hover: #404056;
+  --pua-border: #46465c;
+  --pua-accent: #b28afa;
+  --pua-danger: #ff8c9a;
+  --pua-focus: #b0a5e9;
+  --pua-shadow: 0 8px 28px #0005, 0 1px 4px #0003;
+}
+@media (prefers-color-scheme: dark) {
+  .pua-ui[data-theme='system'] {
+    color-scheme: dark;
+    --pua-sidebar-bg: #242435; --pua-surface: #202030; --pua-text: #d1d3e5; --pua-muted: #9295af;
+    --pua-hover: #303044; --pua-selected: #39394f; --pua-menu-bg: #2c2c3e; --pua-menu-hover: #404056;
+    --pua-border: #46465c; --pua-accent: #b28afa; --pua-danger: #ff8c9a; --pua-focus: #b0a5e9;
+    --pua-shadow: 0 8px 28px #0005, 0 1px 4px #0003;
+  }
+}
+.pua-ui .pua-sidebar, .pua-ui .pua-sidebar *, .pua-ui .pua-menu-popup, .pua-ui .pua-menu-popup * { box-sizing: border-box; }
+.pua-ui .pua-sidebar { width: 100%; min-width: 0; height: 100%; display: flex; flex-direction: column; padding: 12px 8px 10px; background: var(--pua-sidebar-bg); }
+.pua-ui .pua-sidebar-header { flex-shrink: 0; margin-bottom: 13px; }
+.pua-ui .pua-sidebar-scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--pua-border) transparent; }
+.pua-ui .pua-sidebar-footer { flex-shrink: 0; padding-top: 12px; }
+.pua-ui .pua-nav-button, .pua-ui .pua-row-label, .pua-ui .pua-icon-button { appearance: none; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; margin: 0; text-align: start; }
+.pua-ui .pua-nav-button { display: flex; align-items: center; gap: 9px; width: 100%; height: 31px; padding: 0 9px; border-radius: 7px; }
+.pua-ui .pua-nav-button:hover:not(:disabled):not([aria-disabled='true']), .pua-ui .pua-icon-button:hover:not(:disabled):not([aria-disabled='true']) { background: var(--pua-hover); }
+.pua-ui .pua-sidebar button:disabled, .pua-ui .pua-row-label:disabled, .pua-ui .pua-icon-button:disabled, .pua-ui .pua-icon-button[aria-disabled='true'], .pua-ui .pua-nav-button[aria-disabled='true'] { cursor: default; opacity: .45; }
+.pua-ui .pua-section-heading { color: var(--pua-muted); font-size: 12px; font-weight: 500; margin: 10px 9px 7px; }
+.pua-ui .pua-list { list-style: none; padding: 0; margin: 0; }
+.pua-ui .pua-list[hidden] { display: none; }
+.pua-ui .pua-project-group { margin-bottom: 5px; }
+.pua-ui .pua-project-list { margin-bottom: 21px; }
+.pua-ui .pua-row { position: relative; height: 31px; min-width: 0; display: flex; align-items: center; border-radius: 7px; padding: 0 5px 0 7px; gap: 5px; }
+.pua-ui .pua-row:hover, .pua-ui .pua-row:has(.pua-menu-trigger[data-popup-open]) { background: var(--pua-hover); }
+.pua-ui .pua-row[data-selected] { background: var(--pua-selected); }
+.pua-ui .pua-row-label { align-self: stretch; display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; padding: 0 2px; }
+.pua-ui .pua-row-label > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pua-ui .pua-row-label > svg { flex: 0 0 auto; }
+.pua-ui .pua-icon-button { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.pua-ui .pua-disclosure { position: relative; flex-basis: 20px; width: 20px; margin-right: 1px; }
+.pua-ui .pua-project-actions, .pua-ui .pua-session-actions { display: inline-flex; align-items: center; flex-shrink: 0; gap: 3px; }
+.pua-ui .pua-project-actions { opacity: 0; }
+.pua-ui .pua-project-row:is(:hover, :focus-within, [data-pending]) .pua-project-actions, .pua-ui .pua-project-actions:has([data-popup-open]) { opacity: 1; }
+.pua-ui .pua-session.is-nested .pua-row { padding-left: 30px; }
+.pua-ui .pua-session .pua-session-actions { position: absolute; inset-inline-end: 5px; opacity: 0; pointer-events: none; background: var(--pua-sidebar-bg); border-radius: 5px; }
+.pua-ui .pua-row:hover .pua-session-actions { background: var(--pua-hover); }
+.pua-ui .pua-row[data-selected] .pua-session-actions { background: var(--pua-selected); }
+.pua-ui .pua-row:is(:hover, :focus-within, [data-pending], :has(.pua-menu-trigger[data-popup-open])) .pua-session-actions { opacity: 1; pointer-events: auto; }
+.pua-ui .pua-session-meta { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; white-space: nowrap; margin-inline-end: 3px; min-width: 0; max-width: calc(100% - 28px); }
+.pua-ui .pua-session .pua-row[data-has-actions]:is(:hover, :focus-within, [data-pending], :has(.pua-menu-trigger[data-popup-open])) .pua-session-meta { opacity: 0; pointer-events: none; min-width: var(--pua-action-width, 51px); }
+.pua-ui .pua-unread { width: 6px; height: 6px; border-radius: 50%; background: var(--pua-accent); }
+.pua-ui .pua-feedback, .pua-ui .pua-error, .pua-ui .pua-empty { display: block; font-size: 11px; line-height: 1.5; margin: 4px 9px 6px; overflow-wrap: anywhere; color: var(--pua-muted); }
+.pua-ui .pua-empty.is-nested { margin-inline-start: 32px; }
+.pua-ui .pua-error { color: var(--pua-danger); }
+.pua-ui .pua-sidebar button:focus-visible { outline: 2px solid var(--pua-focus); outline-offset: -2px; border-radius: 5px; }
+.pua-ui .pua-menu-positioner { z-index: 100; max-width: calc(100vw - 16px); }
+.pua-ui .pua-menu-popup { min-width: 226px; max-width: min(300px, calc(100vw - 16px)); max-height: var(--available-height); overflow-y: auto; padding: 5px; border: 1px solid var(--pua-border); border-radius: 10px; background: var(--pua-menu-bg); color: var(--pua-text); box-shadow: var(--pua-shadow); outline: none; transform-origin: var(--transform-origin); transition: opacity 100ms ease, transform 100ms ease; }
+.pua-ui .pua-menu-popup[data-starting-style], .pua-ui .pua-menu-popup[data-ending-style] { opacity: 0; transform: scale(.98); }
+.pua-ui .pua-menu-item { min-height: 31px; display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 5px; outline: none; cursor: default; user-select: none; font-size: 13px; }
+.pua-ui .pua-menu-item > svg { flex-shrink: 0; }
+.pua-ui .pua-menu-item[data-highlighted], .pua-ui .pua-menu-item[data-popup-open] { background: var(--pua-menu-hover); }
+.pua-ui .pua-menu-item[data-disabled] { opacity: .42; }
+.pua-ui .pua-menu-item[data-danger] { color: var(--pua-danger); }
+.pua-ui .pua-menu-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.pua-ui .pua-menu-copy small { font-size: 10px; color: var(--pua-muted); line-height: 1.4; margin-top: 2px; }
+.pua-ui .pua-menu-icon-space { display: block; width: 16px; flex-shrink: 0; }
+.pua-ui .pua-menu-trailing { margin-inline-start: auto; }
+.pua-ui .pua-menu-separator { height: 1px; margin: 4px 3px; background: var(--pua-border); }
+@media (hover: none), (pointer: coarse) {
+  .pua-ui .pua-project-actions { opacity: 1; }
+  /* Session actions still replace status on focus, never sit beside it. */
+}
+@media (prefers-reduced-motion: reduce) { .pua-ui .pua-menu-popup { transition: none; } }
+
+/* Presentation axes are separate from the mutation feedback/action rail. */
+.pua-ui .pua-state-indicators { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.pua-ui .pua-state-icon, .pua-ui .pua-state-dot-wrap { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 14px; height: 18px; gap: 2px; }
+.pua-ui { --pua-state-info: #416ab0; --pua-state-green: #377951; --pua-state-purple: #7d49ab; --pua-state-yellow: #926f24; --pua-state-orange: #a65b25; }
+.pua-ui[data-theme='dark'] { --pua-state-info: #9bb8f5; --pua-state-green: #80c496; --pua-state-purple: #bf9deb; --pua-state-yellow: #e9cb7b; --pua-state-orange: #e6a878; }
+@media (prefers-color-scheme: dark) { .pua-ui[data-theme='system'] { --pua-state-info: #9bb8f5; --pua-state-green: #80c496; --pua-state-purple: #bf9deb; --pua-state-yellow: #e9cb7b; --pua-state-orange: #e6a878; } }
+.pua-ui [data-tone='info'] { color: var(--pua-state-info); }
+.pua-ui [data-tone='danger'] { color: var(--pua-danger); }
+.pua-ui [data-tone='green'] { color: var(--pua-state-green); }
+.pua-ui [data-tone='purple'] { color: var(--pua-state-purple); }
+.pua-ui [data-tone='yellow'] { color: var(--pua-state-yellow); }
+.pua-ui [data-tone='orange'] { color: var(--pua-state-orange); }
+.pua-ui .pua-state-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: block; }
+.pua-ui .pua-state-chip { max-width: 120px; overflow: hidden; text-overflow: ellipsis; border: 1px solid var(--pua-border); border-radius: 5px; padding: 1px 5px; font-size: 10px; color: var(--pua-muted); }
+.pua-ui .pua-state-input { position: relative; overflow: hidden; min-width: 0; display: inline-flex; align-items: center; gap: 5px; border-radius: 9px; padding: 2px 7px; color: var(--pua-state-info); background: #5783d919; border: 1px solid #5783d92b; font-size: 10px; }
+.pua-ui .pua-state-input > span:not(.pua-state-input-fill) { position: relative; overflow: hidden; text-overflow: ellipsis; }
+.pua-ui .pua-state-input-fill { position: absolute; inset: 0 auto 0 0; background: #5783d927; pointer-events: none; }
+.pua-ui .pua-state-snooze { position: relative; flex-shrink: 0; border: 0; border-left: 1px solid #5783d955; color: inherit; padding: 0 0 0 5px; font: inherit; background: transparent; cursor: pointer; }
+.pua-ui .pua-state-snooze[aria-disabled='true'] { opacity: .45; cursor: default; }
+.pua-ui .pua-state-team { height: 18px; min-width: 20px; padding: 0 4px; border-radius: 8px; font-size: 9px; border: 1px solid var(--pua-border); background: var(--pua-hover); }
+/* Snooze belongs to the input status, not the navigation action rail.
+   Targeting/focusing that status keeps it available, with Pin/Archive hidden.
+   Hovering/focusing the title/actions swaps the same right slot to actions. */
+.pua-ui .pua-session .pua-row[data-status-interaction]:not(:has(.pua-menu-trigger[data-popup-open])) .pua-session-meta { opacity: 1; pointer-events: auto; min-width: 0; }
+.pua-ui .pua-session .pua-row[data-status-interaction]:not(:has(.pua-menu-trigger[data-popup-open])) .pua-session-actions { opacity: 0; pointer-events: none; }
+.pua-ui .pua-state-spinner { animation: pua-state-spin 1s linear infinite; }
+.pua-ui [data-pulse='true'] { animation: pua-state-pulse 1.8s ease-in-out infinite; }
+@keyframes pua-state-spin { to { transform: rotate(360deg); } }
+@keyframes pua-state-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .pua-ui .pua-state-spinner, .pua-ui [data-pulse='true'] { animation: none; } }

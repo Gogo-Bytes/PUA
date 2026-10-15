@@ -1,0 +1,16 @@
+{
+  "name": "pua-ui-studies",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @pua/playground dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @pua/components build && pnpm -r typecheck",
+    "test:states": "pnpm --filter @pua/components build && pnpm --filter @pua/playground test:states",
+    "preview": "pnpm --filter @pua/playground preview",
+    "test": "pnpm --filter @pua/components test && pnpm --filter @pua/playground test:states"
+  }
+}
